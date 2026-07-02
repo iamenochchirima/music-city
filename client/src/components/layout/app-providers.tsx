@@ -24,7 +24,6 @@ const dispatchDynamicEvent = (name: string) => {
     return;
   }
 
-  console.log("[dynamic][event]", name);
   window.dispatchEvent(new CustomEvent(name));
 };
 
@@ -34,13 +33,6 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const origin = window.location.origin;
     setRedirectOrigin(origin);
-    console.log("[dynamic][boot]", {
-      environmentId: clientEnv.dynamicEnvironmentId,
-      isConfigured: clientEnv.isDynamicConfigured,
-      redirectUrl: origin,
-      socialStrategy: "redirect",
-      href: window.location.href,
-    });
   }, []);
 
   return (
@@ -59,18 +51,13 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
               strategy: "redirect",
             },
             events: {
-              onAuthSuccess: (args) => {
-                console.log("[dynamic][event] onAuthSuccess", {
-                  hasArgs: Boolean(args),
-                });
+              onAuthSuccess: (_args) => {
                 dispatchDynamicEvent(DYNAMIC_AUTH_SUCCESS_EVENT);
               },
-              onAuthFailure: (args) => {
-                console.log("[dynamic][event] onAuthFailure", args);
+              onAuthFailure: (_args) => {
                 dispatchDynamicEvent(DYNAMIC_AUTH_FAILURE_EVENT);
               },
               onAuthFlowCancel: () => {
-                console.log("[dynamic][event] onAuthFlowCancel");
                 dispatchDynamicEvent(DYNAMIC_AUTH_CANCEL_EVENT);
               },
             },

@@ -46,9 +46,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const redactToken = (token?: string | null) =>
   token ? `${token.slice(0, 10)}...${token.slice(-6)} (${token.length})` : null;
 
-const logDynamicAuth = (label: string, payload?: Record<string, unknown>) => {
-  console.log(`[auth][dynamic] ${label}`, payload ?? {});
-};
+const logDynamicAuth = (_label: string, _payload?: Record<string, unknown>) => {};
 
 const readStoredSession = () => {
   if (typeof window === "undefined") {

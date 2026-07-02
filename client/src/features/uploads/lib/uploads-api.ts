@@ -22,6 +22,7 @@ export const uploadsApi = {
   },
 
   async uploadFile(
+    token: string,
     uploadSession: UploadSession,
     file: File,
     onProgress?: UploadProgressCallback,
@@ -60,7 +61,10 @@ export const uploadsApi = {
 
     const response = await fetch(uploadSession.uploadUrl, {
       method: uploadSession.method,
-      headers: uploadSession.headers,
+      headers: {
+        ...uploadSession.headers,
+        Authorization: `Bearer ${token}`,
+      },
       body: file,
     });
 

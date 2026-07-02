@@ -12,7 +12,6 @@ import { Readable } from "node:stream";
 import { env } from "../../config/env.js";
 import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
-import { normalizePositiveAmount, normalizeStellarAsset } from "../../utils/commerce.js";
 import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "./users.repository.js";
 
@@ -74,11 +73,6 @@ export const usersService = {
       walletAddress: profile.walletAddress,
       displayName: profile.displayName,
       location: profile.location,
-      subscriptionEnabled: profile.subscriptionEnabled,
-      subscriptionPrice: profile.subscriptionPrice,
-      subscriptionAssetCode: profile.subscriptionAssetCode,
-      subscriptionAssetIssuer: profile.subscriptionAssetIssuer,
-      subscriptionPeriodDays: profile.subscriptionPeriodDays,
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
       verified: profile.verified,
@@ -96,6 +90,17 @@ export const usersService = {
     return tracksService.listPublicTracksByArtist(id);
   },
 
+  async getPublicArtistReleases(id: string) {
+    const profile = await this.getProfileById(id);
+
+    if (!profile || profile.role !== "artist") {
+      return [];
+    }
+
+    const { releasesService } = await import("../releases/releases.service.js");
+    return releasesService.listPublicReleasesByArtist(id);
+  },
+
   async getProfileById(id: string) {
     return withMediaUrls(await usersRepository.findById(id));
   },
@@ -108,25 +113,6 @@ export const usersService = {
     const parsed = upsertUserProfileSchema.parse(input);
     const existing = await usersRepository.findByWallet(walletAddress);
     const timestamp = nowIso();
-    const subscriptionAsset = normalizeStellarAsset(
-      {
-        code:
-          parsed.subscriptionAssetCode ??
-          existing?.subscriptionAssetCode ??
-          env.STELLAR_SETTLEMENT_ASSET_CODE,
-        issuer:
-          parsed.subscriptionAssetIssuer ??
-          existing?.subscriptionAssetIssuer ??
-          env.STELLAR_SETTLEMENT_ASSET_ISSUER,
-      },
-      "Subscription",
-    );
-    const subscriptionPrice = normalizePositiveAmount(
-      parsed.subscriptionPrice ??
-        existing?.subscriptionPrice ??
-        env.ARTIST_SUBSCRIPTION_DEFAULT_PRICE,
-      "Subscription price",
-    );
 
     const profile: UserProfile = {
       id: existing?.id ?? createId("usr"),
@@ -135,15 +121,6 @@ export const usersService = {
       displayName: parsed.displayName,
       role: parsed.role,
       location: parsed.location ?? existing?.location ?? "",
-      subscriptionEnabled:
-        parsed.subscriptionEnabled ?? existing?.subscriptionEnabled ?? false,
-      subscriptionPrice,
-      subscriptionAssetCode: subscriptionAsset.code,
-      subscriptionAssetIssuer: subscriptionAsset.issuer,
-      subscriptionPeriodDays:
-        parsed.subscriptionPeriodDays ??
-        existing?.subscriptionPeriodDays ??
-        env.ARTIST_SUBSCRIPTION_PERIOD_DAYS,
       profileImageStorageKey:
         ensureOwnedProfileStorageKey(
           walletAddress,

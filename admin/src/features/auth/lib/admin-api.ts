@@ -10,6 +10,12 @@ import type {
   AdminLoginInput,
   BootstrapAdminInput,
   CreateAdminInput,
+  RoyaltyLedgerEntry,
+  RoyaltyEngineConfig,
+  TrackRoyaltySplitList,
+  TrackRoyaltySplitRecord,
+  TrackSummary,
+  UpsertTrackRoyaltySplitInput,
 } from "@music-city/shared";
 
 import { httpClient } from "@/lib/api/http-client";
@@ -80,6 +86,48 @@ export const adminApi = {
 
   listUsers(token: string) {
     return httpClient.get<AdminUserList>("/users", token);
+  },
+
+  listTracks(token: string) {
+    return httpClient
+      .get<{ items: TrackSummary[] }>("/tracks", token)
+      .then((response) => response.items);
+  },
+
+  getRoyaltyConfig(token: string) {
+    return httpClient
+      .get<{ config: RoyaltyEngineConfig }>("/royalties/config", token)
+      .then((response) => response.config);
+  },
+
+  listTrackRoyaltySplits(trackId: string, token: string) {
+    return httpClient.get<TrackRoyaltySplitList>(
+      `/royalties/tracks/${trackId}/splits`,
+      token,
+    );
+  },
+
+  listTrackRoyaltyLedger(trackId: string, token: string) {
+    return httpClient
+      .get<{ items: RoyaltyLedgerEntry[] }>(
+        `/royalties/tracks/${trackId}/ledger`,
+        token,
+      )
+      .then((response) => response.items);
+  },
+
+  updateTrackRoyaltySplits(
+    trackId: string,
+    input: UpsertTrackRoyaltySplitInput,
+    token: string,
+  ) {
+    return httpClient
+      .put<{ split: TrackRoyaltySplitRecord }>(
+        `/royalties/tracks/${trackId}/splits`,
+        input,
+        token,
+      )
+      .then((response) => response.split);
   },
 
   updateTreasury(input: AdminTreasurySettings, token: string) {

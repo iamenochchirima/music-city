@@ -120,6 +120,59 @@ adminRouter.get(
 );
 
 adminRouter.get(
+  "/tracks",
+  requireAdminSession,
+  asyncHandler(async (_request, response) => {
+    response.json(await adminService.listTracks());
+  }),
+);
+
+adminRouter.get(
+  "/royalties/config",
+  requireAdminSession,
+  asyncHandler(async (_request, response) => {
+    response.json({
+      config: adminService.getRoyaltyConfig(),
+    });
+  }),
+);
+
+adminRouter.get(
+  "/royalties/tracks/:trackId/splits",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json(
+      await adminService.listTrackRoyaltySplits(String(request.params.trackId)),
+    );
+  }),
+);
+
+adminRouter.get(
+  "/royalties/tracks/:trackId/ledger",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      items: await adminService.listTrackRoyaltyLedger(
+        String(request.params.trackId),
+      ),
+    });
+  }),
+);
+
+adminRouter.put(
+  "/royalties/tracks/:trackId/splits",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      split: await adminService.upsertTrackRoyaltySplits(
+        String(request.params.trackId),
+        request.body,
+      ),
+    });
+  }),
+);
+
+adminRouter.get(
   "/treasury",
   requireAdminSession,
   asyncHandler(async (_request, response) => {

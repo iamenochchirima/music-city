@@ -9,7 +9,6 @@ import {
 
 export const paymentProductTypeSchema = z.enum([
   "track_purchase",
-  "artist_subscription",
   "platform_subscription",
 ]);
 export type PaymentProductType = z.infer<typeof paymentProductTypeSchema>;
@@ -28,7 +27,7 @@ export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 export const subscriptionStatusSchema = z.enum(["active", "expired", "cancelled"]);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
-export const subscriptionScopeSchema = z.enum(["artist", "platform"]);
+export const subscriptionScopeSchema = z.enum(["platform"]);
 export type SubscriptionScope = z.infer<typeof subscriptionScopeSchema>;
 
 export const stellarAssetSchema = z.object({
@@ -44,7 +43,6 @@ export const paymentIntentSchema = z.object({
   productType: paymentProductTypeSchema,
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
-  artistId: z.string().optional(),
   amount: positiveAmountSchema,
   assetCode: stellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
@@ -65,7 +63,6 @@ export const paymentRecordSchema = z.object({
   productType: paymentProductTypeSchema,
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
-  artistId: z.string().optional(),
   txHash: z.string(),
   amount: positiveAmountSchema,
   assetCode: stellarAssetCodeSchema,
@@ -79,8 +76,7 @@ export type PaymentRecord = z.infer<typeof paymentRecordSchema>;
 export const subscriptionRecordSchema = z.object({
   id: z.string(),
   walletAddress: stellarWalletAddressSchema,
-  scope: subscriptionScopeSchema.default("artist"),
-  artistId: z.string().optional(),
+  scope: subscriptionScopeSchema.default("platform"),
   status: subscriptionStatusSchema,
   startsAt: z.string(),
   endsAt: z.string(),
@@ -108,13 +104,6 @@ export const createTrackPurchaseIntentSchema = z.object({
 });
 export type CreateTrackPurchaseIntentInput = z.infer<
   typeof createTrackPurchaseIntentSchema
->;
-
-export const createArtistSubscriptionIntentSchema = z.object({
-  artistId: z.string().min(1),
-});
-export type CreateArtistSubscriptionIntentInput = z.infer<
-  typeof createArtistSubscriptionIntentSchema
 >;
 
 export const createPlatformSubscriptionIntentSchema = z.object({});

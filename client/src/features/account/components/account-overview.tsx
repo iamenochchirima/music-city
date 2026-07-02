@@ -288,9 +288,7 @@ export const AccountOverview = () => {
                     <p className="text-base font-medium text-white">
                       {payment.productType === "track_purchase"
                         ? "Track purchase"
-                        : payment.productType === "platform_subscription"
-                          ? "Music City Pass"
-                          : "Artist subscription"}
+                        : "Music City Pass"}
                     </p>
                     <p className="text-sm text-slate-400">
                       {payment.amount} {payment.assetCode}
@@ -319,11 +317,7 @@ export const AccountOverview = () => {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4"
                 >
                   <div className="space-y-1">
-                    <p className="text-base font-medium text-white">
-                      {subscription.scope === "platform"
-                        ? "Music City Pass"
-                        : "Artist subscription"}
-                    </p>
+                    <p className="text-base font-medium text-white">Music City Pass</p>
                     <p className="text-sm text-slate-400">
                       Ends {new Date(subscription.endsAt).toLocaleDateString()}
                     </p>

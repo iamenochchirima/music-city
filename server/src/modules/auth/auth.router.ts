@@ -24,12 +24,6 @@ authRouter.post(
   asyncHandler(async (request, response) => {
     const token = request.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
 
-    console.log("[server][auth][dynamic] session request", {
-      hasToken: Boolean(token),
-      tokenPreview: token ? `${token.slice(0, 10)}...${token.slice(-6)} (${token.length})` : null,
-      body: request.body,
-    });
-
     if (!token) {
       response.status(401).json({ message: "Missing Dynamic auth token" });
       return;
@@ -41,12 +35,6 @@ authRouter.post(
       payload.walletAddress,
     );
     const issuedToken = tokenService.issueSession(session);
-
-    console.log("[server][auth][dynamic] session issued", {
-      walletAddress: session.walletAddress,
-      displayName: session.displayName,
-      profileComplete: session.profileComplete,
-    });
 
     response.json({
       session: {

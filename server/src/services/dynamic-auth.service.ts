@@ -30,9 +30,7 @@ type DynamicJwtPayload = JWTPayload & {
 
 const DYNAMIC_TOKEN_SCOPE = "user:basic";
 
-const logDynamicAuth = (label: string, payload?: Record<string, unknown>) => {
-  console.log(`[server][dynamic-auth] ${label}`, payload ?? {});
-};
+const logDynamicAuth = (_label: string, _payload?: Record<string, unknown>) => {};
 
 const getJwksUrl = () => {
   if (env.DYNAMIC_JWKS_URL) {

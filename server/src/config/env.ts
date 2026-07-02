@@ -26,6 +26,10 @@ const normalizeLocalRoot = (value: string) => {
 };
 
 const hasValue = (value?: string) => typeof value === "string" && value.trim().length > 0;
+const isLocalUrl = (value: string) => /:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(value);
+const usesHttps = (value: string) => value.startsWith("https://");
+const usesTestnetHost = (value: string) => /testnet/i.test(value);
+const isDefaultSecret = (value: string, defaults: string[]) => defaults.includes(value);
 
 const envSchema = z
   .object({
@@ -69,9 +73,10 @@ const envSchema = z
     STELLAR_TREASURY_ADDRESS: z.string().optional(),
     STELLAR_SETTLEMENT_ASSET_CODE: z.string().default("XLM"),
     STELLAR_SETTLEMENT_ASSET_ISSUER: z.string().optional(),
+    ROYALTY_REGISTRY_CHAIN: z.enum(["stellar", "evm", "solana"]).default("stellar"),
+    ROYALTY_REGISTRY_NETWORK: z.string().default("stellar:testnet"),
+    ROYALTY_REGISTRY_CONTRACT_ID: z.string().optional(),
     TRACK_PURCHASE_DEFAULT_PRICE: z.string().default("5"),
-    ARTIST_SUBSCRIPTION_DEFAULT_PRICE: z.string().default("10"),
-    ARTIST_SUBSCRIPTION_PERIOD_DAYS: z.coerce.number().int().positive().default(30),
     PLATFORM_SUBSCRIPTION_ENABLED: z
       .string()
       .optional()
@@ -152,6 +157,103 @@ const envSchema = z
         message:
           "Production must not use STORAGE_PROVIDER=local. Configure STORAGE_PROVIDER=s3 instead.",
       });
+    }
+
+    if (value.NODE_ENV === "production") {
+      if (
+        isDefaultSecret(value.JWT_SECRET, ["music-city-dev-secret"]) ||
+        value.JWT_SECRET.trim().length < 24
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["JWT_SECRET"],
+          message: "Production requires a strong non-default JWT_SECRET.",
+        });
+      }
+
+      if (
+        isDefaultSecret(value.ADMIN_JWT_SECRET, ["music-city-admin-secret"]) ||
+        value.ADMIN_JWT_SECRET.trim().length < 24
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ADMIN_JWT_SECRET"],
+          message: "Production requires a strong non-default ADMIN_JWT_SECRET.",
+        });
+      }
+
+      if (
+        isDefaultSecret(value.PLAYBACK_TOKEN_SECRET, ["music-city-playback-secret"]) ||
+        value.PLAYBACK_TOKEN_SECRET.trim().length < 24
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["PLAYBACK_TOKEN_SECRET"],
+          message: "Production requires a strong non-default PLAYBACK_TOKEN_SECRET.",
+        });
+      }
+
+      for (const [key, url] of [
+        ["CLIENT_ORIGIN", value.CLIENT_ORIGIN],
+        ["ADMIN_CLIENT_ORIGIN", value.ADMIN_CLIENT_ORIGIN],
+        ["APP_BASE_URL", value.APP_BASE_URL],
+      ] as const) {
+        if (isLocalUrl(url)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} must not point to localhost in production.`,
+          });
+        }
+
+        if (!usesHttps(url)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} must use https:// in production.`,
+          });
+        }
+      }
+
+      if (value.STELLAR_HOME_DOMAIN === "localhost") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_HOME_DOMAIN"],
+          message: "STELLAR_HOME_DOMAIN must be configured for production.",
+        });
+      }
+
+      if (value.STELLAR_WEB_AUTH_DOMAIN === "localhost:4000") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_WEB_AUTH_DOMAIN"],
+          message: "STELLAR_WEB_AUTH_DOMAIN must be configured for production.",
+        });
+      }
+
+      if (usesTestnetHost(value.STELLAR_HORIZON_URL)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_HORIZON_URL"],
+          message: "Production must not use a Stellar testnet horizon URL.",
+        });
+      }
+
+      if (usesTestnetHost(value.ROYALTY_REGISTRY_NETWORK)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["ROYALTY_REGISTRY_NETWORK"],
+          message: "Production must not use a testnet royalty registry network.",
+        });
+      }
+
+      if (!hasValue(value.STELLAR_TREASURY_ADDRESS)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_TREASURY_ADDRESS"],
+          message: "Production requires STELLAR_TREASURY_ADDRESS.",
+        });
+      }
     }
   });
 

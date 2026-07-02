@@ -1,6 +1,6 @@
 import express, { Router } from "express";
-import { Readable } from "node:stream";
 import { stat } from "node:fs/promises";
+import { Readable } from "node:stream";
 
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -31,39 +31,42 @@ uploadsRouter.post(
 );
 
 uploadsRouter.put(
-  "/content/*",
-  asyncHandler(async (request, response) => {
-    if (!request.body) {
-      throw new HttpError(400, "Upload body is required");
-    }
-
-    const storageKey = decodeURIComponent(String(request.params[0]));
-    await storageService.saveLocalObject(
-      storageKey,
-      Readable.from(request.body as Buffer) as unknown as NodeJS.ReadableStream,
-    );
-
-    response.status(204).send();
-  }),
-);
-
-uploadsRouter.put(
   "/sessions/:uploadSessionId/content",
+  requireSession,
   express.raw({ type: "*/*", limit: "500mb" }),
   asyncHandler(async (request, response) => {
     const uploadSessionId = String(request.params.uploadSessionId);
-    const session = await uploadsService.getSession(uploadSessionId);
+    const session = await uploadsService.requireActiveSession(uploadSessionId);
 
-    if (!session) {
-      throw new HttpError(404, "Upload session not found");
-    }
-
-    if (session.provider !== "s3" || !session.directUploadUrl) {
-      throw new HttpError(400, "Upload relay is only available for S3 storage");
+    if (
+      !(await tracksService.userOwnsTrack(
+        request.session!.walletAddress,
+        session.trackId,
+      ))
+    ) {
+      throw new HttpError(404, "Track not found");
     }
 
     if (!Buffer.isBuffer(request.body)) {
       throw new HttpError(400, "Upload body is required");
+    }
+
+    if (session.provider === "local") {
+      if (!session.storageKey) {
+        throw new HttpError(400, "Upload session storage key is missing");
+      }
+
+      await storageService.saveLocalObject(
+        session.storageKey,
+        Readable.from(request.body) as unknown as NodeJS.ReadableStream,
+      );
+
+      response.status(204).send();
+      return;
+    }
+
+    if (session.provider !== "s3" || !session.directUploadUrl) {
+      throw new HttpError(400, "Upload relay is only available for local or S3 storage");
     }
 
     const result = await storageService.uploadRemoteObject(

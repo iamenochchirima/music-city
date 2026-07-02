@@ -54,7 +54,9 @@ export const subscriptionsService = {
   },
 
   async listMine(walletAddress: string) {
-    const items = await subscriptionsRepository.listByWallet(walletAddress);
+    const items = (await subscriptionsRepository.listByWallet(walletAddress)).filter(
+      (subscription) => subscription.scope === "platform",
+    );
     return items.map((subscription) =>
       isActive(subscription)
         ? subscription
@@ -62,15 +64,6 @@ export const subscriptionsService = {
             ...subscription,
             status: "expired" as const,
           },
-    );
-  },
-
-  async hasActiveArtistSubscription(walletAddress: string, artistId: string) {
-    const items = await subscriptionsRepository.listByWallet(walletAddress);
-
-    return items.some(
-      (subscription) =>
-        subscription.artistId === artistId && isActive(subscription),
     );
   },
 
@@ -83,16 +76,6 @@ export const subscriptionsService = {
     );
   },
 
-  async findByArtistAndPayment(walletAddress: string, artistId: string, paymentId: string) {
-    const items = await subscriptionsRepository.listByWallet(walletAddress);
-
-    return items.find(
-      (subscription) =>
-        subscription.artistId === artistId &&
-        subscription.paymentId === paymentId,
-    );
-  },
-
   async findPlatformByPayment(walletAddress: string, paymentId: string) {
     const items = await subscriptionsRepository.listByWallet(walletAddress);
 
@@ -101,46 +84,6 @@ export const subscriptionsService = {
         subscription.scope === "platform" &&
         subscription.paymentId === paymentId,
     );
-  },
-
-  async activateOrExtend(
-    walletAddress: string,
-    artistId: string,
-    paymentId: string,
-    periodDays: number,
-  ) {
-    const existing = (await subscriptionsRepository.listByWallet(walletAddress))
-      .filter((subscription) => subscription.artistId === artistId)
-      .sort(
-        (left, right) =>
-          Date.parse(right.endsAt) - Date.parse(left.endsAt),
-      )[0];
-
-    const baseMs =
-      existing && Date.parse(existing.endsAt) > nowMs()
-        ? Date.parse(existing.endsAt)
-        : nowMs();
-    const startsAt =
-      existing && Date.parse(existing.endsAt) > nowMs()
-        ? existing.startsAt
-        : new Date(nowMs()).toISOString();
-    const endsAt = new Date(
-      baseMs + periodDays * 24 * 60 * 60 * 1000,
-    ).toISOString();
-    const timestamp = new Date().toISOString();
-
-    return subscriptionsRepository.upsert({
-      id: existing?.id ?? createId("sub"),
-      walletAddress,
-      scope: "artist",
-      artistId,
-      status: "active",
-      startsAt,
-      endsAt,
-      paymentId,
-      createdAt: existing?.createdAt ?? timestamp,
-      updatedAt: timestamp,
-    });
   },
 
   async activateOrExtendPlatform(
@@ -172,7 +115,6 @@ export const subscriptionsService = {
       id: existing?.id ?? createId("sub"),
       walletAddress,
       scope: "platform",
-      artistId: undefined,
       status: "active",
       startsAt,
       endsAt,

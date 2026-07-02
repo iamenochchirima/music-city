@@ -21,7 +21,7 @@ import {
   type AdminSession,
   type PaymentRecord,
   type SubscriptionRecord,
-  type UserProfile,
+  type TrackSummary,
 } from "@music-city/shared";
 
 import { env } from "../../config/env.js";
@@ -33,6 +33,8 @@ import { walletService } from "../wallet/wallet.service.js";
 import { paymentsRepository } from "../payments/payments.repository.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { usersService } from "../users/users.service.js";
+import { royaltiesService } from "../royalties/royalties.service.js";
+import { tracksRepository } from "../tracks/tracks.repository.js";
 
 type PersistedAdminAccount = AdminAccount & {
   passwordHash: string;
@@ -255,21 +257,15 @@ export const adminService = {
       subscriptionsRepository.listAll(),
       paymentsRepository.listAllPayments(),
     ]);
+    const platformSubscriptions = subscriptions.filter(
+      (subscription) => subscription.scope === "platform",
+    );
 
     const paymentById = new Map<string, PaymentRecord>(
       payments.map((payment) => [payment.id, payment]),
     );
-    const artistIds = [...new Set(subscriptions.map((item) => item.artistId).filter(Boolean))];
-    const artistProfiles = await Promise.all(
-      artistIds.map(async (artistId) => [artistId, await usersService.getProfileById(artistId!)] as const),
-    );
-    const artistNameById = new Map<string, string>(
-      artistProfiles
-        .filter((entry): entry is readonly [string, NonNullable<(typeof artistProfiles)[number][1]>] => Boolean(entry[1]))
-        .map(([artistId, profile]) => [artistId, profile.displayName]),
-    );
 
-    const items = subscriptions
+    const items = platformSubscriptions
       .map((subscription) => {
         const payment = paymentById.get(subscription.paymentId);
 
@@ -278,10 +274,6 @@ export const adminService = {
           walletAddress: subscription.walletAddress,
           scope: subscription.scope,
           status: normalizeSubscriptionStatus(subscription),
-          artistId: subscription.artistId,
-          artistName: subscription.artistId
-            ? artistNameById.get(subscription.artistId)
-            : undefined,
           paymentId: subscription.paymentId,
           amount: payment?.amount,
           assetCode: payment?.assetCode,
@@ -299,13 +291,24 @@ export const adminService = {
       total: items.length,
       active: items.filter((item) => item.status === "active").length,
       platform: items.filter((item) => item.scope === "platform").length,
-      artist: items.filter((item) => item.scope === "artist").length,
     };
 
     return adminSubscriptionListSchema.parse({
       summary,
       items,
     });
+  },
+
+  async listTracks(): Promise<{ items: TrackSummary[] }> {
+    const items = (await tracksRepository.list()).sort(
+      (left, right) =>
+        Date.parse(right.updatedAt ?? right.createdAt ?? "") -
+        Date.parse(left.updatedAt ?? left.createdAt ?? ""),
+    );
+
+    return {
+      items,
+    };
   },
 
   async listUsers(): Promise<AdminUserList> {
@@ -364,5 +367,21 @@ export const adminService = {
       summary,
       items,
     });
+  },
+
+  getRoyaltyConfig() {
+    return royaltiesService.getConfig();
+  },
+
+  listTrackRoyaltySplits(trackId: string) {
+    return royaltiesService.listTrackSplits(trackId);
+  },
+
+  listTrackRoyaltyLedger(trackId: string) {
+    return royaltiesService.listTrackLedgerEntries(trackId);
+  },
+
+  upsertTrackRoyaltySplits(trackId: string, input: unknown) {
+    return royaltiesService.upsertTrackSplits(trackId, input as never);
   },
 };

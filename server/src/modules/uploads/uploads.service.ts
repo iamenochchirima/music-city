@@ -88,6 +88,20 @@ export const uploadsService = {
     return uploadsRepository.findById(id);
   },
 
+  async requireActiveSession(id: string) {
+    const session = await uploadsRepository.findById(id);
+
+    if (!session) {
+      throw new Error("Upload session not found");
+    }
+
+    if (Date.parse(session.expiresAt) <= Date.now()) {
+      throw new Error("Upload session has expired");
+    }
+
+    return session;
+  },
+
   async completeSession(input: CompleteUploadSessionInput) {
     const parsed = completeUploadSessionSchema.parse(input);
     const session = await uploadsRepository.findById(parsed.uploadSessionId);

@@ -29,10 +29,6 @@ export const createApp = () => {
   app.use(helmet());
   app.use(morgan("dev"));
   app.use(
-    "/api/v1/uploads/content",
-    express.raw({ type: "*/*", limit: "500mb" }),
-  );
-  app.use(
     express.json({
       verify: (request, _response, buffer) => {
         (request as express.Request).rawBody = buffer.toString("utf8");

@@ -25,7 +25,6 @@ export const paymentsRepository = {
       intent.walletAddress,
       intent.productType,
       intent.trackId ?? null,
-      intent.artistId ?? null,
       intent.status,
       intent.expiresAt,
       intent,
@@ -62,7 +61,6 @@ export const paymentsRepository = {
       payment.txHash,
       payment.productType,
       payment.trackId ?? null,
-      payment.artistId ?? null,
       payment.confirmedAt,
       payment,
     );

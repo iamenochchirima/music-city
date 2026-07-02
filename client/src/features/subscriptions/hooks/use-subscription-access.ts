@@ -39,12 +39,7 @@ export const useSubscriptionAccess = () => {
   const canAccessSubscriberTrack = useCallback(
     (track: TrackSummary) =>
       track.access !== "subscribers" ||
-      subscriptions.some(
-        (subscription) =>
-          subscription.scope === "platform" ||
-          (subscription.scope === "artist" &&
-            subscription.artistId === track.artistId),
-      ),
+      subscriptions.some((subscription) => subscription.scope === "platform"),
     [subscriptions],
   );
 

@@ -30,19 +30,6 @@ paymentsRouter.post(
 );
 
 paymentsRouter.post(
-  "/intents/subscription/:artistId",
-  requireSession,
-  asyncHandler(async (request, response) => {
-    response.status(201).json({
-      intent: await paymentsService.createArtistSubscriptionIntent(
-        request.session!.walletAddress,
-        String(request.params.artistId),
-      ),
-    });
-  }),
-);
-
-paymentsRouter.post(
   "/intents/platform-subscription",
   requireSession,
   asyncHandler(async (request, response) => {

@@ -16,16 +16,10 @@ export const subscriptionsRepository = {
       walletAddress,
     );
   },
-
-  async listByArtist(artistId: string) {
-    return databaseService.listSubscriptionsByArtist<SubscriptionRecord>(artistId);
-  },
-
   async upsert(subscription: SubscriptionRecord) {
     await databaseService.upsertSubscription(
       subscription.id,
       subscription.walletAddress,
-      subscription.artistId ?? null,
       subscription.scope,
       subscription.status,
       subscription.endsAt,

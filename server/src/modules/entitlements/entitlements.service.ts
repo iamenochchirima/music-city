@@ -117,16 +117,6 @@ export const entitlementsService = {
         return true;
       }
 
-      const hasLocalSubscription =
-        await subscriptionsService.hasActiveArtistSubscription(
-          walletAddress,
-          track.artistId,
-        );
-
-      if (hasLocalSubscription) {
-        return true;
-      }
-
       return this.hasStellarAssetEntitlement(walletAddress);
     }
 

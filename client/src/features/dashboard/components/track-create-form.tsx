@@ -296,6 +296,7 @@ export const TrackCreateForm = ({
           sizeBytes: coverFile.size,
         });
         const coverETag = await uploadsApi.uploadFile(
+          session.token,
           coverUploadSession,
           coverFile,
           setUploadProgress,
@@ -317,6 +318,7 @@ export const TrackCreateForm = ({
         });
         setUploadStage("Uploading audio...");
         const eTag = await uploadsApi.uploadFile(
+          session.token,
           uploadSession,
           audioFile,
           setUploadProgress,

@@ -7,11 +7,28 @@ type PersistedRow = {
   payload: unknown;
 };
 
+type ReleaseTrackRow = {
+  release_id: string;
+  track_id: string;
+  track_number: number;
+  disc_number: number;
+  is_focus_track: boolean;
+};
+
+type AppliedMigrationRow = {
+  name: string;
+};
+
+type SchemaMigration = {
+  name: string;
+  statements: string[];
+};
+
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
 });
 
-const createTableStatements = [
+const baseSchemaStatements = [
   `CREATE TABLE IF NOT EXISTS admins (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -45,6 +62,32 @@ const createTableStatements = [
       CHECK (access IN ('private', 'subscribers', 'purchase_required', 'public')),
     CONSTRAINT tracks_media_provider_check
       CHECK (media_provider IS NULL OR media_provider IN ('local', 'mux'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS releases (
+    id TEXT PRIMARY KEY,
+    artist_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    release_date TIMESTAMPTZ,
+    payload JSONB NOT NULL,
+    CONSTRAINT releases_artist_id_fk
+      FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT releases_type_check
+      CHECK (type IN ('single', 'ep', 'album')),
+    CONSTRAINT releases_status_check
+      CHECK (status IN ('draft', 'scheduled', 'published', 'archived'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS release_tracks (
+    release_id TEXT NOT NULL,
+    track_id TEXT NOT NULL UNIQUE,
+    track_number INTEGER NOT NULL,
+    disc_number INTEGER NOT NULL DEFAULT 1,
+    is_focus_track BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (release_id, track_id),
+    CONSTRAINT release_tracks_release_id_fk
+      FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE,
+    CONSTRAINT release_tracks_track_id_fk
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
   )`,
   `CREATE TABLE IF NOT EXISTS upload_sessions (
     id TEXT PRIMARY KEY,
@@ -94,16 +137,13 @@ const createTableStatements = [
     wallet_address TEXT NOT NULL,
     product_type TEXT NOT NULL,
     track_id TEXT,
-    artist_id TEXT,
     status TEXT NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     payload JSONB NOT NULL,
     CONSTRAINT payment_intents_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
-    CONSTRAINT payment_intents_artist_id_fk
-      FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT payment_intents_product_type_check
-      CHECK (product_type IN ('track_purchase', 'artist_subscription', 'platform_subscription')),
+      CHECK (product_type IN ('track_purchase', 'platform_subscription')),
     CONSTRAINT payment_intents_status_check
       CHECK (status IN ('pending', 'confirmed', 'expired', 'failed'))
   )`,
@@ -114,38 +154,70 @@ const createTableStatements = [
     tx_hash TEXT NOT NULL UNIQUE,
     product_type TEXT NOT NULL,
     track_id TEXT,
-    artist_id TEXT,
     confirmed_at TIMESTAMPTZ NOT NULL,
     payload JSONB NOT NULL,
     CONSTRAINT payments_intent_id_fk
       FOREIGN KEY (intent_id) REFERENCES payment_intents(id) ON DELETE CASCADE,
     CONSTRAINT payments_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
-    CONSTRAINT payments_artist_id_fk
-      FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT payments_product_type_check
-      CHECK (product_type IN ('track_purchase', 'artist_subscription', 'platform_subscription'))
+      CHECK (product_type IN ('track_purchase', 'platform_subscription'))
   )`,
   `CREATE TABLE IF NOT EXISTS subscriptions (
     id TEXT PRIMARY KEY,
     wallet_address TEXT NOT NULL,
-    artist_id TEXT,
-    scope TEXT NOT NULL DEFAULT 'artist',
+    scope TEXT NOT NULL DEFAULT 'platform',
     status TEXT NOT NULL,
     ends_at TIMESTAMPTZ NOT NULL,
     payload JSONB NOT NULL,
-    CONSTRAINT subscriptions_artist_id_fk
-      FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT subscriptions_scope_check
-      CHECK (scope IN ('artist', 'platform')),
+      CHECK (scope IN ('platform')),
     CONSTRAINT subscriptions_status_check
       CHECK (status IN ('active', 'expired', 'cancelled'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS royalty_splits (
+    id TEXT PRIMARY KEY,
+    track_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    registry_chain TEXT,
+    payload JSONB NOT NULL,
+    CONSTRAINT royalty_splits_track_id_fk
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    CONSTRAINT royalty_splits_status_check
+      CHECK (status IN ('draft', 'active', 'superseded', 'archived'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS royalty_ledger (
+    id TEXT PRIMARY KEY,
+    track_id TEXT NOT NULL,
+    recipient_wallet_address TEXT NOT NULL,
+    status TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    recipient_chain TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    CONSTRAINT royalty_ledger_track_id_fk
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    CONSTRAINT royalty_ledger_status_check
+      CHECK (status IN ('pending', 'approved', 'paid', 'reversed'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS royalty_payouts (
+    id TEXT PRIMARY KEY,
+    recipient_wallet_address TEXT NOT NULL,
+    status TEXT NOT NULL,
+    payout_rail TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    CONSTRAINT royalty_payouts_status_check
+      CHECK (status IN ('pending', 'submitted', 'confirmed', 'failed', 'cancelled'))
   )`,
   "CREATE INDEX IF NOT EXISTS users_wallet_address_idx ON users (wallet_address)",
   "CREATE INDEX IF NOT EXISTS users_role_idx ON users (role)",
   "CREATE INDEX IF NOT EXISTS admins_email_idx ON admins (email)",
   "CREATE INDEX IF NOT EXISTS tracks_artist_id_idx ON tracks (artist_id)",
   "CREATE INDEX IF NOT EXISTS tracks_status_idx ON tracks (status)",
+  "CREATE INDEX IF NOT EXISTS releases_artist_id_idx ON releases (artist_id)",
+  "CREATE INDEX IF NOT EXISTS releases_status_idx ON releases (status)",
+  "CREATE INDEX IF NOT EXISTS release_tracks_release_id_idx ON release_tracks (release_id)",
   "CREATE INDEX IF NOT EXISTS upload_sessions_track_id_idx ON upload_sessions (track_id)",
   "CREATE INDEX IF NOT EXISTS playback_sessions_track_id_idx ON playback_sessions (track_id)",
   "CREATE INDEX IF NOT EXISTS entitlements_wallet_address_idx ON entitlements (wallet_address)",
@@ -153,28 +225,143 @@ const createTableStatements = [
   "CREATE INDEX IF NOT EXISTS archives_track_id_idx ON archives (track_id)",
   "CREATE INDEX IF NOT EXISTS payment_intents_wallet_address_idx ON payment_intents (wallet_address)",
   "CREATE INDEX IF NOT EXISTS payment_intents_track_id_idx ON payment_intents (track_id)",
-  "CREATE INDEX IF NOT EXISTS payment_intents_artist_id_idx ON payment_intents (artist_id)",
   "CREATE INDEX IF NOT EXISTS payments_wallet_address_idx ON payments (wallet_address)",
   "CREATE INDEX IF NOT EXISTS subscriptions_wallet_address_idx ON subscriptions (wallet_address)",
-  "CREATE INDEX IF NOT EXISTS subscriptions_artist_id_idx ON subscriptions (artist_id)",
-  "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_product_type_check",
-  `ALTER TABLE payment_intents
-    ADD CONSTRAINT payment_intents_product_type_check
-    CHECK (product_type IN ('track_purchase', 'artist_subscription', 'platform_subscription'))`,
-  "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_product_type_check",
-  `ALTER TABLE payments
-    ADD CONSTRAINT payments_product_type_check
-    CHECK (product_type IN ('track_purchase', 'artist_subscription', 'platform_subscription'))`,
-  "ALTER TABLE subscriptions ALTER COLUMN artist_id DROP NOT NULL",
-  "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS scope TEXT",
-  "UPDATE subscriptions SET scope = 'artist' WHERE scope IS NULL",
-  "ALTER TABLE subscriptions ALTER COLUMN scope SET DEFAULT 'artist'",
-  "ALTER TABLE subscriptions ALTER COLUMN scope SET NOT NULL",
-  "ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_scope_check",
-  `ALTER TABLE subscriptions
-    ADD CONSTRAINT subscriptions_scope_check
-    CHECK (scope IN ('artist', 'platform'))`,
-  "CREATE INDEX IF NOT EXISTS subscriptions_scope_idx ON subscriptions (scope)",
+  "CREATE INDEX IF NOT EXISTS royalty_splits_track_id_idx ON royalty_splits (track_id)",
+  "CREATE INDEX IF NOT EXISTS royalty_splits_status_idx ON royalty_splits (status)",
+  "CREATE INDEX IF NOT EXISTS royalty_ledger_track_id_idx ON royalty_ledger (track_id)",
+  "CREATE INDEX IF NOT EXISTS royalty_ledger_recipient_wallet_idx ON royalty_ledger (recipient_wallet_address)",
+  "CREATE INDEX IF NOT EXISTS royalty_ledger_status_idx ON royalty_ledger (status)",
+  "CREATE INDEX IF NOT EXISTS royalty_payouts_recipient_wallet_idx ON royalty_payouts (recipient_wallet_address)",
+  "CREATE INDEX IF NOT EXISTS royalty_payouts_status_idx ON royalty_payouts (status)",
+];
+
+const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrations (
+  name TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+)`;
+
+const schemaMigrations: SchemaMigration[] = [
+  {
+    name: "2026-07-02-release-foundation",
+    statements: [
+      `CREATE TABLE IF NOT EXISTS releases (
+        id TEXT PRIMARY KEY,
+        artist_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        release_date TIMESTAMPTZ,
+        payload JSONB NOT NULL,
+        CONSTRAINT releases_artist_id_fk
+          FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT releases_type_check
+          CHECK (type IN ('single', 'ep', 'album')),
+        CONSTRAINT releases_status_check
+          CHECK (status IN ('draft', 'scheduled', 'published', 'archived'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS release_tracks (
+        release_id TEXT NOT NULL,
+        track_id TEXT NOT NULL UNIQUE,
+        track_number INTEGER NOT NULL,
+        disc_number INTEGER NOT NULL DEFAULT 1,
+        is_focus_track BOOLEAN NOT NULL DEFAULT FALSE,
+        PRIMARY KEY (release_id, track_id),
+        CONSTRAINT release_tracks_release_id_fk
+          FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE,
+        CONSTRAINT release_tracks_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+      )`,
+      "CREATE INDEX IF NOT EXISTS releases_artist_id_idx ON releases (artist_id)",
+      "CREATE INDEX IF NOT EXISTS releases_status_idx ON releases (status)",
+      "CREATE INDEX IF NOT EXISTS release_tracks_release_id_idx ON release_tracks (release_id)",
+    ],
+  },
+  {
+    name: "2026-07-02-platform-subscription-cleanup",
+    statements: [
+      `UPDATE payment_intents
+        SET product_type = 'platform_subscription',
+            payload = jsonb_strip_nulls(
+              jsonb_set(
+                (payload - 'artistId'),
+                '{productType}',
+                to_jsonb('platform_subscription'::text),
+                true
+              )
+            )
+        WHERE product_type = 'artist_subscription'`,
+      `UPDATE payment_intents
+        SET payload = jsonb_strip_nulls(
+          jsonb_set(payload, '{subscriptionScope}', to_jsonb('platform'::text), true)
+        )
+        WHERE product_type = 'platform_subscription'
+          AND COALESCE(payload->>'subscriptionScope', '') <> 'platform'`,
+      "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_product_type_check",
+      `ALTER TABLE payment_intents
+        ADD CONSTRAINT payment_intents_product_type_check
+        CHECK (product_type IN ('track_purchase', 'platform_subscription'))`,
+      "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_artist_id_fk",
+      "DROP INDEX IF EXISTS payment_intents_artist_id_idx",
+      "ALTER TABLE payment_intents DROP COLUMN IF EXISTS artist_id",
+      `UPDATE payments
+        SET product_type = 'platform_subscription',
+            payload = jsonb_strip_nulls(
+              jsonb_set(
+                (payload - 'artistId'),
+                '{productType}',
+                to_jsonb('platform_subscription'::text),
+                true
+              )
+            )
+        WHERE product_type = 'artist_subscription'`,
+      `UPDATE payments
+        SET payload = jsonb_strip_nulls(
+          jsonb_set(payload, '{subscriptionScope}', to_jsonb('platform'::text), true)
+        )
+        WHERE product_type = 'platform_subscription'
+          AND COALESCE(payload->>'subscriptionScope', '') <> 'platform'`,
+      "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_product_type_check",
+      `ALTER TABLE payments
+        ADD CONSTRAINT payments_product_type_check
+        CHECK (product_type IN ('track_purchase', 'platform_subscription'))`,
+      "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_artist_id_fk",
+      "ALTER TABLE payments DROP COLUMN IF EXISTS artist_id",
+      "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS scope TEXT",
+      `UPDATE subscriptions
+        SET scope = 'platform',
+            payload = jsonb_strip_nulls(
+              jsonb_set((payload - 'artistId'), '{scope}', to_jsonb('platform'::text), true)
+            )
+        WHERE scope <> 'platform' OR payload ? 'artistId' OR COALESCE(payload->>'scope', '') <> 'platform'`,
+      "ALTER TABLE subscriptions ALTER COLUMN scope SET DEFAULT 'platform'",
+      "ALTER TABLE subscriptions ALTER COLUMN scope SET NOT NULL",
+      "ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_scope_check",
+      `ALTER TABLE subscriptions
+        ADD CONSTRAINT subscriptions_scope_check
+        CHECK (scope IN ('platform'))`,
+      "ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_artist_id_fk",
+      "DROP INDEX IF EXISTS subscriptions_artist_id_idx",
+      "ALTER TABLE subscriptions DROP COLUMN IF EXISTS artist_id",
+      "CREATE INDEX IF NOT EXISTS subscriptions_scope_idx ON subscriptions (scope)",
+    ],
+  },
+  {
+    name: "2026-07-02-royalty-constraint-refresh",
+    statements: [
+      "ALTER TABLE royalty_splits DROP CONSTRAINT IF EXISTS royalty_splits_status_check",
+      `ALTER TABLE royalty_splits
+        ADD CONSTRAINT royalty_splits_status_check
+        CHECK (status IN ('draft', 'active', 'superseded', 'archived'))`,
+      "ALTER TABLE royalty_ledger DROP CONSTRAINT IF EXISTS royalty_ledger_status_check",
+      `ALTER TABLE royalty_ledger
+        ADD CONSTRAINT royalty_ledger_status_check
+        CHECK (status IN ('pending', 'approved', 'paid', 'reversed'))`,
+      "ALTER TABLE royalty_payouts DROP CONSTRAINT IF EXISTS royalty_payouts_status_check",
+      `ALTER TABLE royalty_payouts
+        ADD CONSTRAINT royalty_payouts_status_check
+        CHECK (status IN ('pending', 'submitted', 'confirmed', 'failed', 'cancelled'))`,
+    ],
+  },
 ];
 
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>
@@ -182,8 +369,38 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
 
 export const databaseService = {
   async initialize() {
-    for (const statement of createTableStatements) {
+    await pool.query(schemaMigrationTableStatement);
+
+    for (const statement of baseSchemaStatements) {
       await pool.query(statement);
+    }
+
+    const appliedMigrations = await pool.query<AppliedMigrationRow>(
+      "SELECT name FROM schema_migrations ORDER BY name",
+    );
+    const appliedNames = new Set(appliedMigrations.rows.map((row) => row.name));
+
+    for (const migration of schemaMigrations) {
+      if (appliedNames.has(migration.name)) {
+        continue;
+      }
+
+      await pool.query("BEGIN");
+
+      try {
+        for (const statement of migration.statements) {
+          await pool.query(statement);
+        }
+
+        await pool.query(
+          "INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING",
+          [migration.name],
+        );
+        await pool.query("COMMIT");
+      } catch (error) {
+        await pool.query("ROLLBACK");
+        throw error;
+      }
     }
   },
 
@@ -210,6 +427,86 @@ export const databaseService = {
     );
 
     return result.rows[0]?.payload as T | null;
+  },
+
+  async upsertRelease(
+    id: string,
+    artistId: string,
+    type: string,
+    status: string,
+    releaseDate: string | null,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO releases (id, artist_id, type, status, release_date, payload)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         artist_id = EXCLUDED.artist_id,
+         type = EXCLUDED.type,
+         status = EXCLUDED.status,
+         release_date = EXCLUDED.release_date,
+         payload = EXCLUDED.payload`,
+      [id, artistId, type, status, releaseDate, JSON.stringify(payload)],
+    );
+  },
+
+  async listReleasesByArtist<T>(artistId: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM releases
+       WHERE artist_id = $1
+       ORDER BY COALESCE(release_date, NOW()) DESC, id DESC`,
+      [artistId],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async deleteRelease(id: string) {
+    await pool.query(`DELETE FROM releases WHERE id = $1`, [id]);
+  },
+
+  async assignTrackToRelease(
+    releaseId: string,
+    trackId: string,
+    trackNumber: number,
+    discNumber: number,
+    isFocusTrack: boolean,
+  ) {
+    await pool.query(
+      `INSERT INTO release_tracks (
+         release_id,
+         track_id,
+         track_number,
+         disc_number,
+         is_focus_track
+       )
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (track_id) DO UPDATE SET
+         release_id = EXCLUDED.release_id,
+         track_number = EXCLUDED.track_number,
+         disc_number = EXCLUDED.disc_number,
+         is_focus_track = EXCLUDED.is_focus_track`,
+      [releaseId, trackId, trackNumber, discNumber, isFocusTrack],
+    );
+  },
+
+  async removeTrackFromRelease(releaseId: string, trackId: string) {
+    await pool.query(
+      `DELETE FROM release_tracks WHERE release_id = $1 AND track_id = $2`,
+      [releaseId, trackId],
+    );
+  },
+
+  async listReleaseTracks(releaseId: string) {
+    const result = await pool.query<ReleaseTrackRow>(
+      `SELECT release_id, track_id, track_number, disc_number, is_focus_track
+       FROM release_tracks
+       WHERE release_id = $1
+       ORDER BY disc_number ASC, track_number ASC, track_id ASC`,
+      [releaseId],
+    );
+
+    return result.rows;
   },
 
   async upsertUser(
@@ -400,23 +697,21 @@ export const databaseService = {
     walletAddress: string,
     productType: string,
     trackId: string | null,
-    artistId: string | null,
     status: string,
     expiresAt: string,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO payment_intents (id, wallet_address, product_type, track_id, artist_id, status, expires_at, payload)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+      `INSERT INTO payment_intents (id, wallet_address, product_type, track_id, status, expires_at, payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          wallet_address = EXCLUDED.wallet_address,
          product_type = EXCLUDED.product_type,
          track_id = EXCLUDED.track_id,
-         artist_id = EXCLUDED.artist_id,
          status = EXCLUDED.status,
          expires_at = EXCLUDED.expires_at,
          payload = EXCLUDED.payload`,
-      [id, walletAddress, productType, trackId, artistId, status, expiresAt, JSON.stringify(payload)],
+      [id, walletAddress, productType, trackId, status, expiresAt, JSON.stringify(payload)],
     );
   },
 
@@ -436,23 +731,21 @@ export const databaseService = {
     txHash: string,
     productType: string,
     trackId: string | null,
-    artistId: string | null,
     confirmedAt: string,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO payments (id, intent_id, wallet_address, tx_hash, product_type, track_id, artist_id, confirmed_at, payload)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)
+      `INSERT INTO payments (id, intent_id, wallet_address, tx_hash, product_type, track_id, confirmed_at, payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          intent_id = EXCLUDED.intent_id,
          wallet_address = EXCLUDED.wallet_address,
          tx_hash = EXCLUDED.tx_hash,
          product_type = EXCLUDED.product_type,
          track_id = EXCLUDED.track_id,
-         artist_id = EXCLUDED.artist_id,
          confirmed_at = EXCLUDED.confirmed_at,
          payload = EXCLUDED.payload`,
-      [id, intentId, walletAddress, txHash, productType, trackId, artistId, confirmedAt, JSON.stringify(payload)],
+      [id, intentId, walletAddress, txHash, productType, trackId, confirmedAt, JSON.stringify(payload)],
     );
   },
 
@@ -486,23 +779,21 @@ export const databaseService = {
   async upsertSubscription(
     id: string,
     walletAddress: string,
-    artistId: string | null,
     scope: string,
     status: string,
     endsAt: string,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO subscriptions (id, wallet_address, artist_id, scope, status, ends_at, payload)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+      `INSERT INTO subscriptions (id, wallet_address, scope, status, ends_at, payload)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          wallet_address = EXCLUDED.wallet_address,
-         artist_id = EXCLUDED.artist_id,
          scope = EXCLUDED.scope,
          status = EXCLUDED.status,
          ends_at = EXCLUDED.ends_at,
          payload = EXCLUDED.payload`,
-      [id, walletAddress, artistId, scope, status, endsAt, JSON.stringify(payload)],
+      [id, walletAddress, scope, status, endsAt, JSON.stringify(payload)],
     );
   },
 
@@ -514,11 +805,102 @@ export const databaseService = {
 
     return mapPayloadRows<T>(result.rows);
   },
+  async upsertRoyaltySplit(
+    id: string,
+    trackId: string,
+    version: number,
+    status: string,
+    registryChain: string | null,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO royalty_splits (id, track_id, version, status, registry_chain, payload)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         track_id = EXCLUDED.track_id,
+         version = EXCLUDED.version,
+         status = EXCLUDED.status,
+         registry_chain = EXCLUDED.registry_chain,
+         payload = EXCLUDED.payload`,
+      [id, trackId, version, status, registryChain, JSON.stringify(payload)],
+    );
+  },
 
-  async listSubscriptionsByArtist<T>(artistId: string) {
+  async listRoyaltySplitsByTrack<T>(trackId: string) {
     const result = await pool.query<PersistedRow>(
-      `SELECT id, payload FROM subscriptions WHERE artist_id = $1 ORDER BY ends_at DESC, id DESC`,
-      [artistId],
+      `SELECT id, payload FROM royalty_splits WHERE track_id = $1 ORDER BY version DESC, id DESC`,
+      [trackId],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async upsertRoyaltyLedgerEntry(
+    id: string,
+    trackId: string,
+    recipientWalletAddress: string,
+    status: string,
+    sourceType: string,
+    sourceId: string,
+    recipientChain: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO royalty_ledger (id, track_id, recipient_wallet_address, status, source_type, source_id, recipient_chain, payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         track_id = EXCLUDED.track_id,
+         recipient_wallet_address = EXCLUDED.recipient_wallet_address,
+         status = EXCLUDED.status,
+         source_type = EXCLUDED.source_type,
+         source_id = EXCLUDED.source_id,
+         recipient_chain = EXCLUDED.recipient_chain,
+         payload = EXCLUDED.payload`,
+      [id, trackId, recipientWalletAddress, status, sourceType, sourceId, recipientChain, JSON.stringify(payload)],
+    );
+  },
+
+  async listRoyaltyLedgerEntriesByTrack<T>(trackId: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_ledger WHERE track_id = $1 ORDER BY id DESC`,
+      [trackId],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async listRoyaltyLedgerEntriesBySource<T>(sourceType: string, sourceId: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_ledger WHERE source_type = $1 AND source_id = $2 ORDER BY id DESC`,
+      [sourceType, sourceId],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async upsertRoyaltyPayout(
+    id: string,
+    recipientWalletAddress: string,
+    status: string,
+    payoutRail: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO royalty_payouts (id, recipient_wallet_address, status, payout_rail, payload)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         recipient_wallet_address = EXCLUDED.recipient_wallet_address,
+         status = EXCLUDED.status,
+         payout_rail = EXCLUDED.payout_rail,
+         payload = EXCLUDED.payload`,
+      [id, recipientWalletAddress, status, payoutRail, JSON.stringify(payload)],
+    );
+  },
+
+  async listRoyaltyPayoutsByRecipient<T>(recipientWalletAddress: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_payouts WHERE recipient_wallet_address = $1 ORDER BY id DESC`,
+      [recipientWalletAddress],
     );
 
     return mapPayloadRows<T>(result.rows);

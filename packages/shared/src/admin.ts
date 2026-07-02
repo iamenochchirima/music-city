@@ -11,6 +11,7 @@ import {
   subscriptionStatusSchema,
 } from "./payments.js";
 import { userRoleSchema } from "./auth.js";
+import type { TrackSummary } from "./music.js";
 import { walletAccountSchema } from "./wallet.js";
 
 export const adminRoleSchema = z.enum(["super_admin", "admin"]);
@@ -90,8 +91,6 @@ export const adminSubscriptionRecordSchema = z.object({
   walletAddress: stellarWalletAddressSchema,
   scope: subscriptionScopeSchema,
   status: subscriptionStatusSchema,
-  artistId: z.string().optional(),
-  artistName: z.string().optional(),
   paymentId: z.string().min(1),
   amount: positiveAmountSchema.optional(),
   assetCode: stellarAssetCodeSchema.optional(),
@@ -110,7 +109,6 @@ export const adminSubscriptionSummarySchema = z.object({
   total: z.number().int().nonnegative(),
   active: z.number().int().nonnegative(),
   platform: z.number().int().nonnegative(),
-  artist: z.number().int().nonnegative(),
 });
 export type AdminSubscriptionSummary = z.infer<
   typeof adminSubscriptionSummarySchema
@@ -158,3 +156,7 @@ export const adminUserListSchema = z.object({
   items: z.array(adminUserRecordSchema),
 });
 export type AdminUserList = z.infer<typeof adminUserListSchema>;
+
+export interface AdminTrackList {
+  items: TrackSummary[];
+}

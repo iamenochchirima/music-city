@@ -21,6 +21,7 @@ import { HttpError } from "../../utils/http-error.js";
 import { paymentsRepository } from "./payments.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { adminService } from "../admin/admin.service.js";
+import { royaltiesService } from "../royalties/royalties.service.js";
 
 const INTENT_TTL_MS = 15 * 60 * 1000;
 
@@ -54,7 +55,6 @@ const createIntentRecord = async (input: {
   productType: PaymentProductType;
   subscriptionScope?: SubscriptionScope;
   trackId?: string;
-  artistId?: string;
   amount: string;
   asset: StellarAssetDescriptor;
 }) => {
@@ -69,7 +69,6 @@ const createIntentRecord = async (input: {
     productType: input.productType,
     subscriptionScope: input.subscriptionScope,
     trackId: input.trackId,
-    artistId: input.artistId,
     amount: preciseAmount,
     assetCode: input.asset.code,
     assetIssuer: input.asset.issuer,
@@ -88,6 +87,8 @@ const paymentResultFromExistingRecord = async (
   payment: PaymentRecord,
 ) => {
   if (intent.productType === "track_purchase" && intent.trackId) {
+    await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
+
     const entitlement =
       (await entitlementsService.findMineForTrack(walletAddress, intent.trackId)) ??
       (await entitlementsService.grantPurchase(walletAddress, intent.trackId));
@@ -95,30 +96,9 @@ const paymentResultFromExistingRecord = async (
     return { payment, entitlement };
   }
 
-  if (intent.productType === "artist_subscription" && intent.artistId) {
-    const artist = await usersService.getProfileById(intent.artistId);
-
-    if (!artist) {
-      throw new HttpError(404, "Artist not found");
-    }
-
-    const subscription =
-      (await subscriptionsService.findByArtistAndPayment(
-        walletAddress,
-        intent.artistId,
-        payment.id,
-      )) ??
-      (await subscriptionsService.activateOrExtend(
-        walletAddress,
-        intent.artistId,
-        payment.id,
-        artist.subscriptionPeriodDays,
-      ));
-
-    return { payment, subscription };
-  }
-
   if (intent.productType === "platform_subscription") {
+    await royaltiesService.ensurePlatformSubscriptionLedgerEntries(payment);
+
     const plan = await subscriptionsService.getPlatformPlan();
 
     const subscription =
@@ -244,7 +224,11 @@ const verifyTransactionAgainstIntent = async (
 
 export const paymentsService = {
   async listMine(walletAddress: string) {
-    return paymentsRepository.listPaymentsByWallet(walletAddress);
+    return (await paymentsRepository.listPaymentsByWallet(walletAddress)).filter(
+      (payment) =>
+        payment.productType === "track_purchase" ||
+        payment.productType === "platform_subscription",
+    );
   },
 
   async createTrackPurchaseIntent(walletAddress: string, trackId: string) {
@@ -279,50 +263,6 @@ export const paymentsService = {
           issuer: track.purchaseAssetIssuer ?? settlementAsset().issuer,
         },
         "Track purchase",
-      ),
-    });
-
-    return paymentsRepository.upsertIntent(intent);
-  },
-
-  async createArtistSubscriptionIntent(walletAddress: string, artistId: string) {
-    const artist = await usersService.getProfileById(artistId);
-
-    if (!artist) {
-      throw new HttpError(404, "Artist not found");
-    }
-
-    if (artist.walletAddress === walletAddress) {
-      throw new HttpError(400, "Artists do not need to subscribe to themselves");
-    }
-
-    if (!artist.subscriptionEnabled || !artist.subscriptionPrice) {
-      throw new HttpError(400, "Artist subscription is not enabled");
-    }
-
-    if (
-      await subscriptionsService.hasActiveArtistSubscription(
-        walletAddress,
-        artistId,
-      )
-    ) {
-      throw new HttpError(400, "Artist subscription is already active");
-    }
-
-    const intent = await createIntentRecord({
-      walletAddress,
-      productType: "artist_subscription",
-      artistId,
-      amount: normalizePositiveAmount(
-        artist.subscriptionPrice,
-        "Artist subscription price",
-      ),
-      asset: normalizeStellarAsset(
-        {
-          code: artist.subscriptionAssetCode ?? settlementAsset().code,
-          issuer: artist.subscriptionAssetIssuer ?? settlementAsset().issuer,
-        },
-        "Artist subscription",
       ),
     });
 
@@ -421,7 +361,6 @@ export const paymentsService = {
       productType: intent.productType,
       subscriptionScope: intent.subscriptionScope,
       trackId: intent.trackId,
-      artistId: intent.artistId,
       txHash: parsed.txHash,
       amount: intent.amount,
       assetCode: intent.assetCode,

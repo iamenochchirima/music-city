@@ -15,7 +15,7 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { OnboardingForm } from "@/features/onboarding/components/onboarding-form";
 import { PlatformSubscriptionOverview } from "@/features/subscriptions/components/platform-subscription-overview";
 import { useEffect, useState } from "react";
-import { Navigate, Routes, Route, useParams, useSearchParams } from "react-router-dom";
+import { Routes, Route, useParams, useSearchParams } from "react-router-dom";
 import type { TrackSummary } from "@music-city/shared";
 
 const PageSection = ({
@@ -125,16 +125,6 @@ const SubscribePage = () => {
   );
 };
 
-const ArtistSubscribeRedirectPage = () => {
-  const [searchParams] = useSearchParams();
-  const trackId = searchParams.get("trackId");
-  const nextPath = trackId
-    ? `/subscribe?trackId=${encodeURIComponent(trackId)}`
-    : "/subscribe";
-
-  return <Navigate replace to={nextPath} />;
-};
-
 export const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
@@ -162,7 +152,6 @@ export const AppRoutes = () => (
         </PageSection>
       }
     />
-    <Route path="/artists/:artistId/subscribe" element={<ArtistSubscribeRedirectPage />} />
     <Route path="/subscribe" element={<SubscribePage />} />
     <Route
       path="/auth"

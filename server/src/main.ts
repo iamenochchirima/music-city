@@ -6,5 +6,5 @@ await databaseService.initialize();
 const app = createApp();
 
 app.listen(env.PORT, () => {
-  console.log(`music-city server listening on http://localhost:${env.PORT}`);
+  console.log(`music-city server listening on port ${env.PORT}`);
 });

@@ -6,6 +6,7 @@ import {
   EyeOff,
   LayoutDashboard,
   LogOut,
+  Percent,
   RefreshCw,
   ShieldCheck,
   Ticket,
@@ -17,8 +18,12 @@ import { toast } from "sonner";
 
 import type {
   AdminAccount,
+  RoyaltyLedgerEntry,
+  RoyaltyEngineConfig,
   AdminPlatformSubscriptionSettings,
   AdminSubscriptionList,
+  TrackRoyaltySplitRecord,
+  TrackSummary,
   AdminUserList,
   AdminTreasuryOverview,
   AdminRole,
@@ -62,6 +67,12 @@ const navItems = [
     label: "Users",
     description: "Audience accounts",
     icon: Users,
+  },
+  {
+    href: "/console/royalties",
+    label: "Royalties",
+    description: "Split registry",
+    icon: Percent,
   },
   {
     href: "/console/treasury",
@@ -188,6 +199,8 @@ const formatDateTime = (value?: string) => {
   }).format(date);
 };
 
+const formatSharePercent = (bps: number) => `${(bps / 100).toFixed(2)}%`;
+
 const LoadingScreen = ({ label }: { label: string }) => (
   <div className="flex min-h-screen items-center justify-center bg-[#0a1120] px-6">
     <div className="w-full max-w-sm border border-white/8 bg-[#0f1728] p-8 text-center">
@@ -195,6 +208,146 @@ const LoadingScreen = ({ label }: { label: string }) => (
       <p className="text-sm text-slate-300">{label}</p>
     </div>
   </div>
+);
+
+const SkeletonBlock = ({
+  className,
+}: {
+  className?: string;
+}) => (
+  <div
+    className={cn("animate-pulse bg-white/8", className)}
+    aria-hidden="true"
+  />
+);
+
+const PageLoadingShell = ({
+  title,
+  description,
+  stats = 3,
+  sidebar = false,
+}: {
+  title: string;
+  description: string;
+  stats?: number;
+  sidebar?: boolean;
+}) => (
+  <SidebarLayout>
+    <div className="space-y-6">
+      <SectionHeader
+        title={title}
+        description={description}
+        action={<SkeletonBlock className="h-9 w-24" />}
+      />
+
+      <div
+        className={cn(
+          "grid gap-3",
+          stats === 5
+            ? "md:grid-cols-5"
+            : stats === 4
+              ? "md:grid-cols-4"
+              : "md:grid-cols-3",
+        )}
+      >
+        {Array.from({ length: stats }).map((_, index) => (
+          <div key={index} className="border border-white/8 bg-[#0f1728] px-4 py-3">
+            <SkeletonBlock className="h-3 w-20" />
+            <SkeletonBlock className="mt-3 h-7 w-24" />
+          </div>
+        ))}
+      </div>
+
+      <div
+        className={cn(
+          "grid gap-6",
+          sidebar ? "xl:grid-cols-[minmax(0,1fr)_340px]" : undefined,
+        )}
+      >
+        <section className={cn(shellPanelClassName, "space-y-4 p-5")}>
+          <SkeletonBlock className="h-5 w-40" />
+          <SkeletonBlock className="h-4 w-72 max-w-full" />
+          <div className="space-y-3 pt-2">
+            <SkeletonBlock className="h-10 w-full" />
+            <SkeletonBlock className="h-10 w-full" />
+            <SkeletonBlock className="h-10 w-3/4" />
+            <SkeletonBlock className="h-40 w-full" />
+          </div>
+        </section>
+
+        {sidebar ? (
+          <aside className="space-y-4">
+            <section className={cn(shellPanelClassName, "space-y-4 p-5")}>
+              <SkeletonBlock className="h-5 w-28" />
+              <SkeletonBlock className="h-4 w-full" />
+              <SkeletonBlock className="h-24 w-full" />
+            </section>
+            <section className={cn(shellPanelClassName, "space-y-3 p-5")}>
+              <SkeletonBlock className="h-5 w-20" />
+              <SkeletonBlock className="h-4 w-full" />
+              <SkeletonBlock className="h-4 w-5/6" />
+            </section>
+          </aside>
+        ) : null}
+      </div>
+    </div>
+  </SidebarLayout>
+);
+
+const TableLoadingShell = ({
+  title,
+  description,
+  stats = 4,
+  columns,
+  columnCount,
+}: {
+  title: string;
+  description: string;
+  stats?: number;
+  columns: string;
+  columnCount: number;
+}) => (
+  <SidebarLayout>
+    <div className="space-y-6">
+      <SectionHeader title={title} description={description} />
+
+      <div
+        className={cn(
+          "grid gap-3",
+          stats === 5
+            ? "md:grid-cols-5"
+            : stats === 4
+              ? "md:grid-cols-4"
+              : "md:grid-cols-3",
+        )}
+      >
+        {Array.from({ length: stats }).map((_, index) => (
+          <div key={index} className="border border-white/8 bg-[#0f1728] px-4 py-3">
+            <SkeletonBlock className="h-3 w-20" />
+            <SkeletonBlock className="mt-3 h-7 w-16" />
+          </div>
+        ))}
+      </div>
+
+      <section className={cn(shellPanelClassName, "overflow-hidden")}>
+        <div className={cn("grid gap-4 border-b border-white/8 px-4 py-3", columns)}>
+          {Array.from({ length: columnCount }).map((_, index) => (
+            <SkeletonBlock key={index} className="h-3 w-16" />
+          ))}
+        </div>
+        {Array.from({ length: 6 }).map((_, rowIndex) => (
+          <div
+            key={rowIndex}
+            className={cn("grid gap-4 border-t border-white/6 px-4 py-4", columns)}
+          >
+            {Array.from({ length: columnCount }).map((_, cellIndex) => (
+              <SkeletonBlock key={cellIndex} className="h-4 w-full" />
+            ))}
+          </div>
+        ))}
+      </section>
+    </div>
+  </SidebarLayout>
 );
 
 const EmptyState = ({
@@ -534,7 +687,14 @@ const SubscriptionSettingsPage = () => {
   };
 
   if (isLoading) {
-    return <LoadingScreen label="Loading subscription settings..." />;
+    return (
+      <PageLoadingShell
+        title="Platform subscription"
+        description="Manage the plan shown to users before checkout."
+        stats={3}
+        sidebar
+      />
+    );
   }
 
   if (!draft) {
@@ -795,7 +955,14 @@ const TreasuryPage = () => {
   };
 
   if (isLoading) {
-    return <LoadingScreen label="Loading treasury..." />;
+    return (
+      <PageLoadingShell
+        title="Treasury wallet"
+        description="Set the receiving Stellar account for purchases and subscriptions."
+        stats={3}
+        sidebar
+      />
+    );
   }
 
   return (
@@ -1009,7 +1176,15 @@ const SubscribersPage = () => {
   }, [session?.token]);
 
   if (isLoading) {
-    return <LoadingScreen label="Loading subscribers..." />;
+    return (
+        <TableLoadingShell
+          title="Subscribers"
+          description="See every platform subscription across the app."
+          stats={4}
+          columns="grid-cols-[1.2fr_110px_110px_140px_140px_160px_160px]"
+          columnCount={7}
+      />
+    );
   }
 
   return (
@@ -1017,14 +1192,14 @@ const SubscribersPage = () => {
       <div className="space-y-6">
         <SectionHeader
           title="Subscribers"
-          description="See every platform and artist subscription across the app."
+          description="See every platform subscription across the app."
         />
 
         <div className="grid gap-3 md:grid-cols-4">
           <StatTile label="Total" value={String(data?.summary.total ?? 0)} />
           <StatTile label="Active" value={String(data?.summary.active ?? 0)} />
           <StatTile label="Platform" value={String(data?.summary.platform ?? 0)} />
-          <StatTile label="Artist" value={String(data?.summary.artist ?? 0)} />
+          <StatTile label="Plans" value={String(data?.summary.platform ?? 0)} />
         </div>
 
         {!data || data.items.length === 0 ? (
@@ -1078,7 +1253,7 @@ const SubscribersPage = () => {
                     ? `${formatBalanceAmount(item.amount)} ${item.assetCode}`
                     : "—"}
                 </div>
-                <div className="text-slate-300">{item.artistName ?? "Platform"}</div>
+                <div className="text-slate-300">Music City Pass</div>
                 <div className="text-slate-300">{formatDateTime(item.startsAt)}</div>
                 <div className="text-slate-300">{formatDateTime(item.endsAt)}</div>
               </div>
@@ -1130,7 +1305,15 @@ const UsersPage = () => {
   }, [session?.token]);
 
   if (isLoading) {
-    return <LoadingScreen label="Loading users..." />;
+    return (
+      <TableLoadingShell
+        title="Users"
+        description="Browse app users and whether they currently have an active subscription."
+        stats={5}
+        columns="grid-cols-[1.1fr_0.9fr_120px_130px_120px_160px]"
+        columnCount={6}
+      />
+    );
   }
 
   return (
@@ -1199,6 +1382,639 @@ const UsersPage = () => {
             ))}
           </section>
         )}
+      </div>
+    </SidebarLayout>
+  );
+};
+
+type EditableRoyaltyRecipient = {
+  walletAddress: string;
+  chain: "stellar" | "evm" | "solana" | "manual";
+  role:
+    | "artist"
+    | "producer"
+    | "writer"
+    | "featured_artist"
+    | "label"
+    | "platform"
+    | "other";
+  shareBps: string;
+};
+
+const RoyaltiesPage = () => {
+  const { session } = useAdminAuth();
+  const [tracks, setTracks] = useState<TrackSummary[]>([]);
+  const [config, setConfig] = useState<RoyaltyEngineConfig | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [splitHistory, setSplitHistory] = useState<TrackRoyaltySplitRecord[]>([]);
+  const [ledgerEntries, setLedgerEntries] = useState<RoyaltyLedgerEntry[]>([]);
+  const [draftRecipients, setDraftRecipients] = useState<EditableRoyaltyRecipient[]>([]);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSplitLoading, setIsSplitLoading] = useState(false);
+
+  const filteredTracks = useMemo(() => {
+    const normalized = search.trim().toLowerCase();
+
+    if (!normalized) {
+      return tracks;
+    }
+
+    return tracks.filter((track) =>
+      [track.title, track.artistName, track.id]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(normalized)),
+    );
+  }, [search, tracks]);
+
+  const selectedTrack = useMemo(
+    () => tracks.find((track) => track.id === selectedTrackId) ?? null,
+    [selectedTrackId, tracks],
+  );
+  const activeSplit = useMemo(
+    () => splitHistory.find((split) => split.status === "active") ?? splitHistory[0] ?? null,
+    [splitHistory],
+  );
+  const totalDraftBps = useMemo(
+    () =>
+      draftRecipients.reduce(
+        (sum, recipient) => sum + (Number.parseInt(recipient.shareBps, 10) || 0),
+        0,
+      ),
+    [draftRecipients],
+  );
+
+  const syncDraftFromSplit = (split: TrackRoyaltySplitRecord | null) => {
+    if (!split) {
+      setDraftRecipients([
+        {
+          walletAddress: "",
+          chain: "stellar",
+          role: "artist",
+          shareBps: "10000",
+        },
+      ]);
+      setDraftNotes("");
+      return;
+    }
+
+    setDraftRecipients(
+      split.recipients.map((recipient) => ({
+        walletAddress: recipient.walletAddress,
+        chain: recipient.chain,
+        role: recipient.role,
+        shareBps: String(recipient.shareBps),
+      })),
+    );
+    setDraftNotes(split.notes ?? "");
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      if (!session?.token) {
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const [nextTracks, nextConfig] = await Promise.all([
+          adminApi.listTracks(session.token),
+          adminApi.getRoyaltyConfig(session.token),
+        ]);
+
+        if (!cancelled) {
+          setTracks(nextTracks);
+          setConfig(nextConfig);
+          setSelectedTrackId((current) => current ?? nextTracks[0]?.id ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to load royalties",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSplits = async () => {
+      if (!session?.token || !selectedTrackId) {
+        setSplitHistory([]);
+        setLedgerEntries([]);
+        syncDraftFromSplit(null);
+        return;
+      }
+
+      setIsSplitLoading(true);
+
+      try {
+        const [response, nextLedgerEntries] = await Promise.all([
+          adminApi.listTrackRoyaltySplits(selectedTrackId, session.token),
+          adminApi.listTrackRoyaltyLedger(selectedTrackId, session.token),
+        ]);
+
+        if (!cancelled) {
+          setSplitHistory(response.items);
+          setLedgerEntries(nextLedgerEntries);
+          syncDraftFromSplit(
+            response.items.find((split) => split.status === "active") ??
+              response.items[0] ??
+              null,
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(
+            error instanceof Error ? error.message : "Failed to load royalty splits",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSplitLoading(false);
+        }
+      }
+    };
+
+    void loadSplits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTrackId, session?.token]);
+
+  if (isLoading) {
+    return (
+      <PageLoadingShell
+        title="Royalties"
+        description="Manage canonical track split ownership with Stellar as the primary registry path."
+        stats={4}
+      />
+    );
+  }
+
+  const updateRecipient = (
+    index: number,
+    patch: Partial<EditableRoyaltyRecipient>,
+  ) => {
+    setDraftRecipients((current) =>
+      current.map((recipient, recipientIndex) =>
+        recipientIndex === index ? { ...recipient, ...patch } : recipient,
+      ),
+    );
+  };
+
+  const addRecipient = () => {
+    setDraftRecipients((current) => [
+      ...current,
+      {
+        walletAddress: "",
+        chain: "stellar",
+        role: "other",
+        shareBps: "0",
+      },
+    ]);
+  };
+
+  const removeRecipient = (index: number) => {
+    setDraftRecipients((current) =>
+      current.length === 1
+        ? current
+        : current.filter((_, recipientIndex) => recipientIndex !== index),
+    );
+  };
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!session?.token || !selectedTrackId) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      await adminApi.updateTrackRoyaltySplits(
+        selectedTrackId,
+        {
+          recipients: draftRecipients.map((recipient) => ({
+            walletAddress: recipient.walletAddress.trim(),
+            chain: recipient.chain,
+            role: recipient.role,
+            shareBps: Number.parseInt(recipient.shareBps, 10) || 0,
+          })),
+          notes: draftNotes.trim() || undefined,
+          activate: true,
+        },
+        session.token,
+      );
+
+      toast.success("Royalty split updated.");
+      const [response, nextLedgerEntries] = await Promise.all([
+        adminApi.listTrackRoyaltySplits(selectedTrackId, session.token),
+        adminApi.listTrackRoyaltyLedger(selectedTrackId, session.token),
+      ]);
+      setSplitHistory(response.items);
+      setLedgerEntries(nextLedgerEntries);
+      syncDraftFromSplit(
+        response.items.find((split) => split.status === "active") ??
+          response.items[0] ??
+          null,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save royalty split",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <SidebarLayout>
+      <div className="space-y-6">
+        <SectionHeader
+          title="Royalties"
+          description="Manage canonical track split ownership with Stellar as the primary registry path."
+        />
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <StatTile
+            label="Primary chain"
+            value={config?.primaryChain?.toUpperCase() ?? "—"}
+          />
+          <StatTile label="Network" value={config?.primaryNetwork ?? "—"} />
+          <StatTile label="Registry" value={config?.registryKind ?? "—"} />
+          <StatTile
+            label="Settlement"
+            value={config?.settlementRails.join(", ") ?? "—"}
+          />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <section className={cn(shellPanelClassName, "p-5")}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="royalty-track-search">Find track</Label>
+                <Input
+                  id="royalty-track-search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by title, artist, or track id"
+                  className={fieldClassName}
+                />
+              </div>
+
+              <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+                {filteredTracks.length === 0 ? (
+                  <EmptyState
+                    title="No matching tracks"
+                    description="Try a different search term."
+                  />
+                ) : (
+                  filteredTracks.map((track) => (
+                    <button
+                      key={track.id}
+                      type="button"
+                      onClick={() => setSelectedTrackId(track.id)}
+                      className={cn(
+                        "w-full border px-4 py-3 text-left transition",
+                        selectedTrackId === track.id
+                          ? "border-emerald-400/25 bg-emerald-400/8"
+                          : "border-white/8 bg-[#0b1220] hover:border-white/12 hover:bg-white/[0.03]",
+                      )}
+                    >
+                      <p className="truncate font-medium text-white">{track.title}</p>
+                      <p className="mt-1 truncate text-sm text-slate-400">
+                        {track.artistName}
+                      </p>
+                      <p className="mt-2 truncate text-xs text-slate-500">{track.id}</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+
+          <div className="space-y-6">
+            {!selectedTrack ? (
+              <EmptyState
+                title="Select a track"
+                description="Choose a track from the list to manage its royalty split."
+              />
+            ) : (
+              <>
+                <section className={cn(shellPanelClassName, "p-5")}>
+                  <div className="flex flex-col gap-4 border-b border-white/8 pb-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        {selectedTrack.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {selectedTrack.artistName} • {selectedTrack.id}
+                      </p>
+                    </div>
+                    {activeSplit ? (
+                      <div className="border border-emerald-400/20 bg-emerald-400/8 px-3 py-2 text-sm text-emerald-200">
+                        Active split v{activeSplit.version}
+                      </div>
+                    ) : (
+                      <div className="border border-white/8 bg-[#0b1220] px-3 py-2 text-sm text-slate-300">
+                        No split yet
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <StatTile
+                      label="Status"
+                      value={activeSplit?.status ?? "Draft"}
+                    />
+                    <StatTile
+                      label="Recipients"
+                      value={String(activeSplit?.recipients.length ?? draftRecipients.length)}
+                    />
+                    <StatTile
+                      label="Total"
+                      value={formatSharePercent(activeSplit?.totalBps ?? totalDraftBps)}
+                    />
+                    <StatTile
+                      label="Ledger entries"
+                      value={String(ledgerEntries.length)}
+                    />
+                  </div>
+                </section>
+
+                <section className={cn(shellPanelClassName, "p-5")}>
+                  <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/8 pb-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Split editor</h3>
+                      <p className="text-sm text-slate-400">
+                        Percentages must total exactly 100%.
+                      </p>
+                    </div>
+                    <div className="text-sm text-slate-300">
+                      Draft total:{" "}
+                      <span
+                        className={cn(
+                          totalDraftBps === 10_000 ? "text-emerald-300" : "text-amber-300",
+                        )}
+                      >
+                        {formatSharePercent(totalDraftBps)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form className="space-y-4" onSubmit={handleSave}>
+                    <div className="space-y-3">
+                      {draftRecipients.map((recipient, index) => (
+                        <div
+                          key={`${selectedTrack.id}-recipient-${index}`}
+                          className="grid gap-3 border border-white/8 bg-[#0b1220] p-4 lg:grid-cols-[minmax(0,1.3fr)_110px_150px_120px_72px]"
+                        >
+                          <Input
+                            value={recipient.walletAddress}
+                            onChange={(event) =>
+                              updateRecipient(index, {
+                                walletAddress: event.target.value,
+                              })
+                            }
+                            placeholder="Recipient wallet / address"
+                            className={fieldClassName}
+                            required
+                          />
+                          <select
+                            value={recipient.chain}
+                            onChange={(event) =>
+                              updateRecipient(index, {
+                                chain: event.target.value as EditableRoyaltyRecipient["chain"],
+                              })
+                            }
+                            className={selectClassName}
+                          >
+                            <option value="stellar">stellar</option>
+                            <option value="evm">evm</option>
+                            <option value="solana">solana</option>
+                            <option value="manual">manual</option>
+                          </select>
+                          <select
+                            value={recipient.role}
+                            onChange={(event) =>
+                              updateRecipient(index, {
+                                role: event.target.value as EditableRoyaltyRecipient["role"],
+                              })
+                            }
+                            className={selectClassName}
+                          >
+                            <option value="artist">artist</option>
+                            <option value="producer">producer</option>
+                            <option value="writer">writer</option>
+                            <option value="featured_artist">featured artist</option>
+                            <option value="label">label</option>
+                            <option value="platform">platform</option>
+                            <option value="other">other</option>
+                          </select>
+                          <Input
+                            value={recipient.shareBps}
+                            onChange={(event) =>
+                              updateRecipient(index, { shareBps: event.target.value })
+                            }
+                            inputMode="numeric"
+                            placeholder="BPS"
+                            className={fieldClassName}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                            disabled={draftRecipients.length === 1}
+                            onClick={() => removeRecipient(index)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                        onClick={addRecipient}
+                      >
+                        Add recipient
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                        onClick={() => syncDraftFromSplit(activeSplit)}
+                      >
+                        Reset to active split
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="royalty-notes">Notes</Label>
+                      <textarea
+                        id="royalty-notes"
+                        value={draftNotes}
+                        onChange={(event) => setDraftNotes(event.target.value)}
+                        placeholder="Optional internal note about this split version"
+                        className={cn(fieldClassName, "min-h-[90px] py-3")}
+                      />
+                    </div>
+
+                    <Button type="submit" className="h-10 rounded-md" disabled={isSaving}>
+                      {isSaving ? "Saving split..." : "Save active split"}
+                    </Button>
+                  </form>
+                </section>
+
+                <section className={cn(shellPanelClassName, "overflow-hidden")}>
+                  <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Split history</h3>
+                      <p className="text-sm text-slate-400">
+                        Previous versions remain visible for auditability.
+                      </p>
+                    </div>
+                    {isSplitLoading ? (
+                      <div className="text-sm text-slate-400">Refreshing…</div>
+                    ) : null}
+                  </div>
+
+                  {splitHistory.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-slate-400">
+                      No split versions have been created for this track yet.
+                    </div>
+                  ) : (
+                    splitHistory.map((split) => (
+                      <div
+                        key={split.id}
+                        className="border-t border-white/6 px-4 py-4"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-white">
+                              Version {split.version}
+                            </span>
+                            <span
+                              className={cn(
+                                "inline-flex border px-2 py-1 text-xs",
+                                split.status === "active"
+                                  ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-200"
+                                  : "border-white/10 text-slate-300",
+                              )}
+                            >
+                              {split.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            Updated {formatDateTime(split.updatedAt)}
+                          </p>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {split.recipients.map((recipient, index) => (
+                            <div
+                              key={`${split.id}-${index}`}
+                              className="grid gap-3 text-sm text-slate-300 md:grid-cols-[minmax(0,1.4fr)_110px_150px_100px]"
+                            >
+                              <span className="truncate">{recipient.walletAddress}</span>
+                              <span>{recipient.chain}</span>
+                              <span>{recipient.role}</span>
+                              <span>{formatSharePercent(recipient.shareBps)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </section>
+
+                <section className={cn(shellPanelClassName, "overflow-hidden")}>
+                  <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Royalty ledger</h3>
+                      <p className="text-sm text-slate-400">
+                        Generated earnings entries for this track.
+                      </p>
+                    </div>
+                  </div>
+
+                  {ledgerEntries.length === 0 ? (
+                    <div className="px-4 py-8 text-sm text-slate-400">
+                      No royalty ledger entries have been created for this track yet.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-[minmax(0,1.1fr)_120px_140px_120px_180px_170px] gap-4 border-b border-white/8 px-4 py-3 text-[0.68rem] uppercase tracking-[0.18em] text-slate-500">
+                        <span>Recipient</span>
+                        <span>Role</span>
+                        <span>Amount</span>
+                        <span>Status</span>
+                        <span>Source</span>
+                        <span>Created</span>
+                      </div>
+                      {ledgerEntries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="grid grid-cols-[minmax(0,1.1fr)_120px_140px_120px_180px_170px] gap-4 border-t border-white/6 px-4 py-4 text-sm"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-white">
+                              {entry.recipientWalletAddress}
+                            </p>
+                            <p className="mt-1 truncate text-xs text-slate-500">
+                              {entry.recipientChain}
+                            </p>
+                          </div>
+                          <div className="text-slate-300">{entry.recipientRole}</div>
+                          <div className="text-slate-300">
+                            {entry.netAmount} {entry.assetCode ?? ""}
+                          </div>
+                          <div>
+                            <span className="inline-flex border border-white/10 px-2 py-1 text-xs text-slate-300">
+                              {entry.status}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-slate-300">{entry.sourceType}</p>
+                            <p className="mt-1 truncate text-xs text-slate-500">
+                              {entry.sourceId}
+                            </p>
+                          </div>
+                          <div className="text-slate-300">
+                            {formatDateTime(entry.createdAt)}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </section>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </SidebarLayout>
   );
@@ -1464,6 +2280,14 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/console/royalties"
+        element={
+          <ProtectedRoute>
+            <RoyaltiesPage />
           </ProtectedRoute>
         }
       />
