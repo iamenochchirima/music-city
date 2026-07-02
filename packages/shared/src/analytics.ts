@@ -217,6 +217,7 @@ export const artistAnalyticsTrackSchema = z.object({
   ]),
   plays: z.number().int().min(0),
   likes: z.number().int().min(0),
+  saves: z.number().int().min(0),
   uniqueListeners: z.number().int().min(0),
 });
 export type ArtistAnalyticsTrack = z.infer<typeof artistAnalyticsTrackSchema>;
@@ -244,11 +245,15 @@ export const artistAnalyticsSummarySchema = z.object({
   followerCount: z.number().int().min(0),
   totalStreams: z.number().int().min(0),
   totalLikes: z.number().int().min(0),
+  totalSaves: z.number().int().min(0),
   uniqueListeners: z.number().int().min(0),
   totalTracks: z.number().int().min(0),
   publishedTracks: z.number().int().min(0),
   streamsLast7Days: z.number().int().min(0),
   streamsLast30Days: z.number().int().min(0),
+  selectedWindowDays: z.number().int().positive().nullable(),
+  selectedWindowStreams: z.number().int().min(0),
+  selectedWindowUniqueListeners: z.number().int().min(0),
   topTracks: z.array(artistAnalyticsTrackSchema),
   dailyStreams: z.array(artistAnalyticsDailyPointSchema),
 });

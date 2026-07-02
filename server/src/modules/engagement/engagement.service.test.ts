@@ -5,6 +5,7 @@ process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/mu
 
 const { engagementService } = await import("./engagement.service.js");
 const { engagementRepository } = await import("./engagement.repository.js");
+const { releasesRepository } = await import("../releases/releases.repository.js");
 const { usersService } = await import("../users/users.service.js");
 const { tracksRepository } = await import("../tracks/tracks.repository.js");
 const { playbackRepository } = await import("../playback/playback.repository.js");
@@ -376,6 +377,188 @@ test("saveTrack and unsaveTrack return the refreshed saved state", async () => {
       saveCount: 4,
     });
     assert.deepEqual(analyticsEvents, ["save_track", "unsave_track"]);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("recordReleaseView stores a release analytics event for anonymous or signed-in listeners", async () => {
+  const analyticsEvents: Array<{
+    eventType: string;
+    actorUserId?: string;
+    artistId?: string;
+    releaseId?: string;
+  }> = [];
+
+  const cleanup = [
+    restore(
+      releasesRepository,
+      "findById",
+      (async () => ({
+        id: "rel-1",
+        artistId: "usr-artist",
+        artistName: "Artist",
+        title: "Release",
+        type: "album",
+        status: "published",
+        genre: "Pop",
+        trackCount: 3,
+      })) as typeof releasesRepository.findById,
+    ),
+    restore(
+      usersService,
+      "getProfile",
+      (async () => createFanProfile()) as typeof usersService.getProfile,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push({
+          eventType: event.eventType,
+          actorUserId: event.actorUserId,
+          artistId: event.artistId,
+          releaseId: event.releaseId,
+        });
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+  ];
+
+  try {
+    await engagementService.recordReleaseView("rel-1");
+    await engagementService.recordReleaseView("rel-1", "wallet-1");
+
+    assert.deepEqual(analyticsEvents, [
+      {
+        eventType: "view_release",
+        actorUserId: undefined,
+        artistId: "usr-artist",
+        releaseId: "rel-1",
+      },
+      {
+        eventType: "view_release",
+        actorUserId: "usr-listener",
+        artistId: "usr-artist",
+        releaseId: "rel-1",
+      },
+    ]);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("getArtistAnalytics returns save totals and selected window metrics", async () => {
+  const cleanup = [
+    restore(
+      usersService,
+      "getProfile",
+      (async () => createArtistProfile()) as typeof usersService.getProfile,
+    ),
+    restore(
+      tracksRepository,
+      "listByArtist",
+      (async () => [
+        {
+          id: "trk-1",
+          title: "First",
+          artistId: "usr-artist",
+          artistName: "Artist",
+          releaseTitle: "Release One",
+          genre: "Pop",
+          runtime: "3:00",
+          priceLabel: "Public",
+          status: "published",
+          access: "public",
+          plays: 20,
+          likes: 5,
+        },
+        {
+          id: "trk-2",
+          title: "Second",
+          artistId: "usr-artist",
+          artistName: "Artist",
+          genre: "Soul",
+          runtime: "4:00",
+          priceLabel: "Subscribers",
+          status: "published",
+          access: "subscribers",
+          plays: 12,
+          likes: 3,
+        },
+      ]) as typeof tracksRepository.listByArtist,
+    ),
+    restore(
+      engagementRepository,
+      "countTrackSaves",
+      (async (trackId: string) => (trackId === "trk-1" ? 4 : 2)) as typeof engagementRepository.countTrackSaves,
+    ),
+    restore(
+      engagementRepository,
+      "countUniqueListenersByTrack",
+      (async (trackId: string) => (trackId === "trk-1" ? 9 : 6)) as typeof engagementRepository.countUniqueListenersByTrack,
+    ),
+    restore(
+      engagementRepository,
+      "countArtistFollowers",
+      (async () => 14) as typeof engagementRepository.countArtistFollowers,
+    ),
+    restore(
+      engagementRepository,
+      "countQualifiedStreamsByArtist",
+      (async () => 32) as typeof engagementRepository.countQualifiedStreamsByArtist,
+    ),
+    restore(
+      engagementRepository,
+      "countUniqueListenersByArtist",
+      (async () => 11) as typeof engagementRepository.countUniqueListenersByArtist,
+    ),
+    restore(
+      engagementRepository,
+      "countQualifiedStreamsByArtistSince",
+      (async (_artistId: string, days?: number | null) =>
+        days === 7 ? 7 : days === 30 ? 18 : days === 90 ? 27 : 32) as typeof engagementRepository.countQualifiedStreamsByArtistSince,
+    ),
+    restore(
+      engagementRepository,
+      "countUniqueListenersByArtistSince",
+      (async (_artistId: string, days?: number | null) =>
+        days === 90 ? 10 : days === 30 ? 8 : days === 7 ? 4 : 11) as typeof engagementRepository.countUniqueListenersByArtistSince,
+    ),
+    restore(
+      engagementRepository,
+      "listArtistDailyQualifiedStreams",
+      (async (_artistId: string, days?: number | null) =>
+        days === 90
+          ? [
+              { date: "2026-04-10", streams: 3 },
+              { date: "2026-06-30", streams: 5 },
+            ]
+          : [{ date: "2026-06-30", streams: 5 }]) as typeof engagementRepository.listArtistDailyQualifiedStreams,
+    ),
+  ];
+
+  try {
+    const analytics = await engagementService.getArtistAnalytics("wallet-1", 90);
+
+    assert.equal(analytics.totalSaves, 6);
+    assert.equal(analytics.selectedWindowDays, 90);
+    assert.equal(analytics.selectedWindowStreams, 27);
+    assert.equal(analytics.selectedWindowUniqueListeners, 10);
+    assert.deepEqual(
+      analytics.topTracks.map((track) => ({
+        trackId: track.trackId,
+        saves: track.saves,
+        uniqueListeners: track.uniqueListeners,
+      })),
+      [
+        { trackId: "trk-1", saves: 4, uniqueListeners: 9 },
+        { trackId: "trk-2", saves: 2, uniqueListeners: 6 },
+      ],
+    );
+    assert.deepEqual(analytics.dailyStreams, [
+      { date: "2026-04-10", streams: 3 },
+      { date: "2026-06-30", streams: 5 },
+    ]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }

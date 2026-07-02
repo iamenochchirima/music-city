@@ -19,6 +19,7 @@ import { engagementRepository } from "./engagement.repository.js";
 const QUALIFIED_STREAM_MIN_SECONDS = 30;
 const QUALIFIED_STREAM_FRACTION = 0.5;
 const DAILY_STREAM_WINDOW_DAYS = 30;
+const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
 const nowIso = () => new Date().toISOString();
 const ANALYTICS_SOURCE = "server.engagement";
@@ -408,12 +409,18 @@ export const engagementService = {
     return updatedSession;
   },
 
-  async getArtistAnalytics(walletAddress: string): Promise<ArtistAnalyticsSummary> {
+  async getArtistAnalytics(
+    walletAddress: string,
+    windowDays?: number | null,
+  ): Promise<ArtistAnalyticsSummary> {
     const profile = await ensureProfile(walletAddress);
 
     if (profile.role !== "artist") {
       throw new Error("Artist analytics are only available for artist accounts");
     }
+
+    const selectedWindowDays =
+      windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
 
     const tracks = await tracksRepository.listByArtist(profile.id);
     const topTracks = await Promise.all(
@@ -428,13 +435,23 @@ export const engagementService = {
           status: track.status,
           plays: track.plays,
           likes: track.likes,
+          saves: await engagementRepository.countTrackSaves(track.id),
           uniqueListeners: await engagementRepository.countUniqueListenersByTrack(
             track.id,
           ),
         })),
     );
 
-    const [followerCount, totalStreams, uniqueListeners, streamsLast7Days, streamsLast30Days, dailyStreams] =
+    const [
+      followerCount,
+      totalStreams,
+      uniqueListeners,
+      streamsLast7Days,
+      streamsLast30Days,
+      dailyStreams,
+      selectedWindowStreams,
+      selectedWindowUniqueListeners,
+    ] =
       await Promise.all([
         engagementRepository.countArtistFollowers(profile.id),
         engagementRepository.countQualifiedStreamsByArtist(profile.id),
@@ -443,7 +460,15 @@ export const engagementService = {
         engagementRepository.countQualifiedStreamsByArtistSince(profile.id, 30),
         engagementRepository.listArtistDailyQualifiedStreams(
           profile.id,
-          DAILY_STREAM_WINDOW_DAYS,
+          selectedWindowDays ?? DAILY_STREAM_WINDOW_DAYS,
+        ),
+        engagementRepository.countQualifiedStreamsByArtistSince(
+          profile.id,
+          selectedWindowDays,
+        ),
+        engagementRepository.countUniqueListenersByArtistSince(
+          profile.id,
+          selectedWindowDays,
         ),
       ]);
 
@@ -452,11 +477,15 @@ export const engagementService = {
       followerCount,
       totalStreams,
       totalLikes: tracks.reduce((sum, track) => sum + track.likes, 0),
+      totalSaves: topTracks.reduce((sum, track) => sum + track.saves, 0),
       uniqueListeners,
       totalTracks: tracks.length,
       publishedTracks: tracks.filter((track) => track.access !== "private").length,
       streamsLast7Days,
       streamsLast30Days,
+      selectedWindowDays,
+      selectedWindowStreams,
+      selectedWindowUniqueListeners,
       topTracks,
       dailyStreams,
     });

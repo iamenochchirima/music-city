@@ -252,6 +252,30 @@ const baseSchemaStatements = [
     CONSTRAINT royalty_payouts_status_check
       CHECK (status IN ('pending', 'submitted', 'confirmed', 'failed', 'cancelled'))
   )`,
+  `CREATE TABLE IF NOT EXISTS ads (
+    id TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    payload JSONB NOT NULL,
+    CONSTRAINT ads_status_check
+      CHECK (status IN ('draft', 'active', 'paused', 'archived'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS ad_impressions (
+    id TEXT PRIMARY KEY,
+    ad_id TEXT NOT NULL,
+    wallet_address TEXT NOT NULL,
+    track_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    payload JSONB NOT NULL,
+    CONSTRAINT ad_impressions_ad_id_fk
+      FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
+    CONSTRAINT ad_impressions_track_id_fk
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    CONSTRAINT ad_impressions_status_check
+      CHECK (status IN ('pending', 'started', 'completed', 'skipped', 'failed'))
+  )`,
   "CREATE INDEX IF NOT EXISTS users_wallet_address_idx ON users (wallet_address)",
   "CREATE INDEX IF NOT EXISTS users_role_idx ON users (role)",
   "CREATE INDEX IF NOT EXISTS admins_email_idx ON admins (email)",
@@ -279,6 +303,13 @@ const baseSchemaStatements = [
   "CREATE INDEX IF NOT EXISTS royalty_ledger_status_idx ON royalty_ledger (status)",
   "CREATE INDEX IF NOT EXISTS royalty_payouts_recipient_wallet_idx ON royalty_payouts (recipient_wallet_address)",
   "CREATE INDEX IF NOT EXISTS royalty_payouts_status_idx ON royalty_payouts (status)",
+  "CREATE INDEX IF NOT EXISTS ads_status_idx ON ads (status)",
+  "CREATE INDEX IF NOT EXISTS ads_starts_at_idx ON ads (starts_at)",
+  "CREATE INDEX IF NOT EXISTS ads_ends_at_idx ON ads (ends_at)",
+  "CREATE INDEX IF NOT EXISTS ad_impressions_wallet_address_idx ON ad_impressions (wallet_address)",
+  "CREATE INDEX IF NOT EXISTS ad_impressions_ad_id_idx ON ad_impressions (ad_id)",
+  "CREATE INDEX IF NOT EXISTS ad_impressions_created_at_idx ON ad_impressions (created_at)",
+  "CREATE INDEX IF NOT EXISTS ad_impressions_status_idx ON ad_impressions (status)",
 ];
 
 const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -627,6 +658,10 @@ export const databaseService = {
     );
 
     return result.rows[0]?.payload as T | null;
+  },
+
+  async deletePayloadById(table: string, id: string) {
+    await pool.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
   },
 
   async upsertRelease(
@@ -1160,14 +1195,23 @@ export const databaseService = {
     return Number(result.rows[0]?.count ?? "0");
   },
 
-  async countQualifiedStreamsByArtistSince(artistId: string, days: number) {
+  async countQualifiedStreamsByArtistSince(artistId: string, days?: number | null) {
+    const values = [artistId];
+    const clauses = [
+      "artist_id = $1",
+      "event_type = 'qualified_stream'",
+    ];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
     const result = await pool.query<CountRow>(
       `SELECT COUNT(*)::text AS count
        FROM playback_events
-       WHERE artist_id = $1
-         AND event_type = 'qualified_stream'
-         AND occurred_at >= NOW() - ($2::text || ' days')::interval`,
-      [artistId, String(days)],
+       WHERE ${clauses.join("\n         AND ")}`,
+      values,
     );
 
     return Number(result.rows[0]?.count ?? "0");
@@ -1186,6 +1230,29 @@ export const databaseService = {
     return Number(result.rows[0]?.count ?? "0");
   },
 
+  async countUniqueListenersByArtistSince(artistId: string, days?: number | null) {
+    const values = [artistId];
+    const clauses = [
+      "artist_id = $1",
+      "event_type = 'qualified_stream'",
+      "listener_user_id IS NOT NULL",
+    ];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(DISTINCT listener_user_id)::text AS count
+       FROM playback_events
+       WHERE ${clauses.join("\n         AND ")}`,
+      values,
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
   async countUniqueListenersByTrack(trackId: string) {
     const result = await pool.query<CountRow>(
       `SELECT COUNT(DISTINCT listener_user_id)::text AS count
@@ -1199,17 +1266,26 @@ export const databaseService = {
     return Number(result.rows[0]?.count ?? "0");
   },
 
-  async listArtistDailyQualifiedStreams(artistId: string, days: number) {
+  async listArtistDailyQualifiedStreams(artistId: string, days?: number | null) {
+    const values = [artistId];
+    const clauses = [
+      "artist_id = $1",
+      "event_type = 'qualified_stream'",
+    ];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
     const result = await pool.query<DailyStreamsRow>(
       `SELECT TO_CHAR(DATE_TRUNC('day', occurred_at), 'YYYY-MM-DD') AS date,
               COUNT(*)::text AS streams
        FROM playback_events
-       WHERE artist_id = $1
-         AND event_type = 'qualified_stream'
-         AND occurred_at >= NOW() - ($2::text || ' days')::interval
+       WHERE ${clauses.join("\n         AND ")}
        GROUP BY DATE_TRUNC('day', occurred_at)
        ORDER BY DATE_TRUNC('day', occurred_at) ASC`,
-      [artistId, String(days)],
+      values,
     );
 
     return result.rows.map((row) => ({
@@ -1533,6 +1609,139 @@ export const databaseService = {
     );
 
     return mapPayloadRows<T>(result.rows);
+  },
+
+  async upsertAd(
+    id: string,
+    status: string,
+    startsAt: string | null,
+    endsAt: string | null,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO ads (id, status, starts_at, ends_at, payload)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         status = EXCLUDED.status,
+         starts_at = EXCLUDED.starts_at,
+         ends_at = EXCLUDED.ends_at,
+         payload = EXCLUDED.payload`,
+      [id, status, startsAt, endsAt, JSON.stringify(payload)],
+    );
+  },
+
+  async listAds<T>(filters?: { status?: string }) {
+    const where: string[] = [];
+    const values: string[] = [];
+
+    if (filters?.status) {
+      values.push(filters.status);
+      where.push(`status = $${values.length}`);
+    }
+
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM ads${
+        where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""
+      } ORDER BY id DESC`,
+      values,
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async findAdById<T>(id: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM ads WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+
+    return result.rows[0]?.payload as T | null;
+  },
+
+  async deleteAd(id: string) {
+    await pool.query(`DELETE FROM ads WHERE id = $1`, [id]);
+  },
+
+  async upsertAdImpression(
+    id: string,
+    adId: string,
+    walletAddress: string,
+    trackId: string,
+    status: string,
+    createdAt: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO ad_impressions (id, ad_id, wallet_address, track_id, status, created_at, payload)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         ad_id = EXCLUDED.ad_id,
+         wallet_address = EXCLUDED.wallet_address,
+         track_id = EXCLUDED.track_id,
+         status = EXCLUDED.status,
+         created_at = EXCLUDED.created_at,
+         payload = EXCLUDED.payload`,
+      [id, adId, walletAddress, trackId, status, createdAt, JSON.stringify(payload)],
+    );
+  },
+
+  async listAdImpressions<T>(filters?: {
+    adId?: string;
+    walletAddress?: string;
+    status?: string;
+  }) {
+    const where: string[] = [];
+    const values: string[] = [];
+
+    if (filters?.adId) {
+      values.push(filters.adId);
+      where.push(`ad_id = $${values.length}`);
+    }
+
+    if (filters?.walletAddress) {
+      values.push(filters.walletAddress);
+      where.push(`wallet_address = $${values.length}`);
+    }
+
+    if (filters?.status) {
+      values.push(filters.status);
+      where.push(`status = $${values.length}`);
+    }
+
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM ad_impressions${
+        where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""
+      } ORDER BY created_at DESC, id DESC`,
+      values,
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async findAdImpressionById<T>(id: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM ad_impressions WHERE id = $1 LIMIT 1`,
+      [id],
+    );
+
+    return result.rows[0]?.payload as T | null;
+  },
+
+  async countAdImpressionsForWalletSince(
+    adId: string,
+    walletAddress: string,
+    since: string,
+  ) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM ad_impressions
+       WHERE ad_id = $1
+         AND wallet_address = $2
+         AND created_at >= $3`,
+      [adId, walletAddress, since],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
   },
 
   async listRoyaltyPayouts<T>(filters?: {

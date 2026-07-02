@@ -34,10 +34,10 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] Define `TrackUnlikeEvent`
 - [x] Define `TrackSaveEvent`
 - [x] Define `TrackUnsaveEvent`
-- [ ] Define `ReleaseViewEvent`
-- [ ] Define `PlaylistCreatedEvent`
-- [ ] Define `PlaylistTrackAddedEvent`
-- [ ] Define `PlaylistTrackRemovedEvent`
+- [x] Define `ReleaseViewEvent`
+- [x] Define `PlaylistCreatedEvent`
+- [x] Define `PlaylistTrackAddedEvent`
+- [x] Define `PlaylistTrackRemovedEvent`
 - [ ] Define `SearchPerformedEvent`
 - [ ] Define shared aggregation result types:
   - [x] `TrackAnalyticsSummary`
@@ -95,8 +95,8 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] Add server endpoint for unlike track
 - [x] Add server endpoint for save track
 - [x] Add server endpoint for unsave track
-- [ ] Add server endpoint for release view
-- [ ] Add server endpoint for playlist interaction events
+- [x] Add server endpoint for release view
+- [x] Add server endpoint for playlist interaction events
 - [x] Validate auth and ownership rules for engagement actions
 - [x] Log analytics events server-side from trusted endpoints only
 
@@ -104,8 +104,8 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] Implement artist follow service
 - [x] Implement track like service
 - [x] Implement track save service
-- [ ] Implement playlist add/remove tracking
-- [ ] Implement release view tracking
+- [x] Implement playlist add/remove tracking
+- [x] Implement release view tracking
 - [x] Update track counters from authoritative engagement records:
   - [x] `plays`
   - [x] `likes`
@@ -138,8 +138,8 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] Track follow and unfollow actions from artist surfaces
 - [x] Track like and unlike actions from track surfaces
 - [x] Track save and unsave actions from track surfaces
-- [ ] Track release page views
-- [ ] Track playlist actions
+- [x] Track release page views
+- [x] Track playlist actions
 - [ ] Track discovery and search interactions where useful
 - [ ] Add retry or buffering behavior for dropped analytics requests
 
@@ -154,18 +154,18 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [ ] Add admin analytics overview
 
 ## Phase 10: Creator Analytics Reporting
-- [ ] Show total streams per track
-- [ ] Show unique listeners per track
+- [x] Show total streams per track
+- [x] Show unique listeners per track
 - [ ] Show completion rate per track
-- [ ] Show top tracks by streams
+- [x] Show top tracks by streams
 - [ ] Show top releases by streams
 - [ ] Show follower growth
-- [ ] Show saves and likes by track
-- [ ] Show recent activity trend lines
+- [x] Show saves and likes by track
+- [x] Show recent activity trend lines
 - [ ] Add date filters:
-  - [ ] 7 days
-  - [ ] 30 days
-  - [ ] 90 days
+  - [x] 7 days
+  - [x] 30 days
+  - [x] 90 days
   - [ ] lifetime
 
 ## Phase 11: Admin Reporting

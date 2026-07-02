@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { useAuth } from "@/hooks/use-auth";
 
+const WINDOW_OPTIONS = [
+  { label: "7D", value: 7 as const },
+  { label: "30D", value: 30 as const },
+  { label: "90D", value: 90 as const },
+];
+
 const StatCard = ({
   label,
   value,
@@ -30,6 +36,7 @@ const StatCard = ({
 export const ArtistAnalyticsOverview = () => {
   const { session } = useAuth();
   const [analytics, setAnalytics] = useState<ArtistAnalyticsSummary | null>(null);
+  const [windowDays, setWindowDays] = useState<7 | 30 | 90>(30);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -47,7 +54,7 @@ export const ArtistAnalyticsOverview = () => {
     }
 
     try {
-      setAnalytics(await engagementApi.getMyArtistAnalytics(session.token));
+      setAnalytics(await engagementApi.getMyArtistAnalytics(session.token, windowDays));
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to load analytics",
@@ -63,7 +70,7 @@ export const ArtistAnalyticsOverview = () => {
 
   useEffect(() => {
     void loadAnalytics();
-  }, [session?.token]);
+  }, [session?.token, windowDays]);
 
   if (!session) {
     return (
@@ -125,7 +132,7 @@ export const ArtistAnalyticsOverview = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="Total streams"
           value={analytics.totalStreams.toLocaleString()}
@@ -142,6 +149,11 @@ export const ArtistAnalyticsOverview = () => {
           icon={<Heart className="h-5 w-5" />}
         />
         <StatCard
+          label="Track saves"
+          value={analytics.totalSaves.toLocaleString()}
+          icon={<Music2 className="h-5 w-5" />}
+        />
+        <StatCard
           label="Followers"
           value={analytics.followerCount.toLocaleString()}
           icon={<BarChart3 className="h-5 w-5" />}
@@ -153,16 +165,39 @@ export const ArtistAnalyticsOverview = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                Last 30 days
+                Last {analytics.selectedWindowDays ?? windowDays} days
               </p>
               <h3 className="mt-2 text-2xl font-semibold text-white">
                 Stream trend
               </h3>
             </div>
             <div className="text-right text-sm text-slate-400">
-              <p>{analytics.streamsLast7Days.toLocaleString()} in 7 days</p>
-              <p>{analytics.streamsLast30Days.toLocaleString()} in 30 days</p>
+              <p>
+                {analytics.selectedWindowStreams.toLocaleString()} streams in window
+              </p>
+              <p>
+                {analytics.selectedWindowUniqueListeners.toLocaleString()} listeners in
+                window
+              </p>
             </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            {WINDOW_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={windowDays === option.value ? "default" : "outline"}
+                className={
+                  windowDays === option.value
+                    ? "bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                    : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }
+                onClick={() => setWindowDays(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
 
           <div className="mt-8 flex items-end gap-2 overflow-x-auto pb-2">
@@ -260,9 +295,10 @@ export const ArtistAnalyticsOverview = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                    Listeners
+                    Saves / listeners
                   </p>
                   <p className="mt-1 text-white">
+                    {track.saves.toLocaleString()} /{" "}
                     {track.uniqueListeners.toLocaleString()}
                   </p>
                 </div>

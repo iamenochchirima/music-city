@@ -128,7 +128,7 @@ export const engagementRepository = {
     return databaseService.countQualifiedStreamsByArtist(artistId);
   },
 
-  async countQualifiedStreamsByArtistSince(artistId: string, days: number) {
+  async countQualifiedStreamsByArtistSince(artistId: string, days?: number | null) {
     return databaseService.countQualifiedStreamsByArtistSince(artistId, days);
   },
 
@@ -136,11 +136,15 @@ export const engagementRepository = {
     return databaseService.countUniqueListenersByArtist(artistId);
   },
 
+  async countUniqueListenersByArtistSince(artistId: string, days?: number | null) {
+    return databaseService.countUniqueListenersByArtistSince(artistId, days);
+  },
+
   async countUniqueListenersByTrack(trackId: string) {
     return databaseService.countUniqueListenersByTrack(trackId);
   },
 
-  async listArtistDailyQualifiedStreams(artistId: string, days: number) {
+  async listArtistDailyQualifiedStreams(artistId: string, days?: number | null) {
     return databaseService.listArtistDailyQualifiedStreams(artistId, days);
   },
 };

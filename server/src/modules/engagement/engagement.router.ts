@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 
 import { optionalSession } from "../../middleware/optional-session.js";
 import { requireSession } from "../../middleware/require-session.js";
@@ -7,6 +8,9 @@ import { HttpError } from "../../utils/http-error.js";
 import { engagementService } from "./engagement.service.js";
 
 const engagementRouter = Router();
+const artistAnalyticsQuerySchema = z.object({
+  windowDays: z.coerce.number().int().positive().optional(),
+});
 
 engagementRouter.get(
   "/artists/:artistId/follow-state",
@@ -215,6 +219,7 @@ engagementRouter.get(
       response.json({
         analytics: await engagementService.getArtistAnalytics(
           request.session!.walletAddress,
+          artistAnalyticsQuerySchema.parse(request.query).windowDays,
         ),
       });
     } catch (error) {

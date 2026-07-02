@@ -96,9 +96,11 @@ export const engagementApi = {
     await httpClient.post(`/engagement/releases/${releaseId}/view`, {}, token);
   },
 
-  async getMyArtistAnalytics(token: string) {
+  async getMyArtistAnalytics(token: string, windowDays?: 7 | 30 | 90) {
     const response = await httpClient.get<{ analytics: ArtistAnalyticsSummary }>(
-      "/engagement/analytics/me/artist",
+      `/engagement/analytics/me/artist${
+        windowDays ? `?windowDays=${windowDays}` : ""
+      }`,
       token,
     );
 

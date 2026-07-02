@@ -7,10 +7,13 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { releasesApi } from "@/features/music/lib/releases-api";
+import { useAuth } from "@/hooks/use-auth";
 
 export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
+  const { session } = useAuth();
   const [release, setRelease] = useState<ReleaseDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,6 +46,26 @@ export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
       cancelled = true;
     };
   }, [releaseId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const recordView = async () => {
+      try {
+        await engagementApi.recordReleaseView(releaseId, session?.token);
+      } catch (error) {
+        if (!cancelled) {
+          console.error(error);
+        }
+      }
+    };
+
+    void recordView();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [releaseId, session?.token]);
 
   if (isLoading) {
     return (
