@@ -66,6 +66,17 @@ usersRouter.put(
 );
 
 usersRouter.get(
+  "/artists/:artistId/releases",
+  asyncHandler(async (request, response) => {
+    response.json({
+      items: await usersService.getPublicArtistReleases(
+        String(request.params.artistId),
+      ),
+    });
+  }),
+);
+
+usersRouter.get(
   "/artists/:artistId/tracks",
   asyncHandler(async (request, response) => {
     response.json({

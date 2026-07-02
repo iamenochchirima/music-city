@@ -28,11 +28,22 @@ export const royaltiesRepository = {
     return databaseService.listRoyaltyLedgerEntriesByTrack<RoyaltyLedgerEntry>(trackId);
   },
 
+  async listLedgerEntries(filters?: {
+    status?: string;
+    recipientWalletAddress?: string;
+  }) {
+    return databaseService.listRoyaltyLedgerEntries<RoyaltyLedgerEntry>(filters);
+  },
+
   async listLedgerEntriesBySource(sourceType: string, sourceId: string) {
     return databaseService.listRoyaltyLedgerEntriesBySource<RoyaltyLedgerEntry>(
       sourceType,
       sourceId,
     );
+  },
+
+  async listLedgerEntriesByIds(entryIds: string[]) {
+    return databaseService.listRoyaltyLedgerEntriesByIds<RoyaltyLedgerEntry>(entryIds);
   },
 
   async upsertLedgerEntry(entry: RoyaltyLedgerEntry) {
@@ -54,6 +65,13 @@ export const royaltiesRepository = {
     return databaseService.listRoyaltyPayoutsByRecipient<RoyaltyPayoutRecord>(
       recipientWalletAddress,
     );
+  },
+
+  async listPayouts(filters?: {
+    status?: string;
+    recipientWalletAddress?: string;
+  }) {
+    return databaseService.listRoyaltyPayouts<RoyaltyPayoutRecord>(filters);
   },
 
   async upsertPayout(payout: RoyaltyPayoutRecord) {

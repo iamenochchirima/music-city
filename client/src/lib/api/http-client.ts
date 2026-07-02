@@ -86,7 +86,7 @@ export const httpClient = {
     return (await response.json()) as T;
   },
 
-  async delete(path: string, token?: string): Promise<void> {
+  async delete<T>(path: string, token?: string): Promise<T> {
     const response = await fetch(`${clientEnv.apiBaseUrl}${path}`, {
       method: "DELETE",
       credentials: "include",
@@ -97,5 +97,11 @@ export const httpClient = {
       const payload = (await response.json().catch(() => null)) as ErrorPayload;
       throw buildApiClientError(payload, response.status);
     }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    return (await response.json()) as T;
   },
 };

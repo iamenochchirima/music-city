@@ -10,6 +10,7 @@ const { paymentsService } = await import("./payments.service.js");
 const { paymentsRepository } = await import("./payments.repository.js");
 const { subscriptionsService } = await import("../subscriptions/subscriptions.service.js");
 const { entitlementsService } = await import("../entitlements/entitlements.service.js");
+const { royaltiesService } = await import("../royalties/royalties.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -110,6 +111,11 @@ test("confirm returns the existing purchase result when the same transaction is 
       "findMineForTrack",
       (async () => entitlement) as typeof entitlementsService.findMineForTrack,
     ),
+    restore(
+      royaltiesService,
+      "ensureTrackPurchaseLedgerEntries",
+      (async () => []) as typeof royaltiesService.ensureTrackPurchaseLedgerEntries,
+    ),
   ];
 
   try {
@@ -183,6 +189,24 @@ test("confirm is idempotent after an intent has already been confirmed", async (
       subscriptionsService,
       "findPlatformByPayment",
       (async () => subscription) as typeof subscriptionsService.findPlatformByPayment,
+    ),
+    restore(
+      subscriptionsService,
+      "getPlatformPlan",
+      (async () => ({
+        enabled: true,
+        name: "Music City Pass",
+        description: "Unlock subscriber-only releases.",
+        price: "15",
+        assetCode: "XLM",
+        assetIssuer: undefined,
+        periodDays: 30,
+      })) as typeof subscriptionsService.getPlatformPlan,
+    ),
+    restore(
+      royaltiesService,
+      "ensurePlatformSubscriptionLedgerEntries",
+      (async () => []) as typeof royaltiesService.ensurePlatformSubscriptionLedgerEntries,
     ),
   ];
 

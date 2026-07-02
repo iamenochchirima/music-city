@@ -68,6 +68,10 @@ export const usersService = {
       return null;
     }
 
+    const { engagementRepository } = await import(
+      "../engagement/engagement.repository.js"
+    );
+
     return artistPublicProfileSchema.parse({
       id: profile.id,
       walletAddress: profile.walletAddress,
@@ -76,6 +80,7 @@ export const usersService = {
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
       verified: profile.verified,
+      followerCount: await engagementRepository.countArtistFollowers(profile.id),
     });
   },
 
@@ -193,15 +198,21 @@ export const usersService = {
 
   async listArtists() {
     const artists = await usersRepository.listArtists();
+    const { engagementRepository } = await import(
+      "../engagement/engagement.repository.js"
+    );
 
-    return artists.map((artist) => ({
-      id: artist.id,
-      walletAddress: artist.walletAddress,
-      name: artist.displayName,
-      genre: "Independent",
-      city: artist.location || "Remote",
-      monthlyListeners: "0",
-      verified: artist.verified,
-    }));
+    return Promise.all(
+      artists.map(async (artist) => ({
+        id: artist.id,
+        walletAddress: artist.walletAddress,
+        name: artist.displayName,
+        genre: "Independent",
+        city: artist.location || "Remote",
+        monthlyListeners: "0",
+        verified: artist.verified,
+        followerCount: await engagementRepository.countArtistFollowers(artist.id),
+      })),
+    );
   },
 };

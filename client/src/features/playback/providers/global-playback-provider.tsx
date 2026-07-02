@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { TrackSummary } from "@music-city/shared";
+import type { PlaybackSession, TrackSummary } from "@music-city/shared";
 import Hls from "hls.js";
 import {
   Music2,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { playbackApi } from "@/features/playback/lib/playback-api";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiClientError } from "@/lib/api/http-client";
@@ -229,12 +230,17 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const hlsRef = useRef<Hls | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [activeTrack, setActiveTrack] = useState<TrackSummary | null>(null);
+  const [playbackSession, setPlaybackSession] = useState<PlaybackSession | null>(
+    null,
+  );
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.85);
   const [playbackQueue, setPlaybackQueueState] = useState<TrackSummary[]>([]);
+  const lastReportedProgressRef = useRef(0);
+  const completionReportedRef = useRef(false);
 
   const setPlaybackQueue = useCallback((tracks: TrackSummary[]) => {
     const nextQueue = tracks.filter((track) => track.playbackReady);
@@ -426,6 +432,57 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     };
   }, [streamUrl]);
 
+  const recordPlaybackEvent = useCallback(
+    async (eventType: "progress" | "completed", positionSeconds: number) => {
+      if (!session?.token || !playbackSession) {
+        return;
+      }
+
+      try {
+        const updatedSession = await engagementApi.recordPlaybackEvent(
+          session.token,
+          playbackSession,
+          {
+            eventType,
+            positionSeconds,
+            durationSeconds: duration > 0 ? duration : undefined,
+          },
+        );
+
+        setPlaybackSession(updatedSession);
+      } catch {
+        // Ignore analytics delivery failures so they never interrupt playback.
+      }
+    },
+    [duration, playbackSession, session?.token],
+  );
+
+  useEffect(() => {
+    if (!playbackSession || !isPlaying) {
+      return;
+    }
+
+    if (currentTime - lastReportedProgressRef.current < 15) {
+      return;
+    }
+
+    lastReportedProgressRef.current = currentTime;
+    void recordPlaybackEvent("progress", currentTime);
+  }, [currentTime, isPlaying, playbackSession, recordPlaybackEvent]);
+
+  useEffect(() => {
+    if (!playbackSession || completionReportedRef.current || !duration) {
+      return;
+    }
+
+    if (currentTime < Math.max(duration - 1, duration * 0.98)) {
+      return;
+    }
+
+    completionReportedRef.current = true;
+    void recordPlaybackEvent("completed", currentTime);
+  }, [currentTime, duration, playbackSession, recordPlaybackEvent]);
+
   const playTrack = useCallback(async (track: TrackSummary) => {
     if (!session?.token) {
       return;
@@ -452,7 +509,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
     try {
       const playbackSession = await playbackApi.createSession(session.token, track.id);
+      lastReportedProgressRef.current = 0;
+      completionReportedRef.current = false;
       setActiveTrack(track);
+      setPlaybackSession(playbackSession);
       setStreamUrl(playbackSession.streamUrl);
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) {

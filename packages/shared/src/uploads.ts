@@ -1,17 +1,51 @@
 import { z } from "zod";
 
-export const createUploadSessionSchema = z.object({
-  trackId: z.string().min(1),
-  purpose: z.enum(["audio", "cover"]).default("audio"),
-  fileName: z.string().min(1).max(180),
-  contentType: z.string().min(1).max(120),
-  sizeBytes: z.number().int().positive(),
-});
+export const createUploadSessionSchema = z
+  .object({
+    trackId: z.string().min(1).optional(),
+    releaseId: z.string().min(1).optional(),
+    purpose: z.enum(["audio", "cover"]).default("audio"),
+    fileName: z.string().min(1).max(180),
+    contentType: z.string().min(1).max(120),
+    sizeBytes: z.number().int().positive(),
+  })
+  .superRefine((value, context) => {
+    if (!value.trackId && !value.releaseId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Either trackId or releaseId is required",
+      });
+    }
+
+    if (value.trackId && value.releaseId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide either trackId or releaseId, not both",
+      });
+    }
+
+    if (value.purpose === "audio" && !value.trackId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["trackId"],
+        message: "Audio uploads require a trackId",
+      });
+    }
+
+    if (value.purpose === "cover" && !value.contentType.startsWith("image/")) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contentType"],
+        message: "Cover uploads must use an image content type",
+      });
+    }
+  });
 export type CreateUploadSessionInput = z.infer<typeof createUploadSessionSchema>;
 
 export interface UploadSession {
   id: string;
-  trackId: string;
+  trackId?: string;
+  releaseId?: string;
   purpose: "audio" | "cover";
   fileName: string;
   contentType: string;

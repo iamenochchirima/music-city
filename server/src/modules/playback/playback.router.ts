@@ -1,11 +1,16 @@
-import { createPlaybackSessionSchema } from "@music-city/shared";
+import {
+  createPlaybackSessionSchema,
+  recordPlaybackEventSchema,
+} from "@music-city/shared";
 import { Router } from "express";
 
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { entitlementsService } from "../entitlements/entitlements.service.js";
+import { engagementService } from "../engagement/engagement.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
+import { usersService } from "../users/users.service.js";
 import { playbackService } from "./playback.service.js";
 
 const playbackRouter = Router();
@@ -35,11 +40,43 @@ playbackRouter.post(
       throw new HttpError(403, "You do not have access to this track");
     }
 
-    const playbackSession = await playbackService.createSession(input.trackId);
+    const profile = await usersService.getProfile(request.session!.walletAddress);
+
+    if (!profile) {
+      throw new HttpError(401, "Profile not found");
+    }
+
+    const playbackSession = await playbackService.createSession(
+      input.trackId,
+      profile.id,
+    );
 
     response.status(201).json({
       playbackSession,
     });
+  }),
+);
+
+playbackRouter.post(
+  "/sessions/:sessionId/events",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    const session = await playbackService.getSession(
+      String(request.params.sessionId),
+      String(request.body?.token ?? ""),
+    );
+    const profile = await usersService.getProfile(request.session!.walletAddress);
+
+    if (!profile || session.listenerUserId !== profile.id) {
+      throw new HttpError(403, "Playback session does not belong to this user");
+    }
+
+    const playbackSession = await engagementService.recordPlaybackEvent(
+      session,
+      recordPlaybackEventSchema.parse(request.body),
+    );
+
+    response.json({ playbackSession });
   }),
 );
 

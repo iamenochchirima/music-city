@@ -57,5 +57,6 @@ export const artistPublicProfileSchema = z.object({
   profileImageUrl: z.string().optional(),
   headerImageUrl: z.string().optional(),
   verified: z.boolean().default(false),
+  followerCount: z.number().int().min(0).default(0),
 });
 export type ArtistPublicProfile = z.infer<typeof artistPublicProfileSchema>;

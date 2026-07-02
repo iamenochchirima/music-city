@@ -71,11 +71,39 @@ const envSchema = z
     STELLAR_ACCESS_ASSET_CODE: z.string().optional(),
     STELLAR_ACCESS_ASSET_ISSUER: z.string().optional(),
     STELLAR_TREASURY_ADDRESS: z.string().optional(),
+    STELLAR_TREASURY_SECRET: z.string().optional(),
     STELLAR_SETTLEMENT_ASSET_CODE: z.string().default("XLM"),
     STELLAR_SETTLEMENT_ASSET_ISSUER: z.string().optional(),
     ROYALTY_REGISTRY_CHAIN: z.enum(["stellar", "evm", "solana"]).default("stellar"),
     ROYALTY_REGISTRY_NETWORK: z.string().default("stellar:testnet"),
     ROYALTY_REGISTRY_CONTRACT_ID: z.string().optional(),
+    ROYALTY_PAYOUT_APPROVAL_MODE: z.enum(["admin", "automatic"]).default("admin"),
+    ROYALTY_PAYOUT_CADENCE: z
+      .enum(["manual", "daily", "weekly", "monthly"])
+      .default("manual"),
+    ROYALTY_PAYOUT_MINIMUM_AMOUNT: z.string().default("10"),
+    ROYALTY_PAYOUT_RETRY_FAILED: z
+      .string()
+      .optional()
+      .transform((value) => value !== "false"),
+    ROYALTY_PAYOUT_SHORTFALL_BEHAVIOR: z
+      .enum(["block_all", "allow_partial_batches"])
+      .default("block_all"),
+    ROYALTY_PAYOUT_AUTOMATIC_APPROVAL: z
+      .string()
+      .optional()
+      .transform((value) => value === "true"),
+    ROYALTY_PAYOUT_REVERSAL_POLICY: z
+      .string()
+      .default("Failed or cancelled payouts return linked ledger entries to approved for retry."),
+    ROYALTY_CONFIRM_BEFORE_MARK_PAID: z
+      .string()
+      .optional()
+      .transform((value) => value !== "false"),
+    ROYALTY_FEE_TRACK_PURCHASE_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
+    ROYALTY_FEE_PLATFORM_SUBSCRIPTION_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
+    ROYALTY_FEE_AD_REVENUE_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
+    ROYALTY_FEE_MANUAL_ADJUSTMENT_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     TRACK_PURCHASE_DEFAULT_PRICE: z.string().default("5"),
     PLATFORM_SUBSCRIPTION_ENABLED: z
       .string()

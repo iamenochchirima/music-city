@@ -15,6 +15,25 @@ type ReleaseTrackRow = {
   is_focus_track: boolean;
 };
 
+type PlaylistTrackRow = {
+  playlist_id: string;
+  track_id: string;
+  position: number;
+};
+
+type CountRow = {
+  count: string;
+};
+
+type DailyStreamsRow = {
+  date: string;
+  streams: string;
+};
+
+type TimestampRow = {
+  occurred_at: Date | string;
+};
+
 type AppliedMigrationRow = {
   name: string;
 };
@@ -89,14 +108,37 @@ const baseSchemaStatements = [
     CONSTRAINT release_tracks_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
   )`,
+  `CREATE TABLE IF NOT EXISTS playlists (
+    id TEXT PRIMARY KEY,
+    owner_user_id TEXT NOT NULL,
+    visibility TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    CONSTRAINT playlists_owner_user_id_fk
+      FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT playlists_visibility_check
+      CHECK (visibility IN ('private', 'public'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS playlist_tracks (
+    playlist_id TEXT NOT NULL,
+    track_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    PRIMARY KEY (playlist_id, track_id),
+    CONSTRAINT playlist_tracks_playlist_id_fk
+      FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+    CONSTRAINT playlist_tracks_track_id_fk
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+  )`,
   `CREATE TABLE IF NOT EXISTS upload_sessions (
     id TEXT PRIMARY KEY,
-    track_id TEXT NOT NULL,
+    track_id TEXT,
+    release_id TEXT,
     provider TEXT NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
     payload JSONB NOT NULL,
     CONSTRAINT upload_sessions_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    CONSTRAINT upload_sessions_release_id_fk
+      FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE,
     CONSTRAINT upload_sessions_provider_check
       CHECK (provider IN ('local', 's3', 'mux'))
   )`,
@@ -218,6 +260,9 @@ const baseSchemaStatements = [
   "CREATE INDEX IF NOT EXISTS releases_artist_id_idx ON releases (artist_id)",
   "CREATE INDEX IF NOT EXISTS releases_status_idx ON releases (status)",
   "CREATE INDEX IF NOT EXISTS release_tracks_release_id_idx ON release_tracks (release_id)",
+  "CREATE INDEX IF NOT EXISTS playlists_owner_user_id_idx ON playlists (owner_user_id)",
+  "CREATE INDEX IF NOT EXISTS playlists_visibility_idx ON playlists (visibility)",
+  "CREATE INDEX IF NOT EXISTS playlist_tracks_playlist_id_idx ON playlist_tracks (playlist_id)",
   "CREATE INDEX IF NOT EXISTS upload_sessions_track_id_idx ON upload_sessions (track_id)",
   "CREATE INDEX IF NOT EXISTS playback_sessions_track_id_idx ON playback_sessions (track_id)",
   "CREATE INDEX IF NOT EXISTS entitlements_wallet_address_idx ON entitlements (wallet_address)",
@@ -242,6 +287,105 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  {
+    name: "2026-07-02-engagement-analytics-foundation",
+    statements: [
+      `CREATE TABLE IF NOT EXISTS analytics_events (
+        id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        actor_user_id TEXT,
+        artist_id TEXT,
+        track_id TEXT,
+        release_id TEXT,
+        playlist_id TEXT,
+        session_id TEXT,
+        occurred_at TIMESTAMPTZ NOT NULL,
+        payload JSONB NOT NULL,
+        CONSTRAINT analytics_events_actor_user_id_fk
+          FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT analytics_events_artist_id_fk
+          FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT analytics_events_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL,
+        CONSTRAINT analytics_events_release_id_fk
+          FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE SET NULL,
+        CONSTRAINT analytics_events_playlist_id_fk
+          FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE SET NULL,
+        CONSTRAINT analytics_events_session_id_fk
+          FOREIGN KEY (session_id) REFERENCES playback_sessions(id) ON DELETE SET NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS artist_follows (
+        user_id TEXT NOT NULL,
+        artist_id TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        PRIMARY KEY (user_id, artist_id),
+        CONSTRAINT artist_follows_user_id_fk
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT artist_follows_artist_id_fk
+          FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE
+      )`,
+      `CREATE TABLE IF NOT EXISTS track_likes (
+        user_id TEXT NOT NULL,
+        track_id TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        PRIMARY KEY (user_id, track_id),
+        CONSTRAINT track_likes_user_id_fk
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT track_likes_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+      )`,
+      `CREATE TABLE IF NOT EXISTS track_saves (
+        user_id TEXT NOT NULL,
+        track_id TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        PRIMARY KEY (user_id, track_id),
+        CONSTRAINT track_saves_user_id_fk
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT track_saves_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+      )`,
+      `CREATE TABLE IF NOT EXISTS playback_events (
+        id TEXT PRIMARY KEY,
+        playback_session_id TEXT NOT NULL,
+        track_id TEXT NOT NULL,
+        artist_id TEXT NOT NULL,
+        listener_user_id TEXT,
+        event_type TEXT NOT NULL,
+        position_seconds DOUBLE PRECISION,
+        duration_seconds DOUBLE PRECISION,
+        occurred_at TIMESTAMPTZ NOT NULL,
+        payload JSONB NOT NULL,
+        CONSTRAINT playback_events_playback_session_id_fk
+          FOREIGN KEY (playback_session_id) REFERENCES playback_sessions(id) ON DELETE CASCADE,
+        CONSTRAINT playback_events_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+        CONSTRAINT playback_events_artist_id_fk
+          FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT playback_events_listener_user_id_fk
+          FOREIGN KEY (listener_user_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT playback_events_event_type_check
+          CHECK (event_type IN ('started', 'progress', 'completed', 'qualified_stream'))
+      )`,
+      "CREATE INDEX IF NOT EXISTS analytics_events_event_type_idx ON analytics_events (event_type)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_occurred_at_idx ON analytics_events (occurred_at)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_track_id_idx ON analytics_events (track_id)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_artist_id_idx ON analytics_events (artist_id)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_release_id_idx ON analytics_events (release_id)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_actor_user_id_idx ON analytics_events (actor_user_id)",
+      "CREATE INDEX IF NOT EXISTS analytics_events_session_id_idx ON analytics_events (session_id)",
+      "CREATE INDEX IF NOT EXISTS artist_follows_artist_id_idx ON artist_follows (artist_id)",
+      "CREATE INDEX IF NOT EXISTS artist_follows_user_id_idx ON artist_follows (user_id)",
+      "CREATE INDEX IF NOT EXISTS track_likes_track_id_idx ON track_likes (track_id)",
+      "CREATE INDEX IF NOT EXISTS track_likes_user_id_idx ON track_likes (user_id)",
+      "CREATE INDEX IF NOT EXISTS track_saves_track_id_idx ON track_saves (track_id)",
+      "CREATE INDEX IF NOT EXISTS track_saves_user_id_idx ON track_saves (user_id)",
+      "CREATE INDEX IF NOT EXISTS playback_events_track_id_idx ON playback_events (track_id)",
+      "CREATE INDEX IF NOT EXISTS playback_events_artist_id_idx ON playback_events (artist_id)",
+      "CREATE INDEX IF NOT EXISTS playback_events_listener_user_id_idx ON playback_events (listener_user_id)",
+      "CREATE INDEX IF NOT EXISTS playback_events_event_type_idx ON playback_events (event_type)",
+      "CREATE INDEX IF NOT EXISTS playback_events_occurred_at_idx ON playback_events (occurred_at)",
+    ],
+  },
   {
     name: "2026-07-02-release-foundation",
     statements: [
@@ -274,6 +418,34 @@ const schemaMigrations: SchemaMigration[] = [
       "CREATE INDEX IF NOT EXISTS releases_artist_id_idx ON releases (artist_id)",
       "CREATE INDEX IF NOT EXISTS releases_status_idx ON releases (status)",
       "CREATE INDEX IF NOT EXISTS release_tracks_release_id_idx ON release_tracks (release_id)",
+    ],
+  },
+  {
+    name: "2026-07-02-playlist-foundation",
+    statements: [
+      `CREATE TABLE IF NOT EXISTS playlists (
+        id TEXT PRIMARY KEY,
+        owner_user_id TEXT NOT NULL,
+        visibility TEXT NOT NULL,
+        payload JSONB NOT NULL,
+        CONSTRAINT playlists_owner_user_id_fk
+          FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT playlists_visibility_check
+          CHECK (visibility IN ('private', 'public'))
+      )`,
+      `CREATE TABLE IF NOT EXISTS playlist_tracks (
+        playlist_id TEXT NOT NULL,
+        track_id TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        PRIMARY KEY (playlist_id, track_id),
+        CONSTRAINT playlist_tracks_playlist_id_fk
+          FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+        CONSTRAINT playlist_tracks_track_id_fk
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+      )`,
+      "CREATE INDEX IF NOT EXISTS playlists_owner_user_id_idx ON playlists (owner_user_id)",
+      "CREATE INDEX IF NOT EXISTS playlists_visibility_idx ON playlists (visibility)",
+      "CREATE INDEX IF NOT EXISTS playlist_tracks_playlist_id_idx ON playlist_tracks (playlist_id)",
     ],
   },
   {
@@ -360,6 +532,34 @@ const schemaMigrations: SchemaMigration[] = [
       `ALTER TABLE royalty_payouts
         ADD CONSTRAINT royalty_payouts_status_check
         CHECK (status IN ('pending', 'submitted', 'confirmed', 'failed', 'cancelled'))`,
+    ],
+  },
+  {
+    name: "2026-07-02-engagement-qualified-stream-idempotency",
+    statements: [
+      `CREATE UNIQUE INDEX IF NOT EXISTS playback_events_qualified_stream_session_uidx
+       ON playback_events (playback_session_id)
+       WHERE event_type = 'qualified_stream'`,
+    ],
+  },
+  {
+    name: "2026-07-02-upload-sessions-release-support",
+    statements: [
+      "ALTER TABLE upload_sessions ALTER COLUMN track_id DROP NOT NULL",
+      "ALTER TABLE upload_sessions ADD COLUMN IF NOT EXISTS release_id TEXT",
+      `DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'upload_sessions_release_id_fk'
+        ) THEN
+          ALTER TABLE upload_sessions
+            ADD CONSTRAINT upload_sessions_release_id_fk
+            FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE;
+        END IF;
+      END $$`,
+      "CREATE INDEX IF NOT EXISTS upload_sessions_release_id_idx ON upload_sessions (release_id)",
     ],
   },
 ];
@@ -509,6 +709,65 @@ export const databaseService = {
     return result.rows;
   },
 
+  async upsertPlaylist(
+    id: string,
+    ownerUserId: string,
+    visibility: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO playlists (id, owner_user_id, visibility, payload)
+       VALUES ($1, $2, $3, $4::jsonb)
+       ON CONFLICT (id) DO UPDATE SET
+         owner_user_id = EXCLUDED.owner_user_id,
+         visibility = EXCLUDED.visibility,
+         payload = EXCLUDED.payload`,
+      [id, ownerUserId, visibility, JSON.stringify(payload)],
+    );
+  },
+
+  async listPlaylistsByOwner<T>(ownerUserId: string) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM playlists WHERE owner_user_id = $1 ORDER BY id DESC`,
+      [ownerUserId],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async deletePlaylist(id: string) {
+    await pool.query(`DELETE FROM playlists WHERE id = $1`, [id]);
+  },
+
+  async assignTrackToPlaylist(playlistId: string, trackId: string, position: number) {
+    await pool.query(
+      `INSERT INTO playlist_tracks (playlist_id, track_id, position)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (playlist_id, track_id) DO UPDATE SET
+         position = EXCLUDED.position`,
+      [playlistId, trackId, position],
+    );
+  },
+
+  async removeTrackFromPlaylist(playlistId: string, trackId: string) {
+    await pool.query(
+      `DELETE FROM playlist_tracks WHERE playlist_id = $1 AND track_id = $2`,
+      [playlistId, trackId],
+    );
+  },
+
+  async listPlaylistTracks(playlistId: string) {
+    const result = await pool.query<PlaylistTrackRow>(
+      `SELECT playlist_id, track_id, position
+       FROM playlist_tracks
+       WHERE playlist_id = $1
+       ORDER BY position ASC, track_id ASC`,
+      [playlistId],
+    );
+
+    return result.rows;
+  },
+
   async upsertUser(
     id: string,
     walletAddress: string,
@@ -589,20 +848,22 @@ export const databaseService = {
 
   async upsertUploadSession(
     id: string,
-    trackId: string,
+    trackId: string | null,
+    releaseId: string | null,
     provider: string,
     expiresAt: string,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO upload_sessions (id, track_id, provider, expires_at, payload)
-       VALUES ($1, $2, $3, $4, $5::jsonb)
+      `INSERT INTO upload_sessions (id, track_id, release_id, provider, expires_at, payload)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          track_id = EXCLUDED.track_id,
+         release_id = EXCLUDED.release_id,
          provider = EXCLUDED.provider,
          expires_at = EXCLUDED.expires_at,
          payload = EXCLUDED.payload`,
-      [id, trackId, provider, expiresAt, JSON.stringify(payload)],
+      [id, trackId, releaseId, provider, expiresAt, JSON.stringify(payload)],
     );
   },
 
@@ -623,6 +884,338 @@ export const databaseService = {
          payload = EXCLUDED.payload`,
       [id, trackId, provider, expiresAt, JSON.stringify(payload)],
     );
+  },
+
+  async upsertArtistFollow(userId: string, artistId: string, createdAt: string) {
+    await pool.query(
+      `INSERT INTO artist_follows (user_id, artist_id, created_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, artist_id) DO UPDATE SET
+         created_at = EXCLUDED.created_at`,
+      [userId, artistId, createdAt],
+    );
+  },
+
+  async deleteArtistFollow(userId: string, artistId: string) {
+    await pool.query(
+      `DELETE FROM artist_follows WHERE user_id = $1 AND artist_id = $2`,
+      [userId, artistId],
+    );
+  },
+
+  async hasArtistFollow(userId: string, artistId: string) {
+    const result = await pool.query(
+      `SELECT 1 FROM artist_follows WHERE user_id = $1 AND artist_id = $2 LIMIT 1`,
+      [userId, artistId],
+    );
+
+    return (result.rowCount ?? 0) > 0;
+  },
+
+  async countArtistFollowers(artistId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count FROM artist_follows WHERE artist_id = $1`,
+      [artistId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async upsertTrackLike(userId: string, trackId: string, createdAt: string) {
+    await pool.query(
+      `INSERT INTO track_likes (user_id, track_id, created_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, track_id) DO UPDATE SET
+         created_at = EXCLUDED.created_at`,
+      [userId, trackId, createdAt],
+    );
+  },
+
+  async deleteTrackLike(userId: string, trackId: string) {
+    await pool.query(
+      `DELETE FROM track_likes WHERE user_id = $1 AND track_id = $2`,
+      [userId, trackId],
+    );
+  },
+
+  async hasTrackLike(userId: string, trackId: string) {
+    const result = await pool.query(
+      `SELECT 1 FROM track_likes WHERE user_id = $1 AND track_id = $2 LIMIT 1`,
+      [userId, trackId],
+    );
+
+    return (result.rowCount ?? 0) > 0;
+  },
+
+  async countTrackLikes(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count FROM track_likes WHERE track_id = $1`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async upsertTrackSave(userId: string, trackId: string, createdAt: string) {
+    await pool.query(
+      `INSERT INTO track_saves (user_id, track_id, created_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, track_id) DO UPDATE SET
+         created_at = EXCLUDED.created_at`,
+      [userId, trackId, createdAt],
+    );
+  },
+
+  async deleteTrackSave(userId: string, trackId: string) {
+    await pool.query(
+      `DELETE FROM track_saves WHERE user_id = $1 AND track_id = $2`,
+      [userId, trackId],
+    );
+  },
+
+  async hasTrackSave(userId: string, trackId: string) {
+    const result = await pool.query(
+      `SELECT 1 FROM track_saves WHERE user_id = $1 AND track_id = $2 LIMIT 1`,
+      [userId, trackId],
+    );
+
+    return (result.rowCount ?? 0) > 0;
+  },
+
+  async countTrackSaves(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count FROM track_saves WHERE track_id = $1`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async insertAnalyticsEvent(
+    id: string,
+    eventType: string,
+    actorUserId: string | null,
+    artistId: string | null,
+    trackId: string | null,
+    releaseId: string | null,
+    playlistId: string | null,
+    sessionId: string | null,
+    occurredAt: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO analytics_events (
+         id,
+         event_type,
+         actor_user_id,
+         artist_id,
+         track_id,
+         release_id,
+         playlist_id,
+         session_id,
+         occurred_at,
+         payload
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
+      [
+        id,
+        eventType,
+        actorUserId,
+        artistId,
+        trackId,
+        releaseId,
+        playlistId,
+        sessionId,
+        occurredAt,
+        JSON.stringify(payload),
+      ],
+    );
+  },
+
+  async insertPlaybackEvent(
+    id: string,
+    playbackSessionId: string,
+    trackId: string,
+    artistId: string,
+    listenerUserId: string | null,
+    eventType: string,
+    positionSeconds: number | null,
+    durationSeconds: number | null,
+    occurredAt: string,
+    payload: unknown,
+  ) {
+    await pool.query(
+      `INSERT INTO playback_events (
+         id,
+         playback_session_id,
+         track_id,
+         artist_id,
+         listener_user_id,
+         event_type,
+         position_seconds,
+         duration_seconds,
+         occurred_at,
+         payload
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)`,
+      [
+        id,
+        playbackSessionId,
+        trackId,
+        artistId,
+        listenerUserId,
+        eventType,
+        positionSeconds,
+        durationSeconds,
+        occurredAt,
+        JSON.stringify(payload),
+      ],
+    );
+  },
+
+  async insertQualifiedPlaybackEvent(
+    id: string,
+    playbackSessionId: string,
+    trackId: string,
+    artistId: string,
+    listenerUserId: string | null,
+    positionSeconds: number | null,
+    durationSeconds: number | null,
+    occurredAt: string,
+    payload: unknown,
+  ) {
+    const result = await pool.query(
+      `INSERT INTO playback_events (
+         id,
+         playback_session_id,
+         track_id,
+         artist_id,
+         listener_user_id,
+         event_type,
+         position_seconds,
+         duration_seconds,
+         occurred_at,
+         payload
+       )
+       VALUES ($1, $2, $3, $4, $5, 'qualified_stream', $6, $7, $8, $9::jsonb)
+       ON CONFLICT DO NOTHING
+       RETURNING occurred_at`,
+      [
+        id,
+        playbackSessionId,
+        trackId,
+        artistId,
+        listenerUserId,
+        positionSeconds,
+        durationSeconds,
+        occurredAt,
+        JSON.stringify(payload),
+      ],
+    );
+
+    return (result.rowCount ?? 0) > 0;
+  },
+
+  async findQualifiedStreamCountedAt(playbackSessionId: string) {
+    const result = await pool.query<TimestampRow>(
+      `SELECT occurred_at
+       FROM playback_events
+       WHERE playback_session_id = $1
+         AND event_type = 'qualified_stream'
+       ORDER BY occurred_at DESC
+       LIMIT 1`,
+      [playbackSessionId],
+    );
+
+    const occurredAt = result.rows[0]?.occurred_at;
+
+    if (!occurredAt) {
+      return null;
+    }
+
+    return occurredAt instanceof Date
+      ? occurredAt.toISOString()
+      : new Date(occurredAt).toISOString();
+  },
+
+  async countQualifiedStreamsByTrack(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE track_id = $1 AND event_type = 'qualified_stream'`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countQualifiedStreamsByArtist(artistId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE artist_id = $1 AND event_type = 'qualified_stream'`,
+      [artistId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countQualifiedStreamsByArtistSince(artistId: string, days: number) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE artist_id = $1
+         AND event_type = 'qualified_stream'
+         AND occurred_at >= NOW() - ($2::text || ' days')::interval`,
+      [artistId, String(days)],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countUniqueListenersByArtist(artistId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(DISTINCT listener_user_id)::text AS count
+       FROM playback_events
+       WHERE artist_id = $1
+         AND event_type = 'qualified_stream'
+         AND listener_user_id IS NOT NULL`,
+      [artistId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countUniqueListenersByTrack(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(DISTINCT listener_user_id)::text AS count
+       FROM playback_events
+       WHERE track_id = $1
+         AND event_type = 'qualified_stream'
+         AND listener_user_id IS NOT NULL`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async listArtistDailyQualifiedStreams(artistId: string, days: number) {
+    const result = await pool.query<DailyStreamsRow>(
+      `SELECT TO_CHAR(DATE_TRUNC('day', occurred_at), 'YYYY-MM-DD') AS date,
+              COUNT(*)::text AS streams
+       FROM playback_events
+       WHERE artist_id = $1
+         AND event_type = 'qualified_stream'
+         AND occurred_at >= NOW() - ($2::text || ' days')::interval
+       GROUP BY DATE_TRUNC('day', occurred_at)
+       ORDER BY DATE_TRUNC('day', occurred_at) ASC`,
+      [artistId, String(days)],
+    );
+
+    return result.rows.map((row) => ({
+      date: row.date,
+      streams: Number(row.streams),
+    }));
   },
 
   async upsertEntitlement(
@@ -878,6 +1471,42 @@ export const databaseService = {
     return mapPayloadRows<T>(result.rows);
   },
 
+  async listRoyaltyLedgerEntries<T>(filters?: {
+    status?: string;
+    recipientWalletAddress?: string;
+  }) {
+    const where: string[] = [];
+    const values: string[] = [];
+
+    if (filters?.status) {
+      values.push(filters.status);
+      where.push(`status = $${values.length}`);
+    }
+
+    if (filters?.recipientWalletAddress) {
+      values.push(filters.recipientWalletAddress);
+      where.push(`recipient_wallet_address = $${values.length}`);
+    }
+
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_ledger${
+        where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""
+      } ORDER BY id DESC`,
+      values,
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async listRoyaltyLedgerEntriesByIds<T>(entryIds: string[]) {
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_ledger WHERE id = ANY($1::text[]) ORDER BY id DESC`,
+      [entryIds],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
   async upsertRoyaltyPayout(
     id: string,
     recipientWalletAddress: string,
@@ -901,6 +1530,33 @@ export const databaseService = {
     const result = await pool.query<PersistedRow>(
       `SELECT id, payload FROM royalty_payouts WHERE recipient_wallet_address = $1 ORDER BY id DESC`,
       [recipientWalletAddress],
+    );
+
+    return mapPayloadRows<T>(result.rows);
+  },
+
+  async listRoyaltyPayouts<T>(filters?: {
+    status?: string;
+    recipientWalletAddress?: string;
+  }) {
+    const where: string[] = [];
+    const values: string[] = [];
+
+    if (filters?.status) {
+      values.push(filters.status);
+      where.push(`status = $${values.length}`);
+    }
+
+    if (filters?.recipientWalletAddress) {
+      values.push(filters.recipientWalletAddress);
+      where.push(`recipient_wallet_address = $${values.length}`);
+    }
+
+    const result = await pool.query<PersistedRow>(
+      `SELECT id, payload FROM royalty_payouts${
+        where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""
+      } ORDER BY id DESC`,
+      values,
     );
 
     return mapPayloadRows<T>(result.rows);

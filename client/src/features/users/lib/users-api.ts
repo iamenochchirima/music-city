@@ -2,6 +2,7 @@ import type {
   ArtistSummary,
   ArtistPublicProfile,
   CreateUserMediaUploadInput,
+  ReleaseSummary,
   TrackSummary,
   UpsertUserProfileInput,
   UserMediaUploadTarget,
@@ -79,6 +80,14 @@ export const usersApi = {
   async getArtistTracks(artistId: string) {
     const response = await httpClient.get<{ items: TrackSummary[] }>(
       `/users/artists/${artistId}/tracks`,
+    );
+
+    return response.items;
+  },
+
+  async getArtistReleases(artistId: string) {
+    const response = await httpClient.get<{ items: ReleaseSummary[] }>(
+      `/users/artists/${artistId}/releases`,
     );
 
     return response.items;

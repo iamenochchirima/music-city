@@ -2,13 +2,23 @@ import LandingPage from "@/app/page";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHero } from "@/components/common/page-hero";
 import { AccountOverview } from "@/features/account/components/account-overview";
+import { AccountPlaylistsOverview } from "@/features/account/components/account-playlists-overview";
+import { PlaylistManageOverview } from "@/features/account/components/playlist-manage-overview";
 import { ArtistsOverview } from "@/features/artists/components/artists-overview";
+import { ArtistDetailOverview } from "@/features/artists/components/artist-detail-overview";
 import { AuthPanel } from "@/features/auth/components/auth-panel";
 import { BecomeArtistOverview } from "@/features/become-artist/components/become-artist-overview";
 import { DashboardOverview } from "@/features/dashboard/components/dashboard-overview";
+import { ArtistAnalyticsOverview } from "@/features/dashboard/components/artist-analytics-overview";
+import { DashboardReleasesOverview } from "@/features/dashboard/components/dashboard-releases-overview";
+import { ReleaseManageOverview } from "@/features/dashboard/components/release-manage-overview";
 import { TrackManageOverview } from "@/features/dashboard/components/track-manage-overview";
 import { DiscoverOverview } from "@/features/discover/components/discover-overview";
 import { MarketplaceOverview } from "@/features/marketplace/components/marketplace-overview";
+import { PlaylistDetailOverview } from "@/features/music/components/playlist-detail-overview";
+import { PlaylistsOverview } from "@/features/music/components/playlists-overview";
+import { ReleaseDetailOverview } from "@/features/music/components/release-detail-overview";
+import { ReleasesOverview } from "@/features/music/components/releases-overview";
 import { TrackDetailOverview } from "@/features/music/components/track-detail-overview";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { tracksApi } from "@/features/music/lib/tracks-api";
@@ -110,6 +120,68 @@ const DashboardTrackPage = () => {
   );
 };
 
+const DashboardReleasesPage = () => (
+  <PageSection
+    eyebrow="Dashboard"
+    title="Your releases"
+    description="Create, organize, and publish singles, EPs, and albums."
+  >
+    <DashboardReleasesOverview />
+  </PageSection>
+);
+
+const DashboardReleasePage = () => {
+  const { releaseId = "" } = useParams();
+
+  return (
+    <PageSection
+      eyebrow="Release"
+      title="Manage release"
+      description="Control metadata, track order, and publish state for this release."
+    >
+      <ReleaseManageOverview releaseId={releaseId} />
+    </PageSection>
+  );
+};
+
+const DashboardAnalyticsPage = () => (
+  <PageSection
+    eyebrow="Analytics"
+    title="Artist analytics"
+    description="Track your streams, followers, listeners, and top performing songs."
+  >
+    <ArtistAnalyticsOverview />
+  </PageSection>
+);
+
+const ReleasePage = () => {
+  const { releaseId = "" } = useParams();
+
+  return (
+    <PageSection
+      eyebrow="Release"
+      title="Release details"
+      description="Explore the full tracklist and play music from this release."
+    >
+      <ReleaseDetailOverview releaseId={releaseId} />
+    </PageSection>
+  );
+};
+
+const ArtistPage = () => {
+  const { artistId = "" } = useParams();
+
+  return (
+    <PageSection
+      eyebrow="Artist"
+      title="Artist profile"
+      description="Browse releases, singles, and tracks from this artist."
+    >
+      <ArtistDetailOverview artistId={artistId} />
+    </PageSection>
+  );
+};
+
 const SubscribePage = () => {
   const [searchParams] = useSearchParams();
   const trackId = searchParams.get("trackId") ?? undefined;
@@ -121,6 +193,44 @@ const SubscribePage = () => {
       description="Unlock subscriber-only tracks with one Music City Pass."
     >
       <PlatformSubscriptionOverview trackId={trackId} />
+    </PageSection>
+  );
+};
+
+const PublicPlaylistPage = () => {
+  const { playlistId = "" } = useParams();
+
+  return (
+    <PageSection
+      eyebrow="Playlists"
+      title="Playlist details"
+      description="Listen through a saved sequence of tracks."
+    >
+      <PlaylistDetailOverview playlistId={playlistId} />
+    </PageSection>
+  );
+};
+
+const AccountPlaylistsPage = () => (
+  <PageSection
+    eyebrow="Account"
+    title="Your playlists"
+    description="Create and manage your personal listening collections."
+  >
+    <AccountPlaylistsOverview />
+  </PageSection>
+);
+
+const AccountPlaylistManagePage = () => {
+  const { playlistId = "" } = useParams();
+
+  return (
+    <PageSection
+      eyebrow="Account"
+      title="Manage playlist"
+      description="Edit metadata and organize the tracks inside this playlist."
+    >
+      <PlaylistManageOverview playlistId={playlistId} />
     </PageSection>
   );
 };
@@ -140,6 +250,11 @@ export const AppRoutes = () => (
         </PageSection>
       }
     />
+    <Route path="/account/playlists" element={<AccountPlaylistsPage />} />
+    <Route
+      path="/account/playlists/:playlistId"
+      element={<AccountPlaylistManagePage />}
+    />
     <Route
       path="/artists"
       element={
@@ -152,6 +267,7 @@ export const AppRoutes = () => (
         </PageSection>
       }
     />
+    <Route path="/artists/:artistId" element={<ArtistPage />} />
     <Route path="/subscribe" element={<SubscribePage />} />
     <Route
       path="/auth"
@@ -194,6 +310,12 @@ export const AppRoutes = () => (
         </PageSection>
       }
     />
+    <Route path="/dashboard/analytics" element={<DashboardAnalyticsPage />} />
+    <Route path="/dashboard/releases" element={<DashboardReleasesPage />} />
+    <Route
+      path="/dashboard/releases/:releaseId"
+      element={<DashboardReleasePage />}
+    />
     <Route path="/dashboard/tracks/:trackId" element={<DashboardTrackPage />} />
     <Route
       path="/discover"
@@ -207,6 +329,32 @@ export const AppRoutes = () => (
         </PageSection>
       }
     />
+    <Route
+      path="/releases"
+      element={
+        <PageSection
+          eyebrow="Releases"
+          title="Explore releases"
+          description="Browse albums, EPs, and singles across Music City."
+        >
+          <ReleasesOverview />
+        </PageSection>
+      }
+    />
+    <Route path="/releases/:releaseId" element={<ReleasePage />} />
+    <Route
+      path="/playlists"
+      element={
+        <PageSection
+          eyebrow="Playlists"
+          title="Explore playlists"
+          description="Browse listening paths built by the Music City community."
+        >
+          <PlaylistsOverview />
+        </PageSection>
+      }
+    />
+    <Route path="/playlists/:playlistId" element={<PublicPlaylistPage />} />
     <Route
       path="/marketplace"
       element={

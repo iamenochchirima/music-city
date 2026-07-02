@@ -1,4 +1,4 @@
-import type { PlaybackSession } from "@music-city/shared";
+import type { PlaybackSession, TrackPlaybackStartedEvent } from "@music-city/shared";
 
 import { createId } from "../../services/id.service.js";
 import { muxService } from "../../services/mux.service.js";
@@ -24,7 +24,7 @@ const resolveTrackPlaybackUrl = (track: {
 };
 
 export const playbackService = {
-  async createSession(trackId: string) {
+  async createSession(trackId: string, listenerUserId: string) {
     const track = await tracksService.getTrackForPlayback(trackId);
 
     if (!track?.playbackReady) {
@@ -41,11 +41,15 @@ export const playbackService = {
       session = {
         id,
         trackId,
+        artistId: track.artistId,
+        listenerUserId,
         provider: "mux",
         streamUrl,
         playbackId: track.muxPlaybackId,
         token,
         expiresAt: expiresInMinutes(15),
+        createdAt: new Date().toISOString(),
+        maxPositionSeconds: 0,
       };
     } else {
       const streamUrl = resolveTrackPlaybackUrl(track);
@@ -57,14 +61,51 @@ export const playbackService = {
       session = {
         id,
         trackId,
+        artistId: track.artistId,
+        listenerUserId,
         provider: "local",
         streamUrl,
         token,
         expiresAt: expiresInMinutes(5),
+        createdAt: new Date().toISOString(),
+        maxPositionSeconds: 0,
       };
     }
 
-    return playbackRepository.upsert(session);
+    const savedSession = await playbackRepository.upsert(session);
+    const { engagementRepository } = await import("../engagement/engagement.repository.js");
+    const occurredAt = new Date().toISOString();
+
+    await engagementRepository.insertPlaybackEvent(
+      createId("evt"),
+      savedSession.id,
+      savedSession.trackId,
+      track.artistId,
+      listenerUserId,
+      "started",
+      0,
+      null,
+      occurredAt,
+      {
+        trackId: savedSession.trackId,
+        artistId: track.artistId,
+        listenerUserId,
+      },
+    );
+    const analyticsEvent: TrackPlaybackStartedEvent = {
+      id: createId("anl"),
+      eventType: "track_playback_started",
+      occurredAt,
+      actorUserId: listenerUserId,
+      artistId: track.artistId,
+      trackId: savedSession.trackId,
+      sessionId: savedSession.id,
+      source: "server.playback",
+      surface: "global_playback_provider",
+    };
+    await engagementRepository.insertAnalyticsEvent(analyticsEvent);
+
+    return savedSession;
   },
 
   async getSession(id: string, token: string) {

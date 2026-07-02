@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { TrackSummary } from "@music-city/shared";
 
 import { Button } from "@/components/ui/button";
@@ -73,11 +74,36 @@ export const DashboardOverview = () => {
             Add a new release when you are ready.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            asChild
+            variant="outline"
+            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+          >
+            <Link href="/dashboard/analytics">Analytics</Link>
+          </Button>
+          <Button
+            className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            New track
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/5 p-6">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-white">Build your discography</h2>
+          <p className="text-sm text-slate-300">
+            Organize tracks into singles, EPs, and albums.
+          </p>
+        </div>
         <Button
-          className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          onClick={() => setIsCreateOpen(true)}
+          asChild
+          variant="outline"
+          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
         >
-          New track
+          <Link href="/dashboard/releases">Manage releases</Link>
         </Button>
       </div>
 

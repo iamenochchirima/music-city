@@ -1,22 +1,47 @@
 import {
+  approveRoyaltyLedgerEntriesSchema,
+  listRoyaltyLedgerEntriesInputSchema,
+  listRoyaltyPayoutsInputSchema,
+  reconcileRoyaltyPayoutsSchema,
   royaltyLedgerEntrySchema,
   royaltyEngineConfigSchema,
+  royaltyFeeSettingsSchema,
+  royaltyPayoutExecutionResultSchema,
+  royaltyPayoutReconciliationResultSchema,
+  royaltyPayoutRecordSchema,
+  royaltyPayoutSettingsSchema,
+  runRoyaltyPayoutsSchema,
   trackRoyaltySplitListSchema,
   trackRoyaltySplitRecordSchema,
   upsertTrackRoyaltySplitSchema,
+  type ApproveRoyaltyLedgerEntriesInput,
+  type ListRoyaltyLedgerEntriesInput,
+  type ListRoyaltyPayoutsInput,
   type PaymentRecord,
+  type ReconcileRoyaltyPayoutsInput,
   type RoyaltyEngineConfig,
+  type RoyaltyFeeSettings,
   type RoyaltyLedgerEntry,
+  type RoyaltyPayoutExecutionResult,
+  type RoyaltyPayoutReconciliationResult,
+  type RoyaltyPayoutRecord,
+  type RoyaltyPayoutSettings,
   type TrackRoyaltySplitList,
   type TrackRoyaltySplitRecord,
+  type RunRoyaltyPayoutsInput,
   type UpsertTrackRoyaltySplitInput,
 } from "@music-city/shared";
 
 import { env } from "../../config/env.js";
+import { databaseService } from "../../services/database.service.js";
 import { createId } from "../../services/id.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { royaltiesRepository } from "./royalties.repository.js";
+import { stellarPayoutService } from "./stellar-payout.service.js";
+
+const ROYALTY_PAYOUT_SETTINGS_KEY = "royalty_payout_settings";
+const ROYALTY_FEE_SETTINGS_KEY = "royalty_fee_settings";
 
 const defaultConfig = (): RoyaltyEngineConfig =>
   royaltyEngineConfigSchema.parse({
@@ -27,6 +52,26 @@ const defaultConfig = (): RoyaltyEngineConfig =>
     settlementRails: ["stellar", "manual"],
     payoutAssetCode: env.STELLAR_SETTLEMENT_ASSET_CODE,
     payoutAssetIssuer: env.STELLAR_SETTLEMENT_ASSET_ISSUER,
+  });
+
+const defaultPayoutSettings = (): RoyaltyPayoutSettings =>
+  royaltyPayoutSettingsSchema.parse({
+    approvalMode: env.ROYALTY_PAYOUT_APPROVAL_MODE,
+    cadence: env.ROYALTY_PAYOUT_CADENCE,
+    minimumPayoutAmount: env.ROYALTY_PAYOUT_MINIMUM_AMOUNT,
+    retryFailedPayouts: env.ROYALTY_PAYOUT_RETRY_FAILED,
+    shortfallBehavior: env.ROYALTY_PAYOUT_SHORTFALL_BEHAVIOR,
+    automaticApproval: env.ROYALTY_PAYOUT_AUTOMATIC_APPROVAL,
+    reversalPolicy: env.ROYALTY_PAYOUT_REVERSAL_POLICY,
+    confirmBeforeMarkPaid: env.ROYALTY_CONFIRM_BEFORE_MARK_PAID,
+  });
+
+const defaultFeeSettings = (): RoyaltyFeeSettings =>
+  royaltyFeeSettingsSchema.parse({
+    trackPurchaseFeeBps: env.ROYALTY_FEE_TRACK_PURCHASE_BPS,
+    platformSubscriptionFeeBps: env.ROYALTY_FEE_PLATFORM_SUBSCRIPTION_BPS,
+    adRevenueFeeBps: env.ROYALTY_FEE_AD_REVENUE_BPS,
+    manualAdjustmentFeeBps: env.ROYALTY_FEE_MANUAL_ADJUSTMENT_BPS,
   });
 
 const toBaseUnits = (amount: string) => {
@@ -116,9 +161,133 @@ const validateRecipients = (recipients: UpsertTrackRoyaltySplitInput["recipients
   return totalBps;
 };
 
+const sortLedgerEntries = (entries: RoyaltyLedgerEntry[]) =>
+  [...entries].sort(
+    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+  );
+
+const sortPayouts = (items: RoyaltyPayoutRecord[]) =>
+  [...items].sort(
+    (left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt),
+  );
+
+const payoutRailForEntry = (entry: RoyaltyLedgerEntry) =>
+  entry.recipientChain === "stellar" ? "stellar" : "manual";
+
+const sumAmounts = (amounts: string[]) =>
+  fromBaseUnits(amounts.reduce((total, amount) => total + toBaseUnits(amount), 0n));
+
+const intersect = (left: string[], right: string[]) => {
+  const rightSet = new Set(right);
+  return left.filter((value) => rightSet.has(value));
+};
+
+const feeBpsForSourceType = (
+  sourceType: RoyaltyLedgerEntry["sourceType"],
+  settings: RoyaltyFeeSettings,
+) => {
+  switch (sourceType) {
+    case "track_purchase":
+      return settings.trackPurchaseFeeBps;
+    case "platform_subscription":
+      return settings.platformSubscriptionFeeBps;
+    case "ad_revenue":
+      return settings.adRevenueFeeBps;
+    case "manual_adjustment":
+      return settings.manualAdjustmentFeeBps;
+  }
+};
+
+const calculateLedgerAmounts = (
+  grossAmount: string,
+  feeBps: number,
+): {
+  grossAmount: string;
+  feeAmount?: string;
+  netAmount: string;
+} => {
+  const grossUnits = toBaseUnits(grossAmount);
+  const feeUnits = (grossUnits * BigInt(feeBps)) / 10_000n;
+  const netUnits = grossUnits - feeUnits;
+
+  if (netUnits <= 0n) {
+    throw new HttpError(400, "Royalty fee configuration leaves no net distributable amount");
+  }
+
+  return {
+    grossAmount: fromBaseUnits(grossUnits),
+    feeAmount: feeUnits > 0n ? fromBaseUnits(feeUnits) : undefined,
+    netAmount: fromBaseUnits(netUnits),
+  };
+};
+
+const payoutGroupingKey = (entry: RoyaltyLedgerEntry) =>
+  [
+    entry.recipientWalletAddress.toLowerCase(),
+    entry.recipientChain,
+    entry.assetCode ?? "XLM",
+    entry.assetIssuer ?? "",
+  ].join("|");
+
+const payoutHasActiveConflict = (
+  payout: RoyaltyPayoutRecord,
+  ledgerEntryIds: string[],
+  retryFailedPayouts: boolean,
+) => {
+  const overlappingEntries = intersect(payout.ledgerEntryIds, ledgerEntryIds);
+
+  if (overlappingEntries.length === 0) {
+    return false;
+  }
+
+  if (["pending", "submitted", "confirmed"].includes(payout.status)) {
+    return true;
+  }
+
+  if (payout.status === "failed" && !retryFailedPayouts) {
+    return true;
+  }
+
+  return false;
+};
+
 export const royaltiesService = {
   getConfig() {
     return defaultConfig();
+  },
+
+  async getPayoutSettings(): Promise<RoyaltyPayoutSettings> {
+    const stored = await databaseService.findSetting<Partial<RoyaltyPayoutSettings>>(
+      ROYALTY_PAYOUT_SETTINGS_KEY,
+    );
+
+    return royaltyPayoutSettingsSchema.parse({
+      ...defaultPayoutSettings(),
+      ...stored,
+    });
+  },
+
+  async updatePayoutSettings(input: unknown): Promise<RoyaltyPayoutSettings> {
+    const parsed = royaltyPayoutSettingsSchema.parse(input);
+    await databaseService.upsertSetting(ROYALTY_PAYOUT_SETTINGS_KEY, parsed);
+    return this.getPayoutSettings();
+  },
+
+  async getFeeSettings(): Promise<RoyaltyFeeSettings> {
+    const stored = await databaseService.findSetting<Partial<RoyaltyFeeSettings>>(
+      ROYALTY_FEE_SETTINGS_KEY,
+    );
+
+    return royaltyFeeSettingsSchema.parse({
+      ...defaultFeeSettings(),
+      ...stored,
+    });
+  },
+
+  async updateFeeSettings(input: unknown): Promise<RoyaltyFeeSettings> {
+    const parsed = royaltyFeeSettingsSchema.parse(input);
+    await databaseService.upsertSetting(ROYALTY_FEE_SETTINGS_KEY, parsed);
+    return this.getFeeSettings();
   },
 
   async listTrackSplits(trackId: string): Promise<TrackRoyaltySplitList> {
@@ -135,12 +304,29 @@ export const royaltiesService = {
   async listTrackLedgerEntries(trackId: string): Promise<RoyaltyLedgerEntry[]> {
     const entries = await royaltiesRepository.listLedgerEntriesByTrack(trackId);
 
-    return entries
-      .map((entry) => royaltyLedgerEntrySchema.parse(entry))
-      .sort(
-        (left, right) =>
-          Date.parse(right.createdAt) - Date.parse(left.createdAt),
-      );
+    return sortLedgerEntries(
+      entries.map((entry) => royaltyLedgerEntrySchema.parse(entry)),
+    );
+  },
+
+  async listLedgerEntries(
+    input?: ListRoyaltyLedgerEntriesInput,
+  ): Promise<RoyaltyLedgerEntry[]> {
+    const parsed = listRoyaltyLedgerEntriesInputSchema.parse(input ?? {});
+    const entries = await royaltiesRepository.listLedgerEntries(parsed);
+
+    return sortLedgerEntries(
+      entries.map((entry) => royaltyLedgerEntrySchema.parse(entry)),
+    );
+  },
+
+  async listPayouts(input?: ListRoyaltyPayoutsInput): Promise<RoyaltyPayoutRecord[]> {
+    const parsed = listRoyaltyPayoutsInputSchema.parse(input ?? {});
+    const payouts = await royaltiesRepository.listPayouts(parsed);
+
+    return sortPayouts(
+      payouts.map((entry) => royaltyPayoutRecordSchema.parse(entry)),
+    );
   },
 
   async upsertTrackSplits(
@@ -217,6 +403,8 @@ export const royaltiesService = {
       return [];
     }
 
+    const payoutSettings = await this.getPayoutSettings();
+    const feeSettings = await this.getFeeSettings();
     const timestamp = new Date().toISOString();
     const distributedAmounts = distributeByBps(payment.amount, activeSplit.recipients);
     const entries = distributedAmounts.map(({ recipient, amount }) =>
@@ -229,9 +417,11 @@ export const royaltiesService = {
         recipientWalletAddress: recipient.walletAddress,
         recipientChain: recipient.chain,
         recipientRole: recipient.role,
-        status: "pending",
-        grossAmount: amount,
-        netAmount: amount,
+        status: payoutSettings.automaticApproval ? "approved" : "pending",
+        ...calculateLedgerAmounts(
+          amount,
+          feeBpsForSourceType("track_purchase", feeSettings),
+        ),
         assetCode: payment.assetCode,
         assetIssuer: payment.assetIssuer,
         createdAt: timestamp,
@@ -299,6 +489,8 @@ export const royaltiesService = {
       return [];
     }
 
+    const payoutSettings = await this.getPayoutSettings();
+    const feeSettings = await this.getFeeSettings();
     const trackAmounts = distributeEvenly(payment.amount, eligibleTracks.length);
     const timestamp = new Date().toISOString();
     const entries = eligibleTracks.flatMap(({ track, split }, index) =>
@@ -313,9 +505,11 @@ export const royaltiesService = {
             recipientWalletAddress: recipient.walletAddress,
             recipientChain: recipient.chain,
             recipientRole: recipient.role,
-            status: "pending",
-            grossAmount: amount,
-            netAmount: amount,
+            status: payoutSettings.automaticApproval ? "approved" : "pending",
+            ...calculateLedgerAmounts(
+              amount,
+              feeBpsForSourceType("platform_subscription", feeSettings),
+            ),
             assetCode: payment.assetCode,
             assetIssuer: payment.assetIssuer,
             createdAt: timestamp,
@@ -329,5 +523,470 @@ export const royaltiesService = {
     );
 
     return entries;
+  },
+
+  async approveLedgerEntries(
+    input: ApproveRoyaltyLedgerEntriesInput,
+  ): Promise<RoyaltyLedgerEntry[]> {
+    const parsed = approveRoyaltyLedgerEntriesSchema.parse(input);
+    const entries = await royaltiesRepository.listLedgerEntriesByIds(parsed.entryIds);
+    const entryById = new Map(entries.map((entry) => [entry.id, entry]));
+
+    const missingIds = parsed.entryIds.filter(
+      (entryId: string) => !entryById.has(entryId),
+    );
+
+    if (missingIds.length > 0) {
+      throw new HttpError(
+        404,
+        `Royalty ledger entries not found: ${missingIds.join(", ")}`,
+      );
+    }
+
+    const timestamp = new Date().toISOString();
+    const approvedEntries = await Promise.all(
+      parsed.entryIds.map(async (entryId: string) => {
+        const entry = royaltyLedgerEntrySchema.parse(entryById.get(entryId));
+
+        if (entry.status === "paid") {
+          throw new HttpError(400, `Royalty ledger entry ${entry.id} has already been paid`);
+        }
+
+        if (entry.status === "reversed") {
+          throw new HttpError(400, `Royalty ledger entry ${entry.id} has been reversed`);
+        }
+
+        if (entry.status === "approved") {
+          return entry;
+        }
+
+        const updatedEntry = royaltyLedgerEntrySchema.parse({
+          ...entry,
+          status: "approved",
+          updatedAt: timestamp,
+        });
+
+        await royaltiesRepository.upsertLedgerEntry(updatedEntry);
+        return updatedEntry;
+      }),
+    );
+
+    return sortLedgerEntries(approvedEntries);
+  },
+
+  async runPayouts(input?: RunRoyaltyPayoutsInput): Promise<RoyaltyPayoutExecutionResult> {
+    const parsed = runRoyaltyPayoutsSchema.parse(input ?? {});
+    const payoutSettings = await this.getPayoutSettings();
+    const approvedEntries = (
+      await this.listLedgerEntries({
+        status: "approved",
+        recipientWalletAddress: parsed.recipientWalletAddress,
+      })
+    ).slice(0, parsed.maxEntries);
+
+    if (approvedEntries.length === 0) {
+      return royaltyPayoutExecutionResultSchema.parse({
+        items: [],
+      });
+    }
+
+    const groupedEntries = new Map<string, RoyaltyLedgerEntry[]>();
+
+    for (const entry of approvedEntries) {
+      const key = payoutGroupingKey(entry);
+      const existing = groupedEntries.get(key) ?? [];
+      existing.push(entry);
+      groupedEntries.set(key, existing);
+    }
+
+    const results = [];
+    const existingPayouts = await this.listPayouts(
+      parsed.recipientWalletAddress
+        ? {
+            recipientWalletAddress: parsed.recipientWalletAddress,
+          }
+        : undefined,
+    );
+
+    if (payoutSettings.shortfallBehavior === "block_all") {
+      const stellarGroups = Array.from(groupedEntries.values()).filter((entries) => {
+        const firstEntry = entries[0]!;
+        return payoutRailForEntry(firstEntry) === "stellar";
+      });
+      const totalsByAsset = new Map<string, bigint>();
+
+      for (const entries of stellarGroups) {
+        const firstEntry = entries[0]!;
+        const amount = sumAmounts(entries.map((entry) => entry.netAmount));
+        const key = `${firstEntry.assetCode ?? "XLM"}:${firstEntry.assetIssuer ?? ""}`;
+        totalsByAsset.set(key, (totalsByAsset.get(key) ?? 0n) + toBaseUnits(amount));
+      }
+
+      if (totalsByAsset.size > 0) {
+        const treasuryAddress = await stellarPayoutService.getTreasuryWalletAddress();
+        const treasuryAccount = await stellarPayoutService.getTreasuryWalletAccount(
+          treasuryAddress,
+        );
+
+        for (const [assetKey, requiredAmount] of totalsByAsset.entries()) {
+          const matchingBalance = treasuryAccount.balances.find(
+            (balance) => balance.assetKey === (assetKey === "XLM:" ? "native" : assetKey),
+          );
+          const availableAmount = matchingBalance?.availableAmount ?? "0";
+
+          if (toBaseUnits(availableAmount) < requiredAmount) {
+            return royaltyPayoutExecutionResultSchema.parse({
+              items: Array.from(groupedEntries.values()).map((entries) => {
+                const firstEntry = entries[0]!;
+                const amount = sumAmounts(entries.map((entry) => entry.netAmount));
+                return {
+                  recipientWalletAddress: firstEntry.recipientWalletAddress,
+                  recipientChain: firstEntry.recipientChain,
+                  payoutRail: payoutRailForEntry(firstEntry),
+                  status: "skipped" as const,
+                  amount,
+                  assetCode: firstEntry.assetCode,
+                  assetIssuer: firstEntry.assetIssuer,
+                  ledgerEntryIds: entries.map((entry) => entry.id),
+                  reason:
+                    "Treasury shortfall blocks this payout run under the current all-or-nothing policy.",
+                };
+              }),
+            });
+          }
+        }
+      }
+    }
+
+    for (const entries of groupedEntries.values()) {
+      const firstEntry = entries[0]!;
+      const payoutRail = payoutRailForEntry(firstEntry);
+      const amount = sumAmounts(entries.map((entry) => entry.netAmount));
+      const ledgerEntryIds = entries.map((entry) => entry.id);
+      const duplicatePayout = existingPayouts.find((payout) =>
+        payoutHasActiveConflict(payout, ledgerEntryIds, payoutSettings.retryFailedPayouts),
+      );
+
+      if (payoutRail !== "stellar") {
+        results.push({
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "skipped" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          reason: "Automatic payouts are only implemented for Stellar rails in this phase.",
+        });
+        continue;
+      }
+
+      if (toBaseUnits(amount) < toBaseUnits(payoutSettings.minimumPayoutAmount)) {
+        results.push({
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "skipped" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          reason: `Payout total is below the configured minimum threshold of ${payoutSettings.minimumPayoutAmount}.`,
+        });
+        continue;
+      }
+
+      if (duplicatePayout) {
+        results.push({
+          payoutId: duplicatePayout.id,
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "skipped" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          txHash: duplicatePayout.txHash,
+          reason: `Payout batch conflicts with existing ${duplicatePayout.status} payout ${duplicatePayout.id}.`,
+        });
+        continue;
+      }
+
+      if (parsed.dryRun) {
+        results.push({
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "dry_run" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+        });
+        continue;
+      }
+
+      const timestamp = new Date().toISOString();
+      const payoutId = createId("rpay");
+
+      try {
+        const payout = royaltyPayoutRecordSchema.parse({
+          id: payoutId,
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "submitted",
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          submittedAt: timestamp,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        });
+
+        const submission = await stellarPayoutService.submitPayment({
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+        });
+
+        const submittedPayout = royaltyPayoutRecordSchema.parse({
+          ...payout,
+          txHash: submission.txHash,
+          updatedAt: new Date().toISOString(),
+        });
+        await royaltiesRepository.upsertPayout(submittedPayout);
+
+        if (!payoutSettings.confirmBeforeMarkPaid) {
+          const confirmedAt = new Date().toISOString();
+          const confirmedPayout = royaltyPayoutRecordSchema.parse({
+            ...submittedPayout,
+            status: "confirmed",
+            confirmedAt,
+            updatedAt: confirmedAt,
+          });
+          await royaltiesRepository.upsertPayout(confirmedPayout);
+
+          await Promise.all(
+            entries.map((entry) =>
+              royaltiesRepository.upsertLedgerEntry(
+                royaltyLedgerEntrySchema.parse({
+                  ...entry,
+                  status: "paid",
+                  updatedAt: confirmedAt,
+                }),
+              ),
+            ),
+          );
+
+          results.push({
+            payoutId: confirmedPayout.id,
+            recipientWalletAddress: firstEntry.recipientWalletAddress,
+            recipientChain: firstEntry.recipientChain,
+            payoutRail,
+            status: "confirmed" as const,
+            amount,
+            assetCode: firstEntry.assetCode,
+            assetIssuer: firstEntry.assetIssuer,
+            ledgerEntryIds,
+            txHash: confirmedPayout.txHash,
+          });
+          continue;
+        }
+
+        results.push({
+          payoutId: submittedPayout.id,
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "submitted" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          txHash: submittedPayout.txHash,
+        });
+      } catch (error) {
+        const reason =
+          error instanceof Error ? error.message : "Unknown payout failure";
+        const failedPayout = royaltyPayoutRecordSchema.parse({
+          id: payoutId,
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "failed",
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          submittedAt: timestamp,
+          failedAt: new Date().toISOString(),
+          failureReason: reason,
+          createdAt: timestamp,
+          updatedAt: new Date().toISOString(),
+        });
+        await royaltiesRepository.upsertPayout(failedPayout);
+
+        results.push({
+          payoutId: failedPayout.id,
+          recipientWalletAddress: firstEntry.recipientWalletAddress,
+          recipientChain: firstEntry.recipientChain,
+          payoutRail,
+          status: "failed" as const,
+          amount,
+          assetCode: firstEntry.assetCode,
+          assetIssuer: firstEntry.assetIssuer,
+          ledgerEntryIds,
+          reason,
+        });
+      }
+    }
+
+    return royaltyPayoutExecutionResultSchema.parse({
+      items: results,
+    });
+  },
+
+  async reconcilePayouts(
+    input?: ReconcileRoyaltyPayoutsInput,
+  ): Promise<RoyaltyPayoutReconciliationResult> {
+    const parsed = reconcileRoyaltyPayoutsSchema.parse(input ?? {});
+    const candidates = parsed.payoutIds
+      ? (await this.listPayouts()).filter((payout) => parsed.payoutIds?.includes(payout.id))
+      : await this.listPayouts(parsed.submittedOnly ? { status: "submitted" } : undefined);
+    const payouts = candidates.slice(0, parsed.maxItems);
+    const results = [];
+
+    for (const payout of payouts) {
+      if (!payout.txHash) {
+        results.push({
+          payoutId: payout.id,
+          status: payout.status,
+          ledgerEntryIds: payout.ledgerEntryIds,
+          reason: "Payout has no transaction hash to reconcile.",
+        });
+        continue;
+      }
+
+      if (payout.payoutRail !== "stellar") {
+        results.push({
+          payoutId: payout.id,
+          status: payout.status,
+          txHash: payout.txHash,
+          ledgerEntryIds: payout.ledgerEntryIds,
+          reason: "Automatic reconciliation is only implemented for Stellar payouts.",
+        });
+        continue;
+      }
+
+      const checkedAt = new Date().toISOString();
+
+      try {
+        const tx = await stellarPayoutService.getTransactionStatus(payout.txHash);
+
+        if (!tx.found) {
+          const updated = royaltyPayoutRecordSchema.parse({
+            ...payout,
+            lastCheckedAt: checkedAt,
+            updatedAt: checkedAt,
+          });
+          await royaltiesRepository.upsertPayout(updated);
+          results.push({
+            payoutId: updated.id,
+            status: updated.status,
+            txHash: updated.txHash,
+            ledgerEntryIds: updated.ledgerEntryIds,
+            reason: "Transaction not found on Horizon yet.",
+          });
+          continue;
+        }
+
+        if (tx.successful) {
+          const confirmedAt = tx.createdAt ?? checkedAt;
+          const confirmedPayout = royaltyPayoutRecordSchema.parse({
+            ...payout,
+            status: "confirmed",
+            confirmedAt,
+            lastCheckedAt: checkedAt,
+            updatedAt: checkedAt,
+          });
+          await royaltiesRepository.upsertPayout(confirmedPayout);
+
+          const linkedEntries = await royaltiesRepository.listLedgerEntriesByIds(
+            payout.ledgerEntryIds,
+          );
+          await Promise.all(
+            linkedEntries.map((entry) =>
+              royaltiesRepository.upsertLedgerEntry(
+                royaltyLedgerEntrySchema.parse({
+                  ...entry,
+                  status: "paid",
+                  updatedAt: checkedAt,
+                }),
+              ),
+            ),
+          );
+
+          results.push({
+            payoutId: confirmedPayout.id,
+            status: confirmedPayout.status,
+            txHash: confirmedPayout.txHash,
+            ledgerEntryIds: confirmedPayout.ledgerEntryIds,
+          });
+          continue;
+        }
+
+        const failedReason =
+          "Transaction was found on Horizon but did not complete successfully.";
+        const failedPayout = royaltyPayoutRecordSchema.parse({
+          ...payout,
+          status: "failed",
+          failedAt: checkedAt,
+          lastCheckedAt: checkedAt,
+          failureReason: failedReason,
+          updatedAt: checkedAt,
+        });
+        await royaltiesRepository.upsertPayout(failedPayout);
+
+        const linkedEntries = await royaltiesRepository.listLedgerEntriesByIds(
+          payout.ledgerEntryIds,
+        );
+        await Promise.all(
+          linkedEntries.map((entry) =>
+            royaltiesRepository.upsertLedgerEntry(
+              royaltyLedgerEntrySchema.parse({
+                ...entry,
+                status: "approved",
+                updatedAt: checkedAt,
+              }),
+            ),
+          ),
+        );
+
+        results.push({
+          payoutId: failedPayout.id,
+          status: failedPayout.status,
+          txHash: failedPayout.txHash,
+          ledgerEntryIds: failedPayout.ledgerEntryIds,
+          reason: failedReason,
+        });
+      } catch (error) {
+        results.push({
+          payoutId: payout.id,
+          status: payout.status,
+          txHash: payout.txHash,
+          ledgerEntryIds: payout.ledgerEntryIds,
+          reason: error instanceof Error ? error.message : "Unknown reconciliation failure",
+        });
+      }
+    }
+
+    return royaltyPayoutReconciliationResultSchema.parse({
+      items: results,
+    });
   },
 };

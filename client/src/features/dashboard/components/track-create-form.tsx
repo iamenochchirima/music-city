@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
-import type { ArtistSummary, TrackAccess } from "@music-city/shared";
+import type { ArtistSummary, ReleaseSummary, TrackAccess } from "@music-city/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { releasesApi } from "@/features/music/lib/releases-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { usersApi } from "@/features/users/lib/users-api";
@@ -20,6 +21,8 @@ type EditableTrackAccess = Extract<
   TrackAccess,
   "private" | "purchase_required" | "public"
 >;
+
+type ReleasePlacement = "standalone" | "existing" | "new";
 
 interface TrackCreateFormProps {
   onCreated: () => void;
@@ -55,6 +58,7 @@ export const TrackCreateForm = ({
 
   const [stepIndex, setStepIndex] = useState(0);
   const [artistOptions, setArtistOptions] = useState<ArtistSummary[]>([]);
+  const [releaseOptions, setReleaseOptions] = useState<ReleaseSummary[]>([]);
   const [title, setTitle] = useState("");
   const [artistName, setArtistName] = useState(session?.displayName ?? "");
   const [genre, setGenre] = useState("");
@@ -69,6 +73,12 @@ export const TrackCreateForm = ({
   const [publisher, setPublisher] = useState("");
   const [featuredSearch, setFeaturedSearch] = useState("");
   const [featuredArtists, setFeaturedArtists] = useState<string[]>([]);
+  const [releasePlacement, setReleasePlacement] =
+    useState<ReleasePlacement>("standalone");
+  const [selectedReleaseId, setSelectedReleaseId] = useState("");
+  const [newReleaseTitle, setNewReleaseTitle] = useState("");
+  const [newReleaseType, setNewReleaseType] =
+    useState<ReleaseSummary["type"]>("single");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -110,10 +120,30 @@ export const TrackCreateForm = ({
 
     void loadArtists();
 
+    const loadReleases = async () => {
+      if (!session?.token) {
+        return;
+      }
+
+      try {
+        const items = await releasesApi.listMyReleases(session.token);
+
+        if (!cancelled) {
+          setReleaseOptions(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setReleaseOptions([]);
+        }
+      }
+    };
+
+    void loadReleases();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [session?.token]);
 
   const artistSuggestions = deferredFeaturedSearch
     ? artistOptions.filter((artist) => {
@@ -168,6 +198,16 @@ export const TrackCreateForm = ({
         toast.error("Add a purchase price before continuing.");
         return false;
       }
+
+      if (releasePlacement === "existing" && !selectedReleaseId) {
+        toast.error("Choose the existing release for this track.");
+        return false;
+      }
+
+      if (releasePlacement === "new" && !newReleaseTitle.trim()) {
+        toast.error("Add a title for the new release first.");
+        return false;
+      }
     }
 
     return true;
@@ -213,6 +253,10 @@ export const TrackCreateForm = ({
     setPublisher("");
     setFeaturedSearch("");
     setFeaturedArtists([]);
+    setReleasePlacement("standalone");
+    setSelectedReleaseId("");
+    setNewReleaseTitle("");
+    setNewReleaseType("single");
     setAudioFile(null);
     setCoverFile(null);
   };
@@ -285,6 +329,29 @@ export const TrackCreateForm = ({
         purchaseEnabled: access === "purchase_required",
         purchasePrice: access === "purchase_required" ? purchasePrice : undefined,
       });
+
+      let releaseId = selectedReleaseId;
+
+      if (releasePlacement === "new") {
+        setUploadStage("Creating release...");
+        const release = await releasesApi.createRelease(session.token, {
+          title: newReleaseTitle,
+          type: newReleaseType,
+          genre,
+          description,
+          artistName,
+        });
+        releaseId = release.id;
+      }
+
+      if (releasePlacement !== "standalone" && releaseId) {
+        setUploadStage("Adding track to release...");
+        await releasesApi.addTrackToRelease(session.token, releaseId, {
+          trackId: track.id,
+          discNumber: 1,
+          isFocusTrack: false,
+        });
+      }
 
       if (coverFile) {
         setUploadStage("Uploading cover...");
@@ -476,6 +543,21 @@ export const TrackCreateForm = ({
               <option value="public">Public</option>
             </select>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="releasePlacement">Release placement</Label>
+            <select
+              id="releasePlacement"
+              value={releasePlacement}
+              onChange={(event) =>
+                setReleasePlacement(event.target.value as ReleasePlacement)
+              }
+              className="h-10 rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white"
+            >
+              <option value="standalone">Standalone track</option>
+              <option value="existing">Add to existing release</option>
+              <option value="new">Create new release</option>
+            </select>
+          </div>
           {access === "purchase_required" ? (
             <div className="space-y-2">
               <Label htmlFor="trackPurchasePrice">Purchase price (XLM)</Label>
@@ -486,6 +568,52 @@ export const TrackCreateForm = ({
                 className="border-white/10 bg-slate-950/70 text-white"
               />
             </div>
+          ) : null}
+          {releasePlacement === "existing" ? (
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="selectedReleaseId">Choose release</Label>
+              <select
+                id="selectedReleaseId"
+                value={selectedReleaseId}
+                onChange={(event) => setSelectedReleaseId(event.target.value)}
+                className="h-10 rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white"
+              >
+                <option value="">Select a release</option>
+                {releaseOptions.map((release) => (
+                  <option key={release.id} value={release.id}>
+                    {release.title} ({release.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+          {releasePlacement === "new" ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="newReleaseTitle">New release title</Label>
+                <Input
+                  id="newReleaseTitle"
+                  value={newReleaseTitle}
+                  onChange={(event) => setNewReleaseTitle(event.target.value)}
+                  className="border-white/10 bg-slate-950/70 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newReleaseType">New release type</Label>
+                <select
+                  id="newReleaseType"
+                  value={newReleaseType}
+                  onChange={(event) =>
+                    setNewReleaseType(event.target.value as ReleaseSummary["type"])
+                  }
+                  className="h-10 rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white"
+                >
+                  <option value="single">Single</option>
+                  <option value="ep">EP</option>
+                  <option value="album">Album</option>
+                </select>
+              </div>
+            </>
           ) : null}
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="trackDescription">Description</Label>

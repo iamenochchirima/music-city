@@ -10,7 +10,8 @@ export const uploadsRepository = {
   async upsert(session: UploadSession) {
     await databaseService.upsertUploadSession(
       session.id,
-      session.trackId,
+      session.trackId ?? null,
+      session.releaseId ?? null,
       session.provider,
       session.expiresAt,
       session,

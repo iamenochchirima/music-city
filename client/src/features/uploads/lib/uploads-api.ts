@@ -1,6 +1,7 @@
 import type {
   CompleteUploadSessionInput,
   CreateUploadSessionInput,
+  ReleaseDetail,
   TrackSummary,
   UploadSession,
 } from "@music-city/shared";
@@ -81,12 +82,15 @@ export const uploadsApi = {
     uploadSessionId: string,
     input: CompleteUploadSessionInput,
   ) {
-    const response = await httpClient.post<{ track: TrackSummary }>(
+    const response = await httpClient.post<{
+      track?: TrackSummary;
+      release?: ReleaseDetail;
+    }>(
       `/uploads/sessions/${uploadSessionId}/complete`,
       input,
       token,
     );
 
-    return response.track;
+    return response;
   },
 };

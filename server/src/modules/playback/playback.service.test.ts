@@ -4,6 +4,7 @@ import test from "node:test";
 process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/music-city";
 
 const { playbackService } = await import("./playback.service.js");
+const { engagementRepository } = await import("../engagement/engagement.repository.js");
 const { tracksService } = await import("../tracks/tracks.service.js");
 const { playbackRepository } = await import("./playback.repository.js");
 const { storageService } = await import("../../services/storage.service.js");
@@ -24,6 +25,8 @@ test("createSession returns the direct local media URL for local playback", asyn
   let capturedSession:
     | Awaited<ReturnType<typeof playbackRepository.upsert>>
     | undefined;
+  const recordedEvents: string[] = [];
+  const analyticsEvents: string[] = [];
 
   const cleanup = [
     restore(
@@ -56,10 +59,31 @@ test("createSession returns the direct local media URL for local playback", asyn
         return session;
       }) as typeof playbackRepository.upsert,
     ),
+    restore(
+      engagementRepository,
+      "insertPlaybackEvent",
+      (async (
+        _id,
+        _sessionId,
+        _trackId,
+        _artistId,
+        _listenerUserId,
+        eventType,
+      ) => {
+        recordedEvents.push(eventType);
+      }) as typeof engagementRepository.insertPlaybackEvent,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event.eventType);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
   ];
 
   try {
-    const session = await playbackService.createSession("trk_local");
+    const session = await playbackService.createSession("trk_local", "usr_listener");
 
     assert.equal(
       session.streamUrl,
@@ -68,6 +92,8 @@ test("createSession returns the direct local media URL for local playback", asyn
     assert.equal(session.provider, "local");
     assert.ok(session.token.length > 0);
     assert.equal(capturedSession?.streamUrl, session.streamUrl);
+    assert.deepEqual(recordedEvents, ["started"]);
+    assert.deepEqual(analyticsEvents, ["track_playback_started"]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -77,6 +103,7 @@ test("createSession refreshes signed local media URLs from storage keys", async 
   let capturedSession:
     | Awaited<ReturnType<typeof playbackRepository.upsert>>
     | undefined;
+  const analyticsEvents: string[] = [];
 
   const cleanup = [
     restore(
@@ -115,16 +142,29 @@ test("createSession refreshes signed local media URLs from storage keys", async 
         return session;
       }) as typeof playbackRepository.upsert,
     ),
+    restore(
+      engagementRepository,
+      "insertPlaybackEvent",
+      (async () => undefined) as typeof engagementRepository.insertPlaybackEvent,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event.eventType);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
   ];
 
   try {
-    const session = await playbackService.createSession("trk_signed");
+    const session = await playbackService.createSession("trk_signed", "usr_listener");
 
     assert.equal(
       session.streamUrl,
       "https://fresh.example.com/masters%2Ftrk_signed%2Faudio.mp3",
     );
     assert.equal(capturedSession?.streamUrl, session.streamUrl);
+    assert.deepEqual(analyticsEvents, ["track_playback_started"]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }

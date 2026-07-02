@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type {
   PaymentRecord,
@@ -9,6 +10,7 @@ import type {
 } from "@music-city/shared";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
@@ -185,7 +187,16 @@ export const AccountOverview = () => {
 
         <Card className="border-white/10 bg-white/5 text-white shadow-none">
           <CardHeader>
-            <CardTitle className="text-2xl">Activity</CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="text-2xl">Activity</CardTitle>
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+              >
+                <Link href="/account/playlists">Manage playlists</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">

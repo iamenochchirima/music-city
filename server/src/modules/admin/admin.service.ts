@@ -373,12 +373,54 @@ export const adminService = {
     return royaltiesService.getConfig();
   },
 
+  getRoyaltyPayoutSettings() {
+    return royaltiesService.getPayoutSettings();
+  },
+
+  updateRoyaltyPayoutSettings(input: unknown) {
+    return royaltiesService.updatePayoutSettings(input);
+  },
+
+  getRoyaltyFeeSettings() {
+    return royaltiesService.getFeeSettings();
+  },
+
+  updateRoyaltyFeeSettings(input: unknown) {
+    return royaltiesService.updateFeeSettings(input);
+  },
+
   listTrackRoyaltySplits(trackId: string) {
     return royaltiesService.listTrackSplits(trackId);
   },
 
   listTrackRoyaltyLedger(trackId: string) {
     return royaltiesService.listTrackLedgerEntries(trackId);
+  },
+
+  listRoyaltyLedger(input?: {
+    status?: "pending" | "approved" | "paid" | "reversed";
+    recipientWalletAddress?: string;
+  }) {
+    return royaltiesService.listLedgerEntries(input);
+  },
+
+  listRoyaltyPayouts(input?: {
+    status?: "pending" | "submitted" | "confirmed" | "failed" | "cancelled";
+    recipientWalletAddress?: string;
+  }) {
+    return royaltiesService.listPayouts(input);
+  },
+
+  approveRoyaltyLedgerEntries(input: unknown) {
+    return royaltiesService.approveLedgerEntries(input as never);
+  },
+
+  runRoyaltyPayouts(input: unknown) {
+    return royaltiesService.runPayouts(input as never);
+  },
+
+  reconcileRoyaltyPayouts(input: unknown) {
+    return royaltiesService.reconcilePayouts(input as never);
   },
 
   upsertTrackRoyaltySplits(trackId: string, input: unknown) {

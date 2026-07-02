@@ -138,6 +138,46 @@ adminRouter.get(
 );
 
 adminRouter.get(
+  "/royalties/payout-settings",
+  requireAdminSession,
+  asyncHandler(async (_request, response) => {
+    response.json({
+      settings: await adminService.getRoyaltyPayoutSettings(),
+    });
+  }),
+);
+
+adminRouter.put(
+  "/royalties/payout-settings",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      settings: await adminService.updateRoyaltyPayoutSettings(request.body),
+    });
+  }),
+);
+
+adminRouter.get(
+  "/royalties/fee-settings",
+  requireAdminSession,
+  asyncHandler(async (_request, response) => {
+    response.json({
+      settings: await adminService.getRoyaltyFeeSettings(),
+    });
+  }),
+);
+
+adminRouter.put(
+  "/royalties/fee-settings",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      settings: await adminService.updateRoyaltyFeeSettings(request.body),
+    });
+  }),
+);
+
+adminRouter.get(
   "/royalties/tracks/:trackId/splits",
   requireAdminSession,
   asyncHandler(async (request, response) => {
@@ -156,6 +196,79 @@ adminRouter.get(
         String(request.params.trackId),
       ),
     });
+  }),
+);
+
+adminRouter.get(
+  "/royalties/ledger",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      items: await adminService.listRoyaltyLedger({
+        status:
+          typeof request.query.status === "string"
+            ? (request.query.status as
+                | "pending"
+                | "approved"
+                | "paid"
+                | "reversed")
+            : undefined,
+        recipientWalletAddress:
+          typeof request.query.recipientWalletAddress === "string"
+            ? request.query.recipientWalletAddress
+            : undefined,
+      }),
+    });
+  }),
+);
+
+adminRouter.post(
+  "/royalties/ledger/approve",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      items: await adminService.approveRoyaltyLedgerEntries(request.body),
+    });
+  }),
+);
+
+adminRouter.get(
+  "/royalties/payouts",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      items: await adminService.listRoyaltyPayouts({
+        status:
+          typeof request.query.status === "string"
+            ? (request.query.status as
+                | "pending"
+                | "submitted"
+                | "confirmed"
+                | "failed"
+                | "cancelled")
+            : undefined,
+        recipientWalletAddress:
+          typeof request.query.recipientWalletAddress === "string"
+            ? request.query.recipientWalletAddress
+            : undefined,
+      }),
+    });
+  }),
+);
+
+adminRouter.post(
+  "/royalties/payouts/run",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json(await adminService.runRoyaltyPayouts(request.body));
+  }),
+);
+
+adminRouter.post(
+  "/royalties/payouts/reconcile",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json(await adminService.reconcileRoyaltyPayouts(request.body));
   }),
 );
 

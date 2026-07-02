@@ -6,6 +6,7 @@ import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
+import { releasesService } from "../releases/releases.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
 import { uploadsService } from "./uploads.service.js";
 
@@ -15,13 +16,26 @@ uploadsRouter.post(
   "/sessions",
   requireSession,
   asyncHandler(async (request, response) => {
-    const ownsTrack = await tracksService.userOwnsTrack(
-      request.session!.walletAddress,
-      request.body.trackId,
-    );
+    const { trackId, releaseId } = request.body ?? {};
+    const walletAddress = request.session!.walletAddress;
 
-    if (!ownsTrack) {
-      throw new HttpError(404, "Track not found");
+    if (trackId) {
+      const ownsTrack = await tracksService.userOwnsTrack(walletAddress, trackId);
+
+      if (!ownsTrack) {
+        throw new HttpError(404, "Track not found");
+      }
+    } else if (releaseId) {
+      const ownsRelease = await releasesService.userOwnsRelease(
+        walletAddress,
+        releaseId,
+      );
+
+      if (!ownsRelease) {
+        throw new HttpError(404, "Release not found");
+      }
+    } else {
+      throw new HttpError(400, "trackId or releaseId is required");
     }
 
     response.status(201).json({
@@ -37,14 +51,18 @@ uploadsRouter.put(
   asyncHandler(async (request, response) => {
     const uploadSessionId = String(request.params.uploadSessionId);
     const session = await uploadsService.requireActiveSession(uploadSessionId);
+    const walletAddress = request.session!.walletAddress;
 
-    if (
-      !(await tracksService.userOwnsTrack(
-        request.session!.walletAddress,
-        session.trackId,
-      ))
-    ) {
-      throw new HttpError(404, "Track not found");
+    if (session.trackId) {
+      if (!(await tracksService.userOwnsTrack(walletAddress, session.trackId))) {
+        throw new HttpError(404, "Track not found");
+      }
+    } else if (session.releaseId) {
+      if (!(await releasesService.userOwnsRelease(walletAddress, session.releaseId))) {
+        throw new HttpError(404, "Release not found");
+      }
+    } else {
+      throw new HttpError(400, "Upload session target is missing");
     }
 
     if (!Buffer.isBuffer(request.body)) {
@@ -138,21 +156,26 @@ uploadsRouter.post(
       throw new HttpError(404, "Upload session not found");
     }
 
-    if (
-      !(await tracksService.userOwnsTrack(
-        request.session!.walletAddress,
-        session.trackId,
-      ))
-    ) {
-      throw new HttpError(404, "Track not found");
+    const walletAddress = request.session!.walletAddress;
+
+    if (session.trackId) {
+      if (!(await tracksService.userOwnsTrack(walletAddress, session.trackId))) {
+        throw new HttpError(404, "Track not found");
+      }
+    } else if (session.releaseId) {
+      if (!(await releasesService.userOwnsRelease(walletAddress, session.releaseId))) {
+        throw new HttpError(404, "Release not found");
+      }
+    } else {
+      throw new HttpError(400, "Upload session target is missing");
     }
 
-    const track = await uploadsService.completeSession({
+    const result = await uploadsService.completeSession({
       uploadSessionId,
       eTag: request.body?.eTag,
     });
 
-    response.json({ track });
+    response.json(result);
   }),
 );
 
