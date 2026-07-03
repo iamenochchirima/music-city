@@ -295,13 +295,6 @@ export const DashboardReleasesOverview = () => {
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-white">Your releases</h2>
-          <Button
-            asChild
-            variant="outline"
-            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-          >
-            <Link href="/dashboard">Back to dashboard</Link>
-          </Button>
         </div>
 
         {isLoading ? (

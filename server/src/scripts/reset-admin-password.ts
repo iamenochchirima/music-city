@@ -82,4 +82,6 @@ const main = async () => {
 await main().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
+}).finally(async () => {
+  await databaseService.close();
 });

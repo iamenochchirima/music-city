@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { z } from "zod";
 
 import { requireAdminSession } from "../../middleware/require-admin-session.js";
 import { requireSuperAdmin } from "../../middleware/require-super-admin.js";
@@ -8,9 +7,6 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { adminService } from "./admin.service.js";
 
 const adminRouter = Router();
-const adminAnalyticsQuerySchema = z.object({
-  windowDays: z.coerce.number().int().positive().optional(),
-});
 
 adminRouter.get(
   "/auth/bootstrap-status",
@@ -133,18 +129,6 @@ adminRouter.delete(
   asyncHandler(async (request, response) => {
     response.json({
       ad: await adminService.archiveAd(String(request.params.id)),
-    });
-  }),
-);
-
-adminRouter.get(
-  "/analytics",
-  requireAdminSession,
-  asyncHandler(async (request, response) => {
-    response.json({
-      analytics: await adminService.getAnalyticsOverview(
-        adminAnalyticsQuerySchema.parse(request.query).windowDays,
-      ),
     });
   }),
 );

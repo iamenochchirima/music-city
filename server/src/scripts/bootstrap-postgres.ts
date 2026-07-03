@@ -74,4 +74,6 @@ const main = async () => {
 main().catch((error) => {
   console.error("[bootstrap][postgres] failed", error);
   process.exitCode = 1;
+}).finally(async () => {
+  await databaseService.close();
 });

@@ -64,14 +64,14 @@ Use this checklist as the working implementation tracker for streams, follows, l
   - [x] `release_id`
   - [x] `actor_user_id`
   - [x] `session_id`
-- [ ] Add uniqueness constraints where needed:
-  - [ ] one follow per user and artist
-  - [ ] one like per user and track
+- [x] Add uniqueness constraints where needed:
+  - [x] one follow per user and artist
+  - [x] one like per user and track
   - [x] one save per user and track
 
 ## Phase 4: Stream Counting Rules
 - [x] Define what counts as a stream in v1
-- [ ] Choose the minimum threshold:
+- [x] Choose the minimum threshold:
   - [x] 30 seconds listened
   - [x] or 50 percent completion
   - [x] or whichever comes first
@@ -213,7 +213,7 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] `track_likes` persistence and API
 - [x] `analytics_events` storage
 - [x] Playback start plus heartbeat plus completion tracking
-- [ ] Qualified stream counting rules
+- [x] Qualified stream counting rules
 - [x] Track-level stream and like counters
 - [x] Creator dashboard track analytics basics
 

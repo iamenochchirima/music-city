@@ -1,8 +1,23 @@
-export const navigationItems = [
+export const primaryNavigationItems = [
   { href: "/discover", label: "Discover" },
-  { href: "/stream", label: "Stream" },
   { href: "/releases", label: "Releases" },
-  { href: "/playlists", label: "Playlists" },
   { href: "/artists", label: "Artists" },
-  { href: "/marketplace", label: "Marketplace" },
+] as const;
+
+export const browseNavigationItems = [
+  {
+    href: "/playlists",
+    label: "Playlists",
+    description: "Community-built listening paths",
+  },
+  {
+    href: "/stream",
+    label: "All tracks",
+    description: "Jump into the full song catalog",
+  },
+  {
+    href: "/marketplace",
+    label: "Marketplace",
+    description: "Unlock drops, access, and paid releases",
+  },
 ] as const;

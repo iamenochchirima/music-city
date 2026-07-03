@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --test-concurrency=1 src/**/*.test.ts",
     "db:bootstrap": "tsx src/scripts/bootstrap-postgres.ts",
+    "db:doctor": "tsx src/scripts/db-doctor.ts",
+    "db:repair": "tsx src/scripts/db-repair.ts",
     "admin:reset-password": "tsx src/scripts/reset-admin-password.ts"
   },
   "dependencies": {

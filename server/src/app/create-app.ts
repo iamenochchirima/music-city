@@ -8,6 +8,7 @@ import { env } from "../config/env.js";
 import { errorHandler } from "../middleware/error-handler.js";
 import { notFoundHandler } from "../middleware/not-found.js";
 import { apiRouter } from "../routes/index.js";
+import { logger } from "../utils/logger.js";
 
 export const createApp = () => {
   const app = express();
@@ -21,6 +22,7 @@ export const createApp = () => {
           return;
         }
 
+        logger.warn("Blocked request due to disallowed CORS origin", { origin });
         callback(new Error("Origin not allowed by CORS"));
       },
       credentials: true,

@@ -4,6 +4,7 @@ import { createId } from "../../services/id.service.js";
 import { muxService } from "../../services/mux.service.js";
 import { tokenService } from "../../services/token.service.js";
 import { storageService } from "../../services/storage.service.js";
+import { logger } from "../../utils/logger.js";
 import { HttpError } from "../../utils/http-error.js";
 import { playbackRepository } from "./playback.repository.js";
 import { tracksService } from "../tracks/tracks.service.js";
@@ -76,22 +77,32 @@ export const playbackService = {
     const { engagementRepository } = await import("../engagement/engagement.repository.js");
     const occurredAt = new Date().toISOString();
 
-    await engagementRepository.insertPlaybackEvent(
-      createId("evt"),
-      savedSession.id,
-      savedSession.trackId,
-      track.artistId,
-      listenerUserId,
-      "started",
-      0,
-      null,
-      occurredAt,
-      {
-        trackId: savedSession.trackId,
-        artistId: track.artistId,
+    try {
+      await engagementRepository.insertPlaybackEvent(
+        createId("evt"),
+        savedSession.id,
+        savedSession.trackId,
+        track.artistId,
         listenerUserId,
-      },
-    );
+        "started",
+        0,
+        null,
+        occurredAt,
+        {
+          trackId: savedSession.trackId,
+          artistId: track.artistId,
+          listenerUserId,
+        },
+      );
+    } catch (error) {
+      logger.warn("Playback session started without playback event persistence", {
+        playbackSessionId: savedSession.id,
+        trackId: savedSession.trackId,
+        listenerUserId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     const analyticsEvent: TrackPlaybackStartedEvent = {
       id: createId("anl"),
       eventType: "track_playback_started",
@@ -103,7 +114,17 @@ export const playbackService = {
       source: "server.playback",
       surface: "global_playback_provider",
     };
-    await engagementRepository.insertAnalyticsEvent(analyticsEvent);
+
+    try {
+      await engagementRepository.insertAnalyticsEvent(analyticsEvent);
+    } catch (error) {
+      logger.warn("Playback session started without analytics event persistence", {
+        playbackSessionId: savedSession.id,
+        trackId: savedSession.trackId,
+        listenerUserId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     return savedSession;
   },

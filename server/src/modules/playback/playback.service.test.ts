@@ -169,3 +169,68 @@ test("createSession refreshes signed local media URLs from storage keys", async 
     cleanup.reverse().forEach((fn) => fn());
   }
 });
+
+test("createSession still succeeds when analytics persistence fails", async () => {
+  const warnings: string[] = [];
+  const cleanup = [
+    restore(
+      tracksService,
+      "getTrackForPlayback",
+      (async () => ({
+        id: "trk_resilient",
+        title: "Resilient track",
+        artistId: "artist-1",
+        artistName: "Artist",
+        genre: "Pop",
+        runtime: "3:15",
+        priceLabel: "Public",
+        status: "published" as const,
+        access: "public" as const,
+        plays: 0,
+        likes: 0,
+        mediaProvider: "local" as const,
+        playbackReady: true,
+        streamMediaUrl: "http://localhost:4000/tracks/trk_resilient.mp3",
+      })) as typeof tracksService.getTrackForPlayback,
+    ),
+    restore(
+      playbackRepository,
+      "upsert",
+      (async (session) => session) as typeof playbackRepository.upsert,
+    ),
+    restore(
+      engagementRepository,
+      "insertPlaybackEvent",
+      (async () => {
+        throw new Error("playback event insert failed");
+      }) as typeof engagementRepository.insertPlaybackEvent,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async () => {
+        throw new Error("analytics event insert failed");
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+    restore(
+      console,
+      "warn",
+      ((message?: unknown) => {
+        warnings.push(String(message));
+      }) as typeof console.warn,
+    ),
+  ];
+
+  try {
+    const session = await playbackService.createSession(
+      "trk_resilient",
+      "usr_listener",
+    );
+
+    assert.equal(session.trackId, "trk_resilient");
+    assert.equal(session.provider, "local");
+    assert.ok(warnings.some((message) => message.includes("Playback session started")));
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});

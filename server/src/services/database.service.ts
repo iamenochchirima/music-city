@@ -68,9 +68,35 @@ type AppliedMigrationRow = {
   name: string;
 };
 
+type SchemaRelationRow = {
+  relation_name: string;
+  qualified_name: string | null;
+};
+
 type SchemaMigration = {
   name: string;
   statements: string[];
+};
+
+type SchemaExpectationGroup = {
+  name: string;
+  relations: string[];
+  indexes?: string[];
+  statements: string[];
+  migrationName?: string;
+};
+
+type SchemaExpectationStatus = {
+  name: string;
+  migrationApplied: boolean;
+  missingRelations: string[];
+  missingIndexes: string[];
+};
+
+type SchemaHealthReport = {
+  ok: boolean;
+  checkedAt: string;
+  groups: SchemaExpectationStatus[];
 };
 
 const pool = new Pool({
@@ -628,8 +654,146 @@ const schemaMigrations: SchemaMigration[] = [
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
+const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  {
+    name: "base-core",
+    relations: [
+      "admins",
+      "app_settings",
+      "users",
+      "tracks",
+      "releases",
+      "release_tracks",
+      "playlists",
+      "playlist_tracks",
+      "upload_sessions",
+      "playback_sessions",
+      "entitlements",
+      "archives",
+      "payment_intents",
+      "payments",
+      "subscriptions",
+      "royalty_splits",
+      "royalty_ledger",
+      "royalty_payouts",
+      "ads",
+      "ad_impressions",
+    ],
+    indexes: [
+      "tracks_artist_id_idx",
+      "playback_sessions_track_id_idx",
+      "royalty_ledger_status_idx",
+      "ads_status_idx",
+      "ad_impressions_ad_id_idx",
+    ],
+    statements: baseSchemaStatements,
+  },
+  {
+    name: "2026-07-02-engagement-analytics-foundation",
+    migrationName: "2026-07-02-engagement-analytics-foundation",
+    relations: [
+      "analytics_events",
+      "artist_follows",
+      "track_likes",
+      "track_saves",
+      "playback_events",
+    ],
+    indexes: [
+      "analytics_events_event_type_idx",
+      "analytics_events_session_id_idx",
+      "artist_follows_artist_id_idx",
+      "track_likes_track_id_idx",
+      "track_saves_track_id_idx",
+      "playback_events_track_id_idx",
+    ],
+    statements:
+      schemaMigrations.find(
+        (migration) =>
+          migration.name === "2026-07-02-engagement-analytics-foundation",
+      )?.statements ?? [],
+  },
+  {
+    name: "2026-07-02-engagement-qualified-stream-idempotency",
+    migrationName: "2026-07-02-engagement-qualified-stream-idempotency",
+    relations: [],
+    indexes: ["playback_events_qualified_stream_session_uidx"],
+    statements:
+      schemaMigrations.find(
+        (migration) =>
+          migration.name === "2026-07-02-engagement-qualified-stream-idempotency",
+      )?.statements ?? [],
+  },
+];
+
+const inspectSchemaGroups = async (): Promise<SchemaExpectationStatus[]> => {
+  const appliedMigrations = await pool.query<AppliedMigrationRow>(
+    "SELECT name FROM schema_migrations ORDER BY name",
+  );
+  const appliedNames = new Set(appliedMigrations.rows.map((row) => row.name));
+
+  const relationNames = criticalSchemaExpectationGroups.flatMap((group) => group.relations);
+  const indexNames = criticalSchemaExpectationGroups.flatMap(
+    (group) => group.indexes ?? [],
+  );
+  const uniqueNames = [...new Set([...relationNames, ...indexNames])];
+
+  const relationLookup = new Map<string, boolean>();
+
+  if (uniqueNames.length > 0) {
+    const relationResult = await pool.query<SchemaRelationRow>(
+      `SELECT relation_name,
+              to_regclass('public.' || relation_name) AS qualified_name
+       FROM unnest($1::text[]) AS relation_name`,
+      [uniqueNames],
+    );
+
+    for (const row of relationResult.rows) {
+      relationLookup.set(row.relation_name, Boolean(row.qualified_name));
+    }
+  }
+
+  return criticalSchemaExpectationGroups.map((group) => ({
+    name: group.name,
+    migrationApplied: group.migrationName
+      ? appliedNames.has(group.migrationName)
+      : true,
+    missingRelations: group.relations.filter(
+      (relation) => !relationLookup.get(relation),
+    ),
+    missingIndexes: (group.indexes ?? []).filter(
+      (indexName) => !relationLookup.get(indexName),
+    ),
+  }));
+};
+
+const applySchemaExpectationRepair = async (group: SchemaExpectationGroup) => {
+  await pool.query("BEGIN");
+
+  try {
+    for (const statement of group.statements) {
+      await pool.query(statement);
+    }
+
+    if (group.migrationName) {
+      await pool.query(
+        "INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING",
+        [group.migrationName],
+      );
+    }
+
+    await pool.query("COMMIT");
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    throw error;
+  }
+};
+
 export const databaseService = {
-  async initialize() {
+  async close() {
+    await pool.end();
+  },
+
+  async initialize(options?: { repair?: boolean }) {
     await pool.query(schemaMigrationTableStatement);
 
     for (const statement of baseSchemaStatements) {
@@ -663,6 +827,63 @@ export const databaseService = {
         throw error;
       }
     }
+
+    if (options?.repair !== false) {
+      await this.repairCriticalSchema();
+    }
+  },
+
+  async inspectSchemaHealth(): Promise<SchemaHealthReport> {
+    const groups = await inspectSchemaGroups();
+
+    return {
+      ok: groups.every(
+        (group) =>
+          group.migrationApplied &&
+          group.missingRelations.length === 0 &&
+          group.missingIndexes.length === 0,
+      ),
+      checkedAt: new Date().toISOString(),
+      groups,
+    };
+  },
+
+  async repairCriticalSchema() {
+    const initialReport = await this.inspectSchemaHealth();
+
+    for (const group of criticalSchemaExpectationGroups) {
+      const status = initialReport.groups.find((candidate) => candidate.name === group.name);
+
+      if (
+        !status ||
+        (status.missingRelations.length === 0 && status.missingIndexes.length === 0)
+      ) {
+        continue;
+      }
+
+      await applySchemaExpectationRepair(group);
+    }
+
+    return this.inspectSchemaHealth();
+  },
+
+  async getReadinessReport() {
+    const schema = await this.inspectSchemaHealth();
+
+    return {
+      ok: schema.ok,
+      service: "music-city-server",
+      database: {
+        ok: true,
+        schemaOk: schema.ok,
+      },
+      storage: {
+        provider: env.STORAGE_PROVIDER,
+        mediaProvider: env.MEDIA_PROVIDER,
+      },
+      schema,
+      checkedAt: new Date().toISOString(),
+    };
   },
 
   async countRows(table: string) {
