@@ -3,18 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { TrackAccess, TrackSummary } from "@music-city/shared";
-import { ArrowLeft, LoaderCircle } from "lucide-react";
+import type { TrackSummary } from "@music-city/shared";
+import { ArrowLeft, LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 
 type EditableTrackAccess = Extract<
-  TrackAccess,
-  "private" | "purchase_required" | "public"
+  TrackSummary["access"],
+  "private" | "public"
 >;
 
 const accessOptions: Array<{
@@ -24,18 +23,13 @@ const accessOptions: Array<{
 }> = [
   {
     value: "private",
-    label: "Private",
-    description: "Only you and explicitly entitled listeners can access it.",
-  },
-  {
-    value: "purchase_required",
-    label: "Purchase required",
-    description: "Visible in discovery and unlocked only after a one-time payment.",
+    label: "Unpublished",
+    description: "Keep the song out of discovery while you prepare the release.",
   },
   {
     value: "public",
-    label: "Public",
-    description: "Visible in discovery and open for normal listening.",
+    label: "Published",
+    description: "Make the song visible in discovery and open for listening.",
   },
 ];
 
@@ -45,7 +39,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
   const [track, setTrack] = useState<TrackSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [purchasePrice, setPurchasePrice] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +55,6 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
 
         if (!cancelled) {
           setTrack(nextTrack);
-          setPurchasePrice(nextTrack?.purchasePrice ?? "");
         }
       } catch (error) {
         if (!cancelled) {
@@ -83,63 +76,55 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     };
   }, [session?.token, trackId]);
 
-  const applyAccessUpdate = async (access: TrackAccess) => {
-    if (!session?.token || !track || track.access === access) {
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      const updatedTrack = await tracksApi.updateTrackAccess(
-        session.token,
-        track.id,
-        access,
-      );
-      setTrack(updatedTrack);
-      toast.success(`Track access updated to ${access}.`);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to update track access",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const updateAccess = async (access: TrackAccess) => {
-    await applyAccessUpdate(access);
-  };
-
-  const savePurchaseSettings = async () => {
+  const updateAccess = async (access: EditableTrackAccess) => {
     if (!session?.token || !track) {
       return;
     }
 
-    const monetizationAccess: EditableTrackAccess =
-      track.access === "subscribers" ? "private" : track.access;
+    const currentVisibility = track.access === "private" ? "private" : "public";
+
+    if (currentVisibility === access) {
+      return;
+    }
 
     try {
       setIsSaving(true);
-      const updatedTrack = await tracksApi.updateTrackMonetization(
-        session.token,
-        track.id,
-        {
-          access: monetizationAccess,
-          purchaseEnabled: monetizationAccess === "purchase_required",
-          purchasePrice,
-        },
-      );
+      const updatedTrack = await tracksApi.updateTrackAccess(session.token, track.id, access);
       setTrack(updatedTrack);
-      setPurchasePrice(updatedTrack.purchasePrice ?? "");
-      toast.success("Track monetization saved.");
+      toast.success(access === "public" ? "Track published." : "Track unpublished.");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save track monetization",
+        error instanceof Error ? error.message : "Unable to update track visibility",
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const deleteTrack = async () => {
+    if (!session?.token || !track) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${track.title}"? This action cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await tracksApi.deleteTrack(session.token, track.id);
+      toast.success("Track deleted.");
+      router.push("/dashboard/tracks");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to delete track",
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -166,6 +151,9 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
       </div>
     );
   }
+
+  const currentVisibility: EditableTrackAccess =
+    track.access === "private" ? "private" : "public";
 
   return (
     <div className="space-y-8">
@@ -218,10 +206,10 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </div>
           <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-              Current access
+              Visibility
             </p>
             <p className="mt-3 text-xl capitalize text-emerald-300">
-              {track.access}
+              {currentVisibility === "public" ? "Published" : "Unpublished"}
             </p>
           </div>
         </div>
@@ -230,26 +218,20 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
       <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
         <div className="max-w-3xl space-y-2">
           <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-            Access control
+            Publishing
           </p>
           <h3 className="text-2xl font-semibold text-white">
-            Change who can discover and play this song.
+            Control whether this song is live or held back.
           </h3>
           <p className="text-slate-400">
-            Private songs stay out of discovery. Public and purchasable songs can
-            appear in discovery once playback is ready.
+            Unpublished songs stay out of discovery. Published songs appear in the
+            listening surfaces once playback is ready.
           </p>
         </div>
 
-        {track.access === "subscribers" ? (
-          <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-            This track is currently included in Music City Pass. Subscriber access is managed by the platform, not by creators.
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {accessOptions.map((option) => {
-            const isActive = option.value === track.access;
+            const isActive = option.value === currentVisibility;
 
             return (
               <button
@@ -280,45 +262,38 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
         {isSaving ? (
           <div className="mt-6 flex items-center gap-3 text-sm text-slate-300">
             <LoaderCircle className="h-4 w-4 animate-spin" />
-            Saving access...
+            Saving visibility...
           </div>
         ) : null}
-      </div>
 
-      {track.access === "purchase_required" ? (
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-          <div className="max-w-3xl space-y-2">
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-              Monetization
-            </p>
-            <h3 className="text-2xl font-semibold text-white">
-              Configure the unlock price.
-            </h3>
-            <p className="text-slate-400">
-              Fans pay once, then playback is unlocked immediately after payment confirmation.
-            </p>
-          </div>
-
-          <div className="mt-8 max-w-sm space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-slate-300">Price ({track.purchaseAssetCode ?? "XLM"})</p>
-              <Input
-                value={purchasePrice}
-                onChange={(event) => setPurchasePrice(event.target.value)}
-                className="border-white/10 bg-slate-950 text-white"
-                placeholder="5"
-              />
-            </div>
-            <Button
-              className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-              disabled={isSaving}
-              onClick={() => void savePurchaseSettings()}
-            >
-              {isSaving ? "Saving..." : "Save purchase settings"}
-            </Button>
-          </div>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+            disabled={isSaving || currentVisibility === "public"}
+            onClick={() => void updateAccess("public")}
+          >
+            Publish
+          </Button>
+          <Button
+            variant="outline"
+            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+            disabled={isSaving || currentVisibility === "private"}
+            onClick={() => void updateAccess("private")}
+          >
+            Unpublish
+          </Button>
+          <Button
+            variant="outline"
+            className="border-red-400/30 bg-red-500/10 text-red-100 hover:bg-red-500/20"
+            disabled={isDeleting}
+            onClick={() => void deleteTrack()}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {isDeleting ? "Deleting..." : "Delete track"}
+          </Button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 };

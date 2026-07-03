@@ -19,7 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 type EditableTrackAccess = Extract<
   TrackAccess,
-  "private" | "purchase_required" | "public"
+  "private" | "public"
 >;
 
 type ReleasePlacement = "standalone" | "existing" | "new";
@@ -45,6 +45,11 @@ const steps = [
     label: "Media",
     description: "Cover art and audio upload.",
   },
+  {
+    id: "publishing",
+    label: "Publishing",
+    description: "Choose whether the track goes live now or stays offstage.",
+  },
 ] as const;
 
 const isEmailLike = (value: string) => /\S+@\S+\.\S+/.test(value.trim());
@@ -65,7 +70,6 @@ export const TrackCreateForm = ({
   const [country, setCountry] = useState("");
   const [description, setDescription] = useState("");
   const [access, setAccess] = useState<EditableTrackAccess>("private");
-  const [purchasePrice, setPurchasePrice] = useState("5");
   const [composer, setComposer] = useState("");
   const [producer, setProducer] = useState("");
   const [isrc, setIsrc] = useState("");
@@ -194,11 +198,6 @@ export const TrackCreateForm = ({
         return false;
       }
 
-      if (access === "purchase_required" && !purchasePrice.trim()) {
-        toast.error("Add a purchase price before continuing.");
-        return false;
-      }
-
       if (releasePlacement === "existing" && !selectedReleaseId) {
         toast.error("Choose the existing release for this track.");
         return false;
@@ -245,7 +244,6 @@ export const TrackCreateForm = ({
     setCountry("");
     setDescription("");
     setAccess("private");
-    setPurchasePrice("5");
     setComposer("");
     setProducer("");
     setIsrc("");
@@ -324,10 +322,8 @@ export const TrackCreateForm = ({
         country,
         genre,
         description,
-        priceLabel: access === "purchase_required" ? purchasePrice : "Private",
+        priceLabel: access === "public" ? "Public" : "Private",
         access,
-        purchaseEnabled: access === "purchase_required",
-        purchasePrice: access === "purchase_required" ? purchasePrice : undefined,
       });
 
       let releaseId = selectedReleaseId;
@@ -457,7 +453,7 @@ export const TrackCreateForm = ({
           value={progressValue}
           className="h-2 bg-white/10 [&>div]:bg-emerald-400"
         />
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => (
             <button
               key={step.id}
@@ -531,19 +527,6 @@ export const TrackCreateForm = ({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="trackAccess">Release access</Label>
-            <select
-              id="trackAccess"
-              value={access}
-              onChange={(event) => setAccess(event.target.value as EditableTrackAccess)}
-              className="h-10 rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white"
-            >
-              <option value="private">Private</option>
-              <option value="purchase_required">One-time purchase</option>
-              <option value="public">Public</option>
-            </select>
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="releasePlacement">Release placement</Label>
             <select
               id="releasePlacement"
@@ -558,17 +541,6 @@ export const TrackCreateForm = ({
               <option value="new">Create new release</option>
             </select>
           </div>
-          {access === "purchase_required" ? (
-            <div className="space-y-2">
-              <Label htmlFor="trackPurchasePrice">Purchase price (XLM)</Label>
-              <Input
-                id="trackPurchasePrice"
-                value={purchasePrice}
-                onChange={(event) => setPurchasePrice(event.target.value)}
-                className="border-white/10 bg-slate-950/70 text-white"
-              />
-            </div>
-          ) : null}
           {releasePlacement === "existing" ? (
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="selectedReleaseId">Choose release</Label>
@@ -791,6 +763,73 @@ export const TrackCreateForm = ({
         </div>
       ) : null}
 
+      {stepIndex === 3 ? (
+        <div className="space-y-5">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-sm uppercase tracking-[0.28em] text-emerald-400">
+              Final decision
+            </p>
+            <h5 className="text-2xl font-semibold text-white">
+              Decide how this track leaves the studio
+            </h5>
+            <p className="text-sm leading-7 text-slate-400">
+              Published tracks can appear in listening surfaces once playback is ready.
+              Unpublished tracks stay hidden so you can come back and release them later.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {(
+              [
+                {
+                  value: "private",
+                  label: "Keep unpublished",
+                  description:
+                    "Save the upload to your catalog without making it visible to listeners yet.",
+                },
+                {
+                  value: "public",
+                  label: "Publish when ready",
+                  description:
+                    "Make the song eligible for discovery and playback as soon as processing completes.",
+                },
+              ] as const
+            ).map((option) => {
+              const isActive = access === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`rounded-[24px] border p-5 text-left transition ${
+                    isActive
+                      ? "border-emerald-400/50 bg-emerald-400/10"
+                      : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
+                  }`}
+                  onClick={() => setAccess(option.value)}
+                >
+                  <p className="text-xl font-semibold text-white">{option.label}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {option.description}
+                  </p>
+                  {isActive ? (
+                    <p className="mt-4 text-xs uppercase tracking-[0.24em] text-emerald-300">
+                      Selected
+                    </p>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-sm leading-7 text-slate-300">
+            {access === "public"
+              ? "This upload will be created as a published track."
+              : "This upload will be created as an unpublished track."}
+          </div>
+        </div>
+      ) : null}
+
       {isSaving && (audioFile || coverFile) ? (
         <div className="space-y-2 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
           <div className="flex items-center justify-between text-sm text-slate-300">
@@ -853,7 +892,11 @@ export const TrackCreateForm = ({
             disabled={isSaving}
             onClick={() => void createTrack()}
           >
-            {isSaving ? "Uploading..." : "Create track"}
+            {isSaving
+              ? "Uploading..."
+              : access === "public"
+                ? "Create and publish"
+                : "Create unpublished track"}
           </Button>
         )}
       </div>

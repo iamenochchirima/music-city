@@ -33,13 +33,13 @@ export const formatTrackStatus = (track: TrackSummary) => {
 export const formatTrackAccessLabel = (track: TrackSummary) => {
   switch (track.access) {
     case "public":
-      return "Public release";
+      return "Published";
     case "subscribers":
-      return "Subscriber release";
+      return "Platform subscription";
     case "purchase_required":
-      return "Purchase required";
+      return "Legacy purchase gate";
     default:
-      return "Private release";
+      return "Unpublished";
   }
 };
 

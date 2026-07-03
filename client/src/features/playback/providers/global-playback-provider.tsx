@@ -20,6 +20,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,6 +44,7 @@ type GlobalPlaybackContextValue = {
   togglePlayback: () => Promise<void>;
   playPreviousTrack: () => Promise<void>;
   playNextTrack: () => Promise<void>;
+  dismissPlayback: () => Promise<void>;
   seekTo: (value: number) => void;
   skipBy: (delta: number) => void;
   setVolumeLevel: (value: number) => void;
@@ -116,6 +118,7 @@ const GlobalPlaybackBar = ({
   togglePlayback,
   playPreviousTrack,
   playNextTrack,
+  dismissPlayback,
   seekTo,
   setVolumeLevel,
 }: Omit<
@@ -137,20 +140,30 @@ const GlobalPlaybackBar = ({
             <TrackArt track={activeTrack} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
           </div>
-          <div className="min-w-0 space-y-1">
-            <p className="truncate text-lg font-semibold text-white">{activeTrack.title}</p>
-            <p className="truncate text-sm text-slate-400">{activeTrack.artistName}</p>
-            <div
-              className={cn(
-                "flex items-center gap-2 text-xs uppercase tracking-[0.22em]",
-                isPlayingAd ? "text-amber-300" : "text-emerald-300",
-              )}
-            >
-              <Music2 className="h-3.5 w-3.5" />
-              {isPlayingAd
-                ? `Sponsored${activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}`
-                : "Now playing"}
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="truncate text-lg font-semibold text-white">{activeTrack.title}</p>
+              <p className="truncate text-sm text-slate-400">{activeTrack.artistName}</p>
+              <div
+                className={cn(
+                  "flex items-center gap-2 text-xs uppercase tracking-[0.22em]",
+                  isPlayingAd ? "text-amber-300" : "text-emerald-300",
+                )}
+              >
+                <Music2 className="h-3.5 w-3.5" />
+                {isPlayingAd
+                  ? `Sponsored${activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}`
+                  : "Now playing"}
+              </div>
             </div>
+            <button
+              type="button"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+              onClick={() => void dismissPlayback()}
+              aria-label="Close player"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
         <div className="space-y-4 rounded-[26px] border border-white/10 bg-black/20 px-4 py-4">
@@ -777,6 +790,40 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     }
   };
 
+  const dismissPlayback = useCallback(async () => {
+    const audio = audioRef.current;
+
+    if (activeAdImpressionId) {
+      void reportAdImpressionUpdate(activeAdImpressionId, {
+        status: "skipped",
+        reason: "Listener dismissed the player before playback completed.",
+      });
+    }
+
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
+    }
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    stopAnimationLoop();
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setPlaybackSession(null);
+    setStreamUrl(null);
+    setActiveTrack(null);
+    clearActiveAdState();
+    lastReportedProgressRef.current = 0;
+    completionReportedRef.current = false;
+  }, [activeAdImpressionId, clearActiveAdState, reportAdImpressionUpdate]);
+
   const value = useMemo<GlobalPlaybackContextValue>(
     () => ({
       activeTrack,
@@ -791,6 +838,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       togglePlayback,
       playPreviousTrack,
       playNextTrack,
+      dismissPlayback,
       seekTo,
       skipBy,
       setVolumeLevel,
@@ -808,6 +856,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       togglePlayback,
       playPreviousTrack,
       playNextTrack,
+      dismissPlayback,
       setPlaybackQueue,
     ],
   );
@@ -829,6 +878,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       togglePlayback={togglePlayback}
       playPreviousTrack={playPreviousTrack}
       playNextTrack={playNextTrack}
+      dismissPlayback={dismissPlayback}
         seekTo={seekTo}
         setVolumeLevel={setVolumeLevel}
       />

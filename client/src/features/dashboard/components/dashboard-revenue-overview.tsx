@@ -98,9 +98,8 @@ export const DashboardRevenueOverview = () => {
       trackSalesCount: trackSales.length,
       subscriptionSalesCount: subscriptionSales.length,
       activeSubscriptions: activeSubscriptions.length,
-      subscriberOnlyTracks: tracks.filter((track) => track.access === "subscribers").length,
-      purchaseRequiredTracks: tracks.filter((track) => track.access === "purchase_required")
-        .length,
+      publishedTracks: tracks.filter((track) => track.access !== "private").length,
+      privateTracks: tracks.filter((track) => track.access === "private").length,
       recentPayments: [...confirmedPayments].sort(
         (left, right) => Date.parse(right.confirmedAt) - Date.parse(left.confirmedAt),
       ),
@@ -229,20 +228,21 @@ export const DashboardRevenueOverview = () => {
           <h3 className="mt-2 text-2xl font-semibold text-white">Catalog mix</h3>
           <div className="mt-6 space-y-4">
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3">
-              <span className="text-slate-300">Purchasable tracks</span>
+              <span className="text-slate-300">Published tracks</span>
               <span className="font-semibold text-white">
-                {metrics.purchaseRequiredTracks}
+                {metrics.publishedTracks}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3">
-              <span className="text-slate-300">Subscriber-only tracks</span>
+              <span className="text-slate-300">Unpublished tracks</span>
               <span className="font-semibold text-white">
-                {metrics.subscriberOnlyTracks}
+                {metrics.privateTracks}
               </span>
             </div>
             <div className="rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 text-sm leading-7 text-slate-300">
-              Royalties and payout ledger views can slot into this section next without
-              changing the studio navigation again.
+              Listener subscriptions are handled at the platform level. This area can
+              absorb deeper royalties and payout reporting next without changing the
+              studio structure again.
             </div>
           </div>
         </section>
