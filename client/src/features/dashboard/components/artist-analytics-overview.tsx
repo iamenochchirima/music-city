@@ -13,6 +13,7 @@ const WINDOW_OPTIONS = [
   { label: "7D", value: 7 as const },
   { label: "30D", value: 30 as const },
   { label: "90D", value: 90 as const },
+  { label: "Lifetime", value: "lifetime" as const },
 ];
 
 const StatCard = ({
@@ -36,7 +37,7 @@ const StatCard = ({
 export const ArtistAnalyticsOverview = () => {
   const { session } = useAuth();
   const [analytics, setAnalytics] = useState<ArtistAnalyticsSummary | null>(null);
-  const [windowDays, setWindowDays] = useState<7 | 30 | 90>(30);
+  const [windowDays, setWindowDays] = useState<7 | 30 | 90 | "lifetime">(30);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -54,7 +55,12 @@ export const ArtistAnalyticsOverview = () => {
     }
 
     try {
-      setAnalytics(await engagementApi.getMyArtistAnalytics(session.token, windowDays));
+      setAnalytics(
+        await engagementApi.getMyArtistAnalytics(
+          session.token,
+          windowDays === "lifetime" ? undefined : windowDays,
+        ),
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to load analytics",
@@ -108,6 +114,13 @@ export const ArtistAnalyticsOverview = () => {
     1,
     ...analytics.dailyStreams.map((item) => item.streams),
   );
+  const maxFollowers = Math.max(
+    1,
+    ...analytics.dailyFollowers.map((item) => item.followers),
+  );
+  const selectedWindowLabel = analytics.selectedWindowDays
+    ? `Last ${analytics.selectedWindowDays} days`
+    : "Lifetime";
 
   return (
     <div className="space-y-8">
@@ -165,7 +178,7 @@ export const ArtistAnalyticsOverview = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                Last {analytics.selectedWindowDays ?? windowDays} days
+                {selectedWindowLabel}
               </p>
               <h3 className="mt-2 text-2xl font-semibold text-white">
                 Stream trend
@@ -178,6 +191,10 @@ export const ArtistAnalyticsOverview = () => {
               <p>
                 {analytics.selectedWindowUniqueListeners.toLocaleString()} listeners in
                 window
+              </p>
+              <p>
+                {analytics.followersGainedInSelectedWindow.toLocaleString()} followers
+                gained
               </p>
             </div>
           </div>
@@ -251,6 +268,89 @@ export const ArtistAnalyticsOverview = () => {
         </section>
       </div>
 
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
+          <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+            Follower growth
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">Audience momentum</h3>
+
+          <div className="mt-8 flex items-end gap-2 overflow-x-auto pb-2">
+            {analytics.dailyFollowers.length === 0 ? (
+              <div className="text-sm text-slate-400">
+                No follower growth recorded yet.
+              </div>
+            ) : (
+              analytics.dailyFollowers.map((point) => (
+                <div key={point.date} className="flex min-w-12 flex-col items-center gap-2">
+                  <div
+                    className="w-8 rounded-t-full bg-sky-400/80"
+                    style={{
+                      height: `${Math.max(12, (point.followers / maxFollowers) * 180)}px`,
+                    }}
+                  />
+                  <p className="text-[0.65rem] uppercase tracking-[0.18em] text-slate-500">
+                    {point.date.slice(5)}
+                  </p>
+                  <p className="text-[0.65rem] text-slate-400">
+                    +{point.newFollowers}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
+          <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+            Top releases
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">
+            Best performing projects
+          </h3>
+
+          {analytics.topReleases.length === 0 ? (
+            <div className="mt-6 text-sm text-slate-400">
+              No release analytics yet.
+            </div>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {analytics.topReleases.map((release) => (
+                <div
+                  key={release.releaseId}
+                  className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 md:grid-cols-[minmax(0,1.4fr)_100px_100px_100px]"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{release.title}</p>
+                    <p className="mt-1 truncate text-sm uppercase tracking-[0.18em] text-slate-500">
+                      {release.type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                      Streams
+                    </p>
+                    <p className="mt-1 text-white">{release.streams.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                      Likes
+                    </p>
+                    <p className="mt-1 text-white">{release.likes.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                      Saves
+                    </p>
+                    <p className="mt-1 text-white">{release.saves.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
       <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
         <div className="flex items-center gap-3">
           <Music2 className="h-5 w-5 text-emerald-300" />
@@ -273,7 +373,7 @@ export const ArtistAnalyticsOverview = () => {
             {analytics.topTracks.map((track) => (
               <div
                 key={track.trackId}
-                className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 md:grid-cols-[minmax(0,1.4fr)_120px_120px_140px]"
+                className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 md:grid-cols-[minmax(0,1.4fr)_100px_100px_130px_110px]"
               >
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-white">{track.title}</p>
@@ -301,6 +401,12 @@ export const ArtistAnalyticsOverview = () => {
                     {track.saves.toLocaleString()} /{" "}
                     {track.uniqueListeners.toLocaleString()}
                   </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    Completion
+                  </p>
+                  <p className="mt-1 text-white">{track.completionRate.toFixed(1)}%</p>
                 </div>
               </div>
             ))}

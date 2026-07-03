@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import {
+  BarChart3,
   CreditCard,
   Eye,
   EyeOff,
@@ -8,6 +9,7 @@ import {
   LogOut,
   Megaphone,
   Percent,
+  Radio,
   RefreshCw,
   ShieldCheck,
   Ticket,
@@ -19,6 +21,7 @@ import { toast } from "sonner";
 
 import type {
   AdminAccount,
+  AdminAnalyticsOverview,
   RoyaltyLedgerEntry,
   RoyaltyEngineConfig,
   RoyaltyFeeSettings,
@@ -51,6 +54,12 @@ import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  {
+    href: "/console/analytics",
+    label: "Analytics",
+    description: "Platform health",
+    icon: LayoutDashboard,
+  },
   {
     href: "/console",
     label: "Subscriptions",
@@ -242,6 +251,13 @@ const formatMoneyAmount = (value: string) => {
 };
 
 const assetDisplayLabel = (assetCode?: string) => assetCode ?? "XLM";
+
+const adminAnalyticsWindowOptions = [
+  { label: "7D", value: 7 as const },
+  { label: "30D", value: 30 as const },
+  { label: "90D", value: 90 as const },
+  { label: "Lifetime", value: "lifetime" as const },
+];
 
 const formatAssetAmount = (amount: string, assetCode?: string) =>
   `${formatMoneyAmount(amount)} ${assetDisplayLabel(assetCode)}`;
@@ -3484,6 +3500,228 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AdminAnalyticsPage = () => {
+  const { session } = useAdminAuth();
+  const [analytics, setAnalytics] = useState<AdminAnalyticsOverview | null>(null);
+  const [windowDays, setWindowDays] = useState<7 | 30 | 90 | "lifetime">(30);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadAnalytics = async (refreshOnly = false) => {
+    if (!session?.token) {
+      setAnalytics(null);
+      setIsLoading(false);
+      return;
+    }
+
+    if (refreshOnly) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+
+    try {
+      setAnalytics(
+        await adminApi.getAnalyticsOverview(
+          session.token,
+          windowDays === "lifetime" ? undefined : windowDays,
+        ),
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load analytics");
+    } finally {
+      if (refreshOnly) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    void loadAnalytics();
+  }, [session?.token, windowDays]);
+
+  const selectedWindowLabel = analytics?.selectedWindowDays
+    ? `Last ${analytics.selectedWindowDays} days`
+    : "Lifetime";
+
+  return (
+    <SidebarLayout>
+      <div className="space-y-6">
+        <SectionHeader
+          title="Platform analytics"
+          description="Trusted playback and engagement metrics across the whole catalog."
+          action={
+            <div className="flex flex-wrap gap-2">
+              {adminAnalyticsWindowOptions.map((option) => (
+                <Button
+                  key={option.label}
+                  type="button"
+                  variant={windowDays === option.value ? "default" : "outline"}
+                  className={
+                    windowDays === option.value
+                      ? "bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                      : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }
+                  onClick={() => setWindowDays(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                disabled={isRefreshing}
+                onClick={() => void loadAnalytics(true)}
+              >
+                <RefreshCw
+                  className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+                />
+                Refresh
+              </Button>
+            </div>
+          }
+        />
+
+        {isLoading ? (
+          <div className={cn(shellPanelClassName, "p-6 text-sm text-slate-400")}>
+            Loading analytics...
+          </div>
+        ) : !analytics ? (
+          <div className={cn(shellPanelClassName, "p-6 text-sm text-slate-400")}>
+            Analytics are not available yet.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <StatTile
+                label={`${selectedWindowLabel} streams`}
+                value={analytics.totalStreams.toLocaleString()}
+              />
+              <StatTile
+                label="Active listeners"
+                value={analytics.activeListeners.toLocaleString()}
+              />
+              <StatTile
+                label="Release views"
+                value={analytics.releaseViews.toLocaleString()}
+              />
+              <StatTile
+                label="New follows"
+                value={analytics.newFollows.toLocaleString()}
+              />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <StatTile
+                label="Artists"
+                value={analytics.totalArtists.toLocaleString()}
+              />
+              <StatTile
+                label="Tracks"
+                value={analytics.totalTracks.toLocaleString()}
+              />
+              <StatTile label="Window" value={selectedWindowLabel} />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-3">
+              <section className={cn(shellPanelClassName, "p-5")}>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-emerald-300" />
+                  <h3 className="text-sm font-semibold text-white">Top artists</h3>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {analytics.topArtists.length === 0 ? (
+                    <p className="text-sm text-slate-400">No artist data yet.</p>
+                  ) : (
+                    analytics.topArtists.map((artist) => (
+                      <div
+                        key={artist.artistId}
+                        className="flex items-center justify-between gap-3 border border-white/8 bg-[#0b1220] px-4 py-3"
+                      >
+                        <p className="truncate text-sm font-medium text-white">
+                          {artist.artistName}
+                        </p>
+                        <p className="text-sm text-slate-300">
+                          {artist.streams.toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <section className={cn(shellPanelClassName, "p-5")}>
+                <div className="flex items-center gap-2">
+                  <Radio className="h-4 w-4 text-emerald-300" />
+                  <h3 className="text-sm font-semibold text-white">Top tracks</h3>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {analytics.topTracks.length === 0 ? (
+                    <p className="text-sm text-slate-400">No track data yet.</p>
+                  ) : (
+                    analytics.topTracks.map((track) => (
+                      <div
+                        key={track.trackId}
+                        className="flex items-center justify-between gap-3 border border-white/8 bg-[#0b1220] px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">
+                            {track.title}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {track.artistName}
+                          </p>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                          {track.streams.toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <section className={cn(shellPanelClassName, "p-5")}>
+                <div className="flex items-center gap-2">
+                  <Ticket className="h-4 w-4 text-emerald-300" />
+                  <h3 className="text-sm font-semibold text-white">Top releases</h3>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {analytics.topReleases.length === 0 ? (
+                    <p className="text-sm text-slate-400">No release data yet.</p>
+                  ) : (
+                    analytics.topReleases.map((release) => (
+                      <div
+                        key={release.releaseId}
+                        className="flex items-center justify-between gap-3 border border-white/8 bg-[#0b1220] px-4 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-white">
+                            {release.title}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {release.artistName}
+                          </p>
+                        </div>
+                        <p className="text-sm text-slate-300">
+                          {release.streams.toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
+      </div>
+    </SidebarLayout>
+  );
+};
+
 export const AppRoutes = () => {
   const { session, isLoading } = useAdminAuth();
 
@@ -3500,6 +3738,14 @@ export const AppRoutes = () => {
       <Route
         path="/auth"
         element={session?.token ? <Navigate replace to="/console" /> : <AuthPage />}
+      />
+      <Route
+        path="/console/analytics"
+        element={
+          <ProtectedRoute>
+            <AdminAnalyticsPage />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/console"

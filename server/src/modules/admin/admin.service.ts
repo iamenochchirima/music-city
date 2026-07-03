@@ -1,6 +1,7 @@
 import {
   type AdminAdListItem,
   adminAccountSchema,
+  adminAnalyticsOverviewSchema,
   adminPlatformSubscriptionSettingsSchema,
   adminSubscriptionListSchema,
   adminSubscriptionRecordSchema,
@@ -13,6 +14,7 @@ import {
   createAdminInputSchema,
   adminLoginInputSchema,
   type AdminAccount,
+  type AdminAnalyticsOverview,
   type AdminPlatformSubscriptionSettings,
   type AdminSubscriptionList,
   type AdminSubscriptionRecord,
@@ -44,6 +46,7 @@ type PersistedAdminAccount = AdminAccount & {
 
 const PLATFORM_SUBSCRIPTION_SETTINGS_KEY = "platform_subscription_settings";
 const TREASURY_SETTINGS_KEY = "treasury_wallet_settings";
+const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
 const defaultPlatformSettings = (): AdminPlatformSubscriptionSettings => ({
   enabled: env.PLATFORM_SUBSCRIPTION_ENABLED,
@@ -311,6 +314,45 @@ export const adminService = {
     return {
       items,
     };
+  },
+
+  async getAnalyticsOverview(
+    windowDays?: number | null,
+  ): Promise<AdminAnalyticsOverview> {
+    const selectedWindowDays =
+      windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
+
+    const [users, tracks, totalStreams, activeListeners, releaseViews, newFollows, topArtists, topTracks, topReleases] =
+      await Promise.all([
+        usersService.listAllProfiles(),
+        tracksRepository.list(),
+        databaseService.countQualifiedStreamsPlatform(selectedWindowDays),
+        databaseService.countPlatformActiveListeners(selectedWindowDays),
+        databaseService.countAnalyticsEventsByType(
+          "view_release",
+          selectedWindowDays,
+        ),
+        databaseService.countAnalyticsEventsByType(
+          "follow_artist",
+          selectedWindowDays,
+        ),
+        databaseService.listTopArtistsByQualifiedStreams(8, selectedWindowDays),
+        databaseService.listTopTracksByQualifiedStreams(8, selectedWindowDays),
+        databaseService.listTopReleasesByQualifiedStreams(8, selectedWindowDays),
+      ]);
+
+    return adminAnalyticsOverviewSchema.parse({
+      selectedWindowDays,
+      totalStreams,
+      activeListeners,
+      releaseViews,
+      newFollows,
+      totalArtists: users.filter((user) => user.role === "artist").length,
+      totalTracks: tracks.length,
+      topArtists,
+      topTracks,
+      topReleases,
+    });
   },
 
   async listUsers(): Promise<AdminUserList> {

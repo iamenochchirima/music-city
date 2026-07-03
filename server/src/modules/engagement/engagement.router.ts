@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { optionalSession } from "../../middleware/optional-session.js";
+import { createRateLimit } from "../../middleware/rate-limit.js";
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -10,6 +11,16 @@ import { engagementService } from "./engagement.service.js";
 const engagementRouter = Router();
 const artistAnalyticsQuerySchema = z.object({
   windowDays: z.coerce.number().int().positive().optional(),
+});
+const analyticsMutationRateLimit = createRateLimit({
+  bucketName: "engagement-mutations",
+  maxRequests: 120,
+  windowMs: 60_000,
+});
+const analyticsViewRateLimit = createRateLimit({
+  bucketName: "engagement-views",
+  maxRequests: 240,
+  windowMs: 60_000,
 });
 
 engagementRouter.get(
@@ -35,6 +46,7 @@ engagementRouter.get(
 engagementRouter.post(
   "/artists/:artistId/follow",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -55,6 +67,7 @@ engagementRouter.post(
 engagementRouter.delete(
   "/artists/:artistId/follow",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -95,6 +108,7 @@ engagementRouter.get(
 engagementRouter.post(
   "/tracks/:trackId/like",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -135,6 +149,7 @@ engagementRouter.get(
 engagementRouter.delete(
   "/tracks/:trackId/like",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -155,6 +170,7 @@ engagementRouter.delete(
 engagementRouter.post(
   "/tracks/:trackId/save",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -175,6 +191,7 @@ engagementRouter.post(
 engagementRouter.delete(
   "/tracks/:trackId/save",
   requireSession,
+  analyticsMutationRateLimit,
   asyncHandler(async (request, response) => {
     try {
       response.json({
@@ -195,6 +212,7 @@ engagementRouter.delete(
 engagementRouter.post(
   "/releases/:releaseId/view",
   optionalSession,
+  analyticsViewRateLimit,
   asyncHandler(async (request, response) => {
     try {
       await engagementService.recordReleaseView(

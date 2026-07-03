@@ -35,6 +35,31 @@ type DailyFollowersRow = {
   new_followers: string;
 };
 
+type PlaybackCountByTrackRow = {
+  track_id: string;
+  streams: string;
+};
+
+type TopArtistStreamsRow = {
+  artist_id: string;
+  artist_name: string;
+  streams: string;
+};
+
+type TopTrackStreamsRow = {
+  track_id: string;
+  title: string;
+  artist_name: string;
+  streams: string;
+};
+
+type TopReleaseStreamsRow = {
+  release_id: string;
+  title: string;
+  artist_name: string;
+  streams: string;
+};
+
 type TimestampRow = {
   occurred_at: Date | string;
 };
@@ -1352,6 +1377,185 @@ export const databaseService = {
         followers: runningFollowers,
       };
     });
+  },
+
+  async listTopArtistsByQualifiedStreams(limit: number, days?: number | null) {
+    const values = [String(limit)];
+    const clauses = ["p.event_type = 'qualified_stream'"];
+
+    if (days && days > 0) {
+      values.unshift(String(days));
+      clauses.push("p.occurred_at >= NOW() - ($1::text || ' days')::interval");
+    }
+
+    const limitParameter = days && days > 0 ? "$2" : "$1";
+    const result = await pool.query<TopArtistStreamsRow>(
+      `SELECT p.artist_id,
+              COALESCE(u.payload->>'displayName', 'Unknown artist') AS artist_name,
+              COUNT(*)::text AS streams
+       FROM playback_events p
+       LEFT JOIN users u ON u.id = p.artist_id
+       WHERE ${clauses.join("\n         AND ")}
+       GROUP BY p.artist_id, artist_name
+       ORDER BY COUNT(*) DESC, artist_name ASC
+       LIMIT ${limitParameter}`,
+      values,
+    );
+
+    return result.rows.map((row) => ({
+      artistId: row.artist_id,
+      artistName: row.artist_name,
+      streams: Number(row.streams),
+    }));
+  },
+
+  async listTopTracksByQualifiedStreams(limit: number, days?: number | null) {
+    const values = [String(limit)];
+    const clauses = ["p.event_type = 'qualified_stream'"];
+
+    if (days && days > 0) {
+      values.unshift(String(days));
+      clauses.push("p.occurred_at >= NOW() - ($1::text || ' days')::interval");
+    }
+
+    const limitParameter = days && days > 0 ? "$2" : "$1";
+    const result = await pool.query<TopTrackStreamsRow>(
+      `SELECT p.track_id,
+              COALESCE(t.payload->>'title', 'Untitled track') AS title,
+              COALESCE(t.payload->>'artistName', 'Unknown artist') AS artist_name,
+              COUNT(*)::text AS streams
+       FROM playback_events p
+       LEFT JOIN tracks t ON t.id = p.track_id
+       WHERE ${clauses.join("\n         AND ")}
+       GROUP BY p.track_id, title, artist_name
+       ORDER BY COUNT(*) DESC, title ASC
+       LIMIT ${limitParameter}`,
+      values,
+    );
+
+    return result.rows.map((row) => ({
+      trackId: row.track_id,
+      title: row.title,
+      artistName: row.artist_name,
+      streams: Number(row.streams),
+    }));
+  },
+
+  async listTopReleasesByQualifiedStreams(limit: number, days?: number | null) {
+    const values = [String(limit)];
+    const clauses = ["p.event_type = 'qualified_stream'"];
+
+    if (days && days > 0) {
+      values.unshift(String(days));
+      clauses.push("p.occurred_at >= NOW() - ($1::text || ' days')::interval");
+    }
+
+    const limitParameter = days && days > 0 ? "$2" : "$1";
+    const result = await pool.query<TopReleaseStreamsRow>(
+      `SELECT rt.release_id,
+              COALESCE(r.payload->>'title', 'Untitled release') AS title,
+              COALESCE(u.payload->>'displayName', 'Unknown artist') AS artist_name,
+              COUNT(*)::text AS streams
+       FROM playback_events p
+       INNER JOIN release_tracks rt ON rt.track_id = p.track_id
+       LEFT JOIN releases r ON r.id = rt.release_id
+       LEFT JOIN users u ON u.id = r.artist_id
+       WHERE ${clauses.join("\n         AND ")}
+       GROUP BY rt.release_id, title, artist_name
+       ORDER BY COUNT(*) DESC, title ASC
+       LIMIT ${limitParameter}`,
+      values,
+    );
+
+    return result.rows.map((row) => ({
+      releaseId: row.release_id,
+      title: row.title,
+      artistName: row.artist_name,
+      streams: Number(row.streams),
+    }));
+  },
+
+  async countQualifiedStreamsPlatform(days?: number | null) {
+    const values: string[] = [];
+    const clauses = ["event_type = 'qualified_stream'"];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE ${clauses.join("\n         AND ")}`,
+      values,
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countPlatformActiveListeners(days?: number | null) {
+    const values: string[] = [];
+    const clauses = [
+      "event_type = 'qualified_stream'",
+      "COALESCE(listener_user_id, playback_session_id) IS NOT NULL",
+    ];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(DISTINCT COALESCE(listener_user_id, playback_session_id))::text AS count
+       FROM playback_events
+       WHERE ${clauses.join("\n         AND ")}`,
+      values,
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countAnalyticsEventsByType(eventType: string, days?: number | null) {
+    const values = [eventType];
+    const clauses = ["event_type = $1"];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM analytics_events
+       WHERE ${clauses.join("\n         AND ")}`,
+      values,
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async listQualifiedStreamCountsByTrack(days?: number | null) {
+    const values: string[] = [];
+    const clauses = ["event_type = 'qualified_stream'"];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`occurred_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<PlaybackCountByTrackRow>(
+      `SELECT track_id, COUNT(*)::text AS streams
+       FROM playback_events
+       WHERE ${clauses.join("\n         AND ")}
+       GROUP BY track_id`,
+      values,
+    );
+
+    return result.rows.map((row) => ({
+      trackId: row.track_id,
+      streams: Number(row.streams),
+    }));
   },
 
   async upsertEntitlement(

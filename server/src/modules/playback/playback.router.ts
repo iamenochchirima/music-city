@@ -4,6 +4,7 @@ import {
 } from "@music-city/shared";
 import { Router } from "express";
 
+import { createRateLimit } from "../../middleware/rate-limit.js";
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
@@ -14,6 +15,11 @@ import { usersService } from "../users/users.service.js";
 import { playbackService } from "./playback.service.js";
 
 const playbackRouter = Router();
+const playbackEventRateLimit = createRateLimit({
+  bucketName: "playback-events",
+  maxRequests: 240,
+  windowMs: 60_000,
+});
 
 playbackRouter.use((_request, response, next) => {
   response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -60,6 +66,7 @@ playbackRouter.post(
 playbackRouter.post(
   "/sessions/:sessionId/events",
   requireSession,
+  playbackEventRateLimit,
   asyncHandler(async (request, response) => {
     const session = await playbackService.getSession(
       String(request.params.sessionId),

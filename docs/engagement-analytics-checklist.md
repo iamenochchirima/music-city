@@ -151,29 +151,29 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [x] Add likes count on track detail where appropriate
 - [x] Add creator dashboard analytics overview
 - [x] Add artist analytics page
-- [ ] Add admin analytics overview
+- [x] Add admin analytics overview
 
 ## Phase 10: Creator Analytics Reporting
 - [x] Show total streams per track
 - [x] Show unique listeners per track
-- [ ] Show completion rate per track
+- [x] Show completion rate per track
 - [x] Show top tracks by streams
-- [ ] Show top releases by streams
-- [ ] Show follower growth
+- [x] Show top releases by streams
+- [x] Show follower growth
 - [x] Show saves and likes by track
 - [x] Show recent activity trend lines
-- [ ] Add date filters:
+- [x] Add date filters:
   - [x] 7 days
   - [x] 30 days
   - [x] 90 days
-  - [ ] lifetime
+  - [x] lifetime
 
 ## Phase 11: Admin Reporting
-- [ ] Show total platform streams
-- [ ] Show total active listeners
-- [ ] Show top artists
-- [ ] Show top tracks
-- [ ] Show top releases
+- [x] Show total platform streams
+- [x] Show total active listeners
+- [x] Show top artists
+- [x] Show top tracks
+- [x] Show top releases
 - [ ] Show follow growth platform-wide
 - [ ] Show conversion funnel:
   - [ ] discovery impressions if available
@@ -189,7 +189,7 @@ Use this checklist as the working implementation tracker for streams, follows, l
 - [ ] Decide what personally identifiable data is stored
 - [ ] Hash or minimize sensitive device/network fields where possible
 - [ ] Add spam prevention for repeated stream inflation
-- [ ] Add rate limiting on analytics endpoints
+- [x] Add rate limiting on analytics endpoints
 - [ ] Add anomaly detection flags for suspicious streaming behavior
 - [ ] Decide how to treat self-streams by creators
 - [ ] Decide how to treat anonymous vs authenticated listeners

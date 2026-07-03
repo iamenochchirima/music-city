@@ -463,6 +463,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "First",
           artistId: "usr-artist",
           artistName: "Artist",
+          releaseId: "rel-1",
           releaseTitle: "Release One",
           genre: "Pop",
           runtime: "3:00",
@@ -477,6 +478,8 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "Second",
           artistId: "usr-artist",
           artistName: "Artist",
+          releaseId: "rel-2",
+          releaseTitle: "Release Two",
           genre: "Soul",
           runtime: "4:00",
           priceLabel: "Subscribers",
@@ -488,6 +491,32 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
       ]) as typeof tracksRepository.listByArtist,
     ),
     restore(
+      releasesRepository,
+      "listByArtist",
+      (async () => [
+        {
+          id: "rel-1",
+          artistId: "usr-artist",
+          artistName: "Artist",
+          title: "Release One",
+          type: "single",
+          status: "published",
+          genre: "Pop",
+          trackCount: 1,
+        },
+        {
+          id: "rel-2",
+          artistId: "usr-artist",
+          artistName: "Artist",
+          title: "Release Two",
+          type: "ep",
+          status: "published",
+          genre: "Soul",
+          trackCount: 1,
+        },
+      ]) as typeof releasesRepository.listByArtist,
+    ),
+    restore(
       engagementRepository,
       "countTrackSaves",
       (async (trackId: string) => (trackId === "trk-1" ? 4 : 2)) as typeof engagementRepository.countTrackSaves,
@@ -496,6 +525,16 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
       engagementRepository,
       "countUniqueListenersByTrack",
       (async (trackId: string) => (trackId === "trk-1" ? 9 : 6)) as typeof engagementRepository.countUniqueListenersByTrack,
+    ),
+    restore(
+      engagementRepository,
+      "countPlaybackStartsByTrack",
+      (async (trackId: string) => (trackId === "trk-1" ? 10 : 3)) as typeof engagementRepository.countPlaybackStartsByTrack,
+    ),
+    restore(
+      engagementRepository,
+      "countPlaybackCompletionsByTrack",
+      (async (trackId: string) => (trackId === "trk-1" ? 8 : 1)) as typeof engagementRepository.countPlaybackCompletionsByTrack,
     ),
     restore(
       engagementRepository,
@@ -535,6 +574,17 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
             ]
           : [{ date: "2026-06-30", streams: 5 }]) as typeof engagementRepository.listArtistDailyQualifiedStreams,
     ),
+    restore(
+      engagementRepository,
+      "listArtistDailyFollowerGrowth",
+      (async (_artistId: string, days?: number | null) =>
+        days === 90
+          ? [
+              { date: "2026-04-10", newFollowers: 2, followers: 2 },
+              { date: "2026-06-30", newFollowers: 1, followers: 3 },
+            ]
+          : [{ date: "2026-06-30", newFollowers: 1, followers: 1 }]) as typeof engagementRepository.listArtistDailyFollowerGrowth,
+    ),
   ];
 
   try {
@@ -544,17 +594,59 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
     assert.equal(analytics.selectedWindowDays, 90);
     assert.equal(analytics.selectedWindowStreams, 27);
     assert.equal(analytics.selectedWindowUniqueListeners, 10);
+    assert.equal(analytics.followersGainedInSelectedWindow, 3);
     assert.deepEqual(
       analytics.topTracks.map((track) => ({
         trackId: track.trackId,
         saves: track.saves,
         uniqueListeners: track.uniqueListeners,
+        completionRate: track.completionRate,
       })),
       [
-        { trackId: "trk-1", saves: 4, uniqueListeners: 9 },
-        { trackId: "trk-2", saves: 2, uniqueListeners: 6 },
+        {
+          trackId: "trk-1",
+          saves: 4,
+          uniqueListeners: 9,
+          completionRate: 80,
+        },
+        {
+          trackId: "trk-2",
+          saves: 2,
+          uniqueListeners: 6,
+          completionRate: 33.3,
+        },
       ],
     );
+    assert.deepEqual(analytics.topReleases, [
+      {
+        releaseId: "rel-1",
+        title: "Release One",
+        type: "single",
+        streams: 20,
+        likes: 5,
+        saves: 4,
+      },
+      {
+        releaseId: "rel-2",
+        title: "Release Two",
+        type: "ep",
+        streams: 12,
+        likes: 3,
+        saves: 2,
+      },
+    ]);
+    assert.deepEqual(analytics.dailyFollowers, [
+      {
+        date: "2026-04-10",
+        newFollowers: 2,
+        followers: 13,
+      },
+      {
+        date: "2026-06-30",
+        newFollowers: 1,
+        followers: 14,
+      },
+    ]);
     assert.deepEqual(analytics.dailyStreams, [
       { date: "2026-04-10", streams: 3 },
       { date: "2026-06-30", streams: 5 },

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 
 import { requireAdminSession } from "../../middleware/require-admin-session.js";
 import { requireSuperAdmin } from "../../middleware/require-super-admin.js";
@@ -7,6 +8,9 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { adminService } from "./admin.service.js";
 
 const adminRouter = Router();
+const adminAnalyticsQuerySchema = z.object({
+  windowDays: z.coerce.number().int().positive().optional(),
+});
 
 adminRouter.get(
   "/auth/bootstrap-status",
@@ -134,6 +138,18 @@ adminRouter.delete(
 );
 
 adminRouter.get(
+  "/analytics",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      analytics: await adminService.getAnalyticsOverview(
+        adminAnalyticsQuerySchema.parse(request.query).windowDays,
+      ),
+    });
+  }),
+);
+
+adminRouter.get(
   "/subscriptions/platform-plan",
   requireAdminSession,
   asyncHandler(async (_request, response) => {
@@ -176,6 +192,23 @@ adminRouter.get(
   requireAdminSession,
   asyncHandler(async (_request, response) => {
     response.json(await adminService.listTracks());
+  }),
+);
+
+adminRouter.get(
+  "/analytics/overview",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    const windowDays =
+      typeof request.query.windowDays === "string"
+        ? Number(request.query.windowDays)
+        : undefined;
+
+    response.json(
+      await adminService.getAnalyticsOverview(
+        Number.isFinite(windowDays) ? windowDays : undefined,
+      ),
+    );
   }),
 );
 

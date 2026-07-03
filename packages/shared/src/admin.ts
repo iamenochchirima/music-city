@@ -160,3 +160,46 @@ export type AdminUserList = z.infer<typeof adminUserListSchema>;
 export interface AdminTrackList {
   items: TrackSummary[];
 }
+
+export const adminAnalyticsTopArtistSchema = z.object({
+  artistId: z.string().min(1),
+  artistName: z.string().min(1),
+  streams: z.number().int().min(0),
+});
+export type AdminAnalyticsTopArtist = z.infer<
+  typeof adminAnalyticsTopArtistSchema
+>;
+
+export const adminAnalyticsTopTrackSchema = z.object({
+  trackId: z.string().min(1),
+  title: z.string().min(1),
+  artistName: z.string().min(1),
+  streams: z.number().int().min(0),
+});
+export type AdminAnalyticsTopTrack = z.infer<typeof adminAnalyticsTopTrackSchema>;
+
+export const adminAnalyticsTopReleaseSchema = z.object({
+  releaseId: z.string().min(1),
+  title: z.string().min(1),
+  artistName: z.string().min(1),
+  streams: z.number().int().min(0),
+});
+export type AdminAnalyticsTopRelease = z.infer<
+  typeof adminAnalyticsTopReleaseSchema
+>;
+
+export const adminAnalyticsOverviewSchema = z.object({
+  selectedWindowDays: z.number().int().positive().nullable(),
+  totalStreams: z.number().int().min(0),
+  activeListeners: z.number().int().min(0),
+  releaseViews: z.number().int().min(0),
+  newFollows: z.number().int().min(0),
+  totalArtists: z.number().int().min(0),
+  totalTracks: z.number().int().min(0),
+  topArtists: z.array(adminAnalyticsTopArtistSchema),
+  topTracks: z.array(adminAnalyticsTopTrackSchema),
+  topReleases: z.array(adminAnalyticsTopReleaseSchema),
+});
+export type AdminAnalyticsOverview = z.infer<
+  typeof adminAnalyticsOverviewSchema
+>;

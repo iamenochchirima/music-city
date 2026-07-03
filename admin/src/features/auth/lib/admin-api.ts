@@ -4,6 +4,7 @@ import type {
   AdRecord,
   AdminAdListItem,
   AdminAccount,
+  AdminAnalyticsOverview,
   AdminBootstrapStatus,
   ReconcileRoyaltyPayoutsInput,
   AdminPlatformSubscriptionSettings,
@@ -104,6 +105,13 @@ export const adminApi = {
     return httpClient
       .get<{ items: TrackSummary[] }>("/tracks", token)
       .then((response) => response.items);
+  },
+
+  getAnalyticsOverview(token: string, windowDays?: 7 | 30 | 90) {
+    return httpClient.get<AdminAnalyticsOverview>(
+      `/analytics/overview${windowDays ? `?windowDays=${windowDays}` : ""}`,
+      token,
+    );
   },
 
   listAds(token: string) {
