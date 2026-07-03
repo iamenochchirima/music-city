@@ -219,6 +219,7 @@ export const artistAnalyticsTrackSchema = z.object({
   likes: z.number().int().min(0),
   saves: z.number().int().min(0),
   uniqueListeners: z.number().int().min(0),
+  completionRate: z.number().min(0).max(100),
 });
 export type ArtistAnalyticsTrack = z.infer<typeof artistAnalyticsTrackSchema>;
 
@@ -240,6 +241,27 @@ export type ArtistAnalyticsDailyPoint = z.infer<
   typeof artistAnalyticsDailyPointSchema
 >;
 
+export const artistAnalyticsFollowerPointSchema = z.object({
+  date: z.string().min(1),
+  followers: z.number().int().min(0),
+  newFollowers: z.number().int().min(0),
+});
+export type ArtistAnalyticsFollowerPoint = z.infer<
+  typeof artistAnalyticsFollowerPointSchema
+>;
+
+export const artistAnalyticsReleaseSchema = z.object({
+  releaseId: z.string().min(1),
+  title: z.string().min(1),
+  type: z.enum(["single", "ep", "album"]),
+  streams: z.number().int().min(0),
+  likes: z.number().int().min(0),
+  saves: z.number().int().min(0),
+});
+export type ArtistAnalyticsRelease = z.infer<
+  typeof artistAnalyticsReleaseSchema
+>;
+
 export const artistAnalyticsSummarySchema = z.object({
   artistId: z.string().min(1),
   followerCount: z.number().int().min(0),
@@ -254,8 +276,11 @@ export const artistAnalyticsSummarySchema = z.object({
   selectedWindowDays: z.number().int().positive().nullable(),
   selectedWindowStreams: z.number().int().min(0),
   selectedWindowUniqueListeners: z.number().int().min(0),
+  followersGainedInSelectedWindow: z.number().int().min(0),
   topTracks: z.array(artistAnalyticsTrackSchema),
+  topReleases: z.array(artistAnalyticsReleaseSchema),
   dailyStreams: z.array(artistAnalyticsDailyPointSchema),
+  dailyFollowers: z.array(artistAnalyticsFollowerPointSchema),
 });
 export type ArtistAnalyticsSummary = z.infer<
   typeof artistAnalyticsSummarySchema

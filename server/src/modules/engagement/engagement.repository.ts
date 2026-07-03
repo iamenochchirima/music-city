@@ -124,6 +124,14 @@ export const engagementRepository = {
     return databaseService.countQualifiedStreamsByTrack(trackId);
   },
 
+  async countPlaybackStartsByTrack(trackId: string) {
+    return databaseService.countPlaybackStartsByTrack(trackId);
+  },
+
+  async countPlaybackCompletionsByTrack(trackId: string) {
+    return databaseService.countPlaybackCompletionsByTrack(trackId);
+  },
+
   async countQualifiedStreamsByArtist(artistId: string) {
     return databaseService.countQualifiedStreamsByArtist(artistId);
   },
@@ -146,5 +154,9 @@ export const engagementRepository = {
 
   async listArtistDailyQualifiedStreams(artistId: string, days?: number | null) {
     return databaseService.listArtistDailyQualifiedStreams(artistId, days);
+  },
+
+  async listArtistDailyFollowerGrowth(artistId: string, days?: number | null) {
+    return databaseService.listArtistDailyFollowerGrowth(artistId, days);
   },
 };

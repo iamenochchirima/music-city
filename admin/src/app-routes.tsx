@@ -6,6 +6,7 @@ import {
   EyeOff,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Percent,
   RefreshCw,
   ShieldCheck,
@@ -20,6 +21,11 @@ import type {
   AdminAccount,
   RoyaltyLedgerEntry,
   RoyaltyEngineConfig,
+  RoyaltyFeeSettings,
+  RoyaltyPayoutExecutionResult,
+  RoyaltyPayoutReconciliationResult,
+  RoyaltyPayoutRecord,
+  RoyaltyPayoutSettings,
   AdminPlatformSubscriptionSettings,
   AdminSubscriptionList,
   TrackRoyaltySplitRecord,
@@ -39,6 +45,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AdsPage } from "@/features/ads/components/ads-page";
 import { adminApi } from "@/features/auth/lib/admin-api";
 import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { cn } from "@/lib/utils";
@@ -67,6 +74,12 @@ const navItems = [
     label: "Users",
     description: "Audience accounts",
     icon: Users,
+  },
+  {
+    href: "/console/ads",
+    label: "Ads",
+    description: "Preroll inventory",
+    icon: Megaphone,
   },
   {
     href: "/console/royalties",
@@ -200,6 +213,102 @@ const formatDateTime = (value?: string) => {
 };
 
 const formatSharePercent = (bps: number) => `${(bps / 100).toFixed(2)}%`;
+
+const amountScale = 10_000_000n;
+
+const amountToBaseUnits = (value: string) => {
+  const [whole, fraction = ""] = value.split(".");
+  const paddedFraction = `${fraction}0000000`.slice(0, 7);
+  return BigInt(whole || "0") * amountScale + BigInt(paddedFraction || "0");
+};
+
+const baseUnitsToAmount = (value: bigint) => {
+  const whole = value / amountScale;
+  const fraction = (value % amountScale).toString().padStart(7, "0");
+  return `${whole.toString()}.${fraction}`;
+};
+
+const formatMoneyAmount = (value: string) => {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4,
+  }).format(numeric);
+};
+
+const assetDisplayLabel = (assetCode?: string) => assetCode ?? "XLM";
+
+const formatAssetAmount = (amount: string, assetCode?: string) =>
+  `${formatMoneyAmount(amount)} ${assetDisplayLabel(assetCode)}`;
+
+const summarizeAssetAmounts = (
+  items: Array<{
+    amount: string;
+    assetCode?: string;
+    assetIssuer?: string;
+  }>,
+) => {
+  const groups = new Map<string, bigint>();
+
+  for (const item of items) {
+    const key = `${item.assetCode ?? "XLM"}:${item.assetIssuer ?? ""}`;
+    groups.set(key, (groups.get(key) ?? 0n) + amountToBaseUnits(item.amount));
+  }
+
+  return Array.from(groups.entries()).map(([key, amount]) => {
+    const [assetCode, assetIssuer] = key.split(":");
+    return {
+      amount: baseUnitsToAmount(amount),
+      assetCode: assetCode === "XLM" ? undefined : assetCode,
+      assetIssuer: assetIssuer || undefined,
+    };
+  });
+};
+
+const formatAssetSummary = (
+  items: Array<{
+    amount: string;
+    assetCode?: string;
+    assetIssuer?: string;
+  }>,
+) => {
+  const groups = summarizeAssetAmounts(items);
+
+  if (groups.length === 0) {
+    return "—";
+  }
+
+  if (groups.length === 1) {
+    const group = groups[0]!;
+    return formatAssetAmount(group.amount, group.assetCode);
+  }
+
+  return `${groups.length} assets`;
+};
+
+const statusBadgeClassName = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "border-amber-400/25 bg-amber-400/8 text-amber-200";
+    case "approved":
+    case "submitted":
+      return "border-sky-400/25 bg-sky-400/8 text-sky-200";
+    case "paid":
+    case "confirmed":
+      return "border-emerald-400/25 bg-emerald-400/8 text-emerald-200";
+    case "failed":
+    case "reversed":
+    case "cancelled":
+      return "border-rose-400/25 bg-rose-400/8 text-rose-200";
+    default:
+      return "border-white/10 text-slate-300";
+  }
+};
 
 const LoadingScreen = ({ label }: { label: string }) => (
   <div className="flex min-h-screen items-center justify-center bg-[#0a1120] px-6">
@@ -1401,19 +1510,88 @@ type EditableRoyaltyRecipient = {
   shareBps: string;
 };
 
+const royaltySourceTypeOptions = [
+  "track_purchase",
+  "platform_subscription",
+  "ad_revenue",
+  "manual_adjustment",
+] as const;
+
 const RoyaltiesPage = () => {
   const { session } = useAdminAuth();
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [config, setConfig] = useState<RoyaltyEngineConfig | null>(null);
+  const [payoutSettings, setPayoutSettings] = useState<RoyaltyPayoutSettings | null>(null);
+  const [feeSettings, setFeeSettings] = useState<RoyaltyFeeSettings | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [globalLedgerEntries, setGlobalLedgerEntries] = useState<RoyaltyLedgerEntry[]>([]);
+  const [payoutHistory, setPayoutHistory] = useState<RoyaltyPayoutRecord[]>([]);
   const [splitHistory, setSplitHistory] = useState<TrackRoyaltySplitRecord[]>([]);
   const [ledgerEntries, setLedgerEntries] = useState<RoyaltyLedgerEntry[]>([]);
   const [draftRecipients, setDraftRecipients] = useState<EditableRoyaltyRecipient[]>([]);
   const [draftNotes, setDraftNotes] = useState("");
+  const [ledgerStatusFilter, setLedgerStatusFilter] = useState<
+    RoyaltyLedgerEntry["status"] | "all"
+  >("pending");
+  const [ledgerSourceFilter, setLedgerSourceFilter] = useState<
+    RoyaltyLedgerEntry["sourceType"] | "all"
+  >("all");
+  const [ledgerRecipientFilter, setLedgerRecipientFilter] = useState("");
+  const [selectedLedgerEntryIds, setSelectedLedgerEntryIds] = useState<string[]>([]);
+  const [payoutStatusFilter, setPayoutStatusFilter] = useState<
+    RoyaltyPayoutRecord["status"] | "all"
+  >("all");
+  const [payoutRecipientFilter, setPayoutRecipientFilter] = useState("");
+  const [runRecipientWalletAddress, setRunRecipientWalletAddress] = useState("");
+  const [maxPayoutEntries, setMaxPayoutEntries] = useState("100");
+  const [lastExecutionResult, setLastExecutionResult] =
+    useState<RoyaltyPayoutExecutionResult | null>(null);
+  const [lastReconciliationResult, setLastReconciliationResult] =
+    useState<RoyaltyPayoutReconciliationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWorkspaceRefreshing, setIsWorkspaceRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPayoutSettings, setIsSavingPayoutSettings] = useState(false);
+  const [isSavingFeeSettings, setIsSavingFeeSettings] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [isDryRunning, setIsDryRunning] = useState(false);
+  const [isRunningPayouts, setIsRunningPayouts] = useState(false);
+  const [isReconcilingPayouts, setIsReconcilingPayouts] = useState(false);
   const [isSplitLoading, setIsSplitLoading] = useState(false);
+
+  const fetchRoyaltyWorkspace = async (token: string) => {
+    const [
+      nextGlobalLedgerEntries,
+      nextPayoutHistory,
+      nextPayoutSettings,
+      nextFeeSettings,
+    ] = await Promise.all([
+      adminApi.listRoyaltyLedger(token),
+      adminApi.listRoyaltyPayouts(token),
+      adminApi.getRoyaltyPayoutSettings(token),
+      adminApi.getRoyaltyFeeSettings(token),
+    ]);
+
+    return {
+      nextGlobalLedgerEntries,
+      nextPayoutHistory,
+      nextPayoutSettings,
+      nextFeeSettings,
+    };
+  };
+
+  const fetchTrackRoyaltyContext = async (trackId: string, token: string) => {
+    const [response, nextLedgerEntries] = await Promise.all([
+      adminApi.listTrackRoyaltySplits(trackId, token),
+      adminApi.listTrackRoyaltyLedger(trackId, token),
+    ]);
+
+    return {
+      nextSplitHistory: response.items,
+      nextLedgerEntries,
+    };
+  };
 
   const filteredTracks = useMemo(() => {
     const normalized = search.trim().toLowerCase();
@@ -1444,6 +1622,104 @@ const RoyaltiesPage = () => {
         0,
       ),
     [draftRecipients],
+  );
+  const filteredGlobalLedgerEntries = useMemo(() => {
+    const normalizedRecipient = ledgerRecipientFilter.trim().toLowerCase();
+
+    return globalLedgerEntries.filter((entry) => {
+      if (ledgerStatusFilter !== "all" && entry.status !== ledgerStatusFilter) {
+        return false;
+      }
+
+      if (ledgerSourceFilter !== "all" && entry.sourceType !== ledgerSourceFilter) {
+        return false;
+      }
+
+      if (
+        normalizedRecipient &&
+        ![
+          entry.recipientWalletAddress,
+          entry.trackId,
+          entry.sourceId,
+          entry.assetCode ?? "XLM",
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedRecipient))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    globalLedgerEntries,
+    ledgerRecipientFilter,
+    ledgerSourceFilter,
+    ledgerStatusFilter,
+  ]);
+  const filteredPayoutHistory = useMemo(() => {
+    const normalizedRecipient = payoutRecipientFilter.trim().toLowerCase();
+
+    return payoutHistory.filter((payout) => {
+      if (payoutStatusFilter !== "all" && payout.status !== payoutStatusFilter) {
+        return false;
+      }
+
+      if (
+        normalizedRecipient &&
+        ![
+          payout.recipientWalletAddress,
+          payout.txHash ?? "",
+          payout.id,
+          payout.assetCode ?? "XLM",
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedRecipient))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [payoutHistory, payoutRecipientFilter, payoutStatusFilter]);
+  const selectedPendingEntries = useMemo(
+    () =>
+      globalLedgerEntries.filter(
+        (entry) =>
+          selectedLedgerEntryIds.includes(entry.id) && entry.status === "pending",
+      ),
+    [globalLedgerEntries, selectedLedgerEntryIds],
+  );
+  const visiblePendingEntryIds = useMemo(
+    () =>
+      filteredGlobalLedgerEntries
+        .filter((entry) => entry.status === "pending")
+        .map((entry) => entry.id),
+    [filteredGlobalLedgerEntries],
+  );
+  const pendingEntries = useMemo(
+    () => globalLedgerEntries.filter((entry) => entry.status === "pending"),
+    [globalLedgerEntries],
+  );
+  const approvedEntries = useMemo(
+    () => globalLedgerEntries.filter((entry) => entry.status === "approved"),
+    [globalLedgerEntries],
+  );
+  const paidEntries = useMemo(
+    () => globalLedgerEntries.filter((entry) => entry.status === "paid"),
+    [globalLedgerEntries],
+  );
+  const failedPayouts = useMemo(
+    () => payoutHistory.filter((payout) => payout.status === "failed"),
+    [payoutHistory],
+  );
+  const submittedPayouts = useMemo(
+    () => payoutHistory.filter((payout) => payout.status === "submitted"),
+    [payoutHistory],
+  );
+  const payoutReadyRecipientCount = useMemo(
+    () => new Set(approvedEntries.map((entry) => entry.recipientWalletAddress.toLowerCase())).size,
+    [approvedEntries],
   );
 
   const syncDraftFromSplit = (split: TrackRoyaltySplitRecord | null) => {
@@ -1482,14 +1758,28 @@ const RoyaltiesPage = () => {
       setIsLoading(true);
 
       try {
-        const [nextTracks, nextConfig] = await Promise.all([
+        const [
+          nextTracks,
+          nextConfig,
+          {
+            nextGlobalLedgerEntries,
+            nextPayoutHistory,
+            nextPayoutSettings,
+            nextFeeSettings,
+          },
+        ] = await Promise.all([
           adminApi.listTracks(session.token),
           adminApi.getRoyaltyConfig(session.token),
+          fetchRoyaltyWorkspace(session.token),
         ]);
 
         if (!cancelled) {
           setTracks(nextTracks);
           setConfig(nextConfig);
+          setGlobalLedgerEntries(nextGlobalLedgerEntries);
+          setPayoutHistory(nextPayoutHistory);
+          setPayoutSettings(nextPayoutSettings);
+          setFeeSettings(nextFeeSettings);
           setSelectedTrackId((current) => current ?? nextTracks[0]?.id ?? null);
         }
       } catch (error) {
@@ -1526,17 +1816,15 @@ const RoyaltiesPage = () => {
       setIsSplitLoading(true);
 
       try {
-        const [response, nextLedgerEntries] = await Promise.all([
-          adminApi.listTrackRoyaltySplits(selectedTrackId, session.token),
-          adminApi.listTrackRoyaltyLedger(selectedTrackId, session.token),
-        ]);
+        const { nextSplitHistory, nextLedgerEntries } =
+          await fetchTrackRoyaltyContext(selectedTrackId, session.token);
 
         if (!cancelled) {
-          setSplitHistory(response.items);
+          setSplitHistory(nextSplitHistory);
           setLedgerEntries(nextLedgerEntries);
           syncDraftFromSplit(
-            response.items.find((split) => split.status === "active") ??
-              response.items[0] ??
+            nextSplitHistory.find((split) => split.status === "active") ??
+              nextSplitHistory[0] ??
               null,
           );
         }
@@ -1601,6 +1889,65 @@ const RoyaltiesPage = () => {
     );
   };
 
+  const refreshWorkspace = async (token: string) => {
+    setIsWorkspaceRefreshing(true);
+
+    try {
+      const {
+        nextGlobalLedgerEntries,
+        nextPayoutHistory,
+        nextPayoutSettings,
+        nextFeeSettings,
+      } =
+        await fetchRoyaltyWorkspace(token);
+      setGlobalLedgerEntries(nextGlobalLedgerEntries);
+      setPayoutHistory(nextPayoutHistory);
+      setPayoutSettings(nextPayoutSettings);
+      setFeeSettings(nextFeeSettings);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to refresh royalty workspace",
+      );
+    } finally {
+      setIsWorkspaceRefreshing(false);
+    }
+  };
+
+  const refreshSelectedTrack = async (trackId: string, token: string) => {
+    setIsSplitLoading(true);
+
+    try {
+      const { nextSplitHistory, nextLedgerEntries } = await fetchTrackRoyaltyContext(
+        trackId,
+        token,
+      );
+      setSplitHistory(nextSplitHistory);
+      setLedgerEntries(nextLedgerEntries);
+      syncDraftFromSplit(
+        nextSplitHistory.find((split) => split.status === "active") ??
+          nextSplitHistory[0] ??
+          null,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to refresh selected track royalties",
+      );
+    } finally {
+      setIsSplitLoading(false);
+    }
+  };
+
+  const refreshAfterMutation = async () => {
+    if (!session?.token) {
+      return;
+    }
+
+    await Promise.all([
+      refreshWorkspace(session.token),
+      selectedTrackId ? refreshSelectedTrack(selectedTrackId, session.token) : Promise.resolve(),
+    ]);
+  };
+
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -1627,17 +1974,7 @@ const RoyaltiesPage = () => {
       );
 
       toast.success("Royalty split updated.");
-      const [response, nextLedgerEntries] = await Promise.all([
-        adminApi.listTrackRoyaltySplits(selectedTrackId, session.token),
-        adminApi.listTrackRoyaltyLedger(selectedTrackId, session.token),
-      ]);
-      setSplitHistory(response.items);
-      setLedgerEntries(nextLedgerEntries);
-      syncDraftFromSplit(
-        response.items.find((split) => split.status === "active") ??
-          response.items[0] ??
-          null,
-      );
+      await refreshSelectedTrack(selectedTrackId, session.token);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save royalty split",
@@ -1647,12 +1984,194 @@ const RoyaltiesPage = () => {
     }
   };
 
+  const toggleLedgerSelection = (entryId: string) => {
+    setSelectedLedgerEntryIds((current) =>
+      current.includes(entryId)
+        ? current.filter((candidateId) => candidateId !== entryId)
+        : [...current, entryId],
+    );
+  };
+
+  const handleApproveSelected = async () => {
+    if (!session?.token || selectedPendingEntries.length === 0) {
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      await adminApi.approveRoyaltyLedgerEntries(
+        {
+          entryIds: selectedPendingEntries.map((entry) => entry.id),
+        },
+        session.token,
+      );
+      setSelectedLedgerEntryIds([]);
+      setLastExecutionResult(null);
+      toast.success(`Approved ${selectedPendingEntries.length} royalty entries.`);
+      await refreshAfterMutation();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve royalty entries",
+      );
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleRunPayouts = async (dryRun: boolean) => {
+    if (!session?.token) {
+      return;
+    }
+
+    const parsedMaxEntries = Math.min(
+      500,
+      Math.max(1, Number.parseInt(maxPayoutEntries, 10) || 100),
+    );
+    const nextInput = {
+      recipientWalletAddress: runRecipientWalletAddress.trim() || undefined,
+      maxEntries: parsedMaxEntries,
+      dryRun,
+    };
+
+    try {
+      if (dryRun) {
+        setIsDryRunning(true);
+      } else {
+        setIsRunningPayouts(true);
+      }
+
+      const result = await adminApi.runRoyaltyPayouts(nextInput, session.token);
+      setLastExecutionResult(result);
+
+      if (dryRun) {
+        toast.success(
+          result.items.length === 0
+            ? "Dry run found no approved payouts."
+            : `Dry run prepared ${result.items.length} payout batch${result.items.length === 1 ? "" : "es"}.`,
+        );
+      } else {
+        toast.success(
+          result.items.length === 0
+            ? "No approved payouts were available to run."
+            : `Processed ${result.items.length} payout batch${result.items.length === 1 ? "" : "es"}.`,
+        );
+        setSelectedLedgerEntryIds([]);
+        await refreshAfterMutation();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to run payouts");
+    } finally {
+      if (dryRun) {
+        setIsDryRunning(false);
+      } else {
+        setIsRunningPayouts(false);
+      }
+    }
+  };
+
+  const handleSavePayoutSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!session?.token || !payoutSettings) {
+      return;
+    }
+
+    try {
+      setIsSavingPayoutSettings(true);
+      const nextSettings = await adminApi.updateRoyaltyPayoutSettings(
+        payoutSettings,
+        session.token,
+      );
+      setPayoutSettings(nextSettings);
+      toast.success("Payout policy updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save payout policy",
+      );
+    } finally {
+      setIsSavingPayoutSettings(false);
+    }
+  };
+
+  const handleSaveFeeSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!session?.token || !feeSettings) {
+      return;
+    }
+
+    try {
+      setIsSavingFeeSettings(true);
+      const nextSettings = await adminApi.updateRoyaltyFeeSettings(
+        feeSettings,
+        session.token,
+      );
+      setFeeSettings(nextSettings);
+      toast.success("Fee policy updated.");
+      await refreshAfterMutation();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save fee policy");
+    } finally {
+      setIsSavingFeeSettings(false);
+    }
+  };
+
+  const handleReconcileSubmitted = async () => {
+    if (!session?.token) {
+      return;
+    }
+
+    try {
+      setIsReconcilingPayouts(true);
+      const result = await adminApi.reconcileRoyaltyPayouts(
+        {
+          submittedOnly: true,
+          maxItems: Math.min(500, Number.parseInt(maxPayoutEntries, 10) || 100),
+        },
+        session.token,
+      );
+      setLastReconciliationResult(result);
+      toast.success(
+        result.items.length === 0
+          ? "No submitted payouts were available to reconcile."
+          : `Reconciled ${result.items.length} payout batch${result.items.length === 1 ? "" : "es"}.`,
+      );
+      await refreshAfterMutation();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reconcile submitted payouts",
+      );
+    } finally {
+      setIsReconcilingPayouts(false);
+    }
+  };
+
   return (
     <SidebarLayout>
       <div className="space-y-6">
         <SectionHeader
           title="Royalties"
-          description="Manage canonical track split ownership with Stellar as the primary registry path."
+          description="Review payout-ready earnings, run treasury settlement, and maintain the split registry."
+          action={
+            <Button
+              type="button"
+              variant="ghost"
+              className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+              onClick={() => {
+                if (!session?.token) {
+                  return;
+                }
+
+                void refreshWorkspace(session.token);
+              }}
+              disabled={isWorkspaceRefreshing}
+            >
+              <RefreshCw
+                className={cn("mr-2 h-4 w-4", isWorkspaceRefreshing && "animate-spin")}
+              />
+              Refresh workspace
+            </Button>
+          }
         />
 
         <div className="grid gap-3 md:grid-cols-4">
@@ -1661,11 +2180,746 @@ const RoyaltiesPage = () => {
             value={config?.primaryChain?.toUpperCase() ?? "—"}
           />
           <StatTile label="Network" value={config?.primaryNetwork ?? "—"} />
-          <StatTile label="Registry" value={config?.registryKind ?? "—"} />
+          <StatTile label="Pending volume" value={formatAssetSummary(
+            pendingEntries.map((entry) => ({
+              amount: entry.netAmount,
+              assetCode: entry.assetCode,
+              assetIssuer: entry.assetIssuer,
+            })),
+          )} />
           <StatTile
-            label="Settlement"
-            value={config?.settlementRails.join(", ") ?? "—"}
+            label="Approved recipients"
+            value={String(payoutReadyRecipientCount)}
           />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.95fr)]">
+          <section className={cn(shellPanelClassName, "overflow-hidden")}>
+            <div className="border-b border-white/8 px-5 py-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Payout queue</h3>
+                  <p className="text-sm text-slate-400">
+                    Approve pending ledger entries and inspect payout-ready balances before settlement.
+                  </p>
+                </div>
+                <div className="text-sm text-slate-400">
+                  {selectedPendingEntries.length} selected • {visiblePendingEntryIds.length} visible pending
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-[140px_190px_minmax(0,1fr)]">
+                <select
+                  value={ledgerStatusFilter}
+                  onChange={(event) =>
+                    setLedgerStatusFilter(
+                      event.target.value as RoyaltyLedgerEntry["status"] | "all",
+                    )
+                  }
+                  className={selectClassName}
+                >
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="paid">Paid</option>
+                  <option value="reversed">Reversed</option>
+                </select>
+                <select
+                  value={ledgerSourceFilter}
+                  onChange={(event) =>
+                    setLedgerSourceFilter(
+                      event.target.value as RoyaltyLedgerEntry["sourceType"] | "all",
+                    )
+                  }
+                  className={selectClassName}
+                >
+                  <option value="all">All sources</option>
+                  {royaltySourceTypeOptions.map((sourceType) => (
+                    <option key={sourceType} value={sourceType}>
+                      {sourceType}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  value={ledgerRecipientFilter}
+                  onChange={(event) => setLedgerRecipientFilter(event.target.value)}
+                  placeholder="Filter by recipient, asset, track, or source id"
+                  className={fieldClassName}
+                />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                  onClick={() => setSelectedLedgerEntryIds(visiblePendingEntryIds)}
+                  disabled={visiblePendingEntryIds.length === 0}
+                >
+                  Select visible pending
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                  onClick={() => setSelectedLedgerEntryIds([])}
+                  disabled={selectedLedgerEntryIds.length === 0}
+                >
+                  Clear selection
+                </Button>
+                <Button
+                  type="button"
+                  className="h-10 rounded-md"
+                  onClick={() => void handleApproveSelected()}
+                  disabled={isApproving || selectedPendingEntries.length === 0}
+                >
+                  {isApproving
+                    ? "Approving..."
+                    : `Approve selected (${selectedPendingEntries.length})`}
+                </Button>
+              </div>
+            </div>
+
+            {filteredGlobalLedgerEntries.length === 0 ? (
+              <div className="px-5 py-10">
+                <EmptyState
+                  title="No ledger entries match these filters"
+                  description="Adjust the queue filters or wait for new royalty earnings to be recorded."
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="grid min-w-[920px] grid-cols-[52px_minmax(0,1.1fr)_160px_140px_120px_170px] gap-4 border-b border-white/8 px-4 py-3 text-[0.68rem] uppercase tracking-[0.18em] text-slate-500">
+                  <span>Select</span>
+                  <span>Recipient</span>
+                  <span>Source</span>
+                  <span>Amount</span>
+                  <span>Status</span>
+                  <span>Created</span>
+                </div>
+                {filteredGlobalLedgerEntries.map((entry) => {
+                  const isPending = entry.status === "pending";
+                  const isSelected = selectedLedgerEntryIds.includes(entry.id);
+
+                  return (
+                    <div
+                      key={entry.id}
+                      className={cn(
+                        "grid min-w-[920px] grid-cols-[52px_minmax(0,1.1fr)_160px_140px_120px_170px] gap-4 border-t border-white/6 px-4 py-4 text-sm transition",
+                        isSelected && "bg-white/[0.03]",
+                      )}
+                    >
+                      <div className="pt-0.5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={!isPending}
+                          onChange={() => toggleLedgerSelection(entry.id)}
+                          className="h-4 w-4 rounded border-white/15 bg-[#0b1220] accent-emerald-400"
+                          aria-label={`Select royalty ledger entry ${entry.id}`}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-white">
+                          {entry.recipientWalletAddress}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-slate-500">
+                          {entry.recipientRole} • {entry.recipientChain} • {entry.trackId}
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-slate-300">{entry.sourceType}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500">{entry.sourceId}</p>
+                      </div>
+                      <div className="text-slate-300">
+                        {formatAssetAmount(entry.netAmount, entry.assetCode)}
+                      </div>
+                      <div>
+                        <span
+                          className={cn(
+                            "inline-flex border px-2 py-1 text-xs",
+                            statusBadgeClassName(entry.status),
+                          )}
+                        >
+                          {entry.status}
+                        </span>
+                      </div>
+                      <div className="text-slate-300">{formatDateTime(entry.createdAt)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <div className="space-y-6">
+            <section className={cn(shellPanelClassName, "p-5")}>
+              <div className="grid gap-6 xl:grid-cols-2">
+                <form className="space-y-4" onSubmit={handleSavePayoutSettings}>
+                  <div className="border-b border-white/8 pb-4">
+                    <h3 className="text-sm font-semibold text-white">Payout policy</h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Control approval mode, payout cadence, thresholding, retries, and reconciliation behavior.
+                    </p>
+                  </div>
+                  {payoutSettings ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="payout-approval-mode">Approval mode</Label>
+                          <select
+                            id="payout-approval-mode"
+                            value={payoutSettings.approvalMode}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      approvalMode: event.target.value as RoyaltyPayoutSettings["approvalMode"],
+                                    }
+                                  : current,
+                              )
+                            }
+                            className={selectClassName}
+                          >
+                            <option value="admin">admin</option>
+                            <option value="automatic">automatic</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payout-cadence">Cadence</Label>
+                          <select
+                            id="payout-cadence"
+                            value={payoutSettings.cadence}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      cadence: event.target.value as RoyaltyPayoutSettings["cadence"],
+                                    }
+                                  : current,
+                              )
+                            }
+                            className={selectClassName}
+                          >
+                            <option value="manual">manual</option>
+                            <option value="daily">daily</option>
+                            <option value="weekly">weekly</option>
+                            <option value="monthly">monthly</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payout-minimum-amount">Minimum payout amount</Label>
+                          <Input
+                            id="payout-minimum-amount"
+                            value={payoutSettings.minimumPayoutAmount}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? { ...current, minimumPayoutAmount: event.target.value }
+                                  : current,
+                              )
+                            }
+                            className={fieldClassName}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payout-shortfall-behavior">Shortfall behavior</Label>
+                          <select
+                            id="payout-shortfall-behavior"
+                            value={payoutSettings.shortfallBehavior}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      shortfallBehavior: event.target.value as RoyaltyPayoutSettings["shortfallBehavior"],
+                                    }
+                                  : current,
+                              )
+                            }
+                            className={selectClassName}
+                          >
+                            <option value="block_all">block_all</option>
+                            <option value="allow_partial_batches">allow_partial_batches</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid gap-3">
+                        <label className="flex items-center gap-3 text-sm text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={payoutSettings.retryFailedPayouts}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? { ...current, retryFailedPayouts: event.target.checked }
+                                  : current,
+                              )
+                            }
+                            className="h-4 w-4 rounded border-white/15 bg-[#0b1220] accent-emerald-400"
+                          />
+                          Retry failed payouts automatically on later runs
+                        </label>
+                        <label className="flex items-center gap-3 text-sm text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={payoutSettings.automaticApproval}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? { ...current, automaticApproval: event.target.checked }
+                                  : current,
+                              )
+                            }
+                            className="h-4 w-4 rounded border-white/15 bg-[#0b1220] accent-emerald-400"
+                          />
+                          Approve new ledger entries automatically
+                        </label>
+                        <label className="flex items-center gap-3 text-sm text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={payoutSettings.confirmBeforeMarkPaid}
+                            onChange={(event) =>
+                              setPayoutSettings((current) =>
+                                current
+                                  ? { ...current, confirmBeforeMarkPaid: event.target.checked }
+                                  : current,
+                              )
+                            }
+                            className="h-4 w-4 rounded border-white/15 bg-[#0b1220] accent-emerald-400"
+                          />
+                          Keep payouts submitted until reconciliation confirms settlement
+                        </label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="payout-reversal-policy">Failure / reversal policy</Label>
+                        <textarea
+                          id="payout-reversal-policy"
+                          value={payoutSettings.reversalPolicy}
+                          onChange={(event) =>
+                            setPayoutSettings((current) =>
+                              current
+                                ? { ...current, reversalPolicy: event.target.value }
+                                : current,
+                            )
+                          }
+                          className={cn(fieldClassName, "min-h-[96px] py-3")}
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        className="h-10 rounded-md"
+                        disabled={isSavingPayoutSettings}
+                      >
+                        {isSavingPayoutSettings ? "Saving policy..." : "Save payout policy"}
+                      </Button>
+                    </>
+                  ) : null}
+                </form>
+
+                <form className="space-y-4" onSubmit={handleSaveFeeSettings}>
+                  <div className="border-b border-white/8 pb-4">
+                    <h3 className="text-sm font-semibold text-white">Fee policy</h3>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Configure deterministic platform fee basis points per royalty source before distribution.
+                    </p>
+                  </div>
+                  {feeSettings ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="fee-track-purchase">Track purchase fee bps</Label>
+                          <Input
+                            id="fee-track-purchase"
+                            value={String(feeSettings.trackPurchaseFeeBps)}
+                            onChange={(event) =>
+                              setFeeSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      trackPurchaseFeeBps:
+                                        Number.parseInt(event.target.value, 10) || 0,
+                                    }
+                                  : current,
+                              )
+                            }
+                            inputMode="numeric"
+                            className={fieldClassName}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fee-platform-subscription">
+                            Platform subscription fee bps
+                          </Label>
+                          <Input
+                            id="fee-platform-subscription"
+                            value={String(feeSettings.platformSubscriptionFeeBps)}
+                            onChange={(event) =>
+                              setFeeSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      platformSubscriptionFeeBps:
+                                        Number.parseInt(event.target.value, 10) || 0,
+                                    }
+                                  : current,
+                              )
+                            }
+                            inputMode="numeric"
+                            className={fieldClassName}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fee-ad-revenue">Ad revenue fee bps</Label>
+                          <Input
+                            id="fee-ad-revenue"
+                            value={String(feeSettings.adRevenueFeeBps)}
+                            onChange={(event) =>
+                              setFeeSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      adRevenueFeeBps:
+                                        Number.parseInt(event.target.value, 10) || 0,
+                                    }
+                                  : current,
+                              )
+                            }
+                            inputMode="numeric"
+                            className={fieldClassName}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fee-manual-adjustment">Manual adjustment fee bps</Label>
+                          <Input
+                            id="fee-manual-adjustment"
+                            value={String(feeSettings.manualAdjustmentFeeBps)}
+                            onChange={(event) =>
+                              setFeeSettings((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      manualAdjustmentFeeBps:
+                                        Number.parseInt(event.target.value, 10) || 0,
+                                    }
+                                  : current,
+                              )
+                            }
+                            inputMode="numeric"
+                            className={fieldClassName}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="submit"
+                        className="h-10 rounded-md"
+                        disabled={isSavingFeeSettings}
+                      >
+                        {isSavingFeeSettings ? "Saving fees..." : "Save fee policy"}
+                      </Button>
+                    </>
+                  ) : null}
+                </form>
+              </div>
+            </section>
+
+            <section className={cn(shellPanelClassName, "p-5")}>
+              <div className="flex flex-col gap-3 border-b border-white/8 pb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Payout run</h3>
+                  <p className="text-sm text-slate-400">
+                    Preview or execute payout batches from approved earnings. Leave the wallet blank to process all approved recipients.
+                  </p>
+                </div>
+                <div className="grid gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="payout-run-recipient">Recipient wallet</Label>
+                    <Input
+                      id="payout-run-recipient"
+                      value={runRecipientWalletAddress}
+                      onChange={(event) => setRunRecipientWalletAddress(event.target.value)}
+                      placeholder="Optional exact Stellar wallet"
+                      className={fieldClassName}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payout-run-max-entries">Max approved ledger entries</Label>
+                    <Input
+                      id="payout-run-max-entries"
+                      value={maxPayoutEntries}
+                      onChange={(event) => setMaxPayoutEntries(event.target.value)}
+                      inputMode="numeric"
+                      className={fieldClassName}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                    onClick={() => void handleRunPayouts(true)}
+                    disabled={isDryRunning || isRunningPayouts}
+                  >
+                    {isDryRunning ? "Preparing preview..." : "Dry run payout batch"}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-10 rounded-md"
+                    onClick={() => void handleRunPayouts(false)}
+                    disabled={isRunningPayouts || isDryRunning}
+                  >
+                    {isRunningPayouts ? "Running payouts..." : "Run payouts now"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                    onClick={() => void handleReconcileSubmitted()}
+                    disabled={isReconcilingPayouts}
+                  >
+                    {isReconcilingPayouts
+                      ? "Reconciling..."
+                      : `Reconcile submitted (${submittedPayouts.length})`}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <StatTile label="Approved volume" value={formatAssetSummary(
+                  approvedEntries.map((entry) => ({
+                    amount: entry.netAmount,
+                    assetCode: entry.assetCode,
+                    assetIssuer: entry.assetIssuer,
+                  })),
+                )} />
+                <StatTile label="Paid volume" value={formatAssetSummary(
+                  paidEntries.map((entry) => ({
+                    amount: entry.netAmount,
+                    assetCode: entry.assetCode,
+                    assetIssuer: entry.assetIssuer,
+                  })),
+                )} />
+                <StatTile label="Pending entries" value={String(pendingEntries.length)} />
+                <StatTile label="Failed payouts" value={String(failedPayouts.length)} />
+                <StatTile label="Submitted payouts" value={String(submittedPayouts.length)} />
+                <StatTile
+                  label="Min threshold"
+                  value={payoutSettings?.minimumPayoutAmount ?? "—"}
+                />
+              </div>
+
+              <div className="mt-4 border border-white/8 bg-[#0b1220] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-white">Last execution</h4>
+                    <p className="text-sm text-slate-400">
+                      Latest preview or payout run result from this console session.
+                    </p>
+                  </div>
+                  {lastExecutionResult ? (
+                    <div className="text-sm text-slate-400">
+                      {lastExecutionResult.items.length} batch
+                      {lastExecutionResult.items.length === 1 ? "" : "es"}
+                    </div>
+                  ) : null}
+                </div>
+                {!lastExecutionResult ? (
+                  <div className="mt-4 text-sm text-slate-500">
+                    No dry run or payout execution has been performed in this session.
+                  </div>
+                ) : lastExecutionResult.items.length === 0 ? (
+                  <div className="mt-4 text-sm text-slate-500">
+                    No approved payouts matched the current execution input.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {lastExecutionResult.items.map((item, index) => (
+                      <div
+                        key={`${item.recipientWalletAddress}-${index}`}
+                        className="border border-white/8 bg-[#0f1728] p-4"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="truncate font-medium text-white">
+                              {item.recipientWalletAddress}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {item.ledgerEntryIds.length} ledger entries • {item.payoutRail}
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              "inline-flex w-fit border px-2 py-1 text-xs",
+                              statusBadgeClassName(item.status),
+                            )}
+                          >
+                            {item.status}
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm text-slate-300">
+                          {formatAssetAmount(item.amount, item.assetCode)}
+                        </p>
+                        {item.txHash ? (
+                          <p className="mt-1 truncate text-xs text-slate-500">
+                            Tx hash: {item.txHash}
+                          </p>
+                        ) : null}
+                        {item.reason ? (
+                          <p className="mt-2 text-xs text-rose-200">{item.reason}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 border border-white/8 bg-[#0b1220] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-white">Last reconciliation</h4>
+                    <p className="text-sm text-slate-400">
+                      Latest submitted-payout reconciliation result from this console session.
+                    </p>
+                  </div>
+                  {lastReconciliationResult ? (
+                    <div className="text-sm text-slate-400">
+                      {lastReconciliationResult.items.length} batch
+                      {lastReconciliationResult.items.length === 1 ? "" : "es"}
+                    </div>
+                  ) : null}
+                </div>
+                {!lastReconciliationResult ? (
+                  <div className="mt-4 text-sm text-slate-500">
+                    No reconciliation has been performed in this session.
+                  </div>
+                ) : lastReconciliationResult.items.length === 0 ? (
+                  <div className="mt-4 text-sm text-slate-500">
+                    No submitted payouts matched the current reconciliation input.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {lastReconciliationResult.items.map((item) => (
+                      <div
+                        key={item.payoutId}
+                        className="border border-white/8 bg-[#0f1728] p-4"
+                      >
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="truncate font-medium text-white">{item.payoutId}</p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {item.ledgerEntryIds.length} ledger entries
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              "inline-flex w-fit border px-2 py-1 text-xs",
+                              statusBadgeClassName(item.status),
+                            )}
+                          >
+                            {item.status}
+                          </span>
+                        </div>
+                        {item.txHash ? (
+                          <p className="mt-2 truncate text-xs text-slate-500">
+                            Tx hash: {item.txHash}
+                          </p>
+                        ) : null}
+                        {item.reason ? (
+                          <p className="mt-2 text-xs text-rose-200">{item.reason}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className={cn(shellPanelClassName, "overflow-hidden")}>
+              <div className="border-b border-white/8 px-5 py-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Payout history</h3>
+                  <p className="text-sm text-slate-400">
+                    Submitted, confirmed, and failed payouts with treasury execution references.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-[160px_minmax(0,1fr)]">
+                  <select
+                    value={payoutStatusFilter}
+                    onChange={(event) =>
+                      setPayoutStatusFilter(
+                        event.target.value as RoyaltyPayoutRecord["status"] | "all",
+                      )
+                    }
+                    className={selectClassName}
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  <Input
+                    value={payoutRecipientFilter}
+                    onChange={(event) => setPayoutRecipientFilter(event.target.value)}
+                    placeholder="Filter by recipient, tx hash, payout id, or asset"
+                    className={fieldClassName}
+                  />
+                </div>
+              </div>
+
+              {filteredPayoutHistory.length === 0 ? (
+                <div className="px-5 py-10">
+                  <EmptyState
+                    title="No payouts match these filters"
+                    description="Run a payout batch or broaden the history filters to inspect previous treasury activity."
+                  />
+                </div>
+              ) : (
+                filteredPayoutHistory.map((payout) => (
+                  <div key={payout.id} className="border-t border-white/6 px-5 py-4">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-white">
+                          {payout.recipientWalletAddress}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-slate-500">
+                          {payout.id} • {payout.payoutRail} • {payout.ledgerEntryIds.length} entries
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "inline-flex w-fit border px-2 py-1 text-xs",
+                          statusBadgeClassName(payout.status),
+                        )}
+                      >
+                        {payout.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
+                      <p>{formatAssetAmount(payout.amount, payout.assetCode)}</p>
+                      <p>
+                        {payout.status === "confirmed"
+                          ? formatDateTime(payout.confirmedAt ?? payout.updatedAt)
+                          : payout.status === "submitted"
+                            ? formatDateTime(payout.submittedAt ?? payout.updatedAt)
+                            : formatDateTime(payout.updatedAt)}
+                      </p>
+                    </div>
+                    {payout.txHash ? (
+                      <p className="mt-2 truncate text-xs text-slate-500">
+                        Tx hash: {payout.txHash}
+                      </p>
+                    ) : null}
+                    {payout.failureReason ? (
+                      <p className="mt-2 text-xs text-rose-200">{payout.failureReason}</p>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </section>
+          </div>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -1742,11 +2996,8 @@ const RoyaltiesPage = () => {
                     )}
                   </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <StatTile
-                      label="Status"
-                      value={activeSplit?.status ?? "Draft"}
-                    />
+                  <div className="mt-4 grid gap-3 md:grid-cols-4">
+                    <StatTile label="Status" value={activeSplit?.status ?? "Draft"} />
                     <StatTile
                       label="Recipients"
                       value={String(activeSplit?.recipients.length ?? draftRecipients.length)}
@@ -1755,10 +3006,7 @@ const RoyaltiesPage = () => {
                       label="Total"
                       value={formatSharePercent(activeSplit?.totalBps ?? totalDraftBps)}
                     />
-                    <StatTile
-                      label="Ledger entries"
-                      value={String(ledgerEntries.length)}
-                    />
+                    <StatTile label="Ledger entries" value={String(ledgerEntries.length)} />
                   </div>
                 </section>
 
@@ -1909,10 +3157,7 @@ const RoyaltiesPage = () => {
                     </div>
                   ) : (
                     splitHistory.map((split) => (
-                      <div
-                        key={split.id}
-                        className="border-t border-white/6 px-4 py-4"
-                      >
+                      <div key={split.id} className="border-t border-white/6 px-4 py-4">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-medium text-white">
@@ -1954,9 +3199,9 @@ const RoyaltiesPage = () => {
                 <section className={cn(shellPanelClassName, "overflow-hidden")}>
                   <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
                     <div>
-                      <h3 className="text-sm font-semibold text-white">Royalty ledger</h3>
+                      <h3 className="text-sm font-semibold text-white">Track ledger</h3>
                       <p className="text-sm text-slate-400">
-                        Generated earnings entries for this track.
+                        Generated earnings entries for the selected track.
                       </p>
                     </div>
                   </div>
@@ -1990,10 +3235,15 @@ const RoyaltiesPage = () => {
                           </div>
                           <div className="text-slate-300">{entry.recipientRole}</div>
                           <div className="text-slate-300">
-                            {entry.netAmount} {entry.assetCode ?? ""}
+                            {formatAssetAmount(entry.netAmount, entry.assetCode)}
                           </div>
                           <div>
-                            <span className="inline-flex border border-white/10 px-2 py-1 text-xs text-slate-300">
+                            <span
+                              className={cn(
+                                "inline-flex border px-2 py-1 text-xs",
+                                statusBadgeClassName(entry.status),
+                              )}
+                            >
                               {entry.status}
                             </span>
                           </div>
@@ -2280,6 +3530,14 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/console/ads"
+        element={
+          <ProtectedRoute>
+            <AdsPage />
           </ProtectedRoute>
         }
       />

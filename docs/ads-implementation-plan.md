@@ -4,6 +4,10 @@
 
 Add audio ads for listeners who do not have an active `Music City Pass`, while keeping playback clean for subscribed users and preserving the current unlock model.
 
+Working tracker:
+
+- `docs/ads-mvp-checklist.md`
+
 ## Product Rules
 
 - Serve ads only to users without an active platform subscription.
@@ -283,3 +287,13 @@ Ship the MVP as:
 - graceful fallback to normal playback if ad delivery fails
 
 This is the fastest clean implementation that fits the current Music City architecture.
+
+## Concrete MVP Build Order
+
+1. shared ad contracts
+2. DB persistence for ads and ad impressions
+3. server ads module plus admin CRUD
+4. playback ad decision endpoint
+5. client preroll insertion in the global player
+6. impression lifecycle reporting
+7. basic admin visibility into impression status

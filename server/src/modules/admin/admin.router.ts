@@ -82,6 +82,58 @@ adminRouter.post(
 );
 
 adminRouter.get(
+  "/ads",
+  requireAdminSession,
+  asyncHandler(async (_request, response) => {
+    response.json(await adminService.listAds());
+  }),
+);
+
+adminRouter.post(
+  "/ads",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.status(201).json({
+      ad: await adminService.createAd(request.body),
+    });
+  }),
+);
+
+adminRouter.get(
+  "/ads/impressions",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json(
+      await adminService.listAdImpressions({
+        adId: typeof request.query.adId === "string" ? request.query.adId : undefined,
+        status:
+          typeof request.query.status === "string" ? request.query.status : undefined,
+      }),
+    );
+  }),
+);
+
+adminRouter.put(
+  "/ads/:id",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      ad: await adminService.updateAd(String(request.params.id), request.body),
+    });
+  }),
+);
+
+adminRouter.delete(
+  "/ads/:id",
+  requireAdminSession,
+  asyncHandler(async (request, response) => {
+    response.json({
+      ad: await adminService.archiveAd(String(request.params.id)),
+    });
+  }),
+);
+
+adminRouter.get(
   "/subscriptions/platform-plan",
   requireAdminSession,
   asyncHandler(async (_request, response) => {

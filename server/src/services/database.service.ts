@@ -30,6 +30,11 @@ type DailyStreamsRow = {
   streams: string;
 };
 
+type DailyFollowersRow = {
+  date: string;
+  new_followers: string;
+};
+
 type TimestampRow = {
   occurred_at: Date | string;
 };
@@ -1184,6 +1189,28 @@ export const databaseService = {
     return Number(result.rows[0]?.count ?? "0");
   },
 
+  async countPlaybackStartsByTrack(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE track_id = $1 AND event_type = 'started'`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countPlaybackCompletionsByTrack(trackId: string) {
+    const result = await pool.query<CountRow>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_events
+       WHERE track_id = $1 AND event_type = 'completed'`,
+      [trackId],
+    );
+
+    return Number(result.rows[0]?.count ?? "0");
+  },
+
   async countQualifiedStreamsByArtist(artistId: string) {
     const result = await pool.query<CountRow>(
       `SELECT COUNT(*)::text AS count
@@ -1292,6 +1319,39 @@ export const databaseService = {
       date: row.date,
       streams: Number(row.streams),
     }));
+  },
+
+  async listArtistDailyFollowerGrowth(artistId: string, days?: number | null) {
+    const values = [artistId];
+    const clauses = ["artist_id = $1"];
+
+    if (days && days > 0) {
+      values.push(String(days));
+      clauses.push(`created_at >= NOW() - ($${values.length}::text || ' days')::interval`);
+    }
+
+    const result = await pool.query<DailyFollowersRow>(
+      `SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') AS date,
+              COUNT(*)::text AS new_followers
+       FROM artist_follows
+       WHERE ${clauses.join("\n         AND ")}
+       GROUP BY DATE_TRUNC('day', created_at)
+       ORDER BY DATE_TRUNC('day', created_at) ASC`,
+      values,
+    );
+
+    let runningFollowers = 0;
+
+    return result.rows.map((row) => {
+      const newFollowers = Number(row.new_followers);
+      runningFollowers += newFollowers;
+
+      return {
+        date: row.date,
+        newFollowers,
+        followers: runningFollowers,
+      };
+    });
   },
 
   async upsertEntitlement(

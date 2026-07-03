@@ -84,4 +84,23 @@ export const httpClient = {
 
     return (await response.json()) as T;
   },
+
+  async delete<T>(path: string, token?: string) {
+    const response = await fetch(`${adminEnv.apiBaseUrl}${path}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: authHeaders(token),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as ErrorPayload;
+      throw buildError(payload, response.status);
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    return (await response.json()) as T;
+  },
 };

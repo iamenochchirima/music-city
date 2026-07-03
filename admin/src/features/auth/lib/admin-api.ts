@@ -1,7 +1,13 @@
 import type {
+  AdImpressionRecord,
+  AdImpressionStatus,
+  AdRecord,
+  AdminAdListItem,
   AdminAccount,
   AdminBootstrapStatus,
+  ReconcileRoyaltyPayoutsInput,
   AdminPlatformSubscriptionSettings,
+  ApproveRoyaltyLedgerEntriesInput,
   AdminSubscriptionList,
   AdminUserList,
   AdminTreasuryOverview,
@@ -12,8 +18,14 @@ import type {
   CreateAdminInput,
   RoyaltyLedgerEntry,
   RoyaltyEngineConfig,
+  RoyaltyFeeSettings,
+  RoyaltyPayoutReconciliationResult,
+  RoyaltyPayoutSettings,
   TrackRoyaltySplitList,
   TrackRoyaltySplitRecord,
+  RoyaltyPayoutExecutionResult,
+  RoyaltyPayoutRecord,
+  RunRoyaltyPayoutsInput,
   TrackSummary,
   UpsertTrackRoyaltySplitInput,
 } from "@music-city/shared";
@@ -94,10 +106,95 @@ export const adminApi = {
       .then((response) => response.items);
   },
 
+  listAds(token: string) {
+    return httpClient
+      .get<{ items: AdminAdListItem[] }>("/ads", token)
+      .then((response) => response.items);
+  },
+
+  createAd(input: Omit<AdRecord, "id" | "createdAt" | "updatedAt">, token: string) {
+    return httpClient
+      .post<{ ad: AdRecord }>("/ads", input, token)
+      .then((response) => response.ad);
+  },
+
+  updateAd(
+    adId: string,
+    input: Partial<Omit<AdRecord, "id" | "createdAt" | "updatedAt">>,
+    token: string,
+  ) {
+    return httpClient
+      .put<{ ad: AdRecord }>(`/ads/${adId}`, input, token)
+      .then((response) => response.ad);
+  },
+
+  archiveAd(adId: string, token: string) {
+    return httpClient
+      .delete<{ ad: AdRecord }>(`/ads/${adId}`, token)
+      .then((response) => response.ad);
+  },
+
+  listAdImpressions(
+    token: string,
+    input?: {
+      adId?: string;
+      status?: AdImpressionStatus;
+    },
+  ) {
+    const query = new URLSearchParams();
+
+    if (input?.adId) {
+      query.set("adId", input.adId);
+    }
+
+    if (input?.status) {
+      query.set("status", input.status);
+    }
+
+    return httpClient
+      .get<{ items: AdImpressionRecord[] }>(
+        `/ads/impressions${query.size > 0 ? `?${query.toString()}` : ""}`,
+        token,
+      )
+      .then((response) => response.items);
+  },
+
   getRoyaltyConfig(token: string) {
     return httpClient
       .get<{ config: RoyaltyEngineConfig }>("/royalties/config", token)
       .then((response) => response.config);
+  },
+
+  getRoyaltyPayoutSettings(token: string) {
+    return httpClient
+      .get<{ settings: RoyaltyPayoutSettings }>("/royalties/payout-settings", token)
+      .then((response) => response.settings);
+  },
+
+  updateRoyaltyPayoutSettings(input: RoyaltyPayoutSettings, token: string) {
+    return httpClient
+      .put<{ settings: RoyaltyPayoutSettings }>(
+        "/royalties/payout-settings",
+        input,
+        token,
+      )
+      .then((response) => response.settings);
+  },
+
+  getRoyaltyFeeSettings(token: string) {
+    return httpClient
+      .get<{ settings: RoyaltyFeeSettings }>("/royalties/fee-settings", token)
+      .then((response) => response.settings);
+  },
+
+  updateRoyaltyFeeSettings(input: RoyaltyFeeSettings, token: string) {
+    return httpClient
+      .put<{ settings: RoyaltyFeeSettings }>(
+        "/royalties/fee-settings",
+        input,
+        token,
+      )
+      .then((response) => response.settings);
   },
 
   listTrackRoyaltySplits(trackId: string, token: string) {
@@ -114,6 +211,88 @@ export const adminApi = {
         token,
       )
       .then((response) => response.items);
+  },
+
+  listRoyaltyLedger(
+    token: string,
+    input?: {
+      status?: "pending" | "approved" | "paid" | "reversed";
+      recipientWalletAddress?: string;
+    },
+  ) {
+    const query = new URLSearchParams();
+
+    if (input?.status) {
+      query.set("status", input.status);
+    }
+
+    if (input?.recipientWalletAddress) {
+      query.set("recipientWalletAddress", input.recipientWalletAddress);
+    }
+
+    return httpClient
+      .get<{ items: RoyaltyLedgerEntry[] }>(
+        `/royalties/ledger${query.size > 0 ? `?${query.toString()}` : ""}`,
+        token,
+      )
+      .then((response) => response.items);
+  },
+
+  approveRoyaltyLedgerEntries(
+    input: ApproveRoyaltyLedgerEntriesInput,
+    token: string,
+  ) {
+    return httpClient
+      .post<{ items: RoyaltyLedgerEntry[] }>(
+        "/royalties/ledger/approve",
+        input,
+        token,
+      )
+      .then((response) => response.items);
+  },
+
+  listRoyaltyPayouts(
+    token: string,
+    input?: {
+      status?: "pending" | "submitted" | "confirmed" | "failed" | "cancelled";
+      recipientWalletAddress?: string;
+    },
+  ) {
+    const query = new URLSearchParams();
+
+    if (input?.status) {
+      query.set("status", input.status);
+    }
+
+    if (input?.recipientWalletAddress) {
+      query.set("recipientWalletAddress", input.recipientWalletAddress);
+    }
+
+    return httpClient
+      .get<{ items: RoyaltyPayoutRecord[] }>(
+        `/royalties/payouts${query.size > 0 ? `?${query.toString()}` : ""}`,
+        token,
+      )
+      .then((response) => response.items);
+  },
+
+  runRoyaltyPayouts(input: RunRoyaltyPayoutsInput, token: string) {
+    return httpClient.post<RoyaltyPayoutExecutionResult>(
+      "/royalties/payouts/run",
+      input,
+      token,
+    );
+  },
+
+  reconcileRoyaltyPayouts(
+    input: ReconcileRoyaltyPayoutsInput,
+    token: string,
+  ) {
+    return httpClient.post<RoyaltyPayoutReconciliationResult>(
+      "/royalties/payouts/reconcile",
+      input,
+      token,
+    );
   },
 
   updateTrackRoyaltySplits(

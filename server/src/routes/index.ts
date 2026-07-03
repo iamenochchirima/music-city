@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { adsRouter } from "../modules/ads/ads.router.js";
 import { adminRouter } from "../modules/admin/admin.router.js";
 import { archivesRouter } from "../modules/archives/archives.router.js";
 import { authRouter } from "../modules/auth/auth.router.js";
@@ -21,6 +22,7 @@ import { walletRouter } from "../modules/wallet/wallet.router.js";
 const apiRouter = Router();
 
 apiRouter.use("/health", healthRouter);
+apiRouter.use("/ads", adsRouter);
 apiRouter.use("/admin", adminRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/archives", archivesRouter);

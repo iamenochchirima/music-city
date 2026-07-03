@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { PlaybackSession, TrackSummary } from "@music-city/shared";
+import type { AdRecord, PlaybackSession, TrackSummary } from "@music-city/shared";
 import Hls from "hls.js";
 import {
   Music2,
@@ -23,10 +23,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { adsApi } from "@/features/ads/lib/ads-api";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { playbackApi } from "@/features/playback/lib/playback-api";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiClientError } from "@/lib/api/http-client";
+import { cn } from "@/lib/utils";
 
 type GlobalPlaybackContextValue = {
   activeTrack: TrackSummary | null;
@@ -109,6 +111,8 @@ const GlobalPlaybackBar = ({
   volume,
   canPlayPrevious,
   canPlayNext,
+  isPlayingAd,
+  activeAd,
   togglePlayback,
   playPreviousTrack,
   playNextTrack,
@@ -117,7 +121,10 @@ const GlobalPlaybackBar = ({
 }: Omit<
   GlobalPlaybackContextValue,
   "activeTrackId" | "playTrack" | "skipBy" | "setPlaybackQueue"
->) => {
+> & {
+  isPlayingAd: boolean;
+  activeAd: AdRecord | null;
+}) => {
   if (!activeTrack) {
     return null;
   }
@@ -133,9 +140,16 @@ const GlobalPlaybackBar = ({
           <div className="min-w-0 space-y-1">
             <p className="truncate text-lg font-semibold text-white">{activeTrack.title}</p>
             <p className="truncate text-sm text-slate-400">{activeTrack.artistName}</p>
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-emerald-300">
+            <div
+              className={cn(
+                "flex items-center gap-2 text-xs uppercase tracking-[0.22em]",
+                isPlayingAd ? "text-amber-300" : "text-emerald-300",
+              )}
+            >
               <Music2 className="h-3.5 w-3.5" />
-              Now playing
+              {isPlayingAd
+                ? `Sponsored${activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}`
+                : "Now playing"}
             </div>
           </div>
         </div>
@@ -177,6 +191,7 @@ const GlobalPlaybackBar = ({
               step={0.1}
               value={Math.min(currentTime, duration || 0)}
               onChange={(event) => seekTo(Number(event.target.value))}
+              disabled={isPlayingAd}
               className="h-2 w-full cursor-pointer appearance-none rounded-full"
               style={{
                 background: buildRangeBackground(
@@ -215,7 +230,9 @@ const GlobalPlaybackBar = ({
               }}
             />
             <p className="text-xs text-slate-500">
-              Private preview stream for this release.
+              {isPlayingAd
+                ? "Sponsored preroll is playing before the selected track."
+                : "Private preview stream for this release."}
             </p>
           </div>
         </div>
@@ -239,6 +256,13 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.85);
   const [playbackQueue, setPlaybackQueueState] = useState<TrackSummary[]>([]);
+  const [activeAd, setActiveAd] = useState<AdRecord | null>(null);
+  const [activeAdImpressionId, setActiveAdImpressionId] = useState<string | null>(
+    null,
+  );
+  const [pendingTrackAfterAd, setPendingTrackAfterAd] = useState<TrackSummary | null>(
+    null,
+  );
   const lastReportedProgressRef = useRef(0);
   const completionReportedRef = useRef(false);
 
@@ -309,6 +333,104 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     animationFrameRef.current = window.requestAnimationFrame(tick);
   };
 
+  const clearActiveAdState = useCallback(() => {
+    setActiveAd(null);
+    setActiveAdImpressionId(null);
+    setPendingTrackAfterAd(null);
+  }, []);
+
+  const reportAdImpressionUpdate = useCallback(
+    async (
+      impressionId: string,
+      input: {
+        status: "completed" | "skipped" | "failed";
+        reason?: string;
+      },
+    ) => {
+      if (!session?.token) {
+        return;
+      }
+
+      try {
+        await adsApi.updateImpression(session.token, impressionId, input);
+      } catch {
+        // Ignore impression delivery failures so playback is never blocked.
+      }
+    },
+    [session?.token],
+  );
+
+  const startTrackSession = useCallback(
+    async (track: TrackSummary) => {
+      if (!session?.token) {
+        return;
+      }
+
+      try {
+        const nextPlaybackSession = await playbackApi.createSession(
+          session.token,
+          track.id,
+        );
+        lastReportedProgressRef.current = 0;
+        completionReportedRef.current = false;
+        clearActiveAdState();
+        setActiveTrack(track);
+        setPlaybackSession(nextPlaybackSession);
+        setStreamUrl(nextPlaybackSession.streamUrl);
+      } catch (error) {
+        if (error instanceof ApiClientError && error.status === 401) {
+          toast.error("Your session expired. Please sign in again.");
+          await logout();
+          return;
+        }
+
+        if (error instanceof ApiClientError && error.status === 403) {
+          if (track.access === "purchase_required") {
+            toast.error("Buy this track first to unlock playback.");
+            return;
+          }
+
+          if (track.access === "subscribers") {
+            toast.error("Subscribe to Music City Pass first to unlock playback.");
+            return;
+          }
+        }
+
+        toast.error(
+          error instanceof Error ? error.message : "Unable to start playback",
+        );
+      }
+    },
+    [clearActiveAdState, logout, session?.token],
+  );
+
+  const handleAudioEnded = useCallback(async () => {
+    stopAnimationLoop();
+    setIsPlaying(false);
+    setCurrentTime(0);
+
+    if (activeAd && pendingTrackAfterAd) {
+      const impressionId = activeAdImpressionId;
+      const nextTrack = pendingTrackAfterAd;
+      clearActiveAdState();
+
+      if (impressionId) {
+        void reportAdImpressionUpdate(impressionId, {
+          status: "completed",
+        });
+      }
+
+      await startTrackSession(nextTrack);
+    }
+  }, [
+    activeAd,
+    activeAdImpressionId,
+    clearActiveAdState,
+    pendingTrackAfterAd,
+    reportAdImpressionUpdate,
+    startTrackSession,
+  ]);
+
   useEffect(() => {
     const audio = audioRef.current;
 
@@ -332,9 +454,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       syncProgress();
     };
     const handleEnded = () => {
-      stopAnimationLoop();
-      setIsPlaying(false);
-      setCurrentTime(0);
+      void handleAudioEnded();
     };
 
     audio.volume = volume;
@@ -356,7 +476,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeEventListener("ended", handleEnded);
       stopAnimationLoop();
     };
-  }, [volume]);
+  }, [handleAudioEnded, volume]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -405,11 +525,25 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         startAnimationLoop();
       } catch (error) {
         setIsPlaying(false);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Unable to start audio playback",
-        );
+
+        if (activeAd && pendingTrackAfterAd) {
+          const impressionId = activeAdImpressionId;
+          const nextTrack = pendingTrackAfterAd;
+          clearActiveAdState();
+
+          if (impressionId) {
+            void reportAdImpressionUpdate(impressionId, {
+              status: "failed",
+              reason: describePlaybackError(error),
+            });
+          }
+
+          toast.error("Ad could not be loaded. Continuing to the track.");
+          await startTrackSession(nextTrack);
+          return;
+        }
+
+        toast.error(describePlaybackError(error));
       }
     };
 
@@ -430,7 +564,15 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeAttribute("src");
       audio.load();
     };
-  }, [streamUrl]);
+  }, [
+    activeAd,
+    activeAdImpressionId,
+    clearActiveAdState,
+    pendingTrackAfterAd,
+    reportAdImpressionUpdate,
+    startTrackSession,
+    streamUrl,
+  ]);
 
   const recordPlaybackEvent = useCallback(
     async (eventType: "progress" | "completed", positionSeconds: number) => {
@@ -484,10 +626,6 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   }, [currentTime, duration, playbackSession, recordPlaybackEvent]);
 
   const playTrack = useCallback(async (track: TrackSummary) => {
-    if (!session?.token) {
-      return;
-    }
-
     if (track.id === activeTrack?.id && audioRef.current) {
       try {
         if (audioRef.current.paused) {
@@ -507,13 +645,39 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       return;
     }
 
+    if (!session?.token) {
+      return;
+    }
+
+    if (activeAdImpressionId) {
+      void reportAdImpressionUpdate(activeAdImpressionId, {
+        status: "skipped",
+        reason: "Listener selected another track before the ad completed.",
+      });
+      clearActiveAdState();
+    }
+
     try {
-      const playbackSession = await playbackApi.createSession(session.token, track.id);
+      const decision = await adsApi.getPlaybackDecision(session.token, track.id);
+
+      if (!decision.serveAd || !decision.ad || !decision.impressionId) {
+        await startTrackSession(track);
+        return;
+      }
+
       lastReportedProgressRef.current = 0;
       completionReportedRef.current = false;
       setActiveTrack(track);
-      setPlaybackSession(playbackSession);
-      setStreamUrl(playbackSession.streamUrl);
+      setPlaybackSession(null);
+      setActiveAd(decision.ad);
+      setActiveAdImpressionId(decision.impressionId);
+      setPendingTrackAfterAd(track);
+      setStreamUrl(decision.ad.audioUrl);
+      void adsApi.startImpression(session.token, {
+        impressionId: decision.impressionId,
+      }).catch(() => {
+        // Ignore impression start failures so music playback can continue.
+      });
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) {
         toast.error("Your session expired. Please sign in again.");
@@ -521,21 +685,17 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         return;
       }
 
-      if (error instanceof ApiClientError && error.status === 403) {
-        if (track.access === "purchase_required") {
-          toast.error("Buy this track first to unlock playback.");
-          return;
-        }
-
-        if (track.access === "subscribers") {
-          toast.error("Subscribe to Music City Pass first to unlock playback.");
-          return;
-        }
-      }
-
-      toast.error(error instanceof Error ? error.message : "Unable to start playback");
+      await startTrackSession(track);
     }
-  }, [activeTrack?.id, logout, session?.token]);
+  }, [
+    activeAdImpressionId,
+    activeTrack?.id,
+    clearActiveAdState,
+    logout,
+    reportAdImpressionUpdate,
+    session?.token,
+    startTrackSession,
+  ]);
 
   const activeTrackIndex = playbackQueue.findIndex(
     (track) => track.id === activeTrack?.id,
@@ -594,6 +754,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const seekTo = (value: number) => {
+    if (activeAd) return;
     const audio = audioRef.current;
     if (!audio) return;
     audio.currentTime = value;
@@ -601,6 +762,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   };
 
   const skipBy = (delta: number) => {
+    if (activeAd) return;
     const audio = audioRef.current;
     if (!audio) return;
     const nextTime = Math.max(0, Math.min(duration || 0, audio.currentTime + delta));
@@ -655,16 +817,18 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       {children}
       <audio ref={audioRef} preload="metadata" />
       <GlobalPlaybackBar
-        activeTrack={activeTrack}
-        isPlaying={isPlaying}
-        currentTime={currentTime}
-        duration={duration}
-        volume={volume}
-        canPlayPrevious={canPlayPrevious}
-        canPlayNext={canPlayNext}
-        togglePlayback={togglePlayback}
-        playPreviousTrack={playPreviousTrack}
-        playNextTrack={playNextTrack}
+      activeTrack={activeTrack}
+      isPlaying={isPlaying}
+      currentTime={currentTime}
+      duration={duration}
+      volume={volume}
+      canPlayPrevious={canPlayPrevious}
+      canPlayNext={canPlayNext}
+      isPlayingAd={Boolean(activeAd)}
+      activeAd={activeAd}
+      togglePlayback={togglePlayback}
+      playPreviousTrack={playPreviousTrack}
+      playNextTrack={playNextTrack}
         seekTo={seekTo}
         setVolumeLevel={setVolumeLevel}
       />

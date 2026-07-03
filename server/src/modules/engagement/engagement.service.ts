@@ -12,13 +12,13 @@ import {
 
 import { createId } from "../../services/id.service.js";
 import { playbackRepository } from "../playback/playback.repository.js";
+import { releasesRepository } from "../releases/releases.repository.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { usersService } from "../users/users.service.js";
 import { engagementRepository } from "./engagement.repository.js";
 
 const QUALIFIED_STREAM_MIN_SECONDS = 30;
 const QUALIFIED_STREAM_FRACTION = 0.5;
-const DAILY_STREAM_WINDOW_DAYS = 30;
 const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
 const nowIso = () => new Date().toISOString();
@@ -89,7 +89,6 @@ const recordAnalyticsEvent = async (event: AnalyticsEvent) => {
 
 export const engagementService = {
   async recordReleaseView(releaseId: string, walletAddress?: string) {
-    const { releasesRepository } = await import("../releases/releases.repository.js");
     const release = await releasesRepository.findById(releaseId);
 
     if (!release || release.status !== "published") {
@@ -423,24 +422,89 @@ export const engagementService = {
       windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
 
     const tracks = await tracksRepository.listByArtist(profile.id);
-    const topTracks = await Promise.all(
-      [...tracks]
-        .sort((left, right) => right.plays - left.plays || right.likes - left.likes)
-        .slice(0, 8)
-        .map(async (track) => ({
+    const trackAnalytics = await Promise.all(
+      tracks.map(async (track) => {
+        const [saves, uniqueListeners, playbackStarts, playbackCompletions] =
+          await Promise.all([
+            engagementRepository.countTrackSaves(track.id),
+            engagementRepository.countUniqueListenersByTrack(track.id),
+            engagementRepository.countPlaybackStartsByTrack(track.id),
+            engagementRepository.countPlaybackCompletionsByTrack(track.id),
+          ]);
+
+        return {
           trackId: track.id,
           title: track.title,
+          releaseId: track.releaseId,
           releaseTitle: track.releaseTitle,
           access: track.access,
           status: track.status,
           plays: track.plays,
           likes: track.likes,
-          saves: await engagementRepository.countTrackSaves(track.id),
-          uniqueListeners: await engagementRepository.countUniqueListenersByTrack(
-            track.id,
-          ),
-        })),
+          saves,
+          uniqueListeners,
+          completionRate:
+            playbackStarts > 0
+              ? Number(((playbackCompletions / playbackStarts) * 100).toFixed(1))
+              : 0,
+        };
+      }),
     );
+
+    const topTracks = [...trackAnalytics]
+      .sort((left, right) => right.plays - left.plays || right.likes - left.likes)
+      .slice(0, 8);
+
+    const releases = await releasesRepository.listByArtist(profile.id);
+    const releaseLookup = new Map(releases.map((release) => [release.id, release]));
+    const topReleases = Array.from(
+      trackAnalytics.reduce<
+        Map<
+          string,
+          {
+            releaseId: string;
+            title: string;
+            type: "single" | "ep" | "album";
+            streams: number;
+            likes: number;
+            saves: number;
+          }
+        >
+      >((accumulator, track) => {
+        if (!track.releaseId) {
+          return accumulator;
+        }
+
+        const release = releaseLookup.get(track.releaseId);
+
+        if (!release) {
+          return accumulator;
+        }
+
+        const existing = accumulator.get(track.releaseId);
+
+        if (existing) {
+          existing.streams += track.plays;
+          existing.likes += track.likes;
+          existing.saves += track.saves;
+          return accumulator;
+        }
+
+        accumulator.set(track.releaseId, {
+          releaseId: track.releaseId,
+          title: release.title,
+          type: release.type,
+          streams: track.plays,
+          likes: track.likes,
+          saves: track.saves,
+        });
+
+        return accumulator;
+      }, new Map()),
+    )
+      .map(([, release]) => release)
+      .sort((left, right) => right.streams - left.streams || right.likes - left.likes)
+      .slice(0, 5);
 
     const [
       followerCount,
@@ -449,6 +513,7 @@ export const engagementService = {
       streamsLast7Days,
       streamsLast30Days,
       dailyStreams,
+      dailyFollowerGrowth,
       selectedWindowStreams,
       selectedWindowUniqueListeners,
     ] =
@@ -458,10 +523,8 @@ export const engagementService = {
         engagementRepository.countUniqueListenersByArtist(profile.id),
         engagementRepository.countQualifiedStreamsByArtistSince(profile.id, 7),
         engagementRepository.countQualifiedStreamsByArtistSince(profile.id, 30),
-        engagementRepository.listArtistDailyQualifiedStreams(
-          profile.id,
-          selectedWindowDays ?? DAILY_STREAM_WINDOW_DAYS,
-        ),
+        engagementRepository.listArtistDailyQualifiedStreams(profile.id, selectedWindowDays),
+        engagementRepository.listArtistDailyFollowerGrowth(profile.id, selectedWindowDays),
         engagementRepository.countQualifiedStreamsByArtistSince(
           profile.id,
           selectedWindowDays,
@@ -472,12 +535,22 @@ export const engagementService = {
         ),
       ]);
 
+    const followersGainedInSelectedWindow = dailyFollowerGrowth.reduce(
+      (sum, point) => sum + point.newFollowers,
+      0,
+    );
+    const followerBaseline = followerCount - followersGainedInSelectedWindow;
+    const dailyFollowers = dailyFollowerGrowth.map((point) => ({
+      ...point,
+      followers: point.followers + Math.max(0, followerBaseline),
+    }));
+
     return artistAnalyticsSummarySchema.parse({
       artistId: profile.id,
       followerCount,
       totalStreams,
       totalLikes: tracks.reduce((sum, track) => sum + track.likes, 0),
-      totalSaves: topTracks.reduce((sum, track) => sum + track.saves, 0),
+      totalSaves: trackAnalytics.reduce((sum, track) => sum + track.saves, 0),
       uniqueListeners,
       totalTracks: tracks.length,
       publishedTracks: tracks.filter((track) => track.access !== "private").length,
@@ -486,8 +559,11 @@ export const engagementService = {
       selectedWindowDays,
       selectedWindowStreams,
       selectedWindowUniqueListeners,
+      followersGainedInSelectedWindow,
       topTracks,
+      topReleases,
       dailyStreams,
+      dailyFollowers,
     });
   },
 

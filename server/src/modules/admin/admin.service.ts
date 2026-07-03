@@ -1,4 +1,5 @@
 import {
+  type AdminAdListItem,
   adminAccountSchema,
   adminPlatformSubscriptionSettingsSchema,
   adminSubscriptionListSchema,
@@ -35,6 +36,7 @@ import { subscriptionsRepository } from "../subscriptions/subscriptions.reposito
 import { usersService } from "../users/users.service.js";
 import { royaltiesService } from "../royalties/royalties.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
+import { adsService } from "../ads/ads.service.js";
 
 type PersistedAdminAccount = AdminAccount & {
   passwordHash: string;
@@ -367,6 +369,30 @@ export const adminService = {
       summary,
       items,
     });
+  },
+
+  async listAds(): Promise<{ items: AdminAdListItem[] }> {
+    return {
+      items: await adsService.listAds(),
+    };
+  },
+
+  async createAd(input: unknown) {
+    return adsService.createAd(input as never);
+  },
+
+  async updateAd(adId: string, input: unknown) {
+    return adsService.updateAd(adId, input as never);
+  },
+
+  async archiveAd(adId: string) {
+    return adsService.archiveAd(adId);
+  },
+
+  async listAdImpressions(input?: { adId?: string; status?: string }) {
+    return {
+      items: await adsService.listImpressions(input),
+    };
   },
 
   getRoyaltyConfig() {
