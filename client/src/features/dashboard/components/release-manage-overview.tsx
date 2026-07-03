@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
-import { ArrowLeft, GripVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, GripVertical, TimerReset, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,33 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { useAuth } from "@/hooks/use-auth";
 
+const toDateTimeLocalValue = (value?: string) => {
+  if (!value) {
+    return "";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  const offsetMs = parsed.getTimezoneOffset() * 60_000;
+  return new Date(parsed.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
+const toIsoString = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+};
+
+const toLaunchMode = (status?: ReleaseDetail["status"]) =>
+  status === "published" || status === "scheduled" ? status : "draft";
+
 export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const { session } = useAuth();
   const [release, setRelease] = useState<ReleaseDetail | null>(null);
@@ -23,6 +50,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [launchMode, setLaunchMode] = useState<"draft" | "published" | "scheduled">("draft");
+  const [releaseDateInput, setReleaseDateInput] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +73,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         if (!cancelled) {
           setRelease(nextRelease);
           setMyTracks(nextTracks);
+          setLaunchMode(toLaunchMode(nextRelease?.status));
+          setReleaseDateInput(toDateTimeLocalValue(nextRelease?.releaseDate));
         }
       } catch (error) {
         if (!cancelled) {
@@ -87,10 +118,15 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         type: release.type,
         genre: release.genre,
         description: release.description,
-        releaseDate: release.releaseDate,
-        status: release.status,
+        releaseDate:
+          launchMode === "scheduled"
+            ? toIsoString(releaseDateInput)
+            : release.releaseDate,
+        status: launchMode,
       });
       setRelease(updated);
+      setLaunchMode(toLaunchMode(updated.status));
+      setReleaseDateInput(toDateTimeLocalValue(updated.releaseDate));
       toast.success("Release updated.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to save release");
@@ -238,10 +274,19 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
 
     try {
       setIsSaving(true);
-      const updated = await releasesApi.updateRelease(token, release.id, { status });
+      const updated = await releasesApi.updateRelease(token, release.id, {
+        status,
+        releaseDate: status === "scheduled" ? toIsoString(releaseDateInput) : undefined,
+      });
       setRelease(updated);
+      setLaunchMode(toLaunchMode(updated.status));
+      setReleaseDateInput(toDateTimeLocalValue(updated.releaseDate));
       toast.success(
-        status === "published" ? "Release published." : "Release moved to draft.",
+        status === "published"
+          ? "Release published."
+          : status === "scheduled"
+            ? "Release scheduled."
+            : "Release moved to draft.",
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update status");
@@ -297,6 +342,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               Release management
             </p>
             <h2 className="text-3xl font-semibold text-white">{release.title}</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Current status:{" "}
+              <span className="capitalize text-white">{release.status}</span>
+            </p>
           </div>
           <div className="flex gap-3">
             <Button
@@ -310,11 +359,21 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             </Button>
             <Button
               type="button"
+              variant="outline"
+              className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+              disabled={isSaving || launchMode !== "scheduled" || !releaseDateInput.trim()}
+              onClick={() => void updateStatus("scheduled")}
+            >
+              <TimerReset className="mr-2 h-4 w-4" />
+              Schedule release
+            </Button>
+            <Button
+              type="button"
               className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
               disabled={isSaving}
               onClick={() => void updateStatus("published")}
             >
-              Publish release
+              Release now
             </Button>
           </div>
         </div>
@@ -373,21 +432,58 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               <option value="album">Album</option>
             </select>
           </div>
+        </div>
+        <div className="space-y-3">
+          <label className="text-sm text-slate-300">Release plan</label>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {(
+              [
+                {
+                  value: "draft",
+                  label: "Draft",
+                  description: "Keep the project private while you finish the setup.",
+                },
+                {
+                  value: "published",
+                  label: "Release now",
+                  description: "Make the release available immediately.",
+                },
+                {
+                  value: "scheduled",
+                  label: "Scheduled release",
+                  description: "Publish later and show fans a countdown page first.",
+                },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`rounded-2xl border p-4 text-left transition ${
+                  launchMode === option.value
+                    ? "border-emerald-400/40 bg-emerald-400/10"
+                    : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-white/[0.05]"
+                }`}
+                onClick={() => setLaunchMode(option.value)}
+              >
+                <p className="text-sm font-semibold text-white">{option.label}</p>
+                <p className="mt-2 text-xs leading-6 text-slate-400">
+                  {option.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+        {launchMode === "scheduled" ? (
           <div className="space-y-2">
-            <label className="text-sm text-slate-300">Release date</label>
+            <label className="text-sm text-slate-300">Scheduled release time</label>
             <Input
-              type="date"
-              value={release.releaseDate ?? ""}
-              onChange={(event) =>
-                setRelease({
-                  ...release,
-                  releaseDate: event.target.value || undefined,
-                })
-              }
+              type="datetime-local"
+              value={releaseDateInput}
+              onChange={(event) => setReleaseDateInput(event.target.value)}
               className="border-white/10 bg-slate-950 text-white"
             />
           </div>
-        </div>
+        ) : null}
 
         <div className="space-y-2">
           <label className="text-sm text-slate-300">Description</label>

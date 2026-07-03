@@ -23,6 +23,17 @@ const initialForm: ReleaseCreateInput = {
   releaseDate: "",
 };
 
+type ReleaseLaunchMode = "draft" | "now" | "scheduled";
+
+const toIsoString = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+};
+
 export const DashboardReleasesOverview = () => {
   const { session } = useAuth();
   const [releases, setReleases] = useState<ReleaseSummary[]>([]);
@@ -32,6 +43,7 @@ export const DashboardReleasesOverview = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [launchMode, setLaunchMode] = useState<ReleaseLaunchMode>("draft");
 
   useEffect(() => {
     if (!session?.displayName) {
@@ -72,6 +84,7 @@ export const DashboardReleasesOverview = () => {
       ...initialForm,
       artistName: session?.displayName ?? "",
     });
+    setLaunchMode("draft");
     setCoverFile(null);
     setCoverUploadProgress(0);
   };
@@ -87,10 +100,11 @@ export const DashboardReleasesOverview = () => {
 
     try {
       setIsCreating(true);
+      const releaseDate = toIsoString(form.releaseDate?.trim());
       let release = await releasesApi.createRelease(token, {
         ...form,
         artistName: form.artistName?.trim() || undefined,
-        releaseDate: form.releaseDate?.trim() || undefined,
+        releaseDate,
       });
 
       if (coverFile) {
@@ -117,8 +131,21 @@ export const DashboardReleasesOverview = () => {
         }
       }
 
+      if (launchMode !== "draft") {
+        release = await releasesApi.updateRelease(token, release.id, {
+          status: launchMode === "scheduled" ? "scheduled" : "published",
+          releaseDate: launchMode === "scheduled" ? releaseDate : undefined,
+        });
+      }
+
       handleCreated(release);
-      toast.success("Release created.");
+      toast.success(
+        launchMode === "scheduled"
+          ? "Release scheduled."
+          : launchMode === "now"
+            ? "Release published."
+            : "Release created.",
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to create release");
     } finally {
@@ -219,10 +246,52 @@ export const DashboardReleasesOverview = () => {
                     required
                   />
                 </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm text-slate-300">Release plan</label>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {(
+                    [
+                      {
+                        value: "draft",
+                        label: "Save draft",
+                        description: "Create the release without making it public yet.",
+                      },
+                      {
+                        value: "now",
+                        label: "Release now",
+                        description: "Publish immediately after creation.",
+                      },
+                      {
+                        value: "scheduled",
+                        label: "Schedule",
+                        description: "Make it public with a countdown before launch.",
+                      },
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        launchMode === option.value
+                          ? "border-emerald-400/40 bg-emerald-400/10"
+                          : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-white/[0.05]"
+                      }`}
+                      onClick={() => setLaunchMode(option.value)}
+                    >
+                      <p className="text-sm font-semibold text-white">{option.label}</p>
+                      <p className="mt-2 text-xs leading-6 text-slate-400">
+                        {option.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {launchMode === "scheduled" ? (
                 <div className="space-y-2">
-                  <label className="text-sm text-slate-300">Release date</label>
+                  <label className="text-sm text-slate-300">Scheduled release date</label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     value={form.releaseDate ?? ""}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -231,9 +300,10 @@ export const DashboardReleasesOverview = () => {
                       }))
                     }
                     className="border-white/10 bg-slate-950 text-white"
+                    required
                   />
                 </div>
-              </div>
+              ) : null}
               <div className="space-y-2">
                 <label className="text-sm text-slate-300">Description</label>
                 <Textarea
@@ -273,6 +343,7 @@ export const DashboardReleasesOverview = () => {
                   className="border-white/10 bg-white/5 text-white hover:bg-white/10"
                   onClick={() => {
                     setIsCreateOpen(false);
+                    setLaunchMode("draft");
                     setCoverFile(null);
                     setCoverUploadProgress(0);
                   }}
@@ -284,7 +355,13 @@ export const DashboardReleasesOverview = () => {
                   className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
                   disabled={isCreating}
                 >
-                  {isCreating ? "Creating..." : "Create release"}
+                  {isCreating
+                    ? "Creating..."
+                    : launchMode === "scheduled"
+                      ? "Schedule release"
+                      : launchMode === "now"
+                        ? "Create and release"
+                        : "Create draft"}
                 </Button>
               </div>
             </form>

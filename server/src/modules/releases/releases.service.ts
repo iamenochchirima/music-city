@@ -145,18 +145,83 @@ const ensureOwnerProfile = async (walletAddress: string) => {
   return profile;
 };
 
+const validateReleaseTracksForPublishing = async (
+  assignments: Awaited<ReturnType<typeof releasesRepository.listTracks>>,
+) => {
+  if (assignments.length === 0) {
+    throw new Error("Add at least one track before releasing this project");
+  }
+
+  const assignedTracks = await Promise.all(
+    assignments.map((assignment) => tracksRepository.findById(assignment.track_id)),
+  );
+  const hasBlockedTrack = assignedTracks.some(
+    (track) => !track || !track.playbackReady || track.access === "private",
+  );
+
+  if (hasBlockedTrack) {
+    throw new Error(
+      "All tracks must be ready for playback and published before releasing this project",
+    );
+  }
+};
+
+const releaseDateHasArrived = (releaseDate?: string) =>
+  Boolean(releaseDate && Date.parse(releaseDate) <= Date.now());
+
+const resolvePublishedReleaseDate = (
+  existing: ReleaseSummary,
+  parsedReleaseDate?: string,
+) => {
+  if (parsedReleaseDate) {
+    return parsedReleaseDate;
+  }
+
+  if (existing.releaseDate && Date.parse(existing.releaseDate) <= Date.now()) {
+    return existing.releaseDate;
+  }
+
+  return new Date().toISOString();
+};
+
+const resolvePublicReleaseState = async (release: ReleaseSummary) => {
+  if (release.status !== "scheduled") {
+    return release;
+  }
+
+  if (!releaseDateHasArrived(release.releaseDate)) {
+    return release;
+  }
+
+  const assignments = await releasesRepository.listTracks(release.id);
+  await validateReleaseTracksForPublishing(assignments);
+
+  return releasesRepository.upsert({
+    ...release,
+    status: "published",
+    publishedAt: release.publishedAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+};
+
 export const releasesService = {
   async listReleases() {
-    const releases = await releasesRepository.list();
+    const releases = await Promise.all(
+      (await releasesRepository.list()).map((release) => resolvePublicReleaseState(release)),
+    );
     return releases
-      .filter((release) => release.status === "published")
+      .filter((release) => release.status === "published" || release.status === "scheduled")
       .map((release) => hydrateReleaseUrls(release));
   },
 
   async listPublicReleasesByArtist(artistId: string) {
-    const releases = await releasesRepository.listByArtist(artistId);
+    const releases = await Promise.all(
+      (await releasesRepository.listByArtist(artistId)).map((release) =>
+        resolvePublicReleaseState(release),
+      ),
+    );
     return releases
-      .filter((release) => release.status === "published")
+      .filter((release) => release.status === "published" || release.status === "scheduled")
       .map((release) => hydrateReleaseUrls(release));
   },
 
@@ -168,9 +233,15 @@ export const releasesService = {
   },
 
   async getRelease(releaseId: string) {
-    const release = await releasesRepository.findById(releaseId);
+    const rawRelease = await releasesRepository.findById(releaseId);
 
-    if (!release || release.status !== "published") {
+    if (!rawRelease) {
+      return null;
+    }
+
+    const release = await resolvePublicReleaseState(rawRelease);
+
+    if (release.status !== "published" && release.status !== "scheduled") {
       return null;
     }
 
@@ -236,22 +307,19 @@ export const releasesService = {
     const nextStatus = parsed.status ?? existing.status;
     const assignments = await releasesRepository.listTracks(releaseId);
 
-    if (nextStatus === "published" && assignments.length === 0) {
-      throw new Error("Add at least one track before publishing a release");
+    if (nextStatus === "published") {
+      await validateReleaseTracksForPublishing(assignments);
     }
 
-    if (nextStatus === "published") {
-      const assignedTracks = await Promise.all(
-        assignments.map((assignment) => tracksRepository.findById(assignment.track_id)),
-      );
-      const hasBlockedTrack = assignedTracks.some(
-        (track) => !track || !track.playbackReady || track.access === "private",
-      );
+    if (nextStatus === "scheduled") {
+      await validateReleaseTracksForPublishing(assignments);
 
-      if (hasBlockedTrack) {
-        throw new Error(
-          "All tracks must be ready for playback and not private before publishing a release",
-        );
+      if (!parsed.releaseDate) {
+        throw new Error("Choose a release date and time before scheduling");
+      }
+
+      if (Date.parse(parsed.releaseDate) <= Date.now()) {
+        throw new Error("Scheduled releases must be set in the future");
       }
     }
 
@@ -270,12 +338,18 @@ export const releasesService = {
           ? parsed.coverStorageKey.trim() || undefined
           : existing.coverStorageKey,
       releaseDate:
-        parsed.releaseDate !== undefined ? parsed.releaseDate : existing.releaseDate,
+        nextStatus === "published"
+          ? resolvePublishedReleaseDate(existing, parsed.releaseDate)
+          : parsed.releaseDate !== undefined
+            ? parsed.releaseDate
+            : existing.releaseDate,
       status: nextStatus,
       publishedAt:
         nextStatus === "published"
           ? parsed.publishedAt ?? existing.publishedAt ?? new Date().toISOString()
-          : existing.publishedAt,
+          : nextStatus === "draft"
+            ? undefined
+            : existing.publishedAt,
       updatedAt: new Date().toISOString(),
     });
 

@@ -8,6 +8,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const formatReleaseType = (value: ReleaseSummary["type"]) =>
   value === "ep" ? "EP" : value.charAt(0).toUpperCase() + value.slice(1);
 
+const formatReleaseDate = (value?: string) => {
+  if (!value) {
+    return "Date not set";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 export const ReleaseGrid = ({
   releases,
   hrefBuilder,
@@ -42,9 +62,14 @@ export const ReleaseGrid = ({
               )}
             </div>
             <CardHeader className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">
-                {formatReleaseType(release.type)}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">
+                  {formatReleaseType(release.type)}
+                </p>
+                <span className="rounded-full border border-white/10 bg-slate-950/60 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-300">
+                  {release.status}
+                </span>
+              </div>
               <CardTitle className="text-xl">{release.title}</CardTitle>
               <p className="text-sm text-slate-400">{release.artistName}</p>
             </CardHeader>
@@ -52,6 +77,12 @@ export const ReleaseGrid = ({
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2">
                 <span>{release.trackCount} tracks</span>
                 <span>{release.genre}</span>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-xs uppercase tracking-[0.2em] text-slate-400">
+                {release.status === "scheduled" ? "Scheduled for" : "Release date"} ·{" "}
+                <span className="text-slate-200 normal-case tracking-normal">
+                  {formatReleaseDate(release.releaseDate)}
+                </span>
               </div>
               {release.description ? (
                 <p className="line-clamp-3 leading-6 text-slate-400">
