@@ -134,6 +134,26 @@ releasesRouter.put(
 );
 
 releasesRouter.delete(
+  "/:releaseId",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    try {
+      await releasesService.deleteRelease(
+        request.session!.walletAddress,
+        String(request.params.releaseId),
+      );
+
+      response.status(204).send();
+    } catch (error) {
+      throw new HttpError(
+        400,
+        error instanceof Error ? error.message : "Release deletion failed",
+      );
+    }
+  }),
+);
+
+releasesRouter.delete(
   "/:releaseId/tracks/:trackId",
   requireSession,
   asyncHandler(async (request, response) => {

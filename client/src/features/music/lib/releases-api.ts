@@ -89,4 +89,8 @@ export const releasesApi = {
     );
     return response;
   },
+
+  async deleteRelease(token: string, releaseId: string) {
+    return httpClient.delete(`/releases/${releaseId}`, token);
+  },
 };

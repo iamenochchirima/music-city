@@ -454,6 +454,29 @@ export const releasesService = {
     return toReleaseDetail(syncedRelease, true);
   },
 
+  async deleteRelease(walletAddress: string, releaseId: string) {
+    const profile = await ensureOwnerProfile(walletAddress);
+    const release = await releasesRepository.findById(releaseId);
+
+    if (!release || release.artistId !== profile.id) {
+      throw new Error("Release not found");
+    }
+
+    const assignments = await releasesRepository.listTracks(releaseId);
+
+    for (const assignment of assignments) {
+      const track = await tracksRepository.findById(assignment.track_id);
+
+      if (!track || track.artistId !== profile.id) {
+        continue;
+      }
+
+      await syncTrackReleaseFields(track, null);
+    }
+
+    await releasesRepository.delete(releaseId);
+  },
+
   async attachCoverArt(releaseId: string, payload: { coverStorageKey: string }) {
     const existing = await releasesRepository.findById(releaseId);
 

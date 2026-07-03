@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
-import { ArrowLeft, GripVertical, TimerReset, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, GripVertical, TimerReset, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,11 +43,13 @@ const toLaunchMode = (status?: ReleaseDetail["status"]) =>
   status === "published" || status === "scheduled" ? status : "draft";
 
 export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
+  const router = useRouter();
   const { session } = useAuth();
   const [release, setRelease] = useState<ReleaseDetail | null>(null);
   const [myTracks, setMyTracks] = useState<TrackSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
@@ -295,6 +298,33 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     }
   };
 
+  const deleteRelease = async () => {
+    const token = session?.token;
+
+    if (!token || !release) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${release.title}"? This removes the release page and detaches its tracks, but it will not delete the tracks themselves.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await releasesApi.deleteRelease(token, release.id);
+      toast.success("Release deleted.");
+      router.push("/dashboard/releases");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete release");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
@@ -355,7 +385,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               disabled={isSaving}
               onClick={() => void updateStatus("draft")}
             >
-              Save as draft
+              {release.status === "draft" ? "Save as draft" : "Unpublish release"}
             </Button>
             <Button
               type="button"
@@ -551,6 +581,34 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           {isSaving ? "Saving..." : "Save release details"}
         </Button>
       </form>
+
+      <section className="rounded-[28px] border border-rose-500/20 bg-rose-500/5 p-6 sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl space-y-2">
+            <p className="text-sm uppercase tracking-[0.3em] text-rose-300">
+              Danger zone
+            </p>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-rose-300" />
+              <h3 className="text-xl font-semibold text-white">Delete this release</h3>
+            </div>
+            <p className="text-sm leading-7 text-rose-100/80">
+              Deleting a release removes its public page and studio record. Tracks stay in
+              your library, but they will be detached from this release.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="border-rose-400/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
+            disabled={isDeleting || isSaving}
+            onClick={() => void deleteRelease()}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {isDeleting ? "Deleting..." : "Delete release"}
+          </Button>
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
