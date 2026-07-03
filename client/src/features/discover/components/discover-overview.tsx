@@ -60,11 +60,30 @@ export const DiscoverOverview = () => {
     return <div className="text-sm text-slate-400">Loading catalog...</div>;
   }
 
+  const scheduledReleases = releases.filter((release) => release.status === "scheduled");
+  const liveReleases = releases.filter((release) => release.status === "published");
+
   return (
     <div className="space-y-12">
+      {scheduledReleases.length > 0 ? (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold text-white">Upcoming countdowns</h2>
+            <p className="text-sm text-slate-400">
+              Stay close to the next drops and watch the clock on scheduled releases.
+            </p>
+          </div>
+          <ReleaseGrid releases={scheduledReleases} emptyMessage="No scheduled releases yet." />
+        </div>
+      ) : null}
       <div className="space-y-5">
-        <h2 className="text-2xl font-semibold text-white">Latest releases</h2>
-        <ReleaseGrid releases={releases} />
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold text-white">Latest live releases</h2>
+          <p className="text-sm text-slate-400">
+            Freshly released projects you can stream right now.
+          </p>
+        </div>
+        <ReleaseGrid releases={liveReleases} emptyMessage="No live releases yet." />
       </div>
       <div className="space-y-5">
         <h2 className="text-2xl font-semibold text-white">Featured tracks</h2>
