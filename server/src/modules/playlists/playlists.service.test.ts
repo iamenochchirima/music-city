@@ -17,6 +17,7 @@ const createProfile = () => ({
   email: "",
   displayName: "Playlist Fan",
   role: "fan" as const,
+  artistOnboardingFeePaid: false,
   location: "",
   profileImageUrl: undefined,
   profileImageStorageKey: undefined,

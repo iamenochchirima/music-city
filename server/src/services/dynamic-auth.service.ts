@@ -204,6 +204,7 @@ export const dynamicAuthService = {
       email: profile?.email ?? payload.email ?? "",
       displayName: buildDisplayName(payload, walletAddress, profile?.displayName),
       role: profile?.role ?? "fan",
+      artistOnboardingFeePaid: await usersService.hasArtistOnboardingAccess(walletAddress),
       profileComplete: Boolean(profile),
     };
 

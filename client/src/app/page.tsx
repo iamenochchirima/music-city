@@ -84,8 +84,8 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="mt-8 max-w-lg text-xl font-light leading-snug text-white/55 sm:text-2xl">
-                A music platform for private drops, polished streams, and
-                artist-owned release moments.
+                A music platform for polished streams and artist/label-owned
+                release moments.
               </p>
 
               <div className="mt-12 flex flex-col gap-4 sm:flex-row">

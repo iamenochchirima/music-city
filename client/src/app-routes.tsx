@@ -26,6 +26,7 @@ import { ReleasesOverview } from "@/features/music/components/releases-overview"
 import { TrackDetailOverview } from "@/features/music/components/track-detail-overview";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { tracksApi } from "@/features/music/lib/tracks-api";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { OnboardingForm } from "@/features/onboarding/components/onboarding-form";
 import { PlatformSubscriptionOverview } from "@/features/subscriptions/components/platform-subscription-overview";
 import { useEffect, useState } from "react";
@@ -344,7 +345,10 @@ export const AppRoutes = () => (
           title="Set up your artist account"
           description="Get ready to upload music, manage releases, and control access."
         >
-          <BecomeArtistOverview />
+          <div className="space-y-8">
+            <BecomeArtistOverview />
+            <ArtistAccessGate action="upload and release music" />
+          </div>
         </PageSection>
       }
     />

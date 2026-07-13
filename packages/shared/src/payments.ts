@@ -10,6 +10,7 @@ import {
 export const paymentProductTypeSchema = z.enum([
   "track_purchase",
   "platform_subscription",
+  "artist_onboarding_fee",
 ]);
 export type PaymentProductType = z.infer<typeof paymentProductTypeSchema>;
 

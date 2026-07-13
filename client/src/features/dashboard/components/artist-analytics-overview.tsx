@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { useAuth } from "@/hooks/use-auth";
 
 const WINDOW_OPTIONS = [
@@ -86,12 +87,8 @@ export const ArtistAnalyticsOverview = () => {
     );
   }
 
-  if (session.role !== "artist") {
-    return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
-        Artist analytics are only available for artist accounts.
-      </div>
-    );
+  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+    return <ArtistAccessGate action="view artist analytics" />;
   }
 
   if (isLoading) {

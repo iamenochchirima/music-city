@@ -10,6 +10,7 @@ export const authSessionSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   displayName: z.string().min(1),
   role: userRoleSchema,
+  artistOnboardingFeePaid: z.boolean().default(false),
   profileImageUrl: z.string().optional(),
   headerImageUrl: z.string().optional(),
   token: z.string().optional(),

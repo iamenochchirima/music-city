@@ -214,6 +214,7 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
       email: profile.email,
       displayName: profile.displayName,
       role: profile.role,
+      artistOnboardingFeePaid: profile.artistOnboardingFeePaid,
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
       profileComplete: true,
@@ -227,7 +228,6 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
     if (
       !session?.token ||
       !session.profileComplete ||
-      session.profileImageUrl ||
       autoProfileRefreshTokenRef.current === session.token
     ) {
       return;
@@ -242,7 +242,6 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
     autoProfileRefreshTokenRef,
     refreshSessionProfile,
     session?.profileComplete,
-    session?.profileImageUrl,
     session?.token,
   ]);
 
@@ -342,6 +341,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       email: profile.email,
       displayName: profile.displayName,
       role: profile.role,
+      artistOnboardingFeePaid: profile.artistOnboardingFeePaid,
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
       profileComplete: true,
@@ -355,7 +355,6 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     if (
       !session?.token ||
       !session.profileComplete ||
-      session.profileImageUrl ||
       autoProfileRefreshTokenRef.current === session.token
     ) {
       return;
@@ -370,7 +369,6 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     autoProfileRefreshTokenRef,
     refreshSessionProfile,
     session?.profileComplete,
-    session?.profileImageUrl,
     session?.token,
   ]);
 

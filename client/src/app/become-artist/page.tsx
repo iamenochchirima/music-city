@@ -1,6 +1,7 @@
 import { PageContainer } from "@/components/common/page-container";
 import { PageHero } from "@/components/common/page-hero";
 import { BecomeArtistOverview } from "@/features/become-artist/components/become-artist-overview";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 
 export default function BecomeArtistPage() {
   return (
@@ -13,6 +14,7 @@ export default function BecomeArtistPage() {
             description="Get ready to upload music, manage releases, and control access."
           />
           <BecomeArtistOverview />
+          <ArtistAccessGate action="upload and release music" />
         </div>
       </PageContainer>
     </section>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { useAuth } from "@/hooks/use-auth";
 
 export const DashboardOverview = () => {
@@ -22,6 +23,10 @@ export const DashboardOverview = () => {
         Complete onboarding before creating tracks.
       </div>
     );
+  }
+
+  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+    return <ArtistAccessGate action="use the studio" />;
   }
 
   return (

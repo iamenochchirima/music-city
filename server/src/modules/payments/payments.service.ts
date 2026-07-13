@@ -115,6 +115,10 @@ const paymentResultFromExistingRecord = async (
     return { payment, subscription };
   }
 
+  if (intent.productType === "artist_onboarding_fee") {
+    return { payment, artistOnboardingFeePaid: true };
+  }
+
   throw new HttpError(400, "Unsupported payment product");
 };
 
@@ -227,7 +231,8 @@ export const paymentsService = {
     return (await paymentsRepository.listPaymentsByWallet(walletAddress)).filter(
       (payment) =>
         payment.productType === "track_purchase" ||
-        payment.productType === "platform_subscription",
+        payment.productType === "platform_subscription" ||
+        payment.productType === "artist_onboarding_fee",
     );
   },
 
@@ -298,6 +303,30 @@ export const paymentsService = {
     });
 
     return paymentsRepository.upsertIntent(intent);
+  },
+
+  async createArtistOnboardingFeeIntent(walletAddress: string) {
+    if (await usersService.hasArtistOnboardingAccess(walletAddress)) {
+      throw new HttpError(400, "Artist onboarding has already been unlocked");
+    }
+
+    const intent = await createIntentRecord({
+      walletAddress,
+      productType: "artist_onboarding_fee",
+      amount: normalizePositiveAmount(
+        env.ARTIST_ONBOARDING_FEE_PRICE,
+        "Artist onboarding fee",
+      ),
+      asset: settlementAsset(),
+    });
+
+    return paymentsRepository.upsertIntent(intent);
+  },
+
+  async getArtistOnboardingFeeStatus(walletAddress: string) {
+    return {
+      paid: await usersService.hasArtistOnboardingAccess(walletAddress),
+    };
   },
 
   async confirm(walletAddress: string, input: ConfirmPaymentInput) {

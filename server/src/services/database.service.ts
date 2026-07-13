@@ -241,7 +241,7 @@ const baseSchemaStatements = [
     CONSTRAINT payment_intents_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
     CONSTRAINT payment_intents_product_type_check
-      CHECK (product_type IN ('track_purchase', 'platform_subscription')),
+      CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee')),
     CONSTRAINT payment_intents_status_check
       CHECK (status IN ('pending', 'confirmed', 'expired', 'failed'))
   )`,
@@ -259,7 +259,7 @@ const baseSchemaStatements = [
     CONSTRAINT payments_track_id_fk
       FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
     CONSTRAINT payments_product_type_check
-      CHECK (product_type IN ('track_purchase', 'platform_subscription'))
+      CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee'))
   )`,
   `CREATE TABLE IF NOT EXISTS subscriptions (
     id TEXT PRIMARY KEY,
@@ -558,7 +558,7 @@ const schemaMigrations: SchemaMigration[] = [
       "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_product_type_check",
       `ALTER TABLE payment_intents
         ADD CONSTRAINT payment_intents_product_type_check
-        CHECK (product_type IN ('track_purchase', 'platform_subscription'))`,
+        CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee'))`,
       "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_artist_id_fk",
       "DROP INDEX IF EXISTS payment_intents_artist_id_idx",
       "ALTER TABLE payment_intents DROP COLUMN IF EXISTS artist_id",
@@ -582,7 +582,7 @@ const schemaMigrations: SchemaMigration[] = [
       "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_product_type_check",
       `ALTER TABLE payments
         ADD CONSTRAINT payments_product_type_check
-        CHECK (product_type IN ('track_purchase', 'platform_subscription'))`,
+        CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee'))`,
       "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_artist_id_fk",
       "ALTER TABLE payments DROP COLUMN IF EXISTS artist_id",
       "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS scope TEXT",
@@ -619,6 +619,19 @@ const schemaMigrations: SchemaMigration[] = [
       `ALTER TABLE royalty_payouts
         ADD CONSTRAINT royalty_payouts_status_check
         CHECK (status IN ('pending', 'submitted', 'confirmed', 'failed', 'cancelled'))`,
+    ],
+  },
+  {
+    name: "2026-07-13-artist-onboarding-fee",
+    statements: [
+      "ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_product_type_check",
+      `ALTER TABLE payment_intents
+        ADD CONSTRAINT payment_intents_product_type_check
+        CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee'))`,
+      "ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_product_type_check",
+      `ALTER TABLE payments
+        ADD CONSTRAINT payments_product_type_check
+        CHECK (product_type IN ('track_purchase', 'platform_subscription', 'artist_onboarding_fee'))`,
     ],
   },
   {

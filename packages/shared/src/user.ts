@@ -9,6 +9,7 @@ export const userProfileSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   displayName: z.string().min(1),
   role: userRoleSchema,
+  artistOnboardingFeePaid: z.boolean().default(false),
   location: z.string().default(""),
   profileImageUrl: z.string().optional(),
   profileImageStorageKey: z.string().optional(),

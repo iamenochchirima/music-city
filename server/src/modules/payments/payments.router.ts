@@ -16,6 +16,18 @@ paymentsRouter.get(
   }),
 );
 
+paymentsRouter.get(
+  "/artist-onboarding-fee/status",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    response.json(
+      await paymentsService.getArtistOnboardingFeeStatus(
+        request.session!.walletAddress,
+      ),
+    );
+  }),
+);
+
 paymentsRouter.post(
   "/intents/track/:trackId",
   requireSession,
@@ -35,6 +47,18 @@ paymentsRouter.post(
   asyncHandler(async (request, response) => {
     response.status(201).json({
       intent: await paymentsService.createPlatformSubscriptionIntent(
+        request.session!.walletAddress,
+      ),
+    });
+  }),
+);
+
+paymentsRouter.post(
+  "/intents/artist-onboarding-fee",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    response.status(201).json({
+      intent: await paymentsService.createArtistOnboardingFeeIntent(
         request.session!.walletAddress,
       ),
     });

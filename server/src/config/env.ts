@@ -105,6 +105,7 @@ const envSchema = z
     ROYALTY_FEE_AD_REVENUE_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     ROYALTY_FEE_MANUAL_ADJUSTMENT_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     TRACK_PURCHASE_DEFAULT_PRICE: z.string().default("5"),
+    ARTIST_ONBOARDING_FEE_PRICE: z.string().default("19"),
     PLATFORM_SUBSCRIPTION_ENABLED: z
       .string()
       .optional()

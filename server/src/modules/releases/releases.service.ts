@@ -136,13 +136,11 @@ const syncTrackReleaseFields = async (
   });
 
 const ensureOwnerProfile = async (walletAddress: string) => {
-  const profile = await usersService.getProfile(walletAddress);
-
-  if (!profile) {
-    throw new Error("Create a profile before managing releases");
-  }
-
-  return profile;
+  return usersService.requireArtistOnboardingAccess(
+    walletAddress,
+    "Create a profile before managing releases",
+    "Pay the onboarding fee before managing releases",
+  );
 };
 
 const validateReleaseTracksForPublishing = async (

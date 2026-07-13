@@ -63,7 +63,7 @@ export const tracksService = {
   async listMyTracks(walletAddress: string) {
     const profile = await usersService.getProfile(walletAddress);
 
-    if (!profile) {
+    if (!profile || profile.role !== "artist") {
       return [];
     }
 
@@ -116,7 +116,10 @@ export const tracksService = {
   },
 
   async getManageTrack(walletAddress: string, trackId: string) {
-    const profile = await usersService.getProfile(walletAddress);
+    const profile = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile before managing tracks",
+    );
     const track = await tracksRepository.findById(trackId);
 
     if (!profile || !track || track.artistId !== profile.id) {
@@ -134,7 +137,10 @@ export const tracksService = {
   },
 
   async deleteTrack(walletAddress: string, trackId: string) {
-    const profile = await usersService.getProfile(walletAddress);
+    const profile = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile before managing tracks",
+    );
     const track = await tracksRepository.findById(trackId);
 
     if (!profile || !track || track.artistId !== profile.id) {
@@ -181,11 +187,11 @@ export const tracksService = {
   },
 
   async createTrack(walletAddress: string, input: TrackCreateInput) {
-    const profile = await usersService.getProfile(walletAddress);
-
-    if (!profile) {
-      throw new Error("Create a profile before creating tracks");
-    }
+    const profile = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile before creating tracks",
+      "Pay the onboarding fee before creating tracks",
+    );
 
     const timestamp = new Date().toISOString();
     const parsed = trackCreateSchema.parse(input);
@@ -252,7 +258,10 @@ export const tracksService = {
     trackId: string,
     input: TrackAccessUpdateInput,
   ) {
-    const profile = await usersService.getProfile(walletAddress);
+    const profile = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile before managing tracks",
+    );
     const existing = await tracksRepository.findById(trackId);
 
     if (!profile || !existing || existing.artistId !== profile.id) {
@@ -283,7 +292,10 @@ export const tracksService = {
     trackId: string,
     input: TrackMonetizationUpdateInput,
   ) {
-    const profile = await usersService.getProfile(walletAddress);
+    const profile = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile before managing tracks",
+    );
     const existing = await tracksRepository.findById(trackId);
 
     if (!profile || !existing || existing.artistId !== profile.id) {

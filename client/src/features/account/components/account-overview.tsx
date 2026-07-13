@@ -165,6 +165,14 @@ export const AccountOverview = () => {
               {formatRole(profile?.role ?? session.role)}
             </p>
           </div>
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Artist access</p>
+            <p className="text-base text-white">
+              {profile?.artistOnboardingFeePaid || session.artistOnboardingFeePaid
+                ? "Onboarding fee paid"
+                : "Not unlocked"}
+            </p>
+          </div>
           <div className="space-y-1 sm:col-span-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Email</p>
             <p className="text-base text-white">
@@ -299,7 +307,9 @@ export const AccountOverview = () => {
                     <p className="text-base font-medium text-white">
                       {payment.productType === "track_purchase"
                         ? "Track purchase"
-                        : "Music City Pass"}
+                        : payment.productType === "platform_subscription"
+                          ? "Music City Pass"
+                          : "Artist onboarding fee"}
                     </p>
                     <p className="text-sm text-slate-400">
                       {payment.amount} {payment.assetCode}

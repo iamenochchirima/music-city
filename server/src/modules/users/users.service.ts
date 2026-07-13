@@ -13,6 +13,7 @@ import { env } from "../../config/env.js";
 import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
+import { paymentsRepository } from "../payments/payments.repository.js";
 import { usersRepository } from "./users.repository.js";
 
 const nowIso = () => new Date().toISOString();
@@ -47,6 +48,7 @@ const withMediaUrls = (profile: UserProfile | null) => {
 
   return {
     ...profile,
+    artistOnboardingFeePaid: profile.artistOnboardingFeePaid ?? false,
     profileImageUrl: profile.profileImageStorageKey
       ? storageService.getDownloadUrl(profile.profileImageStorageKey)
       : profile.profileImageUrl,
@@ -56,9 +58,34 @@ const withMediaUrls = (profile: UserProfile | null) => {
   };
 };
 
+const hasArtistOnboardingPayment = async (walletAddress: string) => {
+  const payments = await paymentsRepository.listPaymentsByWallet(walletAddress);
+
+  return payments.some(
+    (payment) => payment.productType === "artist_onboarding_fee" && payment.status === "confirmed",
+  );
+};
+
+const withArtistAccess = async (profile: UserProfile | null) => {
+  const hydrated = withMediaUrls(profile);
+
+  if (!hydrated) {
+    return null;
+  }
+
+  return {
+    ...hydrated,
+    artistOnboardingFeePaid: await hasArtistOnboardingPayment(hydrated.walletAddress),
+  };
+};
+
 export const usersService = {
   async listAllProfiles() {
-    return (await usersRepository.listAll()).map((profile) => withMediaUrls(profile)) as UserProfile[];
+    const profiles = await usersRepository.listAll();
+
+    return Promise.all(
+      profiles.map((profile) => withArtistAccess(profile)),
+    ) as Promise<UserProfile[]>;
   },
 
   async getPublicArtistProfile(id: string) {
@@ -107,11 +134,37 @@ export const usersService = {
   },
 
   async getProfileById(id: string) {
-    return withMediaUrls(await usersRepository.findById(id));
+    return withArtistAccess(await usersRepository.findById(id));
   },
 
   async getProfile(walletAddress: string) {
-    return withMediaUrls(await usersRepository.findByWallet(walletAddress));
+    return withArtistAccess(await usersRepository.findByWallet(walletAddress));
+  },
+
+  async hasArtistOnboardingAccess(walletAddress: string) {
+    return hasArtistOnboardingPayment(walletAddress);
+  },
+
+  async requireArtistOnboardingAccess(
+    walletAddress: string,
+    missingProfileMessage: string,
+    missingFeeMessage = "Pay the onboarding fee before accessing artist tools",
+  ) {
+    const profile = await this.getProfile(walletAddress);
+
+    if (!profile) {
+      throw new Error(missingProfileMessage);
+    }
+
+    if (profile.role !== "artist") {
+      throw new Error(missingFeeMessage);
+    }
+
+    if (!profile.artistOnboardingFeePaid) {
+      throw new HttpError(402, missingFeeMessage);
+    }
+
+    return profile;
   },
 
   async upsertProfile(walletAddress: string, input: UpsertUserProfileInput) {
@@ -119,12 +172,21 @@ export const usersService = {
     const existing = await usersRepository.findByWallet(walletAddress);
     const timestamp = nowIso();
 
+    if (
+      parsed.role === "artist" &&
+      existing?.role !== "artist" &&
+      !(await this.hasArtistOnboardingAccess(walletAddress))
+    ) {
+      throw new HttpError(402, "Pay the onboarding fee before creating an artist account");
+    }
+
     const profile: UserProfile = {
       id: existing?.id ?? createId("usr"),
       walletAddress,
       email: parsed.email ?? existing?.email ?? "",
       displayName: parsed.displayName,
       role: parsed.role,
+      artistOnboardingFeePaid: await this.hasArtistOnboardingAccess(walletAddress),
       location: parsed.location ?? existing?.location ?? "",
       profileImageStorageKey:
         ensureOwnedProfileStorageKey(
@@ -141,7 +203,7 @@ export const usersService = {
       updatedAt: timestamp,
     };
 
-    return withMediaUrls(await usersRepository.upsert(profile));
+    return withArtistAccess(await usersRepository.upsert(profile));
   },
 
   createMediaUploadTarget(

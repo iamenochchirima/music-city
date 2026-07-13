@@ -114,6 +114,7 @@ export const stellarAuthService = {
       email: profile?.email ?? "",
       displayName: profile?.displayName ?? source.slice(0, 6),
       role: profile?.role ?? ("fan" as const),
+      artistOnboardingFeePaid: await usersService.hasArtistOnboardingAccess(source),
       profileComplete: Boolean(profile),
     };
   },

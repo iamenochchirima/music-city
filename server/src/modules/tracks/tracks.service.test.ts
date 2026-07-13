@@ -25,13 +25,14 @@ test("createTrack rejects subscriber-only access from creator-controlled input",
   const cleanup = [
     restore(
       usersService,
-      "getProfile",
+      "requireArtistOnboardingAccess",
       (async () => ({
         id: "artist-1",
         walletAddress,
         email: "",
         displayName: "Artist",
         role: "artist" as const,
+        artistOnboardingFeePaid: true,
         location: "",
         profileImageUrl: undefined,
         profileImageStorageKey: undefined,
@@ -40,7 +41,7 @@ test("createTrack rejects subscriber-only access from creator-controlled input",
         verified: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      })) as typeof usersService.getProfile,
+      })) as typeof usersService.requireArtistOnboardingAccess,
     ),
   ];
 
@@ -62,13 +63,14 @@ test("updateTrackAccess rejects subscriber-only access from creator-controlled i
   const cleanup = [
     restore(
       usersService,
-      "getProfile",
+      "requireArtistOnboardingAccess",
       (async () => ({
         id: "artist-1",
         walletAddress,
         email: "",
         displayName: "Artist",
         role: "artist" as const,
+        artistOnboardingFeePaid: true,
         location: "",
         profileImageUrl: undefined,
         profileImageStorageKey: undefined,
@@ -77,7 +79,7 @@ test("updateTrackAccess rejects subscriber-only access from creator-controlled i
         verified: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      })) as typeof usersService.getProfile,
+      })) as typeof usersService.requireArtistOnboardingAccess,
     ),
     restore(
       tracksRepository,

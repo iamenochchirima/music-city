@@ -5,6 +5,7 @@ import type { PaymentRecord, SubscriptionRecord, TrackSummary } from "@music-cit
 
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -31,6 +32,14 @@ export const DashboardRevenueOverview = () => {
     const token = session?.token;
 
     if (!token) {
+      setPayments([]);
+      setSubscriptions([]);
+      setTracks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    if (session?.role !== "artist") {
       setPayments([]);
       setSubscriptions([]);
       setTracks([]);
@@ -80,7 +89,12 @@ export const DashboardRevenueOverview = () => {
   }, [session?.token]);
 
   const metrics = useMemo(() => {
-    const confirmedPayments = payments.filter((payment) => payment.status === "confirmed");
+    const confirmedPayments = payments.filter(
+      (payment) =>
+        payment.status === "confirmed" &&
+        (payment.productType === "track_purchase" ||
+          payment.productType === "platform_subscription"),
+    );
     const trackSales = confirmedPayments.filter(
       (payment) => payment.productType === "track_purchase",
     );
@@ -120,6 +134,10 @@ export const DashboardRevenueOverview = () => {
         Loading revenue...
       </div>
     );
+  }
+
+  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+    return <ArtistAccessGate action="view artist revenue" />;
   }
 
   if (error) {
@@ -193,7 +211,9 @@ export const DashboardRevenueOverview = () => {
                     <p className="font-semibold text-white">
                       {payment.productType === "track_purchase"
                         ? "Track purchase"
-                        : "Platform subscription"}
+                        : payment.productType === "platform_subscription"
+                          ? "Platform subscription"
+                          : "Artist onboarding fee"}
                     </p>
                     <p className="mt-1 truncate text-sm text-slate-500">
                       {payment.trackId || payment.walletAddress}

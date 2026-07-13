@@ -10,6 +10,13 @@ import type {
 import { httpClient } from "@/lib/api/http-client";
 
 export const paymentsApi = {
+  async getArtistOnboardingFeeStatus(token: string) {
+    return httpClient.get<{ paid: boolean }>(
+      "/payments/artist-onboarding-fee/status",
+      token,
+    );
+  },
+
   async listMine(token: string) {
     const response = await httpClient.get<{ items: PaymentRecord[] }>(
       "/payments/mine",
@@ -39,11 +46,22 @@ export const paymentsApi = {
     return response.intent;
   },
 
+  async createArtistOnboardingFeeIntent(token: string) {
+    const response = await httpClient.post<{ intent: PaymentIntentRecord }>(
+      "/payments/intents/artist-onboarding-fee",
+      {},
+      token,
+    );
+
+    return response.intent;
+  },
+
   async confirm(token: string, input: ConfirmPaymentInput) {
     return httpClient.post<{
       payment: PaymentRecord;
       entitlement?: { id: string; trackId: string };
       subscription?: SubscriptionRecord;
+      artistOnboardingFeePaid?: boolean;
     }>("/payments/confirm", input, token);
   },
 };

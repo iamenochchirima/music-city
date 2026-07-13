@@ -6,6 +6,7 @@ import type { TrackSummary } from "@music-city/shared";
 
 import { Button } from "@/components/ui/button";
 import { tracksApi } from "@/features/music/lib/tracks-api";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardTrackShelves } from "./dashboard-track-shelves";
 
@@ -61,6 +62,10 @@ export const DashboardTracksOverview = () => {
         Complete onboarding before managing tracks.
       </div>
     );
+  }
+
+  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+    return <ArtistAccessGate action="manage tracks" />;
   }
 
   return (

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ReleaseGrid } from "@/features/music/components/release-grid";
 import { releasesApi } from "@/features/music/lib/releases-api";
+import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -66,6 +67,11 @@ export const DashboardReleasesOverview = () => {
     const token = session?.token;
 
     if (!token) {
+      setReleases([]);
+      return;
+    }
+
+    if (session?.role !== "artist") {
       setReleases([]);
       return;
     }
@@ -186,6 +192,10 @@ export const DashboardReleasesOverview = () => {
         Connect your wallet before managing releases.
       </div>
     );
+  }
+
+  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+    return <ArtistAccessGate action="create or manage releases" />;
   }
 
   const releaseBuckets = getReleaseBuckets(releases);

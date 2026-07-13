@@ -11,6 +11,7 @@ const { paymentsRepository } = await import("./payments.repository.js");
 const { subscriptionsService } = await import("../subscriptions/subscriptions.service.js");
 const { entitlementsService } = await import("../entitlements/entitlements.service.js");
 const { royaltiesService } = await import("../royalties/royalties.service.js");
+const { usersService } = await import("../users/users.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -219,6 +220,83 @@ test("confirm is idempotent after an intent has already been confirmed", async (
     assert.deepEqual(result, {
       payment,
       subscription,
+    });
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("createArtistOnboardingFeeIntent rejects wallets that already unlocked artist access", async () => {
+  const cleanup = [
+    restore(
+      usersService,
+      "hasArtistOnboardingAccess",
+      (async () => true) as typeof usersService.hasArtistOnboardingAccess,
+    ),
+  ];
+
+  try {
+    await assert.rejects(
+      () => paymentsService.createArtistOnboardingFeeIntent(walletAddress),
+      (error: { message?: string; statusCode?: number }) =>
+        error.statusCode === 400 &&
+        error.message === "Artist onboarding has already been unlocked",
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("confirm returns artist onboarding completion for the onboarding fee product", async () => {
+  const intent = {
+    id: "payi-artist-1",
+    walletAddress,
+    productType: "artist_onboarding_fee" as const,
+    amount: "19.0000100",
+    assetCode: "XLM",
+    destinationAddress: process.env.STELLAR_TREASURY_ADDRESS!,
+    memo: "artist_onboarding_fee:payi-artist-1",
+    status: "confirmed" as const,
+    txHash: "stellar-tx-artist-1",
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    createdAt: new Date(0).toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const payment = {
+    id: "pay-artist-1",
+    intentId: intent.id,
+    walletAddress,
+    productType: intent.productType,
+    txHash: intent.txHash,
+    amount: intent.amount,
+    assetCode: "XLM",
+    status: "confirmed" as const,
+    confirmedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const cleanup = [
+    restore(
+      paymentsRepository,
+      "findIntentById",
+      (async () => intent) as typeof paymentsRepository.findIntentById,
+    ),
+    restore(
+      paymentsRepository,
+      "findPaymentByIntentId",
+      (async () => payment) as typeof paymentsRepository.findPaymentByIntentId,
+    ),
+  ];
+
+  try {
+    const result = await paymentsService.confirm(walletAddress, {
+      intentId: intent.id,
+      txHash: intent.txHash,
+    });
+
+    assert.deepEqual(result, {
+      payment,
+      artistOnboardingFeePaid: true,
     });
   } finally {
     cleanup.reverse().forEach((fn) => fn());

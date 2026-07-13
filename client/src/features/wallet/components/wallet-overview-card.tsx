@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Check,
   Copy,
+  ExternalLink,
   X,
   LoaderCircle,
   Plus,
@@ -390,6 +391,30 @@ export const WalletOverviewCard = () => {
             This Stellar address is not funded on the current network yet, so balances and sends stay unavailable until it receives its first deposit.
           </div>
         ) : null}
+
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.07] p-4">
+          <div>
+            <p className="text-base font-medium text-white">Need test tokens?</p>
+            <p className="mt-1 max-w-md text-sm leading-6 text-slate-300">
+              Copy your wallet address above, then fund it with testnet XLM through
+              Stellar Lab. Test tokens have no real-world value.
+            </p>
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            className="border-cyan-300/25 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/15 hover:text-white"
+          >
+            <a
+              href="https://lab.stellar.org/account/fund"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open testnet faucet
+              <ExternalLink className="ml-2 size-4" aria-hidden="true" />
+            </a>
+          </Button>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
