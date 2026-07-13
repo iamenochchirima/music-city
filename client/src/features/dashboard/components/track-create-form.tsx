@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SearchablePicker } from "@/components/ui/searchable-picker";
 import { Textarea } from "@/components/ui/textarea";
+import { countries, musicGenres } from "@/features/music/data/metadata-options";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
@@ -508,22 +510,25 @@ export const TrackCreateForm = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="trackGenre">Genre</Label>
-            <Input
+            <SearchablePicker
               id="trackGenre"
               value={genre}
-              onChange={(event) => setGenre(event.target.value)}
+              onValueChange={setGenre}
+              options={musicGenres}
+              placeholder="Select a genre"
+              searchPlaceholder="Search genres"
               required
-              className="border-white/10 bg-slate-950/70 text-white"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="trackCountry">Country</Label>
-            <Input
+            <SearchablePicker
               id="trackCountry"
               value={country}
-              onChange={(event) => setCountry(event.target.value)}
-              placeholder="South Africa"
-              className="border-white/10 bg-slate-950/70 text-white"
+              onValueChange={setCountry}
+              options={countries}
+              placeholder="Select a country"
+              searchPlaceholder="Search countries"
             />
           </div>
           <div className="space-y-2">
