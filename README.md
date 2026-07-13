@@ -82,3 +82,31 @@ Mux should send webhooks to:
 
 The app uses Mux direct uploads, waits for Mux asset webhooks, stores the resulting
 Mux asset/playback IDs on the track, and issues short-lived playback URLs through the backend.
+
+## Production runtime configuration
+
+`NODE_ENV=production` enables startup checks that reject development secrets,
+localhost origins, local storage, and missing Stellar treasury configuration.
+Configure these values in the server hosting environment:
+
+- `JWT_SECRET`, `ADMIN_JWT_SECRET`, and `PLAYBACK_TOKEN_SECRET`: separate random
+  values of at least 24 characters
+- `CLIENT_ORIGIN`, `ADMIN_CLIENT_ORIGIN`, and `APP_BASE_URL`: public `https://` URLs
+- `STELLAR_HOME_DOMAIN` and `STELLAR_WEB_AUTH_DOMAIN`: deployed Stellar auth domains
+- `STELLAR_TREASURY_ADDRESS`: the public Stellar account receiving payments
+- the `STORAGE_PROVIDER=s3` variables listed above
+
+Generate each application secret independently, for example:
+
+```bash
+openssl rand -hex 32
+```
+
+Public beta deployments that intentionally use test tokens may keep the Testnet
+Horizon and royalty registry settings by explicitly setting:
+
+```dotenv
+STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true
+```
+
+Do not set that flag for a mainnet deployment.
