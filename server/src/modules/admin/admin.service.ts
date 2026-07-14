@@ -31,6 +31,7 @@ import { env } from "../../config/env.js";
 import { databaseService } from "../../services/database.service.js";
 import { createId } from "../../services/id.service.js";
 import { passwordService } from "../../services/password.service.js";
+import { treasuryConfigService } from "../../services/treasury-config.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { walletService } from "../wallet/wallet.service.js";
 import { paymentsRepository } from "../payments/payments.repository.js";
@@ -242,19 +243,23 @@ export const adminService = {
       walletAddress: parsed.walletAddress.trim(),
     };
 
+    await treasuryConfigService.assertWalletAddressCanBeConfigured(
+      normalized.walletAddress,
+    );
+
     await databaseService.upsertSetting(TREASURY_SETTINGS_KEY, normalized);
 
     return this.getTreasuryOverview();
   },
 
   async getTreasuryWalletAddress() {
-    const settings = await this.getTreasurySettings();
+    const walletAddress = await treasuryConfigService.getConfiguredWalletAddress();
 
-    if (!settings.walletAddress) {
+    if (!walletAddress) {
       throw new HttpError(500, "Stellar treasury wallet is not configured");
     }
 
-    return settings.walletAddress;
+    return walletAddress;
   },
 
   async listSubscriptions(): Promise<AdminSubscriptionList> {

@@ -9,11 +9,10 @@ import {
 } from "@stellar/stellar-sdk";
 
 import { env } from "../../config/env.js";
-import { databaseService } from "../../services/database.service.js";
+import { treasuryConfigService } from "../../services/treasury-config.service.js";
 import { walletService } from "../wallet/wallet.service.js";
 import { HttpError } from "../../utils/http-error.js";
 
-const TREASURY_SETTINGS_KEY = "treasury_wallet_settings";
 const DECIMAL_SCALE = 10_000_000n;
 
 const toBaseUnits = (amount: string) => {
@@ -46,10 +45,7 @@ const toBalanceKey = (assetCode?: string, assetIssuer?: string) =>
     : `${assetCode}:${assetIssuer ?? ""}`;
 
 const getTreasuryWalletAddress = async () => {
-  const settings = await databaseService.findSetting<{ walletAddress?: string }>(
-    TREASURY_SETTINGS_KEY,
-  );
-  const walletAddress = settings?.walletAddress?.trim() || env.STELLAR_TREASURY_ADDRESS?.trim();
+  const walletAddress = await treasuryConfigService.getConfiguredWalletAddress();
 
   if (!walletAddress) {
     throw new HttpError(500, "Stellar treasury wallet is not configured");

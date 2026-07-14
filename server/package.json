@@ -13,7 +13,9 @@
     "db:bootstrap": "tsx src/scripts/bootstrap-postgres.ts",
     "db:doctor": "tsx src/scripts/db-doctor.ts",
     "db:repair": "tsx src/scripts/db-repair.ts",
-    "admin:reset-password": "tsx src/scripts/reset-admin-password.ts"
+    "admin:reset-password": "tsx src/scripts/reset-admin-password.ts",
+    "treasury:derive-secret": "tsx src/scripts/derive-treasury-key-from-mnemonic.ts",
+    "treasury:add-trustline": "tsx src/scripts/add-treasury-trustline.ts"
   },
   "dependencies": {
     "@music-city/shared": "workspace:*",
@@ -28,6 +30,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pg": "^8.16.3",
+    "stellar-hd-wallet": "^1.0.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
