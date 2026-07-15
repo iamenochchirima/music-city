@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TrackSummary } from "@music-city/shared";
-import { LoaderCircle, Play, RefreshCw } from "lucide-react";
+import { Ellipsis, LoaderCircle, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,12 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { TrackTable } from "@/features/music/components/track-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const TrackGrid = ({
   tracks,
@@ -118,6 +124,28 @@ export const TrackGrid = ({
           </Button>
         )
       }
+      renderOverflowAction={(track) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              aria-label={`More options for ${track.title}`}
+              className="border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Ellipsis className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-44 border-white/10 bg-[#101625] text-white"
+          >
+            <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white">
+              <Link href={`/stream/${track.id}`}>View track details</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     />
   );
 };

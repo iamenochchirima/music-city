@@ -13,6 +13,8 @@ import {
 import type { AdRecord, PlaybackSession, TrackSummary } from "@music-city/shared";
 import Hls from "hls.js";
 import {
+  ChevronDown,
+  Ellipsis,
   Music2,
   Pause,
   Play,
@@ -20,9 +22,9 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 import { adsApi } from "@/features/ads/lib/ads-api";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
@@ -30,6 +32,12 @@ import { playbackApi } from "@/features/playback/lib/playback-api";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiClientError } from "@/lib/api/http-client";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type GlobalPlaybackContextValue = {
   activeTrack: TrackSummary | null;
@@ -128,108 +136,293 @@ const GlobalPlaybackBar = ({
   isPlayingAd: boolean;
   activeAd: AdRecord | null;
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsExpanded(false);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isExpanded]);
+
   if (!activeTrack) {
     return null;
   }
 
+  const progressPercent =
+    duration > 0 ? Math.max(0, Math.min(100, (currentTime / duration) * 100)) : 0;
+
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 rounded-[32px] border border-white/10 bg-[#0d1324]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-      <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_180px] lg:items-center">
-        <div className="flex items-center gap-4 overflow-hidden">
-          <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
-            <TrackArt track={activeTrack} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+    <>
+      {isExpanded ? (
+        <section
+          className="fixed inset-0 z-[60] flex flex-col bg-[#070b16] px-5 pb-8 pt-[max(1rem,env(safe-area-inset-top))] text-white sm:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Now playing ${activeTrack.title}`}
+        >
+          <header className="grid h-12 grid-cols-[44px_1fr_44px] items-center">
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-slate-200 transition hover:bg-white/10"
+              onClick={() => setIsExpanded(false)}
+              aria-label="Collapse player"
+            >
+              <ChevronDown className="h-6 w-6" />
+            </button>
+            <p className="text-center text-xs font-medium uppercase tracking-[0.18em] text-slate-300">
+              Now playing
+            </p>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-slate-200 transition hover:bg-white/10"
+                  aria-label="More track options"
+                >
+                  <Ellipsis className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 border-white/10 bg-[#101625] text-white"
+              >
+                <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white">
+                  <Link href={`/stream/${activeTrack.id}`}>View track details</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => void dismissPlayback()}
+                  className="cursor-pointer focus:bg-white/10 focus:text-white"
+                >
+                  Hide player
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+
+          <div className="flex min-h-0 flex-1 flex-col justify-evenly py-4">
+            <div className="relative mx-auto aspect-square w-full max-w-[min(78vw,360px)] overflow-hidden rounded-2xl bg-slate-900 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+              <TrackArt track={activeTrack} />
+            </div>
+
+            <div className="space-y-6">
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-semibold">{activeTrack.title}</h2>
+                <p className="mt-1 truncate text-sm text-slate-400">{activeTrack.artistName}</p>
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(duration, 0)}
+                  step={0.1}
+                  value={Math.min(currentTime, duration || 0)}
+                  onChange={(event) => seekTo(Number(event.target.value))}
+                  disabled={isPlayingAd}
+                  aria-label="Playback position"
+                  className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
+                  style={{
+                    background: buildRangeBackground(
+                      Math.min(currentTime, duration || 0),
+                      Math.max(duration, 0),
+                      "#34d399",
+                    ),
+                  }}
+                />
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>{formatClock(currentTime)}</span>
+                  <span>{formatClock(duration)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 items-center justify-items-center">
+                <button
+                  type="button"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:bg-white/10 disabled:opacity-35"
+                  disabled={!canPlayPrevious}
+                  onClick={() => void playPreviousTrack()}
+                  aria-label="Previous track"
+                >
+                  <SkipBack className="h-6 w-6 fill-current" />
+                </button>
+                <button
+                  type="button"
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-400 text-slate-950 transition hover:bg-emerald-300"
+                  onClick={() => void togglePlayback()}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-7 w-7 fill-current" />
+                  ) : (
+                    <Play className="h-7 w-7 fill-current" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-white transition hover:bg-white/10 disabled:opacity-35"
+                  disabled={!canPlayNext}
+                  onClick={() => void playNextTrack()}
+                  aria-label="Next track"
+                >
+                  <SkipForward className="h-6 w-6 fill-current" />
+                </button>
+              </div>
+
+              {isPlayingAd ? (
+                <p className="text-center text-xs uppercase tracking-[0.18em] text-amber-300">
+                  Sponsored{activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}
+                </p>
+              ) : null}
+            </div>
           </div>
-          <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <p className="truncate text-lg font-semibold text-white">{activeTrack.title}</p>
-              <p className="truncate text-sm text-slate-400">{activeTrack.artistName}</p>
+        </section>
+      ) : null}
+
+      <div className="fixed bottom-2 left-1/2 z-50 flex h-16 w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-2 overflow-hidden rounded-xl border border-white/10 bg-[#0d1324]/96 p-2 shadow-[0_20px_60px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:hidden">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          onClick={() => setIsExpanded(true)}
+          aria-label={`Open player for ${activeTrack.title}`}
+        >
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-900">
+            <TrackArt track={activeTrack} />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{activeTrack.title}</p>
+            <p className="mt-0.5 truncate text-xs text-slate-400">{activeTrack.artistName}</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10"
+          onClick={() => void togglePlayback()}
+          aria-label={isPlaying ? "Pause" : "Play"}
+        >
+          {isPlaying ? (
+            <Pause className="h-5 w-5 fill-current" />
+          ) : (
+            <Play className="h-5 w-5 fill-current" />
+          )}
+        </button>
+        <button
+          type="button"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10 disabled:opacity-35"
+          disabled={!canPlayNext}
+          onClick={() => void playNextTrack()}
+          aria-label="Next track"
+        >
+          <SkipForward className="h-5 w-5 fill-current" />
+        </button>
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/10">
+          <div
+            className="h-full bg-emerald-400 transition-[width] duration-200"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="fixed bottom-4 left-1/2 z-50 hidden w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 rounded-[28px] border border-white/10 bg-[#0d1324]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:block">
+        <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_180px] lg:items-center">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-900">
+              <TrackArt track={activeTrack} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-white">{activeTrack.title}</p>
+              <p className="mt-1 truncate text-sm text-slate-400">{activeTrack.artistName}</p>
               <div
                 className={cn(
-                  "flex items-center gap-2 text-xs uppercase tracking-[0.22em]",
+                  "mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]",
                   isPlayingAd ? "text-amber-300" : "text-emerald-300",
                 )}
               >
-                <Music2 className="h-3.5 w-3.5" />
+                <Music2 className="h-3 w-3" />
                 {isPlayingAd
                   ? `Sponsored${activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}`
                   : "Now playing"}
               </div>
             </div>
-            <button
-              type="button"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
-              onClick={() => void dismissPlayback()}
-              aria-label="Close player"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
-        </div>
-        <div className="space-y-4 rounded-[26px] border border-white/10 bg-black/20 px-4 py-4">
-          <div className="flex items-center justify-center gap-3">
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!canPlayPrevious}
-              onClick={() => void playPreviousTrack()}
-            >
-              <SkipBack className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-400 text-slate-950 shadow-lg transition hover:bg-emerald-300"
-              onClick={() => void togglePlayback()}
-            >
-              {isPlaying ? (
-                <Pause className="h-6 w-6 fill-current" />
-              ) : (
-                <Play className="h-6 w-6 fill-current" />
-              )}
-            </button>
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={!canPlayNext}
-              onClick={() => void playNextTrack()}
-            >
-              <SkipForward className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="space-y-2">
-            <input
-              type="range"
-              min={0}
-              max={Math.max(duration, 0)}
-              step={0.1}
-              value={Math.min(currentTime, duration || 0)}
-              onChange={(event) => seekTo(Number(event.target.value))}
-              disabled={isPlayingAd}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full"
-              style={{
-                background: buildRangeBackground(
-                  Math.min(currentTime, duration || 0),
-                  Math.max(duration, 0),
-                  "#34d399",
-                ),
-              }}
-            />
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>{formatClock(currentTime)}</span>
-              <span>{formatClock(duration)}</span>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-[26px] border border-white/10 bg-black/20 px-4 py-4">
+
           <div className="space-y-3">
-            <div className="flex items-center gap-3 text-sm text-slate-300">
-              {volume === 0 ? (
-                <VolumeX className="h-4 w-4 text-slate-400" />
-              ) : (
-                <Volume2 className="h-4 w-4 text-slate-400" />
-              )}
-              <span>Volume</span>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10 disabled:opacity-35"
+                disabled={!canPlayPrevious}
+                onClick={() => void playPreviousTrack()}
+                aria-label="Previous track"
+              >
+                <SkipBack className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400 text-slate-950 transition hover:bg-emerald-300"
+                onClick={() => void togglePlayback()}
+                aria-label={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? (
+                  <Pause className="h-5 w-5 fill-current" />
+                ) : (
+                  <Play className="h-5 w-5 fill-current" />
+                )}
+              </button>
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition hover:bg-white/10 disabled:opacity-35"
+                disabled={!canPlayNext}
+                onClick={() => void playNextTrack()}
+                aria-label="Next track"
+              >
+                <SkipForward className="h-5 w-5" />
+              </button>
             </div>
+            <div className="grid grid-cols-[36px_1fr_36px] items-center gap-2 text-[10px] text-slate-400">
+              <span>{formatClock(currentTime)}</span>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(duration, 0)}
+                step={0.1}
+                value={Math.min(currentTime, duration || 0)}
+                onChange={(event) => seekTo(Number(event.target.value))}
+                disabled={isPlayingAd}
+                aria-label="Playback position"
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
+                style={{
+                  background: buildRangeBackground(
+                    Math.min(currentTime, duration || 0),
+                    Math.max(duration, 0),
+                    "#34d399",
+                  ),
+                }}
+              />
+              <span className="text-right">{formatClock(duration)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {volume === 0 ? (
+              <VolumeX className="h-4 w-4 shrink-0 text-slate-400" />
+            ) : (
+              <Volume2 className="h-4 w-4 shrink-0 text-slate-400" />
+            )}
             <input
               type="range"
               min={0}
@@ -237,20 +430,14 @@ const GlobalPlaybackBar = ({
               step={0.01}
               value={volume}
               onChange={(event) => setVolumeLevel(Number(event.target.value))}
-              className="h-2 w-full cursor-pointer appearance-none rounded-full"
-              style={{
-                background: buildRangeBackground(volume, 1, "#34d399"),
-              }}
+              aria-label="Volume"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
+              style={{ background: buildRangeBackground(volume, 1, "#34d399") }}
             />
-            <p className="text-xs text-slate-500">
-              {isPlayingAd
-                ? "Sponsored preroll is playing before the selected track."
-                : "Private preview stream for this release."}
-            </p>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

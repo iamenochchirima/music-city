@@ -56,6 +56,7 @@ interface TrackTableProps {
   isRowClickable?: (track: TrackSummary) => boolean;
   renderSelectionCell?: (track: TrackSummary) => ReactNode;
   renderAction: (track: TrackSummary) => ReactNode;
+  renderOverflowAction?: (track: TrackSummary) => ReactNode;
 }
 
 export const TrackTable = ({
@@ -66,14 +67,12 @@ export const TrackTable = ({
   isRowClickable,
   renderSelectionCell,
   renderAction,
+  renderOverflowAction,
 }: TrackTableProps) => {
   return (
     <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
-      <div className="hidden grid-cols-[minmax(280px,2.2fr)_1fr_1fr_1fr_120px] gap-4 border-b border-white/10 px-6 py-4 text-xs uppercase tracking-[0.24em] text-slate-500 lg:grid">
+      <div className="hidden grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-white/10 px-6 py-4 text-xs uppercase tracking-[0.24em] text-slate-500 lg:grid">
         <span>Track</span>
-        <span>Genre</span>
-        <span>Status</span>
-        <span>Runtime</span>
         <span className="text-right">{actionHeader}</span>
       </div>
 
@@ -85,7 +84,7 @@ export const TrackTable = ({
             <article
               key={track.id}
               className={cn(
-                "px-4 py-4 transition sm:px-6",
+                "relative px-4 py-4 transition sm:px-6",
                 rowClickable && "cursor-pointer hover:bg-white/[0.03]",
               )}
               onClick={() => {
@@ -96,10 +95,12 @@ export const TrackTable = ({
                 onRowClick(track);
               }}
             >
-              <div className="grid gap-4 lg:grid-cols-[minmax(280px,2.2fr)_1fr_1fr_1fr_120px] lg:items-center">
-                <div className="flex items-center gap-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_120px] lg:items-center lg:gap-4">
+                <div className="flex min-w-0 items-center gap-3 pr-14 sm:gap-4 lg:pr-0">
                   {renderSelectionCell?.(track)}
-                  <TrackThumbnail track={track} />
+                  <div className="scale-90 sm:scale-100">
+                    <TrackThumbnail track={track} />
+                  </div>
                   <div className="min-w-0 space-y-1">
                     {titleHref ? (
                       <Link
@@ -120,33 +121,9 @@ export const TrackTable = ({
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500 lg:hidden">
-                    Genre
-                  </p>
-                  <div>
-                    <span className="inline-flex rounded-full border border-white/10 bg-slate-950/80 px-2.5 py-1 text-[11px] uppercase tracking-[0.2em] text-emerald-300">
-                      {track.genre}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500 lg:hidden">
-                    Status
-                  </p>
-                  <p className="text-sm text-slate-200">{formatTrackStatus(track)}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500 lg:hidden">
-                    Runtime
-                  </p>
-                  <p className="text-sm text-slate-200">{track.runtime}</p>
-                </div>
-
-                <div className="flex justify-start lg:justify-end">
+                <div className="absolute right-4 top-4 flex justify-end gap-2 sm:right-6 lg:static lg:justify-end">
                   {renderAction(track)}
+                  {renderOverflowAction?.(track)}
                 </div>
               </div>
             </article>
