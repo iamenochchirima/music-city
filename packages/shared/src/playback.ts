@@ -11,6 +11,7 @@ export const recordPlaybackEventSchema = z.object({
   eventType: z.enum(["progress", "completed"]),
   positionSeconds: z.number().min(0).optional(),
   durationSeconds: z.number().min(0).optional(),
+  listenedSeconds: z.number().positive().max(60).optional(),
 });
 export type RecordPlaybackEventInput = z.infer<typeof recordPlaybackEventSchema>;
 
@@ -26,6 +27,8 @@ export interface PlaybackSession {
   expiresAt: string;
   createdAt?: string;
   maxPositionSeconds?: number;
+  listenedSeconds?: number;
+  lastPlaybackEventAt?: string;
   qualifiedStreamCountedAt?: string;
   completedAt?: string;
 }

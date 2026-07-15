@@ -20,6 +20,11 @@ const playbackEventRateLimit = createRateLimit({
   maxRequests: 240,
   windowMs: 60_000,
 });
+const playbackSessionRateLimit = createRateLimit({
+  bucketName: "playback-sessions",
+  maxRequests: 30,
+  windowMs: 60_000,
+});
 
 playbackRouter.use((_request, response, next) => {
   response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -29,6 +34,7 @@ playbackRouter.use((_request, response, next) => {
 playbackRouter.post(
   "/sessions",
   requireSession,
+  playbackSessionRateLimit,
   asyncHandler(async (request, response) => {
     const input = createPlaybackSessionSchema.parse(request.body);
     const track = await tracksService.getTrackForPlayback(input.trackId);

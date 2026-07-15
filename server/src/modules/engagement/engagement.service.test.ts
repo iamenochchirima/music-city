@@ -658,7 +658,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
   }
 });
 
-test("recordPlaybackEvent keeps partial plays without counting a qualified stream", async () => {
+test("recordPlaybackEvent does not qualify a seek or client-supplied duration", async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   let savedSession: unknown;
@@ -734,16 +734,16 @@ test("recordPlaybackEvent keeps partial plays without counting a qualified strea
       },
       {
         eventType: "progress",
-        positionSeconds: 20,
-        durationSeconds: 180,
+        positionSeconds: 179,
+        durationSeconds: 1,
       },
     );
 
     assert.deepEqual(events, ["progress"]);
     assert.deepEqual(analyticsEvents, ["track_playback_progress"]);
     assert.equal(session.qualifiedStreamCountedAt, undefined);
-    assert.equal(session.maxPositionSeconds, 20);
-    assert.equal((savedSession as { maxPositionSeconds: number }).maxPositionSeconds, 20);
+    assert.equal(session.maxPositionSeconds, 179);
+    assert.equal((savedSession as { maxPositionSeconds: number }).maxPositionSeconds, 179);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -842,11 +842,14 @@ test("recordPlaybackEvent counts a qualified stream once when the threshold is f
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
+        listenedSeconds: 12,
+        lastPlaybackEventAt: new Date(Date.now() - 20_000).toISOString(),
       },
       {
         eventType: "progress",
         positionSeconds: 31,
         durationSeconds: 180,
+        listenedSeconds: 18,
       },
     );
 
@@ -935,6 +938,7 @@ test("recordPlaybackEvent preserves the original qualified timestamp when a dupl
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
+        listenedSeconds: 30,
       },
       {
         eventType: "completed",
