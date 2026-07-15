@@ -87,7 +87,7 @@ export const ArtistAnalyticsOverview = () => {
     );
   }
 
-  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+  if (session.role !== "artist") {
     return <ArtistAccessGate action="view artist analytics" />;
   }
 

@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
-import type { ArtistSummary, ReleaseSummary, TrackVisibility } from "@music-city/shared";
+import type {
+  ArtistSummary,
+  PaymentIntentRecord,
+  ReleaseSummary,
+  TrackVisibility,
+} from "@music-city/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +20,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { countries, musicGenres } from "@/features/music/data/metadata-options";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
+import { ArtistPaymentReviewDialog } from "@/features/onboarding/components/artist-payment-review-dialog";
+import { useArtistOnboardingPayment } from "@/features/onboarding/hooks/use-artist-onboarding-payment";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { usersApi } from "@/features/users/lib/users-api";
 import { useAuth } from "@/hooks/use-auth";
+import { ApiClientError } from "@/lib/api/http-client";
 
 type EditableTrackVisibility = TrackVisibility;
 
@@ -59,6 +67,11 @@ export const TrackCreateForm = ({
 }: TrackCreateFormProps) => {
   const router = useRouter();
   const { session } = useAuth();
+  const {
+    complete: completeArtistFeePayment,
+    isPaying: isPayingArtistFee,
+    prepare: prepareArtistFeePayment,
+  } = useArtistOnboardingPayment();
 
   const [stepIndex, setStepIndex] = useState(0);
   const [artistOptions, setArtistOptions] = useState<ArtistSummary[]>([]);
@@ -88,6 +101,8 @@ export const TrackCreateForm = ({
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState<string | null>(null);
+  const [artistFeeIntent, setArtistFeeIntent] =
+    useState<PaymentIntentRecord | null>(null);
 
   const deferredFeaturedSearch = useDeferredValue(featuredSearch.trim().toLowerCase());
   const progressValue = ((stepIndex + 1) / steps.length) * 100;
@@ -399,6 +414,19 @@ export const TrackCreateForm = ({
       onClose?.();
       toast.success(audioFile ? "Track uploaded" : "Track draft created");
     } catch (error) {
+      if (error instanceof ApiClientError && error.status === 402) {
+        try {
+          setArtistFeeIntent(await prepareArtistFeePayment());
+        } catch (paymentError) {
+          toast.error(
+            paymentError instanceof Error
+              ? paymentError.message
+              : "Unable to prepare the artist upload payment.",
+          );
+        }
+        return;
+      }
+
       toast.error(error instanceof Error ? error.message : "Track upload failed");
     } finally {
       setIsSaving(false);
@@ -409,8 +437,25 @@ export const TrackCreateForm = ({
     }
   };
 
+  const confirmArtistFeePayment = async () => {
+    if (!artistFeeIntent) {
+      return;
+    }
+
+    try {
+      await completeArtistFeePayment(artistFeeIntent);
+      setArtistFeeIntent(null);
+      toast.success("Payment complete. Create your first track to continue.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Artist payment failed.",
+      );
+    }
+  };
+
   return (
-    <div
+    <>
+      <div
       className="space-y-8 rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-7"
       onKeyDown={(event) => {
         if (
@@ -903,6 +948,13 @@ export const TrackCreateForm = ({
         )}
       </div>
 
-    </div>
+      </div>
+      <ArtistPaymentReviewDialog
+        intent={artistFeeIntent}
+        isPaying={isPayingArtistFee}
+        onCancel={() => setArtistFeeIntent(null)}
+        onConfirm={() => void confirmArtistFeePayment()}
+      />
+    </>
   );
 };

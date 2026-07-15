@@ -29,6 +29,8 @@ export const adRecordSchema = z.object({
   status: adStatusSchema,
   slot: adSlotSchema.default("preroll"),
   audioUrl: genericUrlSchema,
+  audioStorageKey: z.string().trim().min(1).max(500).optional(),
+  audioStorageProvider: z.enum(["local", "s3"]).optional(),
   clickUrl: genericUrlSchema.optional(),
   startsAt: z.string().optional(),
   endsAt: z.string().optional(),

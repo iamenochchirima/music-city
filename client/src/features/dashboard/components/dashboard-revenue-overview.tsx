@@ -136,7 +136,7 @@ export const DashboardRevenueOverview = () => {
     );
   }
 
-  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+  if (session.role !== "artist") {
     return <ArtistAccessGate action="view artist revenue" />;
   }
 

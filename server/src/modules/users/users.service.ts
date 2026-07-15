@@ -172,14 +172,6 @@ export const usersService = {
     const existing = await usersRepository.findByWallet(walletAddress);
     const timestamp = nowIso();
 
-    if (
-      parsed.role === "artist" &&
-      existing?.role !== "artist" &&
-      !(await this.hasArtistOnboardingAccess(walletAddress))
-    ) {
-      throw new HttpError(402, "Pay the onboarding fee before creating an artist account");
-    }
-
     const profile: UserProfile = {
       id: existing?.id ?? createId("usr"),
       walletAddress,

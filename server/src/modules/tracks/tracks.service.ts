@@ -194,7 +194,7 @@ export const tracksService = {
     const profile = await usersService.requireArtistOnboardingAccess(
       walletAddress,
       "Create a profile before creating tracks",
-      "Pay the onboarding fee before creating tracks",
+      "Pay the one-time artist fee before your first upload",
     );
 
     const timestamp = new Date().toISOString();

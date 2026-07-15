@@ -149,7 +149,7 @@ export const ArtistPaymentReviewDialog = ({
                 id="artist-payment-review-title"
                 className="mt-1 text-2xl font-semibold text-white"
               >
-                Confirm artist access fee
+                Confirm first-upload payment
               </h2>
             </div>
           </div>
@@ -170,7 +170,7 @@ export const ArtistPaymentReviewDialog = ({
             {formatAmount(intent.amount)} {intent.assetCode}
           </p>
           <p className="mt-2 text-xs leading-5 text-slate-400">
-            One-time payment. The exact Stellar amount includes the transaction’s unique reference.
+            One-time payment to activate music uploads. The exact Stellar amount includes the transaction’s unique reference.
           </p>
         </div>
 

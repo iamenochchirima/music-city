@@ -19,6 +19,7 @@ import {
 } from "@music-city/shared";
 
 import { createId } from "../../services/id.service.js";
+import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
@@ -58,6 +59,17 @@ const sortAdsForServing = (items: AdRecord[]) =>
     return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
   });
 
+const hydrateAdAudioUrl = (ad: AdRecord): AdRecord =>
+  ad.audioStorageKey
+    ? {
+        ...ad,
+        audioUrl: storageService.getDownloadUrl(
+          ad.audioStorageKey,
+          ad.audioStorageProvider,
+        ),
+      }
+    : ad;
+
 const buildAdminAdList = async (ads: AdRecord[]): Promise<AdminAdListItem[]> => {
   const impressions = await adsRepository.listAdImpressions();
   const impressionsByAdId = impressions.reduce<Map<string, AdImpressionRecord[]>>(
@@ -70,7 +82,7 @@ const buildAdminAdList = async (ads: AdRecord[]): Promise<AdminAdListItem[]> => 
 
   return ads.map((ad) =>
     adminAdListItemSchema.parse({
-      ...ad,
+      ...hydrateAdAudioUrl(ad),
       summary: summarizeImpressions(impressionsByAdId.get(ad.id) ?? []),
     }),
   );
@@ -242,7 +254,7 @@ export const adsService = {
       return adDecisionSchema.parse({
         serveAd: true,
         impressionId: impression.id,
-        ad,
+        ad: hydrateAdAudioUrl(ad),
       });
     }
 

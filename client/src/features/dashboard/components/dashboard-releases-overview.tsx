@@ -194,7 +194,7 @@ export const DashboardReleasesOverview = () => {
     );
   }
 
-  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
+  if (session.role !== "artist") {
     return <ArtistAccessGate action="create or manage releases" />;
   }
 

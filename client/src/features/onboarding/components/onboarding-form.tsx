@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { PaymentIntentRecord } from "@music-city/shared";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { usersApi } from "@/features/users/lib/users-api";
-import { ArtistPaymentReviewDialog } from "./artist-payment-review-dialog";
-import { useArtistOnboardingPayment } from "../hooks/use-artist-onboarding-payment";
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
@@ -24,14 +21,6 @@ export const OnboardingForm = ({
 }: OnboardingFormProps) => {
   const router = useRouter();
   const { session, refreshSessionProfile } = useAuth();
-  const {
-    complete: completeOnboardingFeePayment,
-    isChecking: isCheckingOnboardingFee,
-    isPaid: artistOnboardingFeePaid,
-    isPaying: isPayingOnboardingFee,
-    isPreparing: isPreparingOnboardingFee,
-    prepare: prepareOnboardingFeePayment,
-  } = useArtistOnboardingPayment();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState(session?.email ?? "");
   const [role, setRole] = useState<"artist" | "fan">("fan");
@@ -46,8 +35,6 @@ export const OnboardingForm = ({
   );
   const [step, setStep] = useState<1 | 2>(1);
   const [isSaving, setIsSaving] = useState(false);
-  const [paymentIntent, setPaymentIntent] =
-    useState<PaymentIntentRecord | null>(null);
 
   useEffect(() => {
     setEmail((current) => current || session?.email || "");
@@ -112,11 +99,6 @@ export const OnboardingForm = ({
       return;
     }
 
-    if (role === "artist" && !artistOnboardingFeePaid) {
-      toast.error("Pay the onboarding fee before creating an artist account.");
-      return;
-    }
-
     setIsSaving(true);
 
     try {
@@ -147,42 +129,6 @@ export const OnboardingForm = ({
       );
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handlePayOnboardingFee = async () => {
-    if (!session?.token) {
-      toast.error("Connect your wallet first");
-      router.push("/auth");
-      return;
-    }
-
-    try {
-      setPaymentIntent(await prepareOnboardingFeePayment());
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to prepare the onboarding fee payment",
-      );
-    }
-  };
-
-  const handleConfirmOnboardingFee = async () => {
-    if (!paymentIntent) {
-      return;
-    }
-
-    try {
-      await completeOnboardingFeePayment(paymentIntent);
-      setPaymentIntent(null);
-      toast.success("Onboarding fee paid. You can continue as an artist now.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to complete the onboarding fee payment",
-      );
     }
   };
 
@@ -285,41 +231,6 @@ export const OnboardingForm = ({
             />
           </div>
 
-          {role === "artist" ? (
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-slate-200">
-              <p className="font-medium text-white">Artist onboarding fee</p>
-              <p className="mt-2 leading-6 text-slate-300">
-                A once-off onboarding fee of $19 is required to unlock artist tools,
-                uploads, and release management.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  onClick={() => void handlePayOnboardingFee()}
-                  disabled={
-                    artistOnboardingFeePaid ||
-                    isCheckingOnboardingFee ||
-                    isPreparingOnboardingFee ||
-                    isPayingOnboardingFee
-                  }
-                  className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-                >
-                  {artistOnboardingFeePaid
-                    ? "Onboarding fee paid"
-                    : isCheckingOnboardingFee
-                      ? "Checking payment status..."
-                      : isPreparingOnboardingFee
-                        ? "Preparing checkout..."
-                        : isPayingOnboardingFee
-                          ? "Confirming payment..."
-                          : "Pay onboarding fee"}
-                </Button>
-                <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                  {artistOnboardingFeePaid ? "Unlocked" : "One-time payment"}
-                </span>
-              </div>
-            </div>
-          ) : null}
         </>
       ) : (
         <div className="grid gap-4 sm:grid-cols-[0.65fr_1fr]">
@@ -407,17 +318,11 @@ export const OnboardingForm = ({
         )}
         <Button
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          disabled={isSaving || (role === "artist" && !artistOnboardingFeePaid)}
+          disabled={isSaving}
         >
           {isSaving ? "Saving..." : step === 1 ? "Continue" : "Save profile"}
         </Button>
       </div>
-      <ArtistPaymentReviewDialog
-        intent={paymentIntent}
-        isPaying={isPayingOnboardingFee}
-        onCancel={() => setPaymentIntent(null)}
-        onConfirm={() => void handleConfirmOnboardingFee()}
-      />
     </form>
   );
 };

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { useAuth } from "@/hooks/use-auth";
 import { TrackCreateForm } from "./track-create-form";
 
@@ -26,8 +25,12 @@ export const DashboardCreateOverview = () => {
     );
   }
 
-  if (session.role !== "artist" || !session.artistOnboardingFeePaid) {
-    return <ArtistAccessGate action="upload music" />;
+  if (session.role !== "artist") {
+    return (
+      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+        Create an artist profile before uploading music.
+      </div>
+    );
   }
 
   return (
