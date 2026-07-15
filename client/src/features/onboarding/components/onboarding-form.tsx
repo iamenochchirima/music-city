@@ -13,22 +13,6 @@ import { usersApi } from "@/features/users/lib/users-api";
 import { ArtistPaymentReviewDialog } from "./artist-payment-review-dialog";
 import { useArtistOnboardingPayment } from "../hooks/use-artist-onboarding-payment";
 
-const normalizeDefaultDisplayName = (value?: string | null) => {
-  if (!value) {
-    return "";
-  }
-
-  if (!value.includes("@")) {
-    return value;
-  }
-
-  return value
-    .split("@")[0]
-    .replace(/[._-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
 type OnboardingFormProps = {
   mode?: "page" | "modal";
   onCompleted?: (role: "artist" | "fan") => void;
@@ -48,11 +32,9 @@ export const OnboardingForm = ({
     isPreparing: isPreparingOnboardingFee,
     prepare: prepareOnboardingFeePayment,
   } = useArtistOnboardingPayment();
-  const [displayName, setDisplayName] = useState(
-    normalizeDefaultDisplayName(session?.displayName),
-  );
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState(session?.email ?? "");
-  const [role, setRole] = useState<"artist" | "fan">("artist");
+  const [role, setRole] = useState<"artist" | "fan">("fan");
   const [location, setLocation] = useState("");
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [headerImageFile, setHeaderImageFile] = useState<File | null>(null);
@@ -68,11 +50,8 @@ export const OnboardingForm = ({
     useState<PaymentIntentRecord | null>(null);
 
   useEffect(() => {
-    setDisplayName((current) =>
-      current || normalizeDefaultDisplayName(session?.displayName),
-    );
     setEmail((current) => current || session?.email || "");
-  }, [session?.displayName, session?.email]);
+  }, [session?.email]);
 
   useEffect(() => {
     if (!profileImageFile) {
@@ -263,20 +242,38 @@ export const OnboardingForm = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Account type</Label>
-            <select
-              id="role"
-              value={role}
-              onChange={(event) =>
-                setRole(event.target.value as "artist" | "fan")
-              }
-              className="h-10 w-full rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white"
-            >
-              <option value="artist">Artist</option>
-              <option value="fan">Fan</option>
-            </select>
-          </div>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium leading-none text-white">
+              Account type
+            </legend>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                ["fan", "Fan", "Follow artists and discover new music."],
+                ["artist", "Artist", "Release music and grow your audience."],
+              ] as const).map(([value, label, description]) => {
+                const isSelected = role === value;
+
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => setRole(value)}
+                    className={`min-h-20 rounded-xl border px-4 py-3 text-left transition ${
+                      isSelected
+                        ? "border-emerald-300 bg-emerald-400/15 text-white shadow-[inset_0_0_0_1px_rgba(110,231,183,0.25)]"
+                        : "border-white/10 bg-slate-950/50 text-slate-300 hover:border-white/25 hover:bg-white/5"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold">{label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-400">
+                      {description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
 
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>

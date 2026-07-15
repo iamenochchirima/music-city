@@ -31,16 +31,13 @@ pnpm dev:client
 - local entitlement records and optional Stellar asset-based subscriber gate
 - encrypted archive generation with optional remote archive upload hook
 
-You can run the server against local Postgres with:
+Initialize the Postgres schema and import any existing JSON-backed development
+data with:
 
 ```bash
-docker compose -f docker-compose.postgres.yml up -d
 pnpm --filter server db:bootstrap
 pnpm dev:server
 ```
-
-The bootstrap command initializes the Postgres schema and imports any existing
-JSON-backed development data into Postgres the first time you run it.
 
 ## Service configuration
 
