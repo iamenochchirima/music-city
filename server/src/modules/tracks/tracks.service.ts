@@ -1,8 +1,8 @@
 import {
   trackMonetizationUpdateSchema,
-  trackAccessUpdateSchema,
+  trackVisibilityUpdateSchema,
   trackCreateSchema,
-  type TrackAccessUpdateInput,
+  type TrackVisibilityUpdateInput,
   type TrackMonetizationUpdateInput,
   type TrackSummary,
   type TrackCreateInput,
@@ -39,12 +39,16 @@ const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: 
   } as T & {
     masterStorageKey?: string;
     mediaProvider?: "local" | "mux";
+    mediaStorageProvider?: "local" | "s3";
     streamMediaUrl?: string;
     playbackUrl?: string;
   };
 
   if (nextTrack.masterStorageKey && nextTrack.mediaProvider !== "mux") {
-    const freshMediaUrl = storageService.getDownloadUrl(nextTrack.masterStorageKey);
+    const freshMediaUrl = storageService.getDownloadUrl(
+      nextTrack.masterStorageKey,
+      nextTrack.mediaStorageProvider,
+    );
     nextTrack.streamMediaUrl = freshMediaUrl;
     nextTrack.playbackUrl = freshMediaUrl;
   }
@@ -57,7 +61,7 @@ export const tracksService = {
     const tracks = await tracksRepository.list();
     return tracks
       .map(hydrateTrackUrls)
-      .filter((track) => track.playbackReady && track.access !== "private");
+      .filter((track) => track.playbackReady && track.visibility === "published");
   },
 
   async listMyTracks(walletAddress: string) {
@@ -76,7 +80,7 @@ export const tracksService = {
 
     return tracks
       .map(hydrateTrackUrls)
-      .filter((track) => track.playbackReady && track.access !== "private");
+      .filter((track) => track.playbackReady && track.visibility === "published");
   },
 
   async getTrack(trackId: string) {
@@ -87,7 +91,7 @@ export const tracksService = {
 
     const hydrated = hydrateTrackUrls(track);
 
-    if (!hydrated.playbackReady || hydrated.access === "private") {
+    if (!hydrated.playbackReady || hydrated.visibility !== "published") {
       return null;
     }
 
@@ -195,8 +199,7 @@ export const tracksService = {
 
     const timestamp = new Date().toISOString();
     const parsed = trackCreateSchema.parse(input);
-    const purchaseEnabled =
-      parsed.purchaseEnabled ?? parsed.access === "purchase_required";
+    const purchaseEnabled = parsed.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
       ? normalizePositiveAmount(
           parsed.purchasePrice ?? env.TRACK_PURCHASE_DEFAULT_PRICE,
@@ -230,12 +233,9 @@ export const tracksService = {
       country: parsed.country?.trim() || undefined,
       genre: parsed.genre,
       runtime: "Not processed",
-      priceLabel:
-        parsed.access === "purchase_required"
-          ? purchasePrice ?? env.TRACK_PURCHASE_DEFAULT_PRICE
-          : parsed.priceLabel ?? "Private",
+      priceLabel: parsed.priceLabel ?? "Unpublished",
       status: "awaiting_upload",
-      access: parsed.access,
+      visibility: parsed.visibility,
       purchaseEnabled,
       purchasePrice,
       purchaseAssetCode: purchaseAsset?.code,
@@ -253,10 +253,10 @@ export const tracksService = {
     return track;
   },
 
-  async updateTrackAccess(
+  async updateTrackVisibility(
     walletAddress: string,
     trackId: string,
-    input: TrackAccessUpdateInput,
+    input: TrackVisibilityUpdateInput,
   ) {
     const profile = await usersService.requireArtistOnboardingAccess(
       walletAddress,
@@ -268,21 +268,12 @@ export const tracksService = {
       throw new Error("Track not found");
     }
 
-    const parsed = trackAccessUpdateSchema.parse(input);
+    const parsed = trackVisibilityUpdateSchema.parse(input);
 
     return tracksRepository.upsert({
       ...existing,
-      access: parsed.access,
-      priceLabel:
-        parsed.access === "public"
-          ? "Public"
-          : parsed.access === "purchase_required"
-            ? existing.purchasePrice ?? env.TRACK_PURCHASE_DEFAULT_PRICE
-            : "Private",
-      purchaseEnabled:
-        parsed.access === "purchase_required"
-          ? (existing.purchaseEnabled ?? true)
-          : existing.purchaseEnabled,
+      visibility: parsed.visibility,
+      priceLabel: parsed.visibility === "published" ? "Published" : "Unpublished",
       updatedAt: new Date().toISOString(),
     });
   },
@@ -304,8 +295,7 @@ export const tracksService = {
 
     const parsed = trackMonetizationUpdateSchema.parse(input);
 
-    const purchaseEnabled =
-      parsed.purchaseEnabled ?? parsed.access === "purchase_required";
+    const purchaseEnabled = parsed.purchaseEnabled ?? existing.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
       ? normalizePositiveAmount(
           parsed.purchasePrice ||
@@ -315,7 +305,7 @@ export const tracksService = {
         )
       : existing.purchasePrice;
     const purchaseAsset =
-      parsed.access === "purchase_required" || purchaseEnabled
+      purchaseEnabled
         ? normalizeStellarAsset(
             {
               code:
@@ -333,19 +323,14 @@ export const tracksService = {
 
     return tracksRepository.upsert({
       ...existing,
-      access: parsed.access,
+      visibility: existing.visibility,
       purchaseEnabled,
       purchasePrice,
       purchaseAssetCode:
         purchaseAsset?.code ?? existing.purchaseAssetCode,
       purchaseAssetIssuer:
         purchaseAsset?.issuer ?? existing.purchaseAssetIssuer,
-      priceLabel:
-        parsed.access === "public"
-          ? "Public"
-          : parsed.access === "purchase_required"
-            ? purchasePrice ?? env.TRACK_PURCHASE_DEFAULT_PRICE
-            : "Private",
+      priceLabel: existing.visibility === "published" ? "Published" : "Unpublished",
       updatedAt: new Date().toISOString(),
     });
   },
@@ -438,6 +423,7 @@ export const tracksService = {
     sourceFileName: string;
     sourceContentType: string;
     sourceSizeBytes: number;
+    storageProvider: "local" | "s3";
   }) {
     const existing = await tracksRepository.findById(trackId);
 
@@ -450,6 +436,7 @@ export const tracksService = {
       status: "uploaded",
       runtime: "Uploaded",
       mediaProvider: "local",
+      mediaStorageProvider: payload.storageProvider,
       masterStorageKey: payload.masterStorageKey,
       streamManifestKey: `virtual/${trackId}/master.m3u8`,
       sourceFileName: payload.sourceFileName,

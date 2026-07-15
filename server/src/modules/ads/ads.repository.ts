@@ -64,4 +64,8 @@ export const adsRepository = {
       since,
     );
   },
+
+  async countPlaybackSessionsForListenerSince(listenerUserId: string, since: string) {
+    return databaseService.countPlaybackSessionsForListenerSince(listenerUserId, since);
+  },
 };

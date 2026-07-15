@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { TrackSummary } from "@music-city/shared";
-import { ArrowUpRight, LoaderCircle, Lock, Play, RefreshCw } from "lucide-react";
+import { LoaderCircle, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
-import { useSubscriptionAccess } from "@/features/subscriptions/hooks/use-subscription-access";
 import { useAuth } from "@/hooks/use-auth";
 import { TrackTable } from "@/features/music/components/track-table";
 
@@ -21,32 +19,12 @@ export const TrackGrid = ({
   tracks?: TrackSummary[];
   onTrackSynced?: (track: TrackSummary) => void;
 }) => {
-  const router = useRouter();
   const { session } = useAuth();
   const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
-  const { canAccessSubscriberTrack } = useSubscriptionAccess();
   const [syncingTrackId, setSyncingTrackId] = useState<string | null>(null);
   const safeTracks = Array.isArray(tracks) ? tracks : [];
 
-  const routeToUnlock = (track: TrackSummary) => {
-    if (track.access === "subscribers") {
-      router.push(`/subscribe?trackId=${encodeURIComponent(track.id)}`);
-      return;
-    }
-
-    router.push(`/stream/${track.id}`);
-  };
-
-  const isGatedTrack = (track: TrackSummary) =>
-    (track.access === "subscribers" && !canAccessSubscriberTrack(track)) ||
-    track.access === "purchase_required";
-
   const handleTrackAction = async (track: TrackSummary) => {
-    if (isGatedTrack(track)) {
-      routeToUnlock(track);
-      return;
-    }
-
     await playTrack(track);
   };
 
@@ -69,35 +47,10 @@ export const TrackGrid = ({
       titleHref={(track) => `/stream/${track.id}`}
       onRowClick={(track) => void handleTrackAction(track)}
       isRowClickable={(track) =>
-        Boolean(track.playbackReady && (isGatedTrack(track) || session?.token))
+        Boolean(track.playbackReady && track.visibility === "published" && session?.token)
       }
       renderAction={(track) =>
-        track.playbackReady && isGatedTrack(track) ? (
-          <Button
-            variant="outline"
-            className="border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
-            aria-label={
-              track.access === "subscribers"
-                ? "Open subscription options"
-                : "Open unlock options"
-            }
-            title={
-              track.access === "subscribers"
-                ? "Open subscription options"
-                : "Open unlock options"
-            }
-            onClick={(event) => {
-              event.stopPropagation();
-              routeToUnlock(track);
-            }}
-          >
-            {track.access === "subscribers" ? (
-              <Lock className="h-4 w-4" />
-            ) : (
-              <ArrowUpRight className="h-4 w-4" />
-            )}
-          </Button>
-        ) : track.playbackReady ? (
+        track.playbackReady && track.visibility === "published" ? (
           <Button
             variant={activeTrackId === track.id ? "default" : "outline"}
             className={

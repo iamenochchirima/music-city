@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { SubscriptionRecord, TrackSummary } from "@music-city/shared";
+import { useEffect, useState } from "react";
+import type { SubscriptionRecord } from "@music-city/shared";
 
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,12 +36,5 @@ export const useSubscriptionAccess = () => {
     };
   }, [session?.token]);
 
-  const canAccessSubscriberTrack = useCallback(
-    (track: TrackSummary) =>
-      track.access !== "subscribers" ||
-      subscriptions.some((subscription) => subscription.scope === "platform"),
-    [subscriptions],
-  );
-
-  return { canAccessSubscriberTrack };
+  return { hasActivePlatformSubscription: subscriptions.some((item) => item.scope === "platform") };
 };

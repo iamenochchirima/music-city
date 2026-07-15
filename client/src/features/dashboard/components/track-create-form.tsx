@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
-import type { ArtistSummary, ReleaseSummary, TrackAccess } from "@music-city/shared";
+import type { ArtistSummary, ReleaseSummary, TrackVisibility } from "@music-city/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,10 +19,7 @@ import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { usersApi } from "@/features/users/lib/users-api";
 import { useAuth } from "@/hooks/use-auth";
 
-type EditableTrackAccess = Extract<
-  TrackAccess,
-  "private" | "public"
->;
+type EditableTrackVisibility = TrackVisibility;
 
 type ReleasePlacement = "standalone" | "existing" | "new";
 
@@ -71,7 +68,7 @@ export const TrackCreateForm = ({
   const [genre, setGenre] = useState("");
   const [country, setCountry] = useState("");
   const [description, setDescription] = useState("");
-  const [access, setAccess] = useState<EditableTrackAccess>("private");
+  const [visibility, setVisibility] = useState<EditableTrackVisibility>("unpublished");
   const [composer, setComposer] = useState("");
   const [producer, setProducer] = useState("");
   const [isrc, setIsrc] = useState("");
@@ -245,7 +242,7 @@ export const TrackCreateForm = ({
     setGenre("");
     setCountry("");
     setDescription("");
-    setAccess("private");
+    setVisibility("unpublished");
     setComposer("");
     setProducer("");
     setIsrc("");
@@ -324,8 +321,8 @@ export const TrackCreateForm = ({
         country,
         genre,
         description,
-        priceLabel: access === "public" ? "Public" : "Private",
-        access,
+        priceLabel: visibility === "published" ? "Published" : "Unpublished",
+        visibility,
       });
 
       let releaseId = selectedReleaseId;
@@ -787,20 +784,20 @@ export const TrackCreateForm = ({
             {(
               [
                 {
-                  value: "private",
+                  value: "unpublished",
                   label: "Keep unpublished",
                   description:
                     "Save the upload to your catalog without making it visible to listeners yet.",
                 },
                 {
-                  value: "public",
+                  value: "published",
                   label: "Publish when ready",
                   description:
                     "Make the song eligible for discovery and playback as soon as processing completes.",
                 },
               ] as const
             ).map((option) => {
-              const isActive = access === option.value;
+              const isActive = visibility === option.value;
 
               return (
                 <button
@@ -811,7 +808,7 @@ export const TrackCreateForm = ({
                       ? "border-emerald-400/50 bg-emerald-400/10"
                       : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
                   }`}
-                  onClick={() => setAccess(option.value)}
+                  onClick={() => setVisibility(option.value)}
                 >
                   <p className="text-xl font-semibold text-white">{option.label}</p>
                   <p className="mt-3 text-sm leading-6 text-slate-400">
@@ -828,7 +825,7 @@ export const TrackCreateForm = ({
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-sm leading-7 text-slate-300">
-            {access === "public"
+            {visibility === "published"
               ? "This upload will be created as a published track."
               : "This upload will be created as an unpublished track."}
           </div>
@@ -899,7 +896,7 @@ export const TrackCreateForm = ({
           >
             {isSaving
               ? "Uploading..."
-              : access === "public"
+              : visibility === "published"
                 ? "Create and publish"
                 : "Create unpublished track"}
           </Button>

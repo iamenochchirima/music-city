@@ -153,9 +153,7 @@ export const PlatformSubscriptionOverview = ({
       ]);
 
       setPlan(nextPlan);
-      setTracks(
-        allTracks.filter((track) => track.access === "subscribers"),
-      );
+      setTracks(allTracks);
       setAccount(walletAccount);
       setSubscription(
         mySubscriptions.find(

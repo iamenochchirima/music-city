@@ -112,8 +112,8 @@ export const DashboardRevenueOverview = () => {
       trackSalesCount: trackSales.length,
       subscriptionSalesCount: subscriptionSales.length,
       activeSubscriptions: activeSubscriptions.length,
-      publishedTracks: tracks.filter((track) => track.access !== "private").length,
-      privateTracks: tracks.filter((track) => track.access === "private").length,
+      publishedTracks: tracks.filter((track) => track.visibility === "published").length,
+      privateTracks: tracks.filter((track) => track.visibility !== "published").length,
       recentPayments: [...confirmedPayments].sort(
         (left, right) => Date.parse(right.confirmedAt) - Date.parse(left.confirmedAt),
       ),

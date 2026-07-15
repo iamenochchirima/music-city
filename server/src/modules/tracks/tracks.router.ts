@@ -72,11 +72,11 @@ tracksRouter.put(
 );
 
 tracksRouter.put(
-  "/:trackId/access",
+  "/:trackId/visibility",
   requireSession,
   asyncHandler(async (request, response) => {
     try {
-      const track = await tracksService.updateTrackAccess(
+      const track = await tracksService.updateTrackVisibility(
         request.session!.walletAddress,
         String(request.params.trackId),
         request.body,
@@ -86,7 +86,7 @@ tracksRouter.put(
     } catch (error) {
       throw new HttpError(
         400,
-        error instanceof Error ? error.message : "Track access update failed",
+        error instanceof Error ? error.message : "Track visibility update failed",
       );
     }
   }),

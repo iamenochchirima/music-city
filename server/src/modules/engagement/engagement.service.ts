@@ -19,6 +19,8 @@ import { engagementRepository } from "./engagement.repository.js";
 
 const QUALIFIED_STREAM_MIN_SECONDS = 30;
 const QUALIFIED_STREAM_FRACTION = 0.5;
+const MAX_LISTEN_SECONDS_PER_EVENT = 30;
+const LISTEN_TIME_CLOCK_TOLERANCE_SECONDS = 2;
 const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
 const nowIso = () => new Date().toISOString();
@@ -69,7 +71,7 @@ const syncTrackPlayCount = async (track: TrackSummary) => {
 };
 
 const shouldCountQualifiedStream = (
-  maxPositionSeconds: number,
+  listenedSeconds: number,
   durationSeconds?: number,
 ) => {
   const fractionThreshold =
@@ -78,8 +80,37 @@ const shouldCountQualifiedStream = (
       : Number.POSITIVE_INFINITY;
 
   return (
-    maxPositionSeconds >= QUALIFIED_STREAM_MIN_SECONDS ||
-    maxPositionSeconds >= fractionThreshold
+    listenedSeconds >= QUALIFIED_STREAM_MIN_SECONDS ||
+    listenedSeconds >= fractionThreshold
+  );
+};
+
+const getTrackDurationSeconds = (runtime: string | undefined) => {
+  const match = runtime?.match(/^(\d+):(\d{2})$/);
+
+  if (!match) {
+    return undefined;
+  }
+
+  return Number(match[1]) * 60 + Number(match[2]);
+};
+
+const getCreditedListenSeconds = (
+  session: PlaybackSession,
+  reportedListenSeconds: number | undefined,
+  occurredAt: string,
+) => {
+  const reported = Math.min(reportedListenSeconds ?? 0, MAX_LISTEN_SECONDS_PER_EVENT);
+  const lastEventAt = Date.parse(
+    session.lastPlaybackEventAt ?? session.createdAt ?? occurredAt,
+  );
+  const elapsedSinceLastEvent = Number.isFinite(lastEventAt)
+    ? Math.max(0, (Date.parse(occurredAt) - lastEventAt) / 1000)
+    : 0;
+
+  return Math.min(
+    reported,
+    elapsedSinceLastEvent + LISTEN_TIME_CLOCK_TOLERANCE_SECONDS,
   );
 };
 
@@ -302,6 +333,12 @@ export const engagementService = {
       input.positionSeconds ?? 0,
     );
     const occurredAt = nowIso();
+    const creditedListenSeconds = getCreditedListenSeconds(
+      session,
+      input.listenedSeconds,
+      occurredAt,
+    );
+    const listenedSeconds = (session.listenedSeconds ?? 0) + creditedListenSeconds;
 
     await engagementRepository.insertPlaybackEvent(
       createId("evt"),
@@ -319,6 +356,8 @@ export const engagementService = {
         listenerUserId: session.listenerUserId ?? null,
         positionSeconds: input.positionSeconds ?? null,
         durationSeconds: input.durationSeconds ?? null,
+        reportedListenSeconds: input.listenedSeconds ?? null,
+        creditedListenSeconds,
       },
     );
     await recordAnalyticsEvent({
@@ -336,12 +375,15 @@ export const engagementService = {
       surface: "global_playback_provider",
       positionSeconds: input.positionSeconds ?? undefined,
       durationSeconds: input.durationSeconds ?? undefined,
+      listenedSeconds: creditedListenSeconds || undefined,
     });
 
     let updatedSession: PlaybackSession = {
       ...session,
       artistId: track.artistId,
       maxPositionSeconds: positionSeconds,
+      listenedSeconds,
+      lastPlaybackEventAt: occurredAt,
     };
 
     if (input.eventType === "completed") {
@@ -353,7 +395,7 @@ export const engagementService = {
 
     const qualifies =
       !updatedSession.qualifiedStreamCountedAt &&
-      shouldCountQualifiedStream(positionSeconds, input.durationSeconds);
+      shouldCountQualifiedStream(listenedSeconds, getTrackDurationSeconds(track.runtime));
 
     if (qualifies) {
       const qualifiedInserted = await engagementRepository.insertQualifiedPlaybackEvent(
@@ -369,6 +411,7 @@ export const engagementService = {
           qualifiedBy: input.eventType,
           positionSeconds,
           durationSeconds: input.durationSeconds ?? null,
+          listenedSeconds,
         },
       );
 
@@ -390,6 +433,7 @@ export const engagementService = {
           surface: "global_playback_provider",
           positionSeconds,
           durationSeconds: input.durationSeconds ?? undefined,
+          listenedSeconds,
           qualifiedBy: input.eventType,
         });
         await syncTrackPlayCount(track);
@@ -437,7 +481,7 @@ export const engagementService = {
           title: track.title,
           releaseId: track.releaseId,
           releaseTitle: track.releaseTitle,
-          access: track.access,
+          visibility: track.visibility ?? "published",
           status: track.status,
           plays: track.plays,
           likes: track.likes,
@@ -553,7 +597,7 @@ export const engagementService = {
       totalSaves: trackAnalytics.reduce((sum, track) => sum + track.saves, 0),
       uniqueListeners,
       totalTracks: tracks.length,
-      publishedTracks: tracks.filter((track) => track.access !== "private").length,
+      publishedTracks: tracks.filter((track) => track.visibility === "published").length,
       streamsLast7Days,
       streamsLast30Days,
       selectedWindowDays,

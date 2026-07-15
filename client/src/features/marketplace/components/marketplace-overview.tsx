@@ -27,7 +27,7 @@ export const MarketplaceOverview = () => {
         subscriptionsApi.getPlatformPlan(),
       ]);
 
-      setTracks(nextTracks.filter((track) => track.access === "purchase_required"));
+      setTracks(nextTracks.filter((track) => track.purchaseEnabled));
       setPlatformPlan(nextPlatformPlan);
     } catch (error) {
       toast.error(
@@ -50,9 +50,9 @@ export const MarketplaceOverview = () => {
     <div className="space-y-10">
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold text-white">Tracks to unlock</h2>
+          <h2 className="text-2xl font-semibold text-white">Support artists</h2>
           <p className="text-sm text-slate-400">
-            One-time purchases that unlock playback immediately.
+            Optional one-time purchases that support artists. Playback is available to everyone.
           </p>
         </div>
         {tracks.length === 0 ? (

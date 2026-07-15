@@ -190,6 +190,7 @@ export const uploadsService = {
         session.contentType || fallbackMetadata?.contentType || "application/octet-stream",
       sourceSizeBytes:
         session.sizeBytes || fallbackMetadata?.sizeBytes || 0,
+      storageProvider: session.provider,
     });
 
     if (env.MEDIA_PROVIDER === "mux") {
@@ -199,7 +200,10 @@ export const uploadsService = {
     return {
       track: await tracksService.markPlaybackReady(track.id, {
       runtime: "Ready",
-      streamMediaUrl: storageService.getDownloadUrl(track.masterStorageKey!),
+      streamMediaUrl: storageService.getDownloadUrl(
+        track.masterStorageKey!,
+        track.mediaStorageProvider,
+      ),
       streamManifestUrl: `/api/v1/playback/tracks/${track.id}/manifest.m3u8`,
       }),
     };

@@ -20,7 +20,7 @@ export const tracksRepository = {
       track.id,
       track.artistId,
       track.status,
-      track.access,
+      track.visibility ?? "unpublished",
       track.mediaProvider ?? null,
       track,
     );

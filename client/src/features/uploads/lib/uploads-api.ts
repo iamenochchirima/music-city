@@ -60,14 +60,19 @@ export const uploadsApi = {
 
     onProgress?.(0);
 
-    const response = await fetch(uploadSession.uploadUrl, {
+    const isDirectS3Upload =
+      uploadSession.provider === "s3" && Boolean(uploadSession.directUploadUrl);
+    const response = await fetch(
+      isDirectS3Upload ? uploadSession.directUploadUrl! : uploadSession.uploadUrl,
+      {
       method: uploadSession.method,
       headers: {
         ...uploadSession.headers,
-        Authorization: `Bearer ${token}`,
+        ...(isDirectS3Upload ? {} : { Authorization: `Bearer ${token}` }),
       },
       body: file,
-    });
+      },
+    );
 
     if (!response.ok) {
       throw new Error("File upload failed");

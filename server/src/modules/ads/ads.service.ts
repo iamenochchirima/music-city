@@ -20,7 +20,6 @@ import {
 
 import { createId } from "../../services/id.service.js";
 import { HttpError } from "../../utils/http-error.js";
-import { entitlementsService } from "../entitlements/entitlements.service.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
 import { usersService } from "../users/users.service.js";
@@ -32,6 +31,9 @@ const isWithinActiveWindow = (ad: AdRecord, nowMs: number) => {
 
   return startsAtMs <= nowMs && endsAtMs >= nowMs;
 };
+
+const AD_BREAK_MINIMUM_TRACKS = 3;
+const AD_BREAK_MINIMUM_INTERVAL_MS = 10 * 60 * 1000;
 
 const summarizeImpressions = (impressions: AdImpressionRecord[]) =>
   adPerformanceSummarySchema.parse({
@@ -137,11 +139,10 @@ export const adsService = {
     walletAddress: string,
     trackId: string,
   ): Promise<AdDecision> {
-    const [track, profile, hasSubscription, purchasedEntitlement, ads] = await Promise.all([
+    const [track, profile, hasSubscription, ads] = await Promise.all([
       tracksService.getTrackForPlayback(trackId),
       usersService.getProfile(walletAddress),
       subscriptionsService.hasActivePlatformSubscription(walletAddress),
-      entitlementsService.findMineForTrack(walletAddress, trackId),
       adsRepository.listAds({ status: "active" }),
     ]);
 
@@ -156,10 +157,10 @@ export const adsService = {
       });
     }
 
-    if (track.access !== "public") {
+    if (track.visibility === "unpublished") {
       return adDecisionSchema.parse({
         serveAd: false,
-        reason: "Ads are currently only served on public tracks.",
+        reason: "Ads are currently only served on published tracks.",
       });
     }
 
@@ -170,14 +171,33 @@ export const adsService = {
       });
     }
 
-    if (purchasedEntitlement?.source === "purchase") {
+    const nowMs = Date.now();
+    const completedImpressions = await adsRepository.listAdImpressions({
+      walletAddress,
+      status: "completed",
+    });
+    const mostRecentCompletedImpression = completedImpressions.sort(
+      (left, right) => Date.parse(right.completedAt ?? right.updatedAt) - Date.parse(left.completedAt ?? left.updatedAt),
+    )[0];
+
+    // The first three selected tracks start immediately. Later breaks require both time and listening cadence.
+    const lastCompletedAt = mostRecentCompletedImpression
+      ? (mostRecentCompletedImpression.completedAt ?? mostRecentCompletedImpression.updatedAt)
+      : new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+    const tracksSinceLastBreak = await adsRepository.countPlaybackSessionsForListenerSince(
+      profile?.id ?? "",
+      lastCompletedAt,
+    );
+
+    if (tracksSinceLastBreak < AD_BREAK_MINIMUM_TRACKS || (
+      mostRecentCompletedImpression && nowMs - Date.parse(lastCompletedAt) < AD_BREAK_MINIMUM_INTERVAL_MS
+    )) {
       return adDecisionSchema.parse({
         serveAd: false,
-        reason: "Purchased-track playback is ad-free.",
+        reason: "The listener has not reached the next ad break.",
       });
     }
 
-    const nowMs = Date.now();
     const activeAds = sortAdsForServing(
       ads
         .map((item) => adRecordSchema.parse(item))

@@ -86,7 +86,7 @@ const toReleaseDetail = async (
       } =>
         item !== null &&
         (includePrivateTracks ||
-          Boolean(item.track.playbackReady && item.track.access !== "private")),
+          Boolean(item.track.playbackReady && item.track.visibility === "published")),
     ),
   };
 };
@@ -154,7 +154,7 @@ const validateReleaseTracksForPublishing = async (
     assignments.map((assignment) => tracksRepository.findById(assignment.track_id)),
   );
   const hasBlockedTrack = assignedTracks.some(
-    (track) => !track || !track.playbackReady || track.access === "private",
+    (track) => !track || !track.playbackReady || track.visibility !== "published",
   );
 
   if (hasBlockedTrack) {

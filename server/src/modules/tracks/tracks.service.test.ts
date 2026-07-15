@@ -104,8 +104,8 @@ test("updateTrackAccess rejects subscriber-only access from creator-controlled i
   try {
     await assert.rejects(
       () =>
-        tracksService.updateTrackAccess(walletAddress, "trk-1", {
-          access: "subscribers",
+        tracksService.updateTrackVisibility(walletAddress, "trk-1", {
+          visibility: "published",
         } as never),
     );
   } finally {

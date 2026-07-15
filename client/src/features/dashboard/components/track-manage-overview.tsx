@@ -11,23 +11,20 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 
-type EditableTrackAccess = Extract<
-  TrackSummary["access"],
-  "private" | "public"
->;
+type EditableTrackVisibility = TrackSummary["visibility"];
 
-const accessOptions: Array<{
-  value: EditableTrackAccess;
+const visibilityOptions: Array<{
+  value: EditableTrackVisibility;
   label: string;
   description: string;
 }> = [
   {
-    value: "private",
+    value: "unpublished",
     label: "Unpublished",
     description: "Keep the song out of discovery while you prepare the release.",
   },
   {
-    value: "public",
+    value: "published",
     label: "Published",
     description: "Make the song visible in discovery and open for listening.",
   },
@@ -76,22 +73,20 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     };
   }, [session?.token, trackId]);
 
-  const updateAccess = async (access: EditableTrackAccess) => {
+  const updateVisibility = async (visibility: EditableTrackVisibility) => {
     if (!session?.token || !track) {
       return;
     }
 
-    const currentVisibility = track.access === "private" ? "private" : "public";
-
-    if (currentVisibility === access) {
+    if (track.visibility === visibility) {
       return;
     }
 
     try {
       setIsSaving(true);
-      const updatedTrack = await tracksApi.updateTrackAccess(session.token, track.id, access);
+      const updatedTrack = await tracksApi.updateTrackVisibility(session.token, track.id, visibility);
       setTrack(updatedTrack);
-      toast.success(access === "public" ? "Track published." : "Track unpublished.");
+      toast.success(visibility === "published" ? "Track published." : "Track unpublished.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to update track visibility",
@@ -152,8 +147,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     );
   }
 
-  const currentVisibility: EditableTrackAccess =
-    track.access === "private" ? "private" : "public";
+  const currentVisibility = track.visibility;
 
   return (
     <div className="space-y-8">
@@ -209,7 +203,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
               Visibility
             </p>
             <p className="mt-3 text-xl capitalize text-emerald-300">
-              {currentVisibility === "public" ? "Published" : "Unpublished"}
+              {currentVisibility === "published" ? "Published" : "Unpublished"}
             </p>
           </div>
         </div>
@@ -230,7 +224,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
         </div>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
-          {accessOptions.map((option) => {
+          {visibilityOptions.map((option) => {
             const isActive = option.value === currentVisibility;
 
             return (
@@ -243,7 +237,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
                     : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
                 }`}
                 disabled={isSaving}
-                onClick={() => void updateAccess(option.value)}
+                onClick={() => void updateVisibility(option.value)}
               >
                 <p className="text-xl font-semibold text-white">{option.label}</p>
                 <p className="mt-3 text-sm leading-6 text-slate-400">
@@ -270,16 +264,16 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           <Button
             variant="outline"
             className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-            disabled={isSaving || currentVisibility === "public"}
-            onClick={() => void updateAccess("public")}
+            disabled={isSaving || currentVisibility === "published"}
+            onClick={() => void updateVisibility("published")}
           >
             Publish
           </Button>
           <Button
             variant="outline"
             className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-            disabled={isSaving || currentVisibility === "private"}
-            onClick={() => void updateAccess("private")}
+            disabled={isSaving || currentVisibility === "unpublished"}
+            onClick={() => void updateVisibility("unpublished")}
           >
             Unpublish
           </Button>

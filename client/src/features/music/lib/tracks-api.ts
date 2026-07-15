@@ -1,5 +1,4 @@
 import type {
-  TrackAccess,
   TrackCreateInput,
   TrackMonetizationUpdateInput,
   TrackSummary,
@@ -64,10 +63,14 @@ export const tracksApi = {
     await httpClient.delete(`/tracks/${trackId}`, token);
   },
 
-  async updateTrackAccess(token: string, trackId: string, access: TrackAccess) {
+  async updateTrackVisibility(
+    token: string,
+    trackId: string,
+    visibility: TrackSummary["visibility"],
+  ) {
     const response = await httpClient.put<{ track: TrackSummary }>(
-      `/tracks/${trackId}/access`,
-      { access },
+      `/tracks/${trackId}/visibility`,
+      { visibility },
       token,
     );
 

@@ -229,7 +229,7 @@ export const AccountOverview = () => {
         {profile?.role === "artist" ? (
           <Card className="border-white/10 bg-white/5 text-white shadow-none">
             <CardHeader>
-              <CardTitle className="text-2xl">Subscriber access</CardTitle>
+                  <CardTitle className="text-2xl">Music City Pass</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -243,18 +243,18 @@ export const AccountOverview = () => {
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Your subscriber tracks
+                    Published tracks
                   </p>
                   <p className="mt-2 text-base font-medium text-white">
-                    {tracks.filter((track) => track.access === "subscribers").length}
+                    {tracks.filter((track) => track.visibility === "published").length}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Fan unlock
+                    Member benefit
                   </p>
                   <p className="mt-2 text-base font-medium text-white">
-                    One platform membership
+                    Ad-free listening
                   </p>
                 </div>
               </div>

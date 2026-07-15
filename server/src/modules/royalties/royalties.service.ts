@@ -457,7 +457,7 @@ export const royaltiesService = {
           if (
             track.status !== "published" ||
             !track.playbackReady ||
-            track.access !== "subscribers"
+            track.visibility === "unpublished"
           ) {
             return null;
           }

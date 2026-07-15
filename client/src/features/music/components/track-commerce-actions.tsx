@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LoaderCircle, Play, ShoppingBag, Ticket } from "lucide-react";
+import { LoaderCircle, Play, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ArtistPublicProfile, TrackSummary } from "@music-city/shared";
@@ -11,9 +10,7 @@ import { Button } from "@/components/ui/button";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checkout";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
-import { useSubscriptionAccess } from "@/features/subscriptions/hooks/use-subscription-access";
 import { useAuth } from "@/hooks/use-auth";
-import { ApiClientError } from "@/lib/api/http-client";
 
 const formatAmountLabel = (amount?: string, assetCode?: string) => {
   if (!amount) {
@@ -34,16 +31,10 @@ export const TrackCommerceActions = ({
   onUnlocked?: () => void | Promise<void>;
   hidePlay?: boolean;
 }) => {
-  const router = useRouter();
   const { session } = useAuth();
   const { activeTrackId, playTrack } = useGlobalPlayback();
-  const { canAccessSubscriberTrack } = useSubscriptionAccess();
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
-  const isPurchaseLocked = track.access === "purchase_required";
-  const isSubscriptionLocked =
-    track.access === "subscribers" && !canAccessSubscriberTrack(track);
-  const isLocked = isPurchaseLocked || isSubscriptionLocked;
 
   const purchaseLabel = useMemo(
     () => formatAmountLabel(track.purchasePrice, track.purchaseAssetCode),
@@ -86,26 +77,10 @@ export const TrackCommerceActions = ({
     }
   };
 
-  const handleSubscribe = async () => {
-    router.push(`/subscribe?trackId=${encodeURIComponent(track.id)}`);
-  };
-
   const handlePlay = async () => {
     try {
       await playTrack(track);
     } catch (error) {
-      if (error instanceof ApiClientError && error.status === 403) {
-        if (track.access === "purchase_required") {
-          toast.error("Buy this track first to unlock playback.");
-          return;
-        }
-
-        if (track.access === "subscribers") {
-          toast.error("Subscribe to Music City Pass first to unlock playback.");
-          return;
-        }
-      }
-
       toast.error(
         error instanceof Error ? error.message : "Unable to start playback",
       );
@@ -114,7 +89,7 @@ export const TrackCommerceActions = ({
 
   return (
     <div className="flex flex-wrap gap-3">
-      {!hidePlay && !isLocked ? (
+      {!hidePlay ? (
         <Button
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
           disabled={!track.playbackReady || !session?.token}
@@ -125,7 +100,7 @@ export const TrackCommerceActions = ({
         </Button>
       ) : null}
 
-      {isPurchaseLocked ? (
+      {track.purchaseEnabled ? (
         <Button
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
           disabled={isBuying}
@@ -140,15 +115,6 @@ export const TrackCommerceActions = ({
         </Button>
       ) : null}
 
-      {isSubscriptionLocked ? (
-        <Button
-          className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          onClick={() => void handleSubscribe()}
-        >
-          <Ticket className="mr-2 h-4 w-4" />
-          Subscribe
-        </Button>
-      ) : null}
     </div>
   );
 };

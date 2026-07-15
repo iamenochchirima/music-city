@@ -126,15 +126,15 @@ const baseSchemaStatements = [
     id TEXT PRIMARY KEY,
     artist_id TEXT NOT NULL,
     status TEXT NOT NULL,
-    access TEXT NOT NULL,
+    visibility TEXT NOT NULL,
     media_provider TEXT,
     payload JSONB NOT NULL,
     CONSTRAINT tracks_artist_id_fk
       FOREIGN KEY (artist_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT tracks_status_check
       CHECK (status IN ('draft', 'awaiting_upload', 'uploaded', 'processing', 'published', 'failed')),
-    CONSTRAINT tracks_access_check
-      CHECK (access IN ('private', 'subscribers', 'purchase_required', 'public')),
+    CONSTRAINT tracks_visibility_check
+      CHECK (visibility IN ('unpublished', 'published')),
     CONSTRAINT tracks_media_provider_check
       CHECK (media_provider IS NULL OR media_provider IN ('local', 'mux'))
   )`,
@@ -662,6 +662,57 @@ const schemaMigrations: SchemaMigration[] = [
       "CREATE INDEX IF NOT EXISTS upload_sessions_release_id_idx ON upload_sessions (release_id)",
     ],
   },
+  {
+    name: "2026-07-15-track-visibility-refactor",
+    statements: [
+      "ALTER TABLE tracks ADD COLUMN IF NOT EXISTS visibility TEXT",
+      `DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'tracks' AND column_name = 'access'
+        ) THEN
+          UPDATE tracks
+          SET visibility = CASE WHEN access = 'private' THEN 'unpublished' ELSE 'published' END
+          WHERE visibility IS NULL;
+        END IF;
+      END $$`,
+      "UPDATE tracks SET visibility = COALESCE(visibility, 'unpublished')",
+      `UPDATE tracks
+       SET payload = jsonb_set(
+         payload - 'access',
+         '{visibility}',
+         to_jsonb(visibility),
+         true
+       )`,
+      "ALTER TABLE tracks ALTER COLUMN visibility SET NOT NULL",
+      "ALTER TABLE tracks DROP CONSTRAINT IF EXISTS tracks_access_check",
+      "ALTER TABLE tracks DROP CONSTRAINT IF EXISTS tracks_visibility_check",
+      `ALTER TABLE tracks
+       ADD CONSTRAINT tracks_visibility_check
+       CHECK (visibility IN ('unpublished', 'published'))`,
+      "ALTER TABLE tracks DROP COLUMN IF EXISTS access",
+    ],
+  },
+  {
+    name: "2026-07-15-track-media-storage-provider",
+    statements: [
+      `UPDATE tracks
+       SET payload = jsonb_set(
+         payload,
+         '{mediaStorageProvider}',
+         to_jsonb(
+           CASE
+             WHEN COALESCE(payload->>'streamMediaUrl', '') LIKE '%backblazeb2.com%' THEN 's3'
+             ELSE 'local'
+           END
+         ),
+         true
+       )
+       WHERE payload ? 'masterStorageKey'
+         AND NOT (payload ? 'mediaStorageProvider')`,
+    ],
+  },
 ];
 
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>
@@ -1115,20 +1166,20 @@ export const databaseService = {
     id: string,
     artistId: string,
     status: string,
-    access: string,
+    visibility: string,
     mediaProvider: string | null,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO tracks (id, artist_id, status, access, media_provider, payload)
+      `INSERT INTO tracks (id, artist_id, status, visibility, media_provider, payload)
        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          artist_id = EXCLUDED.artist_id,
          status = EXCLUDED.status,
-         access = EXCLUDED.access,
+         visibility = EXCLUDED.visibility,
          media_provider = EXCLUDED.media_provider,
          payload = EXCLUDED.payload`,
-      [id, artistId, status, access, mediaProvider, JSON.stringify(payload)],
+      [id, artistId, status, visibility, mediaProvider, JSON.stringify(payload)],
     );
   },
 
@@ -1457,6 +1508,18 @@ export const databaseService = {
     );
 
     return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async countPlaybackSessionsForListenerSince(listenerUserId: string, since: string) {
+    const result = await pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM playback_sessions
+       WHERE payload->>'listenerUserId' = $1
+         AND (payload->>'createdAt')::timestamptz >= $2::timestamptz`,
+      [listenerUserId, since],
+    );
+
+    return Number(result.rows[0]?.count ?? 0);
   },
 
   async countPlaybackCompletionsByTrack(trackId: string) {

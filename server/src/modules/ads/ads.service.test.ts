@@ -6,7 +6,6 @@ process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/mu
 
 const { adsService } = await import("./ads.service.js");
 const { adsRepository } = await import("./ads.repository.js");
-const { entitlementsService } = await import("../entitlements/entitlements.service.js");
 const { subscriptionsService } = await import("../subscriptions/subscriptions.service.js");
 const { tracksService } = await import("../tracks/tracks.service.js");
 const { usersService } = await import("../users/users.service.js");
@@ -35,7 +34,7 @@ const createTrack = () => ({
   runtime: "3:20",
   priceLabel: "Public",
   status: "published" as const,
-  access: "public" as const,
+  visibility: "published" as const,
   plays: 0,
   likes: 0,
   playbackReady: true,
@@ -76,11 +75,6 @@ test("getPlaybackAdDecision skips ads for subscribed listeners", async () => {
       (async () => true) as typeof subscriptionsService.hasActivePlatformSubscription,
     ),
     restore(
-      entitlementsService,
-      "findMineForTrack",
-      (async () => undefined) as typeof entitlementsService.findMineForTrack,
-    ),
-    restore(
       adsRepository,
       "listAds",
       (async () => [createActiveAd()]) as typeof adsRepository.listAds,
@@ -119,9 +113,24 @@ test("getPlaybackAdDecision returns an eligible ad and creates a pending impress
       (async () => false) as typeof subscriptionsService.hasActivePlatformSubscription,
     ),
     restore(
-      entitlementsService,
-      "findMineForTrack",
-      (async () => undefined) as typeof entitlementsService.findMineForTrack,
+      adsRepository,
+      "listAdImpressions",
+      (async () => [{
+        id: "adimp_previous",
+        adId: "ad_1",
+        walletAddress: fanWallet,
+        trackId: "trk_public_1",
+        status: "completed",
+        slot: "preroll",
+        createdAt: "2026-07-02T10:00:00.000Z",
+        updatedAt: "2026-07-02T10:00:00.000Z",
+        completedAt: "2026-07-02T10:00:00.000Z",
+      }]) as typeof adsRepository.listAdImpressions,
+    ),
+    restore(
+      adsRepository,
+      "countPlaybackSessionsForListenerSince",
+      (async () => 3) as typeof adsRepository.countPlaybackSessionsForListenerSince,
     ),
     restore(
       adsRepository,
@@ -155,7 +164,7 @@ test("getPlaybackAdDecision returns an eligible ad and creates a pending impress
   }
 });
 
-test("getPlaybackAdDecision skips ads for purchased-track playback", async () => {
+test("getPlaybackAdDecision waits for a break even when the listener bought the track", async () => {
   const cleanup = [
     restore(
       tracksService,
@@ -175,20 +184,19 @@ test("getPlaybackAdDecision skips ads for purchased-track playback", async () =>
       (async () => false) as typeof subscriptionsService.hasActivePlatformSubscription,
     ),
     restore(
-      entitlementsService,
-      "findMineForTrack",
-      (async () => ({
-        id: "ent_1",
-        walletAddress: fanWallet,
-        trackId: "trk_public_1",
-        source: "purchase" as const,
-        startsAt: "2026-07-02T10:00:00.000Z",
-      })) as typeof entitlementsService.findMineForTrack,
-    ),
-    restore(
       adsRepository,
       "listAds",
       (async () => [createActiveAd()]) as typeof adsRepository.listAds,
+    ),
+    restore(
+      adsRepository,
+      "listAdImpressions",
+      (async () => []) as typeof adsRepository.listAdImpressions,
+    ),
+    restore(
+      adsRepository,
+      "countPlaybackSessionsForListenerSince",
+      (async () => 0) as typeof adsRepository.countPlaybackSessionsForListenerSince,
     ),
   ];
 
@@ -196,7 +204,7 @@ test("getPlaybackAdDecision skips ads for purchased-track playback", async () =>
     const decision = await adsService.getPlaybackAdDecision(fanWallet, "trk_public_1");
 
     assert.equal(decision.serveAd, false);
-    assert.match(decision.reason ?? "", /ad-free/i);
+    assert.match(decision.reason ?? "", /next ad break/i);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -224,14 +232,29 @@ test("getPlaybackAdDecision skips ads when the listener reached the daily cap", 
       (async () => false) as typeof subscriptionsService.hasActivePlatformSubscription,
     ),
     restore(
-      entitlementsService,
-      "findMineForTrack",
-      (async () => undefined) as typeof entitlementsService.findMineForTrack,
-    ),
-    restore(
       adsRepository,
       "listAds",
       (async () => [createActiveAd()]) as typeof adsRepository.listAds,
+    ),
+    restore(
+      adsRepository,
+      "listAdImpressions",
+      (async () => [{
+        id: "adimp_previous",
+        adId: "ad_1",
+        walletAddress: fanWallet,
+        trackId: "trk_public_1",
+        status: "completed",
+        slot: "preroll",
+        createdAt: "2026-07-02T10:00:00.000Z",
+        updatedAt: "2026-07-02T10:00:00.000Z",
+        completedAt: "2026-07-02T10:00:00.000Z",
+      }]) as typeof adsRepository.listAdImpressions,
+    ),
+    restore(
+      adsRepository,
+      "countPlaybackSessionsForListenerSince",
+      (async () => 3) as typeof adsRepository.countPlaybackSessionsForListenerSince,
     ),
     restore(
       adsRepository,
@@ -322,11 +345,6 @@ test("getPlaybackAdDecision skips ads when artists preview their own tracks", as
       subscriptionsService,
       "hasActivePlatformSubscription",
       (async () => false) as typeof subscriptionsService.hasActivePlatformSubscription,
-    ),
-    restore(
-      entitlementsService,
-      "findMineForTrack",
-      (async () => undefined) as typeof entitlementsService.findMineForTrack,
     ),
     restore(
       adsRepository,

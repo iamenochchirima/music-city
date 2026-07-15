@@ -30,18 +30,8 @@ export const formatTrackStatus = (track: TrackSummary) => {
   return track.status;
 };
 
-export const formatTrackAccessLabel = (track: TrackSummary) => {
-  switch (track.access) {
-    case "public":
-      return "Published";
-    case "subscribers":
-      return "Platform subscription";
-    case "purchase_required":
-      return "Legacy purchase gate";
-    default:
-      return "Unpublished";
-  }
-};
+export const formatTrackVisibilityLabel = (track: TrackSummary) =>
+  track.visibility === "published" ? "Published" : "Unpublished";
 
 export const TrackThumbnail = ({ track }: { track: TrackSummary }) => {
   if (track.coverImageUrl) {

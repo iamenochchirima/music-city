@@ -14,11 +14,12 @@ const expiresInMinutes = (minutes: number) =>
 
 const resolveTrackPlaybackUrl = (track: {
   mediaProvider?: "local" | "mux";
+  mediaStorageProvider?: "local" | "s3";
   streamMediaUrl?: string;
   masterStorageKey?: string;
 }) => {
   if (track.mediaProvider !== "mux" && track.masterStorageKey) {
-    return storageService.getDownloadUrl(track.masterStorageKey);
+    return storageService.getDownloadUrl(track.masterStorageKey, track.mediaStorageProvider);
   }
 
   return track.streamMediaUrl;
@@ -34,6 +35,7 @@ export const playbackService = {
 
     const id = createId("ply");
     const token = tokenService.issuePlaybackToken({ playbackSessionId: id, trackId });
+    const createdAt = new Date().toISOString();
     let session: PlaybackSession;
 
     if (track.mediaProvider === "mux" && track.muxPlaybackId) {
@@ -49,8 +51,10 @@ export const playbackService = {
         playbackId: track.muxPlaybackId,
         token,
         expiresAt: expiresInMinutes(15),
-        createdAt: new Date().toISOString(),
+        createdAt,
         maxPositionSeconds: 0,
+        listenedSeconds: 0,
+        lastPlaybackEventAt: createdAt,
       };
     } else {
       const streamUrl = resolveTrackPlaybackUrl(track);
@@ -68,8 +72,10 @@ export const playbackService = {
         streamUrl,
         token,
         expiresAt: expiresInMinutes(5),
-        createdAt: new Date().toISOString(),
+        createdAt,
         maxPositionSeconds: 0,
+        listenedSeconds: 0,
+        lastPlaybackEventAt: createdAt,
       };
     }
 

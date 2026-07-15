@@ -6,8 +6,8 @@ Use this checklist as the working tracker for shipping Music City's first admin-
 
 Ship a simple ad-supported playback flow that:
 
-- serves audio ads only to non-subscribed listeners
-- inserts ads before eligible public tracks
+- serves audio ads only to non-subscribed listeners at scheduled breaks
+- makes every ready published track playable
 - keeps subscribed listeners ad-free
 - lets admins manage ad inventory directly
 - records enough delivery data to evolve into mature ad accounting later
@@ -15,10 +15,10 @@ Ship a simple ad-supported playback flow that:
 ## Product Rules
 
 - [x] Serve ads only to listeners without an active platform subscription
-- [x] Start with `public` tracks only
+- [x] Serve ads only on ready, published tracks
 - [x] Skip ads for artists previewing their own tracks
-- [x] Skip ads for purchased-track playback
-- [x] Default slot is audio preroll
+- [x] Keep purchases as optional artist support, not playback access
+- [x] Default slot is audio preroll at a scheduled break
 - [x] Do not block track playback if ad decisioning or ad media fails
 
 ## Phase 1: Shared Contracts
@@ -52,6 +52,8 @@ Ship a simple ad-supported playback flow that:
 - [x] Add ad selection logic
 - [x] Add active-window filtering
 - [x] Add simple frequency cap support
+- [x] Require three playback sessions before the first ad break
+- [x] Require three playback sessions and a ten-minute cooldown between later breaks
 - [x] Add subscription-aware ad eligibility check
 - [x] Add self-artist skip check
 
@@ -75,7 +77,7 @@ Ship a simple ad-supported playback flow that:
 
 - [x] Add public-safe playback ad decision endpoint
 - [x] Return `serveAd=false` for subscribed listeners
-- [x] Return `serveAd=false` for ineligible tracks
+- [x] Return `serveAd=false` until a free listener reaches an eligible break
 - [x] Return `serveAd=false` when no active ad is eligible
 - [x] Return ad metadata plus impression id when an ad should play
 
@@ -92,7 +94,7 @@ Ship a simple ad-supported playback flow that:
 
 - [x] Add ad decision request before eligible playback
 - [x] Add ad playback state to the global player
-- [x] Play preroll ad before the selected track
+- [x] Play an eligible preroll ad before the selected track
 - [x] Continue into the track automatically after ad completion
 - [x] Fall back to track playback on ad errors
 - [x] Add minimal sponsored UI state
@@ -101,9 +103,8 @@ Ship a simple ad-supported playback flow that:
 
 - [x] Add admin visibility into impressions by status
 - [x] Keep impression records compatible with future revenue accounting
+- [x] Add one ad every N tracks and a minimum interval between breaks
 - [ ] Leave room for:
-  - [ ] one ad every N tracks
-  - [ ] one ad every X minutes
   - [ ] campaign targeting by genre
   - [ ] ad revenue pool allocation into royalties
 
@@ -112,5 +113,6 @@ Ship a simple ad-supported playback flow that:
 - [x] Admin can manage active audio ads
 - [x] Non-subscribed listeners can receive an audio preroll before eligible public tracks
 - [x] Subscribed listeners remain ad-free
+- [x] Every ready published track is playable without a purchase or subscription
 - [x] Ad failures do not break music playback
 - [x] Impression lifecycle is recorded end-to-end

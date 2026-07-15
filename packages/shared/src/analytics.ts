@@ -65,6 +65,7 @@ export const trackPlaybackProgressEventSchema = analyticsEventBaseSchema.extend(
   sessionId: z.string().min(1),
   positionSeconds: z.number().min(0).optional(),
   durationSeconds: z.number().min(0).optional(),
+  listenedSeconds: z.number().min(0).optional(),
 });
 export type TrackPlaybackProgressEvent = z.infer<
   typeof trackPlaybackProgressEventSchema
@@ -78,6 +79,7 @@ export const trackPlaybackCompletedEventSchema = analyticsEventBaseSchema.extend
   sessionId: z.string().min(1),
   positionSeconds: z.number().min(0).optional(),
   durationSeconds: z.number().min(0).optional(),
+  listenedSeconds: z.number().min(0).optional(),
 });
 export type TrackPlaybackCompletedEvent = z.infer<
   typeof trackPlaybackCompletedEventSchema
@@ -91,6 +93,7 @@ export const trackPlaybackQualifiedEventSchema = analyticsEventBaseSchema.extend
   sessionId: z.string().min(1),
   positionSeconds: z.number().min(0).optional(),
   durationSeconds: z.number().min(0).optional(),
+  listenedSeconds: z.number().min(0).optional(),
   qualifiedBy: z.enum(["started", "progress", "completed"]),
 });
 export type TrackPlaybackQualifiedEvent = z.infer<
@@ -206,7 +209,7 @@ export const artistAnalyticsTrackSchema = z.object({
   trackId: z.string().min(1),
   title: z.string().min(1),
   releaseTitle: z.string().optional(),
-  access: z.enum(["private", "subscribers", "purchase_required", "public"]),
+  visibility: z.enum(["unpublished", "published"]),
   status: z.enum([
     "draft",
     "awaiting_upload",

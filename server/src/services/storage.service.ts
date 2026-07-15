@@ -264,8 +264,8 @@ export const storageService = {
     return localMediaPath(storageKey);
   },
 
-  getDownloadUrl(storageKey: string) {
-    if (env.STORAGE_PROVIDER === "local") {
+  getDownloadUrl(storageKey: string, provider = env.STORAGE_PROVIDER) {
+    if (provider === "local") {
       return `${env.APP_BASE_URL}/api/v1/uploads/content/${encodeURIComponent(
         storageKey,
       )}`;

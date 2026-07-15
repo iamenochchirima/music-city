@@ -18,20 +18,8 @@ export const trackStatusSchema = z.enum([
 ]);
 export type TrackStatus = z.infer<typeof trackStatusSchema>;
 
-export const trackAccessSchema = z.enum([
-  "private",
-  "subscribers",
-  "purchase_required",
-  "public",
-]);
-export type TrackAccess = z.infer<typeof trackAccessSchema>;
-
-export const creatorTrackAccessSchema = z.enum([
-  "private",
-  "purchase_required",
-  "public",
-]);
-export type CreatorTrackAccess = z.infer<typeof creatorTrackAccessSchema>;
+export const trackVisibilitySchema = z.enum(["unpublished", "published"]);
+export type TrackVisibility = z.infer<typeof trackVisibilitySchema>;
 
 export const releaseTypeSchema = z.enum(["single", "ep", "album"]);
 export type ReleaseType = z.infer<typeof releaseTypeSchema>;
@@ -80,7 +68,7 @@ export interface TrackSummary {
   runtime: string;
   priceLabel: string;
   status: TrackStatus;
-  access: TrackAccess;
+  visibility?: TrackVisibility;
   plays: number;
   likes: number;
   description?: string;
@@ -96,6 +84,7 @@ export interface TrackSummary {
   masterStorageKey?: string;
   streamManifestKey?: string;
   mediaProvider?: "local" | "mux";
+  mediaStorageProvider?: "local" | "s3";
   sourceFileName?: string;
   sourceContentType?: string;
   sourceSizeBytes?: number;
@@ -234,20 +223,12 @@ export const trackCreateSchema = z.object({
   genre: z.string().min(1).max(80),
   description: z.string().max(1000).optional(),
   priceLabel: z.string().max(80).optional(),
-  access: creatorTrackAccessSchema.default("private"),
+  visibility: trackVisibilitySchema.default("unpublished"),
   purchaseEnabled: z.boolean().optional(),
   purchasePrice: optionalPositiveAmountSchema,
   purchaseAssetCode: optionalStellarAssetCodeSchema,
   purchaseAssetIssuer: optionalStellarAssetIssuerSchema,
 }).superRefine((value, context) => {
-  if (value.access === "purchase_required" && !value.purchasePrice) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["purchasePrice"],
-      message: "Purchase price is required when purchase access is enabled",
-    });
-  }
-
   const issue = requireIssuerForNonNativeAsset({
     assetCode: value.purchaseAssetCode,
     assetIssuer: value.purchaseAssetIssuer,
@@ -263,22 +244,20 @@ export const trackCreateSchema = z.object({
 });
 export type TrackCreateInput = z.infer<typeof trackCreateSchema>;
 
-export const trackAccessUpdateSchema = z.object({
-  access: creatorTrackAccessSchema,
+export const trackVisibilityUpdateSchema = z.object({
+  visibility: trackVisibilitySchema,
 });
-export type TrackAccessUpdateInput = z.infer<typeof trackAccessUpdateSchema>;
+export type TrackVisibilityUpdateInput = z.infer<typeof trackVisibilityUpdateSchema>;
 
 export const trackMonetizationUpdateSchema = z
   .object({
-    access: creatorTrackAccessSchema,
     purchaseEnabled: z.boolean().optional(),
     purchasePrice: optionalPositiveAmountSchema,
     purchaseAssetCode: optionalStellarAssetCodeSchema,
     purchaseAssetIssuer: optionalStellarAssetIssuerSchema,
   })
   .superRefine((value, context) => {
-    const purchaseEnabled =
-      value.purchaseEnabled ?? value.access === "purchase_required";
+    const purchaseEnabled = value.purchaseEnabled ?? false;
 
     if (purchaseEnabled && !value.purchasePrice) {
       context.addIssue({

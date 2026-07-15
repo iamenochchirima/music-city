@@ -4,7 +4,6 @@ import { grantEntitlementSchema } from "@music-city/shared";
 
 import { env } from "../../config/env.js";
 import { createId } from "../../services/id.service.js";
-import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
 import { usersService } from "../users/users.service.js";
 import { entitlementsRepository } from "./entitlements.repository.js";
@@ -89,37 +88,6 @@ export const entitlementsService = {
 
     const profile = await usersService.getProfile(walletAddress);
 
-    if (profile && profile.id === track.artistId) {
-      return true;
-    }
-
-    if (track.access === "public") {
-      return true;
-    }
-
-    const localEntitlement = (await entitlementsRepository.listByWallet(walletAddress)).some(
-      (record) => record.trackId === trackId && withinWindow(record),
-    );
-
-    if (localEntitlement) {
-      return true;
-    }
-
-    if (track.access === "purchase_required") {
-      return false;
-    }
-
-    if (track.access === "subscribers") {
-      const hasPlatformSubscription =
-        await subscriptionsService.hasActivePlatformSubscription(walletAddress);
-
-      if (hasPlatformSubscription) {
-        return true;
-      }
-
-      return this.hasStellarAssetEntitlement(walletAddress);
-    }
-
-    return false;
+    return track.visibility === "published" || (profile?.id === track.artistId);
   },
 };

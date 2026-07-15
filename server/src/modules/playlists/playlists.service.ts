@@ -79,7 +79,7 @@ const toPlaylistDetail = async (
       } =>
         item !== null &&
         (includePrivateTracks ||
-          Boolean(item.track.playbackReady && item.track.access !== "private")),
+          Boolean(item.track.playbackReady && item.track.visibility === "published")),
     ),
   };
 };
@@ -191,7 +191,7 @@ export const playlistsService = {
       throw new Error("Track not found");
     }
 
-    if (track.access === "private" && track.artistId !== profile.id) {
+    if (track.visibility === "unpublished" && track.artistId !== profile.id) {
       throw new Error("Private tracks cannot be added to this playlist");
     }
 

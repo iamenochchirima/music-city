@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { TrackAccess, TrackSummary } from "@music-city/shared";
+import type { TrackSummary, TrackVisibility } from "@music-city/shared";
 import {
   Check,
   ExternalLink,
@@ -25,7 +25,7 @@ import {
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import {
   TrackTable,
-  formatTrackAccessLabel,
+  formatTrackVisibilityLabel,
 } from "@/features/music/components/track-table";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -49,7 +49,7 @@ const TrackTableSection = ({
   onPlay,
   onSync,
   onDelete,
-  onUpdateAccess,
+  onUpdateVisibility,
   onToggleSelectionMode,
   onToggleTrackSelected,
 }: {
@@ -65,7 +65,7 @@ const TrackTableSection = ({
   onPlay: (track: TrackSummary) => Promise<void>;
   onSync: (track: TrackSummary) => Promise<void>;
   onDelete: (track: TrackSummary) => Promise<void>;
-  onUpdateAccess: (track: TrackSummary, access: TrackAccess) => Promise<void>;
+  onUpdateVisibility: (track: TrackSummary, visibility: TrackVisibility) => Promise<void>;
   onToggleSelectionMode: (track: TrackSummary) => void;
   onToggleTrackSelected: (trackId: string) => void;
 }) => {
@@ -172,19 +172,19 @@ const TrackTableSection = ({
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem
                     className="cursor-pointer focus:bg-white/10 focus:text-white"
-                    onClick={() => void onUpdateAccess(track, "private")}
+                    onClick={() => void onUpdateVisibility(track, "unpublished")}
                   >
                     Unpublish
-                    {track.access === "private" ? (
+                    {track.visibility === "unpublished" ? (
                       <Check className="ml-auto h-4 w-4 text-emerald-300" />
                     ) : null}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="cursor-pointer focus:bg-white/10 focus:text-white"
-                    onClick={() => void onUpdateAccess(track, "public")}
+                    onClick={() => void onUpdateVisibility(track, "published")}
                   >
                     Publish
-                    {track.access === "public" ? (
+                    {track.visibility === "published" ? (
                       <Check className="ml-auto h-4 w-4 text-emerald-300" />
                     ) : null}
                   </DropdownMenuItem>
@@ -234,7 +234,7 @@ export const DashboardTrackShelves = ({
   const [trackPendingDelete, setTrackPendingDelete] = useState<TrackSummary | null>(null);
   const [bulkDeleteCount, setBulkDeleteCount] = useState<number | null>(null);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [bulkAccessUpdating, setBulkAccessUpdating] = useState<TrackAccess | null>(null);
+  const [bulkAccessUpdating, setBulkAccessUpdating] = useState<TrackVisibility | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const canPlayTrack = (track: TrackSummary) =>
@@ -355,26 +355,26 @@ export const DashboardTrackShelves = ({
     );
   };
 
-  const applyTrackAccessUpdate = async (track: TrackSummary, access: TrackAccess) => {
+  const applyTrackVisibilityUpdate = async (track: TrackSummary, visibility: TrackVisibility) => {
     const token = session?.token;
 
-    if (!token || track.access === access) {
+    if (!token || track.visibility === visibility) {
       return;
     }
 
     try {
-      const updated = await tracksApi.updateTrackAccess(token, track.id, access);
+      const updated = await tracksApi.updateTrackVisibility(token, track.id, visibility);
       onTrackSynced(updated);
-      toast.success(`${track.title} is now ${formatTrackAccessLabel(updated).toLowerCase()}.`);
+      toast.success(`${track.title} is now ${formatTrackVisibilityLabel(updated).toLowerCase()}.`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to update track access",
+        error instanceof Error ? error.message : "Unable to update track visibility",
       );
     }
   };
 
-  const updateTrackAccess = async (track: TrackSummary, access: TrackAccess) => {
-    await applyTrackAccessUpdate(track, access);
+  const updateTrackVisibility = async (track: TrackSummary, visibility: TrackVisibility) => {
+    await applyTrackVisibilityUpdate(track, visibility);
   };
 
   const clearSelectionMode = () => {
@@ -382,7 +382,7 @@ export const DashboardTrackShelves = ({
     setSelectedTrackIds([]);
   };
 
-  const applySelectedTracksAccessUpdate = async (access: TrackAccess) => {
+  const applySelectedTracksVisibilityUpdate = async (visibility: TrackVisibility) => {
     const token = session?.token;
 
     if (!token || selectedTrackIds.length === 0) {
@@ -392,12 +392,12 @@ export const DashboardTrackShelves = ({
     const selectedTracks = tracks.filter((track) => selectedTrackIds.includes(track.id));
 
     try {
-      setBulkAccessUpdating(access);
+      setBulkAccessUpdating(visibility);
 
       const updatedTracks = await Promise.all(
         selectedTracks
-          .filter((track) => track.access !== access)
-          .map((track) => tracksApi.updateTrackAccess(token, track.id, access)),
+          .filter((track) => track.visibility !== visibility)
+          .map((track) => tracksApi.updateTrackVisibility(token, track.id, visibility)),
       );
 
       updatedTracks.forEach((track) => onTrackSynced(track));
@@ -415,8 +415,8 @@ export const DashboardTrackShelves = ({
     }
   };
 
-  const updateSelectedTracksAccess = async (access: TrackAccess) => {
-    await applySelectedTracksAccessUpdate(access);
+  const updateSelectedTracksVisibility = async (visibility: TrackVisibility) => {
+    await applySelectedTracksVisibilityUpdate(visibility);
   };
 
   const deleteSelectedTracks = async () => {
@@ -511,17 +511,17 @@ export const DashboardTrackShelves = ({
               variant="outline"
               className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               disabled={Boolean(bulkAccessUpdating) || isBulkDeleting || selectedTrackIds.length === 0}
-              onClick={() => void updateSelectedTracksAccess("private")}
+              onClick={() => void updateSelectedTracksVisibility("unpublished")}
             >
-              {bulkAccessUpdating === "private" ? "Updating..." : "Unpublish"}
+              {bulkAccessUpdating === "unpublished" ? "Updating..." : "Unpublish"}
             </Button>
             <Button
               variant="outline"
               className="border-white/10 bg-white/5 text-white hover:bg-white/10"
               disabled={Boolean(bulkAccessUpdating) || isBulkDeleting || selectedTrackIds.length === 0}
-              onClick={() => void updateSelectedTracksAccess("public")}
+              onClick={() => void updateSelectedTracksVisibility("published")}
             >
-              {bulkAccessUpdating === "public" ? "Updating..." : "Publish"}
+              {bulkAccessUpdating === "published" ? "Updating..." : "Publish"}
             </Button>
             <Button
               variant="outline"
@@ -564,7 +564,7 @@ export const DashboardTrackShelves = ({
         onPlay={playTrack}
         onSync={syncTrack}
         onDelete={deleteTrack}
-        onUpdateAccess={updateTrackAccess}
+        onUpdateVisibility={updateTrackVisibility}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}
       />
@@ -581,7 +581,7 @@ export const DashboardTrackShelves = ({
         onPlay={playTrack}
         onSync={syncTrack}
         onDelete={deleteTrack}
-        onUpdateAccess={updateTrackAccess}
+        onUpdateVisibility={updateTrackVisibility}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}
       />
