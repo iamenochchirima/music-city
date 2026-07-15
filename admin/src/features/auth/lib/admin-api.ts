@@ -13,6 +13,8 @@ import type {
   AdminUserList,
   AdminTreasuryOverview,
   AdminTreasurySettings,
+  AdminTreasuryTransferInput,
+  AdminTreasuryTransferResult,
   AdminSession,
   AdminLoginInput,
   BootstrapAdminInput,
@@ -52,7 +54,15 @@ export const adminApi = {
   },
 
   getMe(token: string) {
-    return httpClient.get<AuthResponse>("/auth/me", token);
+    return httpClient
+      .get<AuthResponse>("/auth/me", token)
+      .then((response) => ({
+        ...response,
+        session: {
+          ...response.session,
+          token,
+        },
+      }));
   },
 
   listAdmins(token: string) {
@@ -91,6 +101,16 @@ export const adminApi = {
 
   getTreasury(token: string) {
     return httpClient.get<AdminTreasuryOverview>("/treasury", token);
+  },
+
+  sendTreasuryTransfer(input: AdminTreasuryTransferInput, token: string) {
+    return httpClient
+      .post<{ transfer: AdminTreasuryTransferResult }>(
+        "/treasury/transfers",
+        input,
+        token,
+      )
+      .then((response) => response.transfer);
   },
 
   listSubscriptions(token: string) {

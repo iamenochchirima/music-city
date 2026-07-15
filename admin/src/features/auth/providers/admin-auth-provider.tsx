@@ -17,6 +17,7 @@ import type {
 } from "@music-city/shared";
 
 import { adminApi } from "@/features/auth/lib/admin-api";
+import { ApiClientError } from "@/lib/api/http-client";
 
 type StoredAdminSession = {
   admin: AdminAccount;
@@ -71,6 +72,10 @@ const persistStoredSession = (value: StoredAdminSession | null) => {
   window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(value));
 };
 
+const isAuthError = (error: unknown) =>
+  error instanceof ApiClientError &&
+  (error.status === 401 || error.status === 403);
+
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [admin, setAdmin] = useState<AdminAccount | null>(null);
   const [session, setSession] = useState<AdminSession | null>(null);
@@ -79,6 +84,10 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const applyAuthResponse = useCallback(
     (payload: { admin: AdminAccount; session: AdminSession }) => {
+      if (!payload.session.token) {
+        throw new Error("Admin session response did not include a token");
+      }
+
       setAdmin(payload.admin);
       setSession(payload.session);
       setBootstrapRequired(false);
@@ -107,8 +116,17 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const payload = await adminApi.getMe(token);
-    applyAuthResponse(payload);
+    try {
+      const payload = await adminApi.getMe(token);
+      applyAuthResponse(payload);
+    } catch (error) {
+      if (isAuthError(error)) {
+        clearSession();
+        throw error;
+      }
+
+      setBootstrapRequired(false);
+    }
   }, [applyAuthResponse, clearSession]);
 
   useEffect(() => {
@@ -136,11 +154,18 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             setBootstrapRequired(status.bootstrapRequired);
           }
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
-          clearSession();
-          const status = await adminApi.getBootstrapStatus().catch(() => null);
-          setBootstrapRequired(status?.bootstrapRequired ?? true);
+          if (isAuthError(error)) {
+            clearSession();
+            const status = await adminApi.getBootstrapStatus().catch(() => null);
+            setBootstrapRequired(status?.bootstrapRequired ?? true);
+          } else if (stored?.session?.token) {
+            setBootstrapRequired(false);
+          } else {
+            const status = await adminApi.getBootstrapStatus().catch(() => null);
+            setBootstrapRequired(status?.bootstrapRequired ?? true);
+          }
         }
       } finally {
         if (!cancelled) {

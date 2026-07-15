@@ -5,6 +5,8 @@ import {
   adminPlatformSubscriptionSettingsSchema,
   adminSubscriptionListSchema,
   adminSubscriptionRecordSchema,
+  adminTreasuryTransferInputSchema,
+  adminTreasuryTransferResultSchema,
   adminUserListSchema,
   adminUserRecordSchema,
   adminTreasuryOverviewSchema,
@@ -38,6 +40,7 @@ import { paymentsRepository } from "../payments/payments.repository.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { usersService } from "../users/users.service.js";
 import { royaltiesService } from "../royalties/royalties.service.js";
+import { stellarPayoutService } from "../royalties/stellar-payout.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { adsService } from "../ads/ads.service.js";
 
@@ -260,6 +263,26 @@ export const adminService = {
     }
 
     return walletAddress;
+  },
+
+  async submitTreasuryTransfer(input: unknown) {
+    const parsed = adminTreasuryTransferInputSchema.parse(input);
+    const submission = await stellarPayoutService.submitPayment({
+      recipientWalletAddress: parsed.recipientWalletAddress,
+      amount: parsed.amount,
+      assetCode: parsed.assetCode,
+      assetIssuer: parsed.assetIssuer,
+      memoText: parsed.memoText,
+    });
+
+    return adminTreasuryTransferResultSchema.parse({
+      ...submission,
+      recipientWalletAddress: parsed.recipientWalletAddress,
+      assetCode: parsed.assetCode,
+      assetIssuer: parsed.assetIssuer,
+      memoText: parsed.memoText,
+      submittedAt: new Date().toISOString(),
+    });
   },
 
   async listSubscriptions(): Promise<AdminSubscriptionList> {

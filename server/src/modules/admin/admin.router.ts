@@ -371,4 +371,15 @@ adminRouter.put(
   }),
 );
 
+adminRouter.post(
+  "/treasury/transfers",
+  requireAdminSession,
+  requireSuperAdmin,
+  asyncHandler(async (request, response) => {
+    response.status(201).json({
+      transfer: await adminService.submitTreasuryTransfer(request.body),
+    });
+  }),
+);
+
 export { adminRouter };

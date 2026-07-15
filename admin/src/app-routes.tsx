@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import {
   BarChart3,
+  CircleArrowOutUpRight,
   CreditCard,
   Eye,
   EyeOff,
@@ -22,6 +23,7 @@ import { toast } from "sonner";
 import type {
   AdminAccount,
   AdminAnalyticsOverview,
+  AdminTreasuryTransferResult,
   RoyaltyLedgerEntry,
   RoyaltyEngineConfig,
   RoyaltyFeeSettings,
@@ -1019,11 +1021,21 @@ const TreasuryPage = () => {
   const { admin, session } = useAdminAuth();
   const [overview, setOverview] = useState<AdminTreasuryOverview | null>(null);
   const [walletAddress, setWalletAddress] = useState("");
+  const [transferAssetKey, setTransferAssetKey] = useState("native");
+  const [transferRecipient, setTransferRecipient] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferMemo, setTransferMemo] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendingTransfer, setIsSendingTransfer] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [lastTransfer, setLastTransfer] = useState<AdminTreasuryTransferResult | null>(null);
 
   const canManageTreasury = admin?.role === "super_admin";
+  const balances = overview?.account?.balances ?? [];
+  const selectedTransferBalance =
+    balances.find((balance) => balance.assetKey === transferAssetKey) ?? balances[0] ?? null;
 
   const loadTreasury = async (refreshOnly = false) => {
     if (!session?.token) {
@@ -1038,8 +1050,16 @@ const TreasuryPage = () => {
 
     try {
       const next = await adminApi.getTreasury(session.token);
+      const nextAccount = next.account;
       setOverview(next);
       setWalletAddress(next.settings.walletAddress);
+      if (nextAccount?.balances.length) {
+        setTransferAssetKey((current) =>
+          nextAccount.balances.some((balance) => balance.assetKey === current)
+            ? current
+            : nextAccount.balances[0]!.assetKey,
+        );
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load treasury");
     } finally {
@@ -1076,6 +1096,41 @@ const TreasuryPage = () => {
       toast.error(error instanceof Error ? error.message : "Failed to update treasury");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSendTransfer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!session?.token || !selectedTransferBalance) {
+      return;
+    }
+
+    setIsSendingTransfer(true);
+
+    try {
+      const transfer = await adminApi.sendTreasuryTransfer(
+        {
+          recipientWalletAddress: transferRecipient.trim(),
+          amount: transferAmount.trim(),
+          assetCode: selectedTransferBalance.assetCode,
+          assetIssuer: selectedTransferBalance.assetIssuer,
+          memoText: transferMemo.trim() || undefined,
+        },
+        session.token,
+      );
+
+      setLastTransfer(transfer);
+      setTransferRecipient("");
+      setTransferAmount("");
+      setTransferMemo("");
+      setIsTransferModalOpen(false);
+      toast.success("Treasury transfer submitted.");
+      await loadTreasury(true);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit treasury transfer");
+    } finally {
+      setIsSendingTransfer(false);
     }
   };
 
@@ -1205,8 +1260,206 @@ const TreasuryPage = () => {
                 </div>
               </div>
             </section>
+
+            <section className={cn(shellPanelClassName, "p-5")}>
+              <h3 className="text-sm font-semibold text-white">Last transfer</h3>
+              {!lastTransfer ? (
+                <p className="mt-3 text-sm text-slate-400">
+                  No treasury transfer has been submitted in this console session.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3 text-sm">
+                  <div>
+                    <p className="text-slate-500">Transaction hash</p>
+                    <p className="mt-1 break-all text-slate-200">{lastTransfer.txHash}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Recipient</p>
+                    <p className="mt-1 break-all text-slate-200">
+                      {lastTransfer.recipientWalletAddress}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Amount</p>
+                    <p className="mt-1 text-slate-200">
+                      {formatBalanceAmount(lastTransfer.amount)} {lastTransfer.assetCode}
+                    </p>
+                  </div>
+                  {lastTransfer.memoText ? (
+                    <div>
+                      <p className="text-slate-500">Memo</p>
+                      <p className="mt-1 text-slate-200">{lastTransfer.memoText}</p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </section>
           </aside>
         </div>
+
+        <section className={cn(shellPanelClassName, "p-5")}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Send from treasury</h3>
+              <p className="mt-1 text-sm text-slate-400">
+                Open a transfer modal to submit a real Stellar payment from the configured treasury wallet.
+              </p>
+            </div>
+            <Button
+              type="button"
+              className="h-10 rounded-md px-4"
+              disabled={
+                !canManageTreasury ||
+                !overview?.account?.exists ||
+                balances.length === 0
+              }
+              onClick={() => setIsTransferModalOpen(true)}
+            >
+              <CircleArrowOutUpRight className="h-4 w-4" />
+              Open transfer modal
+            </Button>
+          </div>
+          {!canManageTreasury ? (
+            <p className="mt-4 text-sm text-slate-400">
+              Only super admins can submit treasury transfers.
+            </p>
+          ) : !overview?.account?.exists ? (
+            <p className="mt-4 text-sm text-slate-400">
+              Fund the treasury wallet before sending from it.
+            </p>
+          ) : balances.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-400">
+              This treasury wallet has no transferable balances yet.
+            </p>
+          ) : null}
+        </section>
+
+        {isTransferModalOpen && canManageTreasury && overview?.account?.exists && balances.length > 0 ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/78 px-4 py-8 backdrop-blur-sm">
+            <div className="w-full max-w-5xl border border-white/10 bg-[#121a2c] p-5 shadow-2xl">
+              <div className="mb-4 flex items-start justify-between gap-4 border-b border-white/8 pb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Send from treasury</h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Submit a real Stellar payment from the configured treasury wallet to verify the end-to-end platform path.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-9 rounded-md px-3 text-slate-300 hover:bg-white/[0.04]"
+                  onClick={() => setIsTransferModalOpen(false)}
+                  disabled={isSendingTransfer}
+                >
+                  Close
+                </Button>
+              </div>
+
+              <form
+                className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+                onSubmit={handleSendTransfer}
+              >
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="treasury-transfer-asset">Asset</Label>
+                      <select
+                        id="treasury-transfer-asset"
+                        value={transferAssetKey}
+                        onChange={(event) => setTransferAssetKey(event.target.value)}
+                        className={selectClassName}
+                      >
+                        {balances.map((balance) => (
+                          <option key={balance.assetKey} value={balance.assetKey}>
+                            {balance.assetCode} • {formatBalanceAmount(balance.availableAmount)} available
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="treasury-transfer-amount">Amount</Label>
+                      <Input
+                        id="treasury-transfer-amount"
+                        value={transferAmount}
+                        onChange={(event) => setTransferAmount(event.target.value)}
+                        placeholder="0.0000000"
+                        className={fieldClassName}
+                        inputMode="decimal"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="treasury-transfer-recipient">Recipient wallet</Label>
+                    <Input
+                      id="treasury-transfer-recipient"
+                      value={transferRecipient}
+                      onChange={(event) => setTransferRecipient(event.target.value.trim())}
+                      placeholder="G..."
+                      className={fieldClassName}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="treasury-transfer-memo">Memo (optional)</Label>
+                    <Input
+                      id="treasury-transfer-memo"
+                      value={transferMemo}
+                      onChange={(event) => setTransferMemo(event.target.value)}
+                      placeholder="Up to 28 characters"
+                      className={fieldClassName}
+                      maxLength={28}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="submit"
+                      className="h-10 rounded-md px-4"
+                      disabled={isSendingTransfer || !selectedTransferBalance}
+                    >
+                      {isSendingTransfer ? "Submitting..." : "Send treasury transfer"}
+                    </Button>
+                  </div>
+                </div>
+
+                <aside className="space-y-4 border border-white/8 bg-[#0b1220] p-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                      Transfer preview
+                    </p>
+                    <p className="mt-2 text-base font-medium text-white">
+                      {selectedTransferBalance
+                        ? `${selectedTransferBalance.assetCode} from treasury`
+                        : "No asset selected"}
+                    </p>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="text-slate-500">Treasury address</p>
+                      <p className="mt-1 break-all text-slate-200">
+                        {overview?.settings.walletAddress || "Not configured"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Available balance</p>
+                      <p className="mt-1 text-slate-200">
+                        {selectedTransferBalance
+                          ? `${formatBalanceAmount(selectedTransferBalance.availableAmount)} ${selectedTransferBalance.assetCode}`
+                          : "Not available"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-500">Issuer</p>
+                      <p className="mt-1 break-all text-slate-200">
+                        {selectedTransferBalance?.assetIssuer || "Native XLM"}
+                      </p>
+                    </div>
+                  </div>
+                </aside>
+              </form>
+            </div>
+          </div>
+        ) : null}
 
         <section className={cn(shellPanelClassName, "overflow-hidden")}>
           <div className="border-b border-white/8 px-4 py-3">

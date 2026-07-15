@@ -3,6 +3,7 @@ import {
   Asset,
   BASE_FEE,
   Keypair,
+  Memo,
   Operation,
   StrKey,
   TransactionBuilder,
@@ -118,7 +119,7 @@ export const stellarPayoutService = {
 
     const asset = buildAsset(input.assetCode, input.assetIssuer);
     const source = new Account(treasuryAddress, treasuryAccount.sequence);
-    const transaction = new TransactionBuilder(source, {
+    const builder = new TransactionBuilder(source, {
       fee: BASE_FEE,
       networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE,
     })
@@ -128,9 +129,13 @@ export const stellarPayoutService = {
           asset,
           amount: input.amount,
         }),
-      )
-      .setTimeout(60)
-      .build();
+      );
+
+    if (input.memoText?.trim()) {
+      builder.addMemo(Memo.text(input.memoText.trim()));
+    }
+
+    const transaction = builder.setTimeout(60).build();
 
     transaction.sign(treasuryKeypair);
 
@@ -167,6 +172,7 @@ export const stellarPayoutService = {
       assetCode: input.assetCode,
       assetIssuer: input.assetIssuer,
       treasuryWalletAddress: treasuryAddress,
+      ...(input.memoText?.trim() ? { memoText: input.memoText.trim() } : {}),
     };
   },
 

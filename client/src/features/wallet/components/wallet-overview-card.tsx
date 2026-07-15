@@ -251,6 +251,8 @@ export const WalletOverviewCard = () => {
 
     try {
       setIsSending(true);
+      await stellarWallet.connector.connect();
+      await ensureActiveStellarAccount(stellarWallet);
       const txHash = await stellarWallet.sendBalance({
         amount: amount.trim(),
         toAddress: recipient.trim(),

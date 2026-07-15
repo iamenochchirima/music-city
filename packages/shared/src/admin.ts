@@ -86,6 +86,48 @@ export const adminTreasuryOverviewSchema = z.object({
 });
 export type AdminTreasuryOverview = z.infer<typeof adminTreasuryOverviewSchema>;
 
+export const adminTreasuryTransferInputSchema = z
+  .object({
+    recipientWalletAddress: stellarWalletAddressSchema,
+    amount: positiveAmountSchema,
+    assetCode: stellarAssetCodeSchema.default("XLM"),
+    assetIssuer: optionalStellarAssetIssuerSchema,
+    memoText: z
+      .string()
+      .max(28)
+      .optional()
+      .transform((value) => {
+        const normalized = value?.trim();
+        return normalized ? normalized : undefined;
+      }),
+  })
+  .superRefine((value, context) => {
+    if (value.assetCode !== "XLM" && !value.assetIssuer) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["assetIssuer"],
+        message: "A non-native Stellar asset requires an issuer address",
+      });
+    }
+  });
+export type AdminTreasuryTransferInput = z.infer<
+  typeof adminTreasuryTransferInputSchema
+>;
+
+export const adminTreasuryTransferResultSchema = z.object({
+  txHash: z.string().min(1),
+  recipientWalletAddress: stellarWalletAddressSchema,
+  amount: positiveAmountSchema,
+  assetCode: stellarAssetCodeSchema,
+  assetIssuer: optionalStellarAssetIssuerSchema,
+  treasuryWalletAddress: stellarWalletAddressSchema,
+  memoText: z.string().optional(),
+  submittedAt: z.string(),
+});
+export type AdminTreasuryTransferResult = z.infer<
+  typeof adminTreasuryTransferResultSchema
+>;
+
 export const adminSubscriptionRecordSchema = z.object({
   id: z.string().min(1),
   walletAddress: stellarWalletAddressSchema,
