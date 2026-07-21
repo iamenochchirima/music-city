@@ -10,6 +10,7 @@
 **/coverage/
 **/.turbo/
 **/.cache/
+**/target/
 
 # debug
 npm-debug.log*

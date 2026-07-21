@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Music City — Instawards Statement of Work</title>
+  <style>
+    @page { size: A4; margin: 16mm 17mm 17mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #171717;
+      font: 10.5pt/1.42 Arial, Helvetica, sans-serif;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 4px; font-size: 25pt; line-height: 1.05; letter-spacing: -0.5px; }
+    h2 {
+      margin: 20px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1.5px solid #222;
+      font-size: 14pt;
+    }
+    h3 { margin: 13px 0 4px; font-size: 11pt; }
+    p { margin-bottom: 8px; }
+    ul { margin: 5px 0 9px; padding-left: 19px; }
+    li { margin-bottom: 3px; }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+    th, td { padding: 6px 7px; border: 1px solid #cfcfcf; text-align: left; vertical-align: top; }
+    th { background: #f0f0f0; font-size: 9.5pt; }
+    .header { padding: 13px 15px 12px; border: 2px solid #171717; }
+    .eyebrow { margin-bottom: 7px; color: #555; font-size: 8.5pt; font-weight: bold; letter-spacing: 1.2px; text-transform: uppercase; }
+    .subtitle { margin: 0; color: #444; font-size: 11.5pt; }
+    .details { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; margin-top: 14px; }
+    .details p { margin-bottom: 5px; }
+    .label { color: #555; font-size: 8.5pt; font-weight: bold; text-transform: uppercase; }
+    .callout { margin: 12px 0; padding: 10px 12px; border-left: 4px solid #222; background: #f5f5f5; }
+    .pending { color: #8b2f19; font-weight: bold; }
+    .amount { white-space: nowrap; text-align: right; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li::before { content: "☐"; display: inline-block; width: 20px; }
+    .page-break { break-before: page; }
+    .avoid-break { break-inside: avoid; }
+    .small { color: #555; font-size: 8.7pt; }
+    .footer-note { margin-top: 18px; padding-top: 8px; border-top: 1px solid #bbb; color: #555; font-size: 8.5pt; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="eyebrow">Instawards — Proposed 30-Day Statement of Work</div>
+    <h1>Music City</h1>
+    <p class="subtitle">Verifiable music ownership and royalty payouts on Stellar</p>
+  </header>
+
+  <section class="details">
+    <div>
+      <p><span class="label">Builder</span><br>Enoch N. Chirima</p>
+      <p><span class="label">Email</span><br>delightproductions102@gmail.com</p>
+      <p><span class="label">Chapter</span><br>Southern Africa</p>
+    </div>
+    <div>
+      <p><span class="label">Chapter Lead</span><br>Yaliwe Mlambo</p>
+      <p><span class="label">Proposed Sprint</span><br>27 July–25 August 2026</p>
+      <p><span class="label">Submission Date</span><br><span class="pending">To be confirmed</span></p>
+    </div>
+  </section>
+
+  <h2>1. Project Summary</h2>
+  <p>Music City is a music platform that helps artists document ownership splits, track qualified listening activity, and receive transparent royalty payouts through Stellar.</p>
+  <p>The working MVP already includes Stellar wallet connection, artist onboarding, track upload and streaming, subscriptions, royalty accounting, admin payout controls, and testnet USDC payments.</p>
+
+  <h2>2. Problem and Objective</h2>
+  <h3>Problem</h3>
+  <p>Independent artists often lack a clear, verifiable record of who owns a track and how its income should be shared. Music City currently stores royalty splits in its application database, so the active split cannot yet be independently verified on Stellar.</p>
+  <h3>30-Day Objective</h3>
+  <p>Deploy a Soroban royalty-split registry on Stellar Testnet, connect it to Music City, and demonstrate the complete flow from track ownership records to a verifiable testnet USDC royalty payout.</p>
+
+  <h2>3. Deliverables</h2>
+  <div class="avoid-break">
+    <h3>Deliverable 1 — Soroban Royalty Registry</h3>
+    <p>Build and deploy a tested Soroban contract that stores versioned royalty splits for each track and confirms that all recipient shares total 100%.</p>
+    <p><strong>Evidence:</strong> public source code, passing contract tests, testnet contract ID, and explorer transaction.</p>
+  </div>
+  <div class="avoid-break">
+    <h3>Deliverable 2 — Music City Integration</h3>
+    <p>Add backend and admin tools to publish an approved split to Soroban, read it back, store its transaction details, and show whether the application record matches the on-chain record.</p>
+    <p><strong>Evidence:</strong> repository commit, automated tests, admin screenshots, and public transaction links.</p>
+  </div>
+  <div class="avoid-break">
+    <h3>Deliverable 3 — Testnet Demo</h3>
+    <p>Record a short demonstration showing the artist, track, royalty recipients, Soroban split verification, royalty ledger, and a successful testnet USDC payout.</p>
+    <p><strong>Evidence:</strong> 3–5 minute video, screenshots, final repository commit, contract ID, payment hash, and reviewer guide.</p>
+  </div>
+
+  <h2>4. Timeline</h2>
+  <table>
+    <thead>
+      <tr><th>Week</th><th>Work</th><th>Output</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Week 1</td><td>Design and build the Soroban contract and tests.</td><td>Tested contract source.</td></tr>
+      <tr><td>Week 2</td><td>Deploy to testnet and build backend publish/read functions.</td><td>Contract ID and working API integration.</td></tr>
+      <tr><td>Week 3</td><td>Add admin publish, verification, and explorer links.</td><td>Working reviewer-facing interface.</td></tr>
+      <tr><td>Week 4</td><td>Complete testing, fix defects, and capture evidence.</td><td>Demo video and final evidence pack.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Budget</h2>
+  <table>
+    <thead>
+      <tr><th>Work</th><th class="amount">Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Soroban contract engineering and tests</td><td class="amount">$2,000</td></tr>
+      <tr><td>Backend and admin integration</td><td class="amount">$1,500</td></tr>
+      <tr><td>End-to-end testnet QA and demo</td><td class="amount">$1,000</td></tr>
+      <tr><td>Documentation and evidence packaging</td><td class="amount">$500</td></tr>
+      <tr><th>Total requested</th><th class="amount">$5,000</th></tr>
+    </tbody>
+  </table>
+  <p class="small">Requested as the USD equivalent paid in XLM, subject to Instawards approval and current program rules.</p>
+
+  <h2>6. Current Evidence</h2>
+  <ul>
+    <li>Repository: <a href="https://github.com/music-city/music-city">github.com/music-city/music-city</a></li>
+    <li>All workspace typechecks passed on 21 July 2026.</li>
+    <li>All 45 server tests passed.</li>
+    <li>All production builds completed successfully.</li>
+    <li>Music City has an active Stellar Testnet treasury with an established USDC trustline.</li>
+    <li>A confirmed outbound payment of 3 testnet USDC is publicly verifiable.</li>
+  </ul>
+  <div class="callout">
+    <strong>Verified payment:</strong><br>
+    <span class="small">058bab23795850e40565704ea07fc7641ce13947070a67437ee3f568de1c8e63</span>
+  </div>
+
+  <h2>7. Out of Scope</h2>
+  <ul>
+    <li>Mainnet deployment or real customer funds.</li>
+    <li>One blockchain payment for every individual play; royalties will be settled in auditable batches.</li>
+    <li>Arweave/Irys migration, mobile applications, scheduled payouts, and record-label contracts.</li>
+    <li>Legal copyright registration or replacement of statutory royalty systems.</li>
+  </ul>
+
+  <h2>8. Required Before Submission</h2>
+  <ul class="checklist">
+    <li>Confirm the sprint dates and actual submission date.</li>
+    <li>Add public client, API, and admin URLs.</li>
+    <li>Add a short founder biography.</li>
+    <li>Add Southern Africa chapter-engagement evidence.</li>
+    <li>Confirm prior Instaward/SCF funding history.</li>
+    <li>Confirm KYC readiness and the public disbursement wallet.</li>
+    <li>Confirm that the GitHub repository opens to a logged-out reviewer.</li>
+  </ul>
+
+  <h2>9. Acknowledgement</h2>
+  <ul class="checklist">
+    <li>The work can be completed within 30 calendar days.</li>
+    <li>The request funds new, defined work rather than completed work.</li>
+    <li>Progress will be measured against the deliverables and evidence above.</li>
+    <li>The builder will complete the required KYC process if approved.</li>
+    <li>Submission does not guarantee approval or funding.</li>
+  </ul>
+
+  <p class="footer-note">Prepared for review with Yaliwe Mlambo, Southern Africa Ambassador Chapter Lead. Draft prepared 21 July 2026.</p>
+</body>
+</html>

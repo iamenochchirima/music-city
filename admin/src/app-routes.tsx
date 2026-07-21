@@ -225,6 +225,9 @@ const formatDateTime = (value?: string) => {
 
 const formatSharePercent = (bps: number) => `${(bps / 100).toFixed(2)}%`;
 
+const stellarTransactionExplorerUrl = (txHash: string, network?: string) =>
+  `https://stellar.expert/explorer/${network?.toLowerCase().includes("testnet") ? "testnet" : "public"}/tx/${txHash}`;
+
 const amountScale = 10_000_000n;
 
 const amountToBaseUnits = (value: string) => {
@@ -1828,6 +1831,8 @@ const RoyaltiesPage = () => {
   const [isRunningPayouts, setIsRunningPayouts] = useState(false);
   const [isReconcilingPayouts, setIsReconcilingPayouts] = useState(false);
   const [isSplitLoading, setIsSplitLoading] = useState(false);
+  const [isPublishingSplit, setIsPublishingSplit] = useState(false);
+  const [isVerifyingSplit, setIsVerifyingSplit] = useState(false);
 
   const fetchRoyaltyWorkspace = async (token: string) => {
     const [
@@ -2253,6 +2258,54 @@ const RoyaltiesPage = () => {
     }
   };
 
+  const handlePublishSplit = async () => {
+    if (!session?.token || !selectedTrackId || !activeSplit) {
+      return;
+    }
+
+    try {
+      setIsPublishingSplit(true);
+      const result = await adminApi.publishTrackRoyaltySplit(
+        selectedTrackId,
+        session.token,
+      );
+      toast.success(`Published split v${result.split.version} to Soroban.`);
+      await refreshSelectedTrack(selectedTrackId, session.token);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to publish split to Soroban",
+      );
+    } finally {
+      setIsPublishingSplit(false);
+    }
+  };
+
+  const handleVerifySplit = async () => {
+    if (!session?.token || !selectedTrackId || !activeSplit) {
+      return;
+    }
+
+    try {
+      setIsVerifyingSplit(true);
+      const result = await adminApi.verifyTrackRoyaltySplit(
+        selectedTrackId,
+        session.token,
+      );
+      if (result.matches) {
+        toast.success(`Split v${result.split.version} matches Soroban.`);
+      } else {
+        toast.error(result.differences.join(" "));
+      }
+      await refreshSelectedTrack(selectedTrackId, session.token);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to verify the Soroban split",
+      );
+    } finally {
+      setIsVerifyingSplit(false);
+    }
+  };
+
   const toggleLedgerSelection = (entryId: string) => {
     setSelectedLedgerEntryIds((current) =>
       current.includes(entryId)
@@ -2443,12 +2496,13 @@ const RoyaltiesPage = () => {
           }
         />
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <StatTile
             label="Primary chain"
             value={config?.primaryChain?.toUpperCase() ?? "—"}
           />
           <StatTile label="Network" value={config?.primaryNetwork ?? "—"} />
+          <StatTile label="Registry" value={config?.registryKind ?? "offchain"} />
           <StatTile label="Pending volume" value={formatAssetSummary(
             pendingEntries.map((entry) => ({
               amount: entry.netAmount,
@@ -3265,7 +3319,7 @@ const RoyaltiesPage = () => {
                     )}
                   </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  <div className="mt-4 grid gap-3 md:grid-cols-5">
                     <StatTile label="Status" value={activeSplit?.status ?? "Draft"} />
                     <StatTile
                       label="Recipients"
@@ -3276,6 +3330,66 @@ const RoyaltiesPage = () => {
                       value={formatSharePercent(activeSplit?.totalBps ?? totalDraftBps)}
                     />
                     <StatTile label="Ledger entries" value={String(ledgerEntries.length)} />
+                    <StatTile
+                      label="On-chain"
+                      value={activeSplit?.registryVerificationStatus ?? "unverified"}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/8 pt-4">
+                    <Button
+                      type="button"
+                      className="h-10 rounded-md"
+                      disabled={!activeSplit || isPublishingSplit}
+                      onClick={() => void handlePublishSplit()}
+                    >
+                      {isPublishingSplit ? "Publishing..." : "Publish to Soroban"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-10 border border-white/8 text-slate-300 hover:bg-white/[0.04]"
+                      disabled={!activeSplit || isVerifyingSplit}
+                      onClick={() => void handleVerifySplit()}
+                    >
+                      {isVerifyingSplit ? "Verifying..." : "Verify on-chain"}
+                    </Button>
+                    {activeSplit?.registryTxHash ? (
+                      <a
+                        href={stellarTransactionExplorerUrl(
+                          activeSplit.registryTxHash,
+                          activeSplit.registryNetwork,
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center border border-white/8 px-3 text-sm text-emerald-200 hover:bg-white/[0.04]"
+                      >
+                        View publish transaction
+                        <CircleArrowOutUpRight className="ml-2 h-4 w-4" />
+                      </a>
+                    ) : config?.registryExplorerUrl ? (
+                      <a
+                        href={config.registryExplorerUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center border border-white/8 px-3 text-sm text-slate-300 hover:bg-white/[0.04]"
+                      >
+                        View contract
+                        <CircleArrowOutUpRight className="ml-2 h-4 w-4" />
+                      </a>
+                    ) : null}
+                    {activeSplit?.registryVerificationMessage ? (
+                      <p
+                        className={cn(
+                          "text-sm",
+                          activeSplit.registryVerificationStatus === "match"
+                            ? "text-emerald-200"
+                            : "text-amber-200",
+                        )}
+                      >
+                        {activeSplit.registryVerificationMessage}
+                      </p>
+                    ) : null}
                   </div>
                 </section>
 
@@ -3460,6 +3574,25 @@ const RoyaltiesPage = () => {
                             </div>
                           ))}
                         </div>
+                        {split.registryKind === "soroban" ? (
+                          <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-400">
+                            <span>Registry: Soroban</span>
+                            <span>Verification: {split.registryVerificationStatus}</span>
+                            {split.registryTxHash ? (
+                              <a
+                                href={stellarTransactionExplorerUrl(
+                                  split.registryTxHash,
+                                  split.registryNetwork,
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-emerald-200 hover:text-emerald-100"
+                              >
+                                Explorer transaction
+                              </a>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     ))
                   )}

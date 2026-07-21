@@ -28,6 +28,8 @@ import type {
   TrackRoyaltySplitRecord,
   RoyaltyPayoutExecutionResult,
   RoyaltyPayoutRecord,
+  RoyaltySplitPublicationResult,
+  RoyaltySplitVerificationResult,
   RunRoyaltyPayoutsInput,
   TrackSummary,
   UpsertTrackRoyaltySplitInput,
@@ -335,6 +337,21 @@ export const adminApi = {
         token,
       )
       .then((response) => response.split);
+  },
+
+  publishTrackRoyaltySplit(trackId: string, token: string) {
+    return httpClient.post<RoyaltySplitPublicationResult>(
+      `/royalties/tracks/${trackId}/splits/publish`,
+      {},
+      token,
+    );
+  },
+
+  verifyTrackRoyaltySplit(trackId: string, token: string) {
+    return httpClient.get<RoyaltySplitVerificationResult>(
+      `/royalties/tracks/${trackId}/splits/verify`,
+      token,
+    );
   },
 
   updateTreasury(input: AdminTreasurySettings, token: string) {

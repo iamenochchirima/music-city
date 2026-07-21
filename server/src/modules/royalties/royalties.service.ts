@@ -10,6 +10,8 @@ import {
   royaltyPayoutReconciliationResultSchema,
   royaltyPayoutRecordSchema,
   royaltyPayoutSettingsSchema,
+  royaltySplitPublicationResultSchema,
+  royaltySplitVerificationResultSchema,
   runRoyaltyPayoutsSchema,
   trackRoyaltySplitListSchema,
   trackRoyaltySplitRecordSchema,
@@ -26,6 +28,9 @@ import {
   type RoyaltyPayoutReconciliationResult,
   type RoyaltyPayoutRecord,
   type RoyaltyPayoutSettings,
+  type RoyaltySplitPublicationResult,
+  type RoyaltySplitVerificationResult,
+  type SorobanTrackSplit,
   type TrackRoyaltySplitList,
   type TrackRoyaltySplitRecord,
   type RunRoyaltyPayoutsInput,
@@ -38,6 +43,7 @@ import { createId } from "../../services/id.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { royaltiesRepository } from "./royalties.repository.js";
+import { sorobanRegistryService } from "./soroban-registry.service.js";
 import { stellarPayoutService } from "./stellar-payout.service.js";
 
 const ROYALTY_PAYOUT_SETTINGS_KEY = "royalty_payout_settings";
@@ -49,6 +55,9 @@ const defaultConfig = (): RoyaltyEngineConfig =>
     primaryNetwork: env.ROYALTY_REGISTRY_NETWORK,
     registryKind: env.ROYALTY_REGISTRY_CONTRACT_ID ? "soroban" : "offchain",
     registryContractId: env.ROYALTY_REGISTRY_CONTRACT_ID,
+    registryExplorerUrl: env.ROYALTY_REGISTRY_CONTRACT_ID
+      ? sorobanRegistryService.contractExplorerUrl()
+      : undefined,
     settlementRails: ["stellar", "manual"],
     payoutAssetCode: env.STELLAR_SETTLEMENT_ASSET_CODE,
     payoutAssetIssuer: env.STELLAR_SETTLEMENT_ASSET_ISSUER,
@@ -159,6 +168,59 @@ const validateRecipients = (recipients: UpsertTrackRoyaltySplitInput["recipients
   }
 
   return totalBps;
+};
+
+const compareSplitWithRegistry = (
+  split: TrackRoyaltySplitRecord,
+  onChainSplit?: SorobanTrackSplit,
+) => {
+  const differences: string[] = [];
+
+  if (!onChainSplit) {
+    return ["No split is published for this track and version on Soroban."];
+  }
+
+  if (onChainSplit.version !== split.version) {
+    differences.push(
+      `Version differs: Music City has ${split.version}; Soroban has ${onChainSplit.version}.`,
+    );
+  }
+
+  const expectedMetadataHash = sorobanRegistryService.metadataHashForSplit(split);
+  if (onChainSplit.metadataHash !== expectedMetadataHash) {
+    differences.push("The canonical split metadata hash does not match.");
+  }
+
+  if (onChainSplit.recipients.length !== split.recipients.length) {
+    differences.push(
+      `Recipient count differs: Music City has ${split.recipients.length}; Soroban has ${onChainSplit.recipients.length}.`,
+    );
+  }
+
+  const recipientCount = Math.max(
+    split.recipients.length,
+    onChainSplit.recipients.length,
+  );
+
+  for (let index = 0; index < recipientCount; index += 1) {
+    const local = split.recipients[index];
+    const onChain = onChainSplit.recipients[index];
+
+    if (!local || !onChain) {
+      continue;
+    }
+
+    if (
+      local.walletAddress !== onChain.walletAddress ||
+      local.chain !== onChain.chain ||
+      local.role !== onChain.role ||
+      local.shareBps !== onChain.shareBps
+    ) {
+      differences.push(`Recipient ${index + 1} differs between Music City and Soroban.`);
+    }
+  }
+
+  return differences;
 };
 
 const sortLedgerEntries = (entries: RoyaltyLedgerEntry[]) =>
@@ -368,10 +430,11 @@ export const royaltiesService = {
         trackId,
         version: nextVersion,
         status: parsed.activate ? "active" : "draft",
-        registryKind: config.registryKind,
+        registryKind: "offchain",
         registryChain: config.primaryChain,
         registryNetwork: config.primaryNetwork,
         registryContractId: config.registryContractId,
+        registryVerificationStatus: "unverified",
         recipients: parsed.recipients,
         totalBps,
         notes: parsed.notes,
@@ -379,6 +442,177 @@ export const royaltiesService = {
         updatedAt: timestamp,
       }),
     );
+  },
+
+  async publishTrackSplit(trackId: string): Promise<RoyaltySplitPublicationResult> {
+    const history = (await royaltiesRepository.listTrackSplits(trackId))
+      .map((split) => trackRoyaltySplitRecordSchema.parse(split))
+      .sort((left, right) => left.version - right.version);
+    const activeSplit = history.find((split) => split.status === "active");
+
+    if (!activeSplit) {
+      throw new HttpError(404, "No active royalty split exists for this track");
+    }
+
+    const config = sorobanRegistryService.getConfig();
+    const latestOnChain = await sorobanRegistryService.getTrackSplit(trackId);
+
+    if (latestOnChain && latestOnChain.version > activeSplit.version) {
+      throw new HttpError(
+        409,
+        "Soroban contains a newer split version than Music City. Verify and reconcile before publishing.",
+      );
+    }
+
+    if (latestOnChain) {
+      const matchingLocalVersion = history.find(
+        (split) => split.version === latestOnChain.version,
+      );
+      if (!matchingLocalVersion) {
+        throw new HttpError(
+          409,
+          `Music City does not contain Soroban split version ${latestOnChain.version}.`,
+        );
+      }
+
+      const differences = compareSplitWithRegistry(
+        matchingLocalVersion,
+        latestOnChain,
+      );
+      if (differences.length > 0) {
+        throw new HttpError(
+          409,
+          `Existing Soroban split does not match Music City: ${differences.join(" ")}`,
+        );
+      }
+    }
+
+    const firstMissingVersion = (latestOnChain?.version ?? 0) + 1;
+    const unpublished = history.filter(
+      (split) =>
+        split.version >= firstMissingVersion && split.version <= activeSplit.version,
+    );
+
+    let activePublication:
+      | Awaited<ReturnType<typeof sorobanRegistryService.publishTrackSplit>>
+      | undefined;
+    let publishedActiveSplit = activeSplit;
+
+    for (const split of unpublished) {
+      const publication = await sorobanRegistryService.publishTrackSplit(split);
+      const timestamp = new Date().toISOString();
+      const updated = trackRoyaltySplitRecordSchema.parse({
+        ...split,
+        registryKind: "soroban",
+        registryChain: "stellar",
+        registryNetwork: config.network,
+        registryContractId: config.contractId,
+        registryTxHash: publication.txHash,
+        registryMetadataHash: publication.metadataHash,
+        registryPublishedAt: timestamp,
+        registryVerificationStatus: "match",
+        registryVerifiedAt: timestamp,
+        registryVerificationMessage: "Music City and Soroban records match.",
+        updatedAt: timestamp,
+      });
+      await royaltiesRepository.upsertSplit(updated);
+
+      if (split.id === activeSplit.id) {
+        activePublication = publication;
+        publishedActiveSplit = updated;
+      }
+    }
+
+    if (!activePublication) {
+      const verifiedOnChain = await sorobanRegistryService.getTrackSplitVersion(
+        trackId,
+        activeSplit.version,
+      );
+      const differences = compareSplitWithRegistry(activeSplit, verifiedOnChain);
+
+      if (
+        differences.length > 0 ||
+        !verifiedOnChain ||
+        !activeSplit.registryTxHash
+      ) {
+        throw new HttpError(
+          409,
+          differences.length > 0
+            ? differences.join(" ")
+            : "The split is already on Soroban, but its original publication transaction is not recorded.",
+        );
+      }
+
+      activePublication = {
+        onChainSplit: verifiedOnChain,
+        metadataHash: sorobanRegistryService.metadataHashForSplit(activeSplit),
+        txHash: activeSplit.registryTxHash,
+        ledger: undefined,
+        contractId: config.contractId,
+        network: config.network,
+        explorerUrl: sorobanRegistryService.transactionExplorerUrl(
+          activeSplit.registryTxHash,
+        ),
+      };
+    }
+
+    if (!activePublication) {
+      throw new HttpError(500, "Soroban publication did not produce a result");
+    }
+
+    return royaltySplitPublicationResultSchema.parse({
+      split: publishedActiveSplit,
+      onChainSplit: activePublication.onChainSplit,
+      contractId: activePublication.contractId,
+      network: activePublication.network,
+      txHash: activePublication.txHash,
+      explorerUrl: activePublication.explorerUrl,
+    });
+  },
+
+  async verifyTrackSplit(trackId: string): Promise<RoyaltySplitVerificationResult> {
+    const history = (await royaltiesRepository.listTrackSplits(trackId)).map((split) =>
+      trackRoyaltySplitRecordSchema.parse(split),
+    );
+    const activeSplit = history.find((split) => split.status === "active");
+
+    if (!activeSplit) {
+      throw new HttpError(404, "No active royalty split exists for this track");
+    }
+
+    const config = sorobanRegistryService.getConfig();
+    const onChainSplit = await sorobanRegistryService.getTrackSplitVersion(
+      trackId,
+      activeSplit.version,
+    );
+    const differences = compareSplitWithRegistry(activeSplit, onChainSplit);
+    const timestamp = new Date().toISOString();
+    const matches = differences.length === 0;
+    const updated = trackRoyaltySplitRecordSchema.parse({
+      ...activeSplit,
+      registryKind: matches ? "soroban" : activeSplit.registryKind,
+      registryChain: "stellar",
+      registryNetwork: config.network,
+      registryContractId: config.contractId,
+      registryMetadataHash: sorobanRegistryService.metadataHashForSplit(activeSplit),
+      registryVerificationStatus: matches ? "match" : "mismatch",
+      registryVerifiedAt: timestamp,
+      registryVerificationMessage: matches
+        ? "Music City and Soroban records match."
+        : differences.join(" "),
+      updatedAt: timestamp,
+    });
+    await royaltiesRepository.upsertSplit(updated);
+
+    return royaltySplitVerificationResultSchema.parse({
+      split: updated,
+      onChainSplit,
+      contractId: config.contractId,
+      network: config.network,
+      matches,
+      differences,
+      verifiedAt: timestamp,
+    });
   },
 
   async ensureTrackPurchaseLedgerEntries(payment: PaymentRecord): Promise<RoyaltyLedgerEntry[]> {

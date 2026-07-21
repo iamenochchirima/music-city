@@ -30,6 +30,9 @@ pnpm dev:client
 - Mux-signed HLS playback for audio or local fallback playback
 - local entitlement records and optional Stellar asset-based subscriber gate
 - encrypted archive generation with optional remote archive upload hook
+- versioned Soroban royalty-split registry deployed to Stellar Testnet
+- admin-controlled split publishing, on-chain read-back verification, and explorer links
+- Stellar treasury royalty payout execution and reconciliation
 
 Initialize the Postgres schema and import any existing JSON-backed development
 data with:
@@ -91,6 +94,8 @@ Configure these values in the server hosting environment:
 - `CLIENT_ORIGIN`, `ADMIN_CLIENT_ORIGIN`, and `APP_BASE_URL`: public `https://` URLs
 - `STELLAR_HOME_DOMAIN` and `STELLAR_WEB_AUTH_DOMAIN`: deployed Stellar auth domains
 - `STELLAR_TREASURY_ADDRESS`: the public Stellar account receiving payments
+- `STELLAR_SOROBAN_RPC_URL`: the Soroban RPC endpoint used for registry calls
+- `ROYALTY_REGISTRY_CONTRACT_ID`: the deployed royalty-split registry contract
 - the `STORAGE_PROVIDER=s3` variables listed above
 
 Generate each application secret independently, for example:
