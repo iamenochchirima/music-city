@@ -26,6 +26,7 @@ export const createApp = () => {
         callback(new Error("Origin not allowed by CORS"));
       },
       credentials: true,
+      exposedHeaders: ["ETag"],
     }),
   );
   app.use(helmet());
