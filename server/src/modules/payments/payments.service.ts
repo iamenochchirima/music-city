@@ -310,6 +310,10 @@ export const paymentsService = {
       throw new HttpError(400, "Artist onboarding has already been unlocked");
     }
 
+    if (Number(env.ARTIST_ONBOARDING_FEE_PRICE) === 0) {
+      throw new HttpError(400, "Artist onboarding is free");
+    }
+
     const intent = await createIntentRecord({
       walletAddress,
       productType: "artist_onboarding_fee",

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   optionalStellarAssetIssuerSchema,
+  nonNegativeAmountSchema,
   positiveAmountSchema,
   stellarAssetCodeSchema,
   stellarWalletAddressSchema,
@@ -44,7 +45,7 @@ export const paymentIntentSchema = z.object({
   productType: paymentProductTypeSchema,
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
-  amount: positiveAmountSchema,
+  amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
   destinationAddress: stellarWalletAddressSchema,
@@ -65,10 +66,11 @@ export const paymentRecordSchema = z.object({
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
   txHash: z.string(),
-  amount: positiveAmountSchema,
+  amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
   status: paymentStatusSchema,
+  waived: z.boolean().optional(),
   confirmedAt: z.string(),
   createdAt: z.string(),
 });

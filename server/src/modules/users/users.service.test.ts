@@ -20,7 +20,7 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
-test("an existing artist role does not bypass the onboarding payment", async () => {
+test("zero-priced artist onboarding grants artist access", async () => {
   const profile = {
     id: "usr-artist-1",
     walletAddress,
@@ -44,22 +44,27 @@ test("an existing artist role does not bypass the onboarding payment", async () 
       "listPaymentsByWallet",
       (async () => []) as typeof paymentsRepository.listPaymentsByWallet,
     ),
+    restore(
+      paymentsRepository,
+      "upsertIntent",
+      (async (intent) => intent) as typeof paymentsRepository.upsertIntent,
+    ),
+    restore(
+      paymentsRepository,
+      "upsertPayment",
+      (async (payment) => payment) as typeof paymentsRepository.upsertPayment,
+    ),
   ];
 
   try {
     const hydrated = await usersService.getProfile(walletAddress);
 
-    assert.equal(hydrated?.artistOnboardingFeePaid, false);
-    await assert.rejects(
-      () =>
-        usersService.requireArtistOnboardingAccess(
-          walletAddress,
-          "Create a profile first",
-        ),
-      (error: { message?: string; statusCode?: number }) =>
-        error.statusCode === 402 &&
-        error.message === "Pay the onboarding fee before accessing artist tools",
+    assert.equal(hydrated?.artistOnboardingFeePaid, true);
+    const access = await usersService.requireArtistOnboardingAccess(
+      walletAddress,
+      "Create a profile first",
     );
+    assert.equal(access.role, "artist");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
