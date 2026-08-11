@@ -68,6 +68,10 @@ const envSchema = z
     DYNAMIC_ENVIRONMENT_ID: z.string().optional(),
     DYNAMIC_JWKS_URL: z.string().optional(),
     STELLAR_HORIZON_URL: z.string().default("https://horizon-testnet.stellar.org"),
+    STELLAR_SOROBAN_RPC_URL: z
+      .string()
+      .url()
+      .default("https://soroban-testnet.stellar.org"),
     STELLAR_ALLOW_TESTNET_IN_PRODUCTION: z
       .string()
       .optional()
@@ -285,6 +289,18 @@ const envSchema = z
           path: ["ROYALTY_REGISTRY_NETWORK"],
           message:
             "Production must not use a testnet royalty registry network unless STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true.",
+        });
+      }
+
+      if (
+        !value.STELLAR_ALLOW_TESTNET_IN_PRODUCTION &&
+        usesTestnetHost(value.STELLAR_SOROBAN_RPC_URL)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_SOROBAN_RPC_URL"],
+          message:
+            "Production must not use a Stellar testnet Soroban RPC URL unless STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true.",
         });
       }
 

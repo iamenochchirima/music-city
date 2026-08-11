@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.30.1+sha512.3590e550d5384caa39bd5c7c739f72270234b2f6059e13018f975c313b1eb9fefcc09714048765d4d9efe961382c312e624572c0420762bdc5d5940cdf9be73a",
   "scripts": {
+    "contract:build": "stellar contract build --manifest-path contracts/Cargo.toml",
+    "contract:test": "cargo test --manifest-path contracts/Cargo.toml",
     "dev:admin": "pnpm --filter admin dev",
     "dev:client": "pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",

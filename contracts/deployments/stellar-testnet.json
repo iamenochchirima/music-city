@@ -1,0 +1,19 @@
+{
+  "contract": "royalty-split-registry",
+  "network": "stellar:testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "deployedAt": "2026-07-21",
+  "contractId": "CD2ONBXRTTPKFHNOI2BV3UYUZOOC75R5LPUPCLSRDZHUWM5OAQVACNF3",
+  "administrator": "GCW3HD5EBMVNBGOWCPTP3WNYXXT5OYB2UIMKDNSL3IZRGLVMU4OEKFWO",
+  "deployer": "GA5MBQ4ZMRRLJP3RW44LX2OGKGUTTBAZO6TC5EXSBFVO7KJURGRZ3WHM",
+  "wasmHash": "a6647a86cfc2d24148fb1f13051bd0040d6759f00d44429fe762a7959baa2d61",
+  "wasmUploadTransaction": "403d783a8ebc1dbf92a6a99232142bf41b0dd85d63c2e45d65538c53ee1c4e76",
+  "deploymentTransaction": "c313274db1575c8c018dd2646e4e388e9a2794b0d21f738fbe55fc7e500b75d6",
+  "evidenceInvocation": {
+    "trackId": "music-city-grant-evidence-2026",
+    "version": 1,
+    "ledger": 3721516,
+    "metadataHash": "6fd071a8040efa11e6d6ead48349d8312654871df506647a4bce89be102f320a",
+    "transaction": "960ccef9c9b5d2d7c9ed2b3721be3884ba464722278044fb32941a685059a98b"
+  }
+}

@@ -60,19 +60,18 @@ export const uploadsApi = {
 
     onProgress?.(0);
 
-    const isDirectS3Upload =
-      uploadSession.provider === "s3" && Boolean(uploadSession.directUploadUrl);
-    const response = await fetch(
-      isDirectS3Upload ? uploadSession.directUploadUrl! : uploadSession.uploadUrl,
-      {
+    // Upload through the API relay. The direct S3-compatible URL points at
+    // Backblaze and requires a bucket CORS preflight from every web origin.
+    // The relay keeps storage-provider CORS out of the browser path while
+    // preserving the same presigned upload on the server.
+    const response = await fetch(uploadSession.uploadUrl, {
       method: uploadSession.method,
       headers: {
         ...uploadSession.headers,
-        ...(isDirectS3Upload ? {} : { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${token}`,
       },
       body: file,
-      },
-    );
+    });
 
     if (!response.ok) {
       throw new Error("File upload failed");

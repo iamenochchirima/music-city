@@ -26,7 +26,7 @@ Still missing:
 
 - [ ] Ad revenue allocation
 - [ ] Pooled subscription allocation by consumption
-- [ ] Soroban split registry contract
+- [x] Soroban split registry contract
 - [x] Full admin payout operations UI
 - [ ] Scheduled payout runner
 - [x] Runtime test execution in this environment
@@ -175,12 +175,12 @@ Still missing:
 
 ## Phase 9: Soroban Split Registry
 
-- [ ] Design Soroban `RoyaltySplitRegistry` contract interface
-- [ ] Implement track split version storage on Soroban
-- [ ] Mirror active backend splits to Soroban
-- [ ] Store contract metadata on split records
-- [ ] Add verification step that off-chain and on-chain split match
-- [ ] Decide when on-chain registry becomes canonical source of split rights
+- [x] Design Soroban `RoyaltySplitRegistry` contract interface
+- [x] Implement track split version storage on Soroban
+- [x] Mirror active backend splits to Soroban
+- [x] Store contract metadata on split records
+- [x] Add verification step that off-chain and on-chain split match
+- [x] Decide when on-chain registry becomes canonical source of split rights
 - [ ] Keep payouts backend-driven until registry is stable
 
 ## Phase 10: QA And Operational Readiness

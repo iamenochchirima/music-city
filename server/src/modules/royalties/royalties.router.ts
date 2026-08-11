@@ -49,4 +49,22 @@ royaltiesRouter.put(
   }),
 );
 
+royaltiesRouter.post(
+  "/tracks/:trackId/splits/publish",
+  asyncHandler(async (request, response) => {
+    response.json(
+      await royaltiesService.publishTrackSplit(String(request.params.trackId)),
+    );
+  }),
+);
+
+royaltiesRouter.get(
+  "/tracks/:trackId/splits/verify",
+  asyncHandler(async (request, response) => {
+    response.json(
+      await royaltiesService.verifyTrackSplit(String(request.params.trackId)),
+    );
+  }),
+);
+
 export { royaltiesRouter };
