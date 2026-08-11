@@ -66,6 +66,73 @@ const hasArtistOnboardingPayment = async (walletAddress: string) => {
   );
 };
 
+const isArtistOnboardingFree = () =>
+  Number(env.ARTIST_ONBOARDING_FEE_PRICE) === 0;
+
+const ensureFreeArtistOnboardingRecord = async (walletAddress: string) => {
+  if (!isArtistOnboardingFree()) {
+    return;
+  }
+
+  const existing = await paymentsRepository.listPaymentsByWallet(walletAddress);
+  if (
+    existing.some(
+      (payment) =>
+        payment.productType === "artist_onboarding_fee" &&
+        payment.status === "confirmed",
+    )
+  ) {
+    return;
+  }
+
+  const timestamp = nowIso();
+  const recordKey = createHash("sha256")
+    .update(walletAddress)
+    .digest("hex")
+    .slice(0, 24);
+  const intentId = `payi_waived_${recordKey}`;
+  const paymentId = `pay_waived_${recordKey}`;
+  const waivedTxHash = `waived:artist-onboarding:${recordKey}`;
+
+  await paymentsRepository.upsertIntent({
+    id: intentId,
+    walletAddress,
+    productType: "artist_onboarding_fee",
+    amount: "0",
+    assetCode: "XLM",
+    destinationAddress: walletAddress,
+    memo: `artist_onboarding_fee:waived:${recordKey}`,
+    status: "confirmed",
+    txHash: waivedTxHash,
+    expiresAt: timestamp,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  await paymentsRepository.upsertPayment({
+    id: paymentId,
+    intentId,
+    walletAddress,
+    productType: "artist_onboarding_fee",
+    txHash: waivedTxHash,
+    amount: "0",
+    assetCode: "XLM",
+    status: "confirmed",
+    waived: true,
+    confirmedAt: timestamp,
+    createdAt: timestamp,
+  });
+};
+
+const getArtistOnboardingAccess = async (walletAddress: string) => {
+  if (isArtistOnboardingFree()) {
+    await ensureFreeArtistOnboardingRecord(walletAddress);
+    return true;
+  }
+
+  return hasArtistOnboardingPayment(walletAddress);
+};
+
 const withArtistAccess = async (profile: UserProfile | null) => {
   const hydrated = withMediaUrls(profile);
 
@@ -75,7 +142,10 @@ const withArtistAccess = async (profile: UserProfile | null) => {
 
   return {
     ...hydrated,
-    artistOnboardingFeePaid: await hasArtistOnboardingPayment(hydrated.walletAddress),
+    artistOnboardingFeePaid:
+      hydrated.role === "artist"
+        ? await getArtistOnboardingAccess(hydrated.walletAddress)
+        : false,
   };
 };
 
@@ -142,7 +212,7 @@ export const usersService = {
   },
 
   async hasArtistOnboardingAccess(walletAddress: string) {
-    return hasArtistOnboardingPayment(walletAddress);
+    return getArtistOnboardingAccess(walletAddress);
   },
 
   async requireArtistOnboardingAccess(
@@ -178,7 +248,10 @@ export const usersService = {
       email: parsed.email ?? existing?.email ?? "",
       displayName: parsed.displayName,
       role: parsed.role,
-      artistOnboardingFeePaid: await this.hasArtistOnboardingAccess(walletAddress),
+      artistOnboardingFeePaid:
+        parsed.role === "artist"
+          ? await this.hasArtistOnboardingAccess(walletAddress)
+          : false,
       location: parsed.location ?? existing?.location ?? "",
       profileImageStorageKey:
         ensureOwnedProfileStorageKey(

@@ -49,6 +49,13 @@ export const positiveAmountSchema = z
   .refine((value) => Number(value) > 0, "Amount must be greater than zero")
   .transform((value) => trimString(value));
 
+export const nonNegativeAmountSchema = z
+  .string()
+  .trim()
+  .regex(DECIMAL_AMOUNT_REGEX, "Amount must be a non-negative number with up to 7 decimal places")
+  .refine((value) => Number(value) >= 0, "Amount must not be negative")
+  .transform((value) => trimString(value));
+
 export const optionalPositiveAmountSchema = z
   .string()
   .max(32)

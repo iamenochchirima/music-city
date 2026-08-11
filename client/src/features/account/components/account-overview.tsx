@@ -315,7 +315,9 @@ export const AccountOverview = () => {
                       {payment.amount} {payment.assetCode}
                     </p>
                   </div>
-                  <p className="text-sm text-emerald-300">Confirmed</p>
+                  <p className="text-sm text-emerald-300">
+                    {payment.waived || payment.amount === "0" ? "Waived" : "Confirmed"}
+                  </p>
                 </div>
               ))
             )}
