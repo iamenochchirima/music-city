@@ -6,6 +6,7 @@ import { ListPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { playlistsApi } from "@/features/music/lib/playlists-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -13,6 +14,7 @@ export const SaveToPlaylistButton = ({ track }: { track: TrackSummary }) => {
   const { session } = useAuth();
   const [playlists, setPlaylists] = useState<PlaylistSummary[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
+  const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -69,6 +71,32 @@ export const SaveToPlaylistButton = ({ track }: { track: TrackSummary }) => {
     }
   };
 
+  const createPlaylistAndSaveTrack = async () => {
+    const token = session?.token;
+    const title = newPlaylistTitle.trim();
+
+    if (!token || !title) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const playlist = await playlistsApi.createPlaylist(token, {
+        title,
+        visibility: "private",
+      });
+      await playlistsApi.addTrackToPlaylist(token, playlist.id, { trackId: track.id });
+      setPlaylists((current) => [playlist, ...current]);
+      toast.success("Private playlist created and track saved.");
+      setIsOpen(false);
+      setNewPlaylistTitle("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create playlist");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <Button
@@ -103,6 +131,36 @@ export const SaveToPlaylistButton = ({ track }: { track: TrackSummary }) => {
                   </option>
                 ))}
               </select>
+
+              <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                <p className="text-sm font-medium text-white">Create a new playlist</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  It will be private by default and this track will be added straight away.
+                </p>
+                <div className="mt-3 flex gap-3">
+                  <Input
+                    value={newPlaylistTitle}
+                    onChange={(event) => setNewPlaylistTitle(event.target.value)}
+                    placeholder="Playlist name"
+                    className="border-white/10 bg-slate-950 text-white"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void createPlaylistAndSaveTrack();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0 border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    disabled={!newPlaylistTitle.trim() || isSaving}
+                    onClick={() => void createPlaylistAndSaveTrack()}
+                  >
+                    Create & save
+                  </Button>
+                </div>
+              </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <Button

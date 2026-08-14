@@ -22,6 +22,7 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -339,6 +340,15 @@ const GlobalPlaybackBar = ({
       </div>
 
       <div className="fixed bottom-4 left-1/2 z-50 hidden w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 rounded-[28px] border border-white/10 bg-[#0d1324]/96 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:block">
+        <button
+          type="button"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-white"
+          onClick={() => void dismissPlayback()}
+          aria-label="Close player"
+          title="Close player"
+        >
+          <X className="h-4 w-4" />
+        </button>
         <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_180px] lg:items-center">
           <div className="flex min-w-0 items-center gap-4">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-900">

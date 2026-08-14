@@ -12,6 +12,8 @@ export const PlaylistGrid = ({
   playlists: PlaylistSummary[];
   hrefBuilder?: (playlist: PlaylistSummary) => string;
 }) => {
+  const isPersonalLibrary = Boolean(hrefBuilder);
+
   if (playlists.length === 0) {
     return (
       <div className="rounded-lg border border-white/10 bg-white/5 p-8 text-sm text-slate-300">
@@ -28,15 +30,17 @@ export const PlaylistGrid = ({
           href={hrefBuilder ? hrefBuilder(playlist) : `/playlists/${playlist.id}`}
         >
           <Card className="h-full border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
-            <div className="aspect-square border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
-            <CardHeader className="space-y-2">
+            <div
+              className={`${isPersonalLibrary ? "aspect-[16/7]" : "aspect-square"} border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]`}
+            />
+            <CardHeader className={`${isPersonalLibrary ? "p-5" : ""} space-y-2`}>
               <p className="text-xs uppercase tracking-[0.24em] text-emerald-300">
                 {playlist.visibility}
               </p>
               <CardTitle className="text-xl">{playlist.title}</CardTitle>
               <p className="text-sm text-slate-400">{playlist.ownerDisplayName}</p>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-300">
+            <CardContent className={`${isPersonalLibrary ? "px-5 pb-5 pt-0" : ""} space-y-3 text-sm text-slate-300`}>
               <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2">
                 <span>{playlist.trackCount} tracks</span>
                 <span>{playlist.visibility === "public" ? "Open" : "Private"}</span>
