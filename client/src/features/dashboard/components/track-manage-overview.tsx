@@ -3,31 +3,25 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { TrackSummary } from "@music-city/shared";
-import { ArrowLeft, LoaderCircle, Trash2 } from "lucide-react";
+import type { ArtistSummary, TrackCredit, TrackCreditRole, TrackSummary } from "@music-city/shared";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { tracksApi } from "@/features/music/lib/tracks-api";
+import { usersApi } from "@/features/users/lib/users-api";
 
-type EditableTrackVisibility = TrackSummary["visibility"];
-
-const visibilityOptions: Array<{
-  value: EditableTrackVisibility;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "unpublished",
-    label: "Unpublished",
-    description: "Keep the song out of discovery while you prepare the release.",
-  },
-  {
-    value: "published",
-    label: "Published",
-    description: "Make the song visible in discovery and open for listening.",
-  },
+const CREDIT_ROLES: TrackCreditRole[] = [
+  "songwriter",
+  "composer",
+  "producer",
+  "publisher",
+  "lyricist",
+  "remixer",
+  "engineer",
 ];
 
 export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
@@ -35,8 +29,17 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
   const { session } = useAuth();
   const [track, setTrack] = useState<TrackSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isMetadataSaving, setIsMetadataSaving] = useState(false);
+  const [isrc, setIsrc] = useState("");
+  const [description, setDescription] = useState("");
+  const [isExplicit, setIsExplicit] = useState(false);
+  const [featuredArtists, setFeaturedArtists] = useState("");
+  const [credits, setCredits] = useState<TrackCredit[]>([]);
+  const [newCreditRole, setNewCreditRole] = useState<TrackCreditRole>("songwriter");
+  const [newCreditName, setNewCreditName] = useState("");
+  const [newCreditArtistId, setNewCreditArtistId] = useState("");
+  const [artistOptions, setArtistOptions] = useState<ArtistSummary[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +54,17 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
         const nextTrack = await tracksApi.getManageTrack(session.token, trackId);
 
         if (!cancelled) {
+          if (!nextTrack) {
+            setTrack(null);
+            return;
+          }
+
           setTrack(nextTrack);
+          setIsrc(nextTrack.isrc ?? "");
+          setDescription(nextTrack.description ?? "");
+          setIsExplicit(nextTrack.isExplicit ?? false);
+          setFeaturedArtists(nextTrack.featuredArtists?.join(", ") ?? "");
+          setCredits(nextTrack.credits ?? []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -73,28 +86,19 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     };
   }, [session?.token, trackId]);
 
-  const updateVisibility = async (visibility: EditableTrackVisibility) => {
-    if (!session?.token || !track) {
-      return;
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    if (track.visibility === visibility) {
-      return;
-    }
+    void usersApi.listArtists().then((artists) => {
+      if (!cancelled) {
+        setArtistOptions(artists);
+      }
+    }).catch(() => undefined);
 
-    try {
-      setIsSaving(true);
-      const updatedTrack = await tracksApi.updateTrackVisibility(session.token, track.id, visibility);
-      setTrack(updatedTrack);
-      toast.success(visibility === "published" ? "Track published." : "Track unpublished.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to update track visibility",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const deleteTrack = async () => {
     if (!session?.token || !track) {
@@ -123,6 +127,53 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     }
   };
 
+  const addCredit = () => {
+    const name = newCreditName.trim();
+
+    if (!name) {
+      return;
+    }
+
+    setCredits((current) => [
+      ...current,
+      {
+        role: newCreditRole,
+        name,
+        artistId: newCreditArtistId || undefined,
+      },
+    ]);
+    setNewCreditName("");
+    setNewCreditArtistId("");
+  };
+
+  const saveMetadata = async () => {
+    if (!session?.token || !track) {
+      return;
+    }
+
+    try {
+      setIsMetadataSaving(true);
+      const updated = await tracksApi.updateTrackMetadata(session.token, track.id, {
+        isrc: isrc.trim(),
+        description: description.trim(),
+        isExplicit,
+        featuredArtists: featuredArtists
+          .split(",")
+          .map((artist) => artist.trim())
+          .filter(Boolean),
+        credits,
+      });
+      setTrack(updated);
+      toast.success("Track metadata saved.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save track metadata",
+      );
+    } finally {
+      setIsMetadataSaving(false);
+    }
+  };
+
   if (!session) {
     return (
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
@@ -147,8 +198,6 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     );
   }
 
-  const currentVisibility = track.visibility;
-
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -163,13 +212,24 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </Link>
         </Button>
 
-        <Button
-          variant="outline"
-          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-          onClick={() => router.push("/discover")}
-        >
-          Open discover
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+          >
+            <Link href={track.releaseId ? `/dashboard/releases/${track.releaseId}` : "/dashboard/releases"}>
+              {track.releaseId ? "Manage release" : "Add to release"}
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+            onClick={() => router.push("/discover")}
+          >
+            Open discover
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
@@ -200,72 +260,114 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </div>
           <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
-              Visibility
+              Release
             </p>
-            <p className="mt-2 text-base capitalize text-emerald-300">
-              {currentVisibility === "published" ? "Published" : "Unpublished"}
+            <p className="mt-2 truncate text-base text-white">
+              {track.releaseTitle ?? "Not assigned"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-        <div className="max-w-3xl space-y-1">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
-            Visibility
-          </p>
-          <h3 className="text-xl font-semibold text-white">Who can hear this track?</h3>
-          <p className="text-sm text-slate-400">Change this any time.</p>
-        </div>
-
-        <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          {visibilityOptions.map((option) => {
-            const isActive = option.value === currentVisibility;
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className={`rounded-xl border p-4 text-left transition ${
-                  isActive
-                    ? "border-emerald-400/50 bg-emerald-400/10"
-                    : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
-                }`}
-                disabled={isSaving}
-                onClick={() => void updateVisibility(option.value)}
-              >
-                <p className="text-base font-semibold text-white">{option.label}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  {option.description}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        {isSaving ? (
-          <div className="mt-6 flex items-center gap-3 text-sm text-slate-300">
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-            Saving visibility...
+      <details className="group rounded-xl border border-white/10 bg-white/[0.04]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-base font-semibold text-white [&::-webkit-details-marker]:hidden">
+          Credits & identifiers
+          <span className="text-xs font-normal text-slate-500 group-open:text-emerald-300">
+            Optional metadata
+          </span>
+        </summary>
+        <div className="space-y-5 border-t border-white/10 p-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm text-slate-300">Existing ISRC</label>
+              <Input
+                value={isrc}
+                onChange={(event) => setIsrc(event.target.value)}
+                placeholder="Leave blank if you do not have one"
+                className="border-white/10 bg-slate-950 text-white"
+              />
+              <p className="text-xs text-slate-500">Music City will not generate an official ISRC.</p>
+            </div>
+            <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/45 p-3 text-sm text-slate-300">
+              <input type="checkbox" checked={isExplicit} onChange={(event) => setIsExplicit(event.target.checked)} className="mt-0.5 h-4 w-4 accent-emerald-400" />
+              <span>
+                <span className="block font-medium text-white">Explicit content</span>
+                <span className="mt-1 block text-xs text-slate-500">Show the explicit-content marker to listeners.</span>
+              </span>
+            </label>
           </div>
-        ) : null}
 
+          <div className="space-y-2">
+            <label className="text-sm text-slate-300">Featured artists</label>
+            <Input
+              value={featuredArtists}
+              onChange={(event) => setFeaturedArtists(event.target.value)}
+              placeholder="Separate names with commas"
+              className="border-white/10 bg-slate-950 text-white"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm text-slate-300">Credits</p>
+              <p className="mt-1 text-xs text-slate-500">Add as many contributors as needed. These do not block saving.</p>
+            </div>
+            {credits.length > 0 ? (
+              <div className="space-y-2">
+                {credits.map((credit, index) => (
+                  <div key={`${credit.role}-${credit.name}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-950/45 px-3 py-2 text-sm">
+                    <span className="text-white">
+                      {credit.name}
+                      <span className="ml-2 text-xs capitalize text-slate-500">{credit.role}</span>
+                      {credit.artistId ? <span className="ml-2 text-xs text-emerald-300">Linked profile</span> : null}
+                    </span>
+                    <button type="button" className="text-slate-500 hover:text-red-200" onClick={() => setCredits((current) => current.filter((_, creditIndex) => creditIndex !== index))} aria-label={`Remove ${credit.name}`}><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="grid gap-2 sm:grid-cols-[160px_minmax(0,1fr)_minmax(0,180px)_auto]">
+              <select value={newCreditRole} onChange={(event) => setNewCreditRole(event.target.value as TrackCreditRole)} className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm capitalize text-white">
+                {CREDIT_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+              </select>
+              <Input value={newCreditName} onChange={(event) => setNewCreditName(event.target.value)} placeholder="Contributor name" className="border-white/10 bg-slate-950 text-white" />
+              <select value={newCreditArtistId} onChange={(event) => setNewCreditArtistId(event.target.value)} className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-white">
+                <option value="">Link profile (optional)</option>
+                {artistOptions.map((artist) => <option key={artist.id} value={artist.id}>{artist.name}</option>)}
+              </select>
+              <Button type="button" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10" onClick={addCredit}>Add credit</Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-slate-300">Track note <span className="text-slate-500">(optional)</span></label>
+            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="A short listener-facing note about this recording" className="min-h-24 border-white/10 bg-slate-950 text-white" />
+          </div>
+
+          <Button type="button" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" disabled={isMetadataSaving} onClick={() => void saveMetadata()}>
+            {isMetadataSaving ? "Saving..." : "Save metadata"}
+          </Button>
+        </div>
+      </details>
+
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+          Release publication
+        </p>
+        <h3 className="mt-2 text-xl font-semibold text-white">
+          {track.releaseTitle ? `Included in ${track.releaseTitle}` : "This track is not in a release yet"}
+        </h3>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          Tracks become public when their Single, EP, or Album is published. Upload and edit this recording here, then manage its public release from the release workspace.
+        </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button
-            variant="outline"
-            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-            disabled={isSaving || currentVisibility === "published"}
-            onClick={() => void updateVisibility("published")}
+            asChild
+            className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
           >
-            Publish
-          </Button>
-          <Button
-            variant="outline"
-            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-            disabled={isSaving || currentVisibility === "unpublished"}
-            onClick={() => void updateVisibility("unpublished")}
-          >
-            Unpublish
+            <Link href={track.releaseId ? `/dashboard/releases/${track.releaseId}` : "/dashboard/releases"}>
+              {track.releaseId ? "Open release workspace" : "Add to a release"}
+            </Link>
           </Button>
           <Button
             variant="outline"

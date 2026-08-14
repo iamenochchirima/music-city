@@ -8,6 +8,7 @@ const { playlistsRepository } = await import("./playlists.repository.js");
 const { engagementService } = await import("../engagement/engagement.service.js");
 const { usersService } = await import("../users/users.service.js");
 const { tracksRepository } = await import("../tracks/tracks.repository.js");
+const { tracksService } = await import("../tracks/tracks.service.js");
 
 const baseTimestamp = new Date(0).toISOString();
 
@@ -154,6 +155,11 @@ test("addTrackToPlaylist records a playlist-track-added analytics event", async 
         likes: 0,
         playbackReady: true,
       })) as typeof tracksRepository.findById,
+    ),
+    restore(
+      tracksService,
+      "isTrackPublic",
+      (async () => true) as typeof tracksService.isTrackPublic,
     ),
     restore(
       engagementService,

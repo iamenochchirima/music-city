@@ -169,10 +169,10 @@ export const adsService = {
       });
     }
 
-    if (track.visibility === "unpublished") {
+    if (!(await tracksService.isTrackPublic(track.id))) {
       return adDecisionSchema.parse({
         serveAd: false,
-        reason: "Ads are currently only served on published tracks.",
+        reason: "Ads are currently only served on tracks in published releases.",
       });
     }
 

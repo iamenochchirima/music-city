@@ -4,12 +4,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
-import { AlertTriangle, ArrowLeft, GripVertical, TimerReset, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  CircleAlert,
+  CircleCheck,
+  GripVertical,
+  TimerReset,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchablePicker } from "@/components/ui/searchable-picker";
+import { musicGenres } from "@/features/music/data/metadata-options";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
@@ -42,6 +53,12 @@ const toIsoString = (value?: string) => {
 
 const toLaunchMode = (status?: ReleaseDetail["status"]) =>
   status === "published" || status === "scheduled" ? status : "draft";
+const MAX_COVER_SIZE_BYTES = 10 * 1024 * 1024;
+
+type ReadinessIssue = {
+  label: string;
+  targetId: string;
+};
 
 export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const router = useRouter();
@@ -51,11 +68,40 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [launchMode, setLaunchMode] = useState<"draft" | "published" | "scheduled">("draft");
   const [releaseDateInput, setReleaseDateInput] = useState("");
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [coverFile]);
+
+  useEffect(() => {
+    if (!isDeleteConfirmOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isDeleting) {
+        setIsDeleteConfirmOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isDeleteConfirmOpen, isDeleting]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +167,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         artistName: release.artistName,
         type: release.type,
         genre: release.genre,
+        recordLabel: release.recordLabel,
         description: release.description,
         releaseDate:
           launchMode === "scheduled"
@@ -146,6 +193,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       return;
     }
 
+    let uploadSessionId: string | null = null;
+
     try {
       setIsSaving(true);
       const uploadSession = await uploadsApi.createSession(token, {
@@ -155,6 +204,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         contentType: coverFile.type || "application/octet-stream",
         sizeBytes: coverFile.size,
       });
+      uploadSessionId = uploadSession.id;
       const eTag = await uploadsApi.uploadFile(
         token,
         uploadSession,
@@ -177,10 +227,33 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       setCoverUploadProgress(0);
       toast.success("Release cover updated.");
     } catch (error) {
+      if (uploadSessionId) {
+        await uploadsApi.cancelSession(token, uploadSessionId).catch(() => undefined);
+      }
+
       toast.error(error instanceof Error ? error.message : "Unable to upload cover");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCoverFileChange = (file: File | undefined) => {
+    if (!file) {
+      setCoverFile(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose a JPG, PNG, or WebP image for the release artwork.");
+      return;
+    }
+
+    if (file.size > MAX_COVER_SIZE_BYTES) {
+      toast.error("Release artwork must be 10 MB or smaller.");
+      return;
+    }
+
+    setCoverFile(file);
   };
 
   const addTrack = async () => {
@@ -269,6 +342,34 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     }
   };
 
+  const moveTrack = (index: number, direction: -1 | 1) => {
+    setRelease((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextIndex = index + direction;
+
+      if (nextIndex < 0 || nextIndex >= current.tracks.length) {
+        return current;
+      }
+
+      const nextTracks = [...current.tracks];
+      [nextTracks[index], nextTracks[nextIndex]] = [
+        nextTracks[nextIndex],
+        nextTracks[index],
+      ];
+
+      return {
+        ...current,
+        tracks: nextTracks.map((item, trackIndex) => ({
+          ...item,
+          trackNumber: trackIndex + 1,
+        })),
+      };
+    });
+  };
+
   const updateStatus = async (status: ReleaseDetail["status"]) => {
     const token = session?.token;
 
@@ -309,17 +410,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete "${release.title}"? This removes the release page and detaches its tracks, but it will not delete the tracks themselves.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setIsDeleting(true);
       await releasesApi.deleteRelease(token, release.id);
+      setIsDeleteConfirmOpen(false);
       toast.success("Release deleted.");
       router.push("/dashboard/releases");
     } catch (error) {
@@ -352,6 +446,48 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       </div>
     );
   }
+
+  const readinessIssues: ReadinessIssue[] = [];
+
+  if (!release.title.trim()) {
+    readinessIssues.push({ label: "Add a release title", targetId: "release-title" });
+  }
+
+  if (!release.genre.trim()) {
+    readinessIssues.push({ label: "Add a primary genre", targetId: "release-genre" });
+  }
+
+  if (!release.coverImageUrl && !release.coverStorageKey) {
+    readinessIssues.push({ label: "Upload release artwork", targetId: "release-cover" });
+  }
+
+  if (release.tracks.length === 0) {
+    readinessIssues.push({ label: "Add at least one track", targetId: "release-tracklist" });
+  } else if (release.type === "single" && release.tracks.length !== 1) {
+    readinessIssues.push({ label: "A Single must contain exactly one track", targetId: "release-tracklist" });
+  } else if (release.type === "ep" && (release.tracks.length < 2 || release.tracks.length > 6)) {
+    readinessIssues.push({ label: "An EP must contain between 2 and 6 tracks", targetId: "release-tracklist" });
+  } else if (release.type === "album" && release.tracks.length < 7) {
+    readinessIssues.push({ label: "An album must contain at least 7 tracks", targetId: "release-tracklist" });
+  }
+
+  if (release.tracks.some((item) => !item.track.playbackReady)) {
+    readinessIssues.push({ label: "Wait for every track to finish audio processing", targetId: "release-tracklist" });
+  }
+
+  if (launchMode === "scheduled" && !releaseDateInput.trim()) {
+    readinessIssues.push({ label: "Choose a future release date", targetId: "release-date" });
+  }
+
+  const canPublish = readinessIssues.length === 0;
+  const focusReadinessTarget = (targetId: string) => {
+    const target = document.getElementById(targetId);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+      target.focus();
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -392,7 +528,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               type="button"
               variant="outline"
               className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-              disabled={isSaving || launchMode !== "scheduled" || !releaseDateInput.trim()}
+              disabled={isSaving || !canPublish || launchMode !== "scheduled" || !releaseDateInput.trim()}
               onClick={() => void updateStatus("scheduled")}
             >
               <TimerReset className="mr-2 h-4 w-4" />
@@ -401,7 +537,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             <Button
               type="button"
               className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-              disabled={isSaving}
+              disabled={isSaving || !canPublish}
               onClick={() => void updateStatus("published")}
             >
               Release now
@@ -413,6 +549,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           <div className="space-y-2">
             <label className="text-sm text-slate-300">Title</label>
             <Input
+              id="release-title"
               value={release.title}
               onChange={(event) =>
                 setRelease({ ...release, title: event.target.value })
@@ -432,15 +569,34 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           </div>
         </div>
 
+        <details className="group rounded-xl border border-white/10 bg-slate-950/30">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-white [&::-webkit-details-marker]:hidden">
+            Release metadata
+            <span className="ml-2 text-xs font-normal text-slate-500 group-open:text-emerald-300">Optional</span>
+          </summary>
+          <div className="border-t border-white/10 p-4">
+            <label className="text-sm text-slate-300">Record label</label>
+            <Input
+              value={release.recordLabel ?? ""}
+              onChange={(event) => setRelease({ ...release, recordLabel: event.target.value })}
+              placeholder="Independent or label name"
+              className="mt-2 border-white/10 bg-slate-950 text-white"
+            />
+            <p className="mt-2 text-xs text-slate-500">UPC/EAN identifiers and territory availability will be added here later.</p>
+          </div>
+        </details>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm text-slate-300">Genre</label>
-            <Input
+            <SearchablePicker
+              id="release-genre"
               value={release.genre}
-              onChange={(event) =>
-                setRelease({ ...release, genre: event.target.value })
-              }
-              className="border-white/10 bg-slate-950 text-white"
+              onValueChange={(genre) => setRelease({ ...release, genre })}
+              options={musicGenres}
+              placeholder="Select a genre"
+              searchPlaceholder="Search genres"
+              required
             />
           </div>
         </div>
@@ -482,7 +638,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                 {
                   value: "scheduled",
                   label: "Scheduled release",
-                  description: "Publish later and show fans a countdown page first.",
+                  description: "Publish later; leave time for audio processing before the date.",
                 },
               ] as const
             ).map((option) => (
@@ -508,6 +664,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           <div className="space-y-2">
             <label className="text-sm text-slate-300">Scheduled release time</label>
             <Input
+              id="release-date"
               type="datetime-local"
               value={releaseDateInput}
               onChange={(event) => setReleaseDateInput(event.target.value)}
@@ -547,11 +704,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
 
           <div className="space-y-3">
             <Input
+              id="release-cover"
               type="file"
               accept="image/*"
-              onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => handleCoverFileChange(event.target.files?.[0])}
               className="border-white/10 bg-slate-950 text-white file:text-white"
             />
+            <p className="text-xs text-slate-500">Square JPG, PNG, or WebP · up to 10 MB. Artwork applies to the whole release.</p>
+            {coverPreviewUrl ? (
+              <img src={coverPreviewUrl} alt="Selected release artwork preview" className="h-24 w-24 rounded-lg object-cover" />
+            ) : null}
             {coverFile ? (
               <p className="text-xs text-slate-400">
                 {coverFile.name}
@@ -583,39 +745,12 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         </Button>
       </form>
 
-      <section className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-rose-300">
-              Danger zone
-            </p>
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-rose-300" />
-              <h3 className="text-xl font-semibold text-white">Delete this release</h3>
-            </div>
-            <p className="text-sm text-rose-100/80">
-              Removes the release page and detaches its tracks. Tracks stay in your library.
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-rose-400/30 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
-            disabled={isDeleting || isSaving}
-            onClick={() => void deleteRelease()}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            {isDeleting ? "Deleting..." : "Delete release"}
-          </Button>
-        </div>
-      </section>
-
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <section id="release-tracklist" className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold text-white">Tracklist</h3>
-              <p className="text-xs text-slate-500">Reorder tracks and choose a focus track.</p>
+              <p className="text-xs text-slate-500">Order the tracks on this release.</p>
             </div>
             <Button
               className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
@@ -626,69 +761,124 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {release.tracks.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-6 text-sm text-slate-400">
-                No tracks assigned yet.
-              </div>
-            ) : (
-              release.tracks.map((item) => (
-                <div
-                  key={item.trackId}
-                  className="grid gap-4 rounded-xl border border-white/10 bg-slate-950/50 p-3 lg:grid-cols-[minmax(0,1fr)_100px_100px_100px_40px]"
-                >
-                  <div className="flex items-start gap-3">
-                    <GripVertical className="mt-1 h-4 w-4 text-slate-500" />
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-white">
-                        {item.track.title}
-                      </p>
-                      <p className="truncate text-sm text-slate-400">
-                        {item.track.runtime} · {item.track.status}
-                      </p>
-                    </div>
-                  </div>
-                  <Input
-                    value={String(item.trackNumber)}
-                    onChange={(event) =>
-                      updateTrackOrder(item.trackId, {
-                        trackNumber: Number(event.target.value) || 1,
-                      })
-                    }
-                    className="border-white/10 bg-slate-950 text-white"
-                  />
-                  <Input
-                    value={String(item.discNumber)}
-                    onChange={(event) =>
-                      updateTrackOrder(item.trackId, {
-                        discNumber: Number(event.target.value) || 1,
-                      })
-                    }
-                    className="border-white/10 bg-slate-950 text-white"
-                  />
-                  <label className="flex items-center gap-2 text-sm text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={item.isFocusTrack}
-                      onChange={(event) =>
-                        updateTrackOrder(item.trackId, {
-                          isFocusTrack: event.target.checked,
-                        })
-                      }
-                    />
-                    Focus
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="border border-white/10 text-red-200 hover:bg-red-500/10 hover:text-red-100"
-                    onClick={() => void removeTrack(item.trackId)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
+          <div className="overflow-x-auto rounded-lg border border-white/10 bg-slate-950/30">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <caption className="sr-only">Tracks in this release</caption>
+              <thead className="border-b border-white/10 text-xs uppercase tracking-[0.14em] text-slate-500">
+                <tr>
+                  <th scope="col" className="w-20 px-4 py-3 font-medium">Track</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Title</th>
+                  <th scope="col" className="w-24 px-4 py-3 font-medium">Disc</th>
+                  <th scope="col" className="w-24 px-4 py-3 font-medium">Focus</th>
+                  <th scope="col" className="w-28 px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {release.tracks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">
+                      No tracks assigned yet. Add an uploaded track to start building this release.
+                    </td>
+                  </tr>
+                ) : (
+                  release.tracks.map((item, index) => (
+                    <tr key={item.trackId} className="align-middle hover:bg-white/[0.03]">
+                      <td className="px-4 py-3">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={String(item.trackNumber)}
+                          aria-label={`Track number for ${item.track.title}`}
+                          onChange={(event) =>
+                            updateTrackOrder(item.trackId, {
+                              trackNumber: Number(event.target.value) || 1,
+                            })
+                          }
+                          className="h-9 w-16 border-white/10 bg-slate-950 text-white"
+                        />
+                      </td>
+                      <td className="max-w-0 px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <GripVertical className="h-4 w-4 shrink-0 text-slate-600" aria-hidden="true" />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-white">{item.track.title}</p>
+                            <p className="truncate text-xs text-slate-500">
+                              {item.track.runtime} · {item.track.isExplicit ? "Explicit" : "Not explicit"} · {item.track.playbackReady ? "Ready" : "Processing"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={String(item.discNumber)}
+                          aria-label={`Disc number for ${item.track.title}`}
+                          onChange={(event) =>
+                            updateTrackOrder(item.trackId, {
+                              discNumber: Number(event.target.value) || 1,
+                            })
+                          }
+                          className="h-9 w-16 border-white/10 bg-slate-950 text-white"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={item.isFocusTrack}
+                            aria-label={`Set ${item.track.title} as focus track`}
+                            onChange={(event) =>
+                              updateTrackOrder(item.trackId, {
+                                isFocusTrack: event.target.checked,
+                              })
+                            }
+                          />
+                          <span>Focus</span>
+                        </label>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:bg-white/10 hover:text-white"
+                            disabled={index === 0 || isSaving}
+                            onClick={() => moveTrack(index, -1)}
+                            aria-label={`Move ${item.track.title} up`}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:bg-white/10 hover:text-white"
+                            disabled={index === release.tracks.length - 1 || isSaving}
+                            onClick={() => moveTrack(index, 1)}
+                            aria-label={`Move ${item.track.title} down`}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+                            disabled={isSaving}
+                            onClick={() => void removeTrack(item.trackId)}
+                            aria-label={`Remove ${item.track.title} from release`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -718,9 +908,110 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             >
               Add track to release
             </Button>
+            <Button asChild type="button" variant="outline" className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10">
+              <Link href="/dashboard/create">Upload a new track</Link>
+            </Button>
           </div>
         </aside>
       </div>
+
+      <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+              Publish review
+            </p>
+            <h3 className="mt-1 text-xl font-semibold text-white">
+              {canPublish ? "Ready to publish" : "Finish these items first"}
+            </h3>
+          </div>
+          {canPublish ? (
+            <CircleCheck className="h-5 w-5 text-emerald-300" />
+          ) : (
+            <CircleAlert className="h-5 w-5 text-amber-300" />
+          )}
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          {canPublish ? (
+            ["Artwork uploaded", "Tracklist is valid", "Audio is ready"].map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-300">
+                <CircleCheck className="h-4 w-4 text-emerald-300" />
+                {item}
+              </div>
+            ))
+          ) : (
+            readinessIssues.map((issue) => (
+              <button key={issue.label} type="button" className="flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-left text-sm text-slate-300 hover:border-amber-300/40 hover:text-white" onClick={() => focusReadinessTarget(issue.targetId)}>
+                <CircleAlert className="h-4 w-4 shrink-0 text-amber-300" />
+                {issue.label}
+              </button>
+            ))
+          )}
+        </div>
+      </section>
+
+      <div className="flex justify-end border-t border-white/10 pt-5">
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+          disabled={isDeleting || isSaving}
+          onClick={() => setIsDeleteConfirmOpen(true)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete release
+        </Button>
+      </div>
+
+      {isDeleteConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target && !isDeleting) {
+              setIsDeleteConfirmOpen(false);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border border-rose-400/25 bg-[#171a2a] p-5 shadow-2xl sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-release-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-rose-300">
+              Delete release
+            </p>
+            <h3 id="delete-release-title" className="mt-2 text-xl font-semibold text-white">
+              Delete “{release.title}”?
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              This removes the release page and detaches its tracks. Your tracks and audio will stay in your library.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+                disabled={isDeleting}
+                onClick={() => setIsDeleteConfirmOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-rose-500 text-white hover:bg-rose-400"
+                disabled={isDeleting}
+                onClick={() => void deleteRelease()}
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? "Deleting..." : "Delete release"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

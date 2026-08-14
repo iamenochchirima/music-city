@@ -100,6 +100,30 @@ export const uploadsService = {
     return uploadsRepository.findById(id);
   },
 
+  async cancelSession(id: string) {
+    const session = await uploadsRepository.findById(id);
+
+    if (!session) {
+      return;
+    }
+
+    if (session.provider === "mux" && session.remoteUploadId) {
+      await muxService.cancelUpload(session.remoteUploadId).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+
+        if (!message.toLowerCase().includes("404") && !message.toLowerCase().includes("not found")) {
+          throw error;
+        }
+      });
+    }
+
+    if (session.storageKey) {
+      await storageService.deleteObject(session.storageKey);
+    }
+
+    await uploadsRepository.delete(id);
+  },
+
   async requireActiveSession(id: string) {
     const session = await uploadsRepository.findById(id);
 

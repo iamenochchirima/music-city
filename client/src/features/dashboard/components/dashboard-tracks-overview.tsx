@@ -73,7 +73,7 @@ export const DashboardTracksOverview = () => {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
           <h2 className="text-2xl font-semibold text-white">Your track catalog</h2>
-          <p className="mt-1 text-sm text-slate-400">Manage playback, visibility, and uploads.</p>
+          <p className="mt-1 text-sm text-slate-400">Manage uploads, metadata, and releases.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button

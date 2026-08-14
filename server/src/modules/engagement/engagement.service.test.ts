@@ -513,6 +513,11 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
       ]) as typeof tracksRepository.listByArtist,
     ),
     restore(
+      tracksRepository,
+      "listPublicTrackIds",
+      (async () => ["trk-1"]) as typeof tracksRepository.listPublicTrackIds,
+    ),
+    restore(
       releasesRepository,
       "listByArtist",
       (async () => [

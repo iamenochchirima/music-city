@@ -519,6 +519,11 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
       ]) as typeof tracksRepository.list,
     ),
     restore(
+      tracksRepository,
+      "listPublicTrackIds",
+      (async () => ["trk_sub_1", "trk_sub_2", "trk_public"]) as typeof tracksRepository.listPublicTrackIds,
+    ),
+    restore(
       royaltiesRepository,
       "listTrackSplits",
       (async (trackId: string) => {

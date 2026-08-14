@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { ZodError } from "zod";
 
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -63,6 +64,10 @@ tracksRouter.put(
 
       response.json({ track });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Track monetization update failed",
@@ -72,11 +77,11 @@ tracksRouter.put(
 );
 
 tracksRouter.put(
-  "/:trackId/visibility",
+  "/:trackId/metadata",
   requireSession,
   asyncHandler(async (request, response) => {
     try {
-      const track = await tracksService.updateTrackVisibility(
+      const track = await tracksService.updateTrackMetadata(
         request.session!.walletAddress,
         String(request.params.trackId),
         request.body,
@@ -84,9 +89,13 @@ tracksRouter.put(
 
       response.json({ track });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
-        error instanceof Error ? error.message : "Track visibility update failed",
+        error instanceof Error ? error.message : "Track metadata update failed",
       );
     }
   }),
@@ -104,6 +113,10 @@ tracksRouter.post(
 
       response.status(201).json({ track });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Track creation failed",
@@ -130,6 +143,10 @@ tracksRouter.post(
       const track = await tracksService.syncMuxTrack(trackId);
       response.json({ track });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Track sync failed",
@@ -148,6 +165,10 @@ tracksRouter.delete(
       await tracksService.deleteTrack(request.session!.walletAddress, trackId);
       response.status(204).send();
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Track delete failed",

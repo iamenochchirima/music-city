@@ -32,6 +32,31 @@ export const createUploadSessionSchema = z
       });
     }
 
+    if (value.purpose === "audio" && !value.contentType.startsWith("audio/")) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contentType"],
+        message: "Audio uploads must use an audio file type",
+      });
+    }
+
+    const maxSizeBytes =
+      value.purpose === "audio" ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+
+    if (value.sizeBytes > maxSizeBytes) {
+      context.addIssue({
+        code: z.ZodIssueCode.too_big,
+        path: ["sizeBytes"],
+        maximum: maxSizeBytes,
+        type: "number",
+        inclusive: true,
+        message:
+          value.purpose === "audio"
+            ? "Audio files must be 500 MB or smaller"
+            : "Images must be 10 MB or smaller",
+      });
+    }
+
     if (value.purpose === "cover" && !value.contentType.startsWith("image/")) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

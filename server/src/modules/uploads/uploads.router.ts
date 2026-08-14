@@ -44,6 +44,37 @@ uploadsRouter.post(
   }),
 );
 
+uploadsRouter.delete(
+  "/sessions/:uploadSessionId",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    const uploadSessionId = String(request.params.uploadSessionId);
+    const session = await uploadsService.getSession(uploadSessionId);
+
+    if (!session) {
+      response.status(204).send();
+      return;
+    }
+
+    const walletAddress = request.session!.walletAddress;
+
+    if (session.trackId) {
+      if (!(await tracksService.userOwnsTrack(walletAddress, session.trackId))) {
+        throw new HttpError(404, "Upload session not found");
+      }
+    } else if (session.releaseId) {
+      if (!(await releasesService.userOwnsRelease(walletAddress, session.releaseId))) {
+        throw new HttpError(404, "Upload session not found");
+      }
+    } else {
+      throw new HttpError(400, "Upload session target is missing");
+    }
+
+    await uploadsService.cancelSession(uploadSessionId);
+    response.status(204).send();
+  }),
+);
+
 uploadsRouter.put(
   "/sessions/:uploadSessionId/content",
   requireSession,

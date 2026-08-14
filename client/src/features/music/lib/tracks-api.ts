@@ -1,5 +1,6 @@
 import type {
   TrackCreateInput,
+  TrackMetadataUpdateInput,
   TrackMonetizationUpdateInput,
   TrackSummary,
 } from "@music-city/shared";
@@ -63,14 +64,14 @@ export const tracksApi = {
     await httpClient.delete(`/tracks/${trackId}`, token);
   },
 
-  async updateTrackVisibility(
+  async updateTrackMetadata(
     token: string,
     trackId: string,
-    visibility: TrackSummary["visibility"],
+    input: TrackMetadataUpdateInput,
   ) {
     const response = await httpClient.put<{ track: TrackSummary }>(
-      `/tracks/${trackId}/visibility`,
-      { visibility },
+      `/tracks/${trackId}/metadata`,
+      input,
       token,
     );
 

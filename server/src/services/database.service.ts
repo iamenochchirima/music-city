@@ -15,6 +15,10 @@ type ReleaseTrackRow = {
   is_focus_track: boolean;
 };
 
+type TrackIdRow = {
+  track_id: string;
+};
+
 type PlaylistTrackRow = {
   playlist_id: string;
   track_id: string;
@@ -800,6 +804,45 @@ const schemaMigrations: SchemaMigration[] = [
          AND NOT (payload ? 'mediaStorageProvider')`,
     ],
   },
+  {
+    name: "2026-08-14-release-first-track-publication",
+    statements: [
+      `UPDATE tracks AS t
+       SET visibility = CASE
+         WHEN EXISTS (
+           SELECT 1
+           FROM release_tracks AS rt
+           INNER JOIN releases AS r ON r.id = rt.release_id
+           WHERE rt.track_id = t.id
+             AND (
+               r.status = 'published'
+               OR (r.status = 'scheduled' AND r.release_date IS NOT NULL AND r.release_date <= NOW())
+             )
+         ) THEN 'published'
+         ELSE 'unpublished'
+       END,
+       payload = jsonb_set(
+         t.payload,
+         '{visibility}',
+         to_jsonb(
+           CASE
+             WHEN EXISTS (
+               SELECT 1
+               FROM release_tracks AS rt
+               INNER JOIN releases AS r ON r.id = rt.release_id
+               WHERE rt.track_id = t.id
+                 AND (
+                   r.status = 'published'
+                   OR (r.status = 'scheduled' AND r.release_date IS NOT NULL AND r.release_date <= NOW())
+                 )
+             ) THEN 'published'
+             ELSE 'unpublished'
+           END
+         ),
+         true
+       )`,
+    ],
+  },
 ];
 
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>
@@ -860,6 +903,15 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
       schemaMigrations.find(
         (migration) =>
           migration.name === "2026-08-14-onboarding-intent-foundation",
+      )?.statements ?? [],
+  },
+  {
+    name: "2026-08-14-release-first-track-publication",
+    migrationName: "2026-08-14-release-first-track-publication",
+    relations: [],
+    statements:
+      schemaMigrations.find(
+        (migration) => migration.name === "2026-08-14-release-first-track-publication",
       )?.statements ?? [],
   },
   {
@@ -1379,6 +1431,41 @@ export const databaseService = {
     );
 
     return mapPayloadRows<T>(result.rows);
+  },
+
+  async listPublicTrackIds(artistId?: string) {
+    const result = await pool.query<TrackIdRow>(
+      `SELECT DISTINCT rt.track_id
+       FROM release_tracks AS rt
+       INNER JOIN releases AS r ON r.id = rt.release_id
+       INNER JOIN tracks AS t ON t.id = rt.track_id
+       WHERE (
+         r.status = 'published'
+         OR (r.status = 'scheduled' AND r.release_date IS NOT NULL AND r.release_date <= NOW())
+       )
+       AND ($1::text IS NULL OR t.artist_id = $1)`,
+      [artistId ?? null],
+    );
+
+    return result.rows.map((row) => row.track_id);
+  },
+
+  async isTrackInPublicRelease(trackId: string) {
+    const result = await pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM release_tracks AS rt
+         INNER JOIN releases AS r ON r.id = rt.release_id
+         WHERE rt.track_id = $1
+           AND (
+             r.status = 'published'
+             OR (r.status = 'scheduled' AND r.release_date IS NOT NULL AND r.release_date <= NOW())
+           )
+       ) AS exists`,
+      [trackId],
+    );
+
+    return Boolean(result.rows[0]?.exists);
   },
 
   async deleteTrack(id: string) {

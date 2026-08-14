@@ -466,6 +466,9 @@ export const engagementService = {
       windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
 
     const tracks = await tracksRepository.listByArtist(profile.id);
+    const publicTrackIds = new Set(
+      await tracksRepository.listPublicTrackIds(profile.id),
+    );
     const trackAnalytics = await Promise.all(
       tracks.map(async (track) => {
         const [saves, uniqueListeners, playbackStarts, playbackCompletions] =
@@ -481,7 +484,7 @@ export const engagementService = {
           title: track.title,
           releaseId: track.releaseId,
           releaseTitle: track.releaseTitle,
-          visibility: track.visibility ?? "published",
+          visibility: publicTrackIds.has(track.id) ? "published" : "unpublished",
           status: track.status,
           plays: track.plays,
           likes: track.likes,
@@ -597,7 +600,7 @@ export const engagementService = {
       totalSaves: trackAnalytics.reduce((sum, track) => sum + track.saves, 0),
       uniqueListeners,
       totalTracks: tracks.length,
-      publishedTracks: tracks.filter((track) => track.visibility === "published").length,
+      publishedTracks: tracks.filter((track) => publicTrackIds.has(track.id)).length,
       streamsLast7Days,
       streamsLast30Days,
       selectedWindowDays,
