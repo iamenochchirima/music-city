@@ -75,6 +75,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [launchMode, setLaunchMode] = useState<"draft" | "published" | "scheduled">("draft");
   const [releaseDateInput, setReleaseDateInput] = useState("");
+  const [isPublishGuidanceOpen, setIsPublishGuidanceOpen] = useState(false);
 
   useEffect(() => {
     if (!coverFile) {
@@ -453,6 +454,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     readinessIssues.push({ label: "Add a release title", targetId: "release-title" });
   }
 
+  if (!release.artistName.trim()) {
+    readinessIssues.push({ label: "Add an artist name", targetId: "release-artist-name" });
+  }
+
   if (!release.genre.trim()) {
     readinessIssues.push({ label: "Add a primary genre", targetId: "release-genre" });
   }
@@ -475,6 +480,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     readinessIssues.push({ label: "Wait for every track to finish audio processing", targetId: "release-tracklist" });
   }
 
+  if (release.tracks.filter((item) => item.isFocusTrack).length > 1) {
+    readinessIssues.push({ label: "Choose only one focus track", targetId: "release-tracklist" });
+  }
+
   if (launchMode === "scheduled" && !releaseDateInput.trim()) {
     readinessIssues.push({ label: "Choose a future release date", targetId: "release-date" });
   }
@@ -489,6 +498,40 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     }
   };
 
+  const guideToNextPublishStep = () => {
+    const nextIssue = readinessIssues[0];
+
+    if (!nextIssue) {
+      void updateStatus("published");
+      return;
+    }
+
+    setIsPublishGuidanceOpen(true);
+    window.requestAnimationFrame(() => focusReadinessTarget(nextIssue.targetId));
+  };
+
+  const guideToScheduling = () => {
+    const publishingIssues = readinessIssues.filter(
+      (issue) => issue.targetId !== "release-date",
+    );
+
+    if (publishingIssues.length > 0) {
+      setIsPublishGuidanceOpen(true);
+      window.requestAnimationFrame(() =>
+        focusReadinessTarget(publishingIssues[0]!.targetId),
+      );
+      return;
+    }
+
+    if (!releaseDateInput.trim()) {
+      setLaunchMode("scheduled");
+      window.requestAnimationFrame(() => focusReadinessTarget("release-date"));
+      return;
+    }
+
+    void updateStatus("scheduled");
+  };
+
   return (
     <div className="space-y-5">
       <Button
@@ -501,6 +544,43 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           Back to releases
         </Link>
       </Button>
+
+      {isPublishGuidanceOpen && !canPublish ? (
+        <section
+          id="publish-guidance"
+          aria-live="polite"
+          className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.07] p-5 sm:p-6"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+            Release checklist
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            Complete {readinessIssues.length} more {readinessIssues.length === 1 ? "step" : "steps"} to release
+          </h2>
+          <p className="mt-2 text-sm text-slate-300">
+            Start with the highlighted item. We will keep this checklist up to date as you complete each step.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {readinessIssues.map((issue, index) => (
+              <button
+                key={issue.label}
+                type="button"
+                onClick={() => focusReadinessTarget(issue.targetId)}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition ${
+                  index === 0
+                    ? "border-emerald-300/50 bg-emerald-300/10 text-white"
+                    : "border-white/10 bg-slate-950/30 text-slate-300 hover:border-white/20 hover:text-white"
+                }`}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs font-semibold">
+                  {index + 1}
+                </span>
+                {issue.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <form
         className="space-y-5 rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
@@ -528,8 +608,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               type="button"
               variant="outline"
               className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-              disabled={isSaving || !canPublish || launchMode !== "scheduled" || !releaseDateInput.trim()}
-              onClick={() => void updateStatus("scheduled")}
+              disabled={isSaving}
+              onClick={guideToScheduling}
             >
               <TimerReset className="mr-2 h-4 w-4" />
               Schedule release
@@ -537,10 +617,17 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             <Button
               type="button"
               className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-              disabled={isSaving || !canPublish}
-              onClick={() => void updateStatus("published")}
+              disabled={isSaving}
+              onClick={guideToNextPublishStep}
+              aria-describedby={!canPublish ? "publish-guidance" : undefined}
             >
-              Release now
+              {isSaving
+                ? "Publishing..."
+                : canPublish
+                  ? "Release now"
+                  : isPublishGuidanceOpen
+                    ? `Continue setup (${readinessIssues.length})`
+                    : "Release now"}
             </Button>
           </div>
         </div>
@@ -560,6 +647,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           <div className="space-y-2">
             <label className="text-sm text-slate-300">Artist name</label>
             <Input
+              id="release-artist-name"
               value={release.artistName}
               onChange={(event) =>
                 setRelease({ ...release, artistName: event.target.value })
