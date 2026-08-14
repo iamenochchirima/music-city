@@ -14,6 +14,7 @@ import { releasesApi } from "@/features/music/lib/releases-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent } from "@/lib/analytics";
 
 const toDateTimeLocalValue = (value?: string) => {
   if (!value) {
@@ -284,6 +285,9 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       setRelease(updated);
       setLaunchMode(toLaunchMode(updated.status));
       setReleaseDateInput(toDateTimeLocalValue(updated.releaseDate));
+      if (status === "published") {
+        trackEvent("release_published");
+      }
       toast.success(
         status === "published"
           ? "Release published."

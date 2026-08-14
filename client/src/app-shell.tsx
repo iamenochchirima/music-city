@@ -1,4 +1,5 @@
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 import { AppProviders } from "@/components/layout/app-providers";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -13,6 +14,7 @@ export const AppShell = () => {
           <AppRoutes />
         </main>
         <Toaster richColors position="top-right" />
+        <Analytics />
       </div>
     </AppProviders>
   );

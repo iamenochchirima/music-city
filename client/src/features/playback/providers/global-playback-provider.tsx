@@ -32,6 +32,7 @@ import { playbackApi } from "@/features/playback/lib/playback-api";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiClientError } from "@/lib/api/http-client";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -916,6 +917,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       const decision = await adsApi.getPlaybackDecision(session.token, track.id);
 
       if (!decision.serveAd || !decision.ad || !decision.impressionId) {
+        trackEvent("track_played");
         await startTrackSession(track);
         return;
       }
@@ -930,6 +932,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       setActiveAdImpressionId(decision.impressionId);
       setPendingTrackAfterAd(track);
       setStreamUrl(decision.ad.audioUrl);
+      trackEvent("track_played");
       void adsApi.startImpression(session.token, {
         impressionId: decision.impressionId,
       }).catch(() => {

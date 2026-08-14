@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { usersApi } from "@/features/users/lib/users-api";
 import { ApiClientError } from "@/lib/api/http-client";
+import { trackEvent } from "@/lib/analytics";
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
@@ -485,6 +486,7 @@ export const OnboardingForm = ({
           removeHeaderImage: skipOptional ? false : removeHeaderImage,
         });
         await complete();
+        trackEvent("signup_completed");
       } else {
         const destination = primaryIntent === "artist" ? "/dashboard" : "/discover";
         onCompleted?.(primaryIntent, destination);
