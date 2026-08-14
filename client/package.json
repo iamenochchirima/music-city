@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "pnpm --dir ../packages/shared build && vite build",
     "start": "vite preview",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
