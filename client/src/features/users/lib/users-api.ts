@@ -1,8 +1,11 @@
 import type {
+  AuthSession,
   ArtistSummary,
   ArtistPublicProfile,
+  CompleteOnboardingInput,
   CreateUserMediaUploadInput,
   ReleaseSummary,
+  SaveOnboardingStepInput,
   TrackSummary,
   UpsertUserProfileInput,
   UserMediaUploadTarget,
@@ -21,9 +24,45 @@ export const usersApi = {
     return response.profile;
   },
 
-  async saveMe(token: string, input: UpsertUserProfileInput) {
+  async updateProfile(token: string, input: UpsertUserProfileInput) {
     const response = await httpClient.put<{ profile: UserProfile }>(
       "/users/me",
+      input,
+      token,
+    );
+
+    return response.profile;
+  },
+
+  async getOnboardingState(token: string) {
+    return httpClient.get<{
+      profile: UserProfile;
+      primaryIntent: UserProfile["primaryIntent"];
+      artistAccess: boolean;
+      onboardingStatus: UserProfile["onboardingStatus"];
+      onboardingStep: UserProfile["onboardingStep"];
+      onboardingVersion: number;
+      onboardingCompletedAt?: string;
+      profileCompletion: AuthSession["profileCompletion"];
+    } | null>("/users/me/onboarding", token);
+  },
+
+  async saveOnboardingStep(token: string, input: SaveOnboardingStepInput) {
+    const response = await httpClient.put<{ profile: UserProfile }>(
+      "/users/me/onboarding",
+      input,
+      token,
+    );
+
+    return response.profile;
+  },
+
+  async completeOnboarding(
+    token: string,
+    input: CompleteOnboardingInput = { step: "complete" },
+  ) {
+    const response = await httpClient.post<{ profile: UserProfile }>(
+      "/users/me/onboarding/complete",
       input,
       token,
     );

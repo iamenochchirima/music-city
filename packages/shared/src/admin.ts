@@ -10,7 +10,7 @@ import {
   subscriptionScopeSchema,
   subscriptionStatusSchema,
 } from "./payments.js";
-import { userRoleSchema } from "./auth.js";
+import { primaryIntentSchema } from "./auth.js";
 import type { TrackSummary } from "./music.js";
 import { walletAccountSchema } from "./wallet.js";
 
@@ -175,7 +175,7 @@ export const adminUserRecordSchema = z.object({
   walletAddress: stellarWalletAddressSchema,
   email: z.string().email().optional().or(z.literal("")),
   displayName: z.string().min(1),
-  role: userRoleSchema,
+  primaryIntent: primaryIntentSchema,
   location: z.string().default(""),
   subscriptionStatus: adminUserSubscriptionStatusSchema,
   activeSubscriptionCount: z.number().int().nonnegative(),
@@ -189,7 +189,7 @@ export const adminUserSummarySchema = z.object({
   subscribed: z.number().int().nonnegative(),
   unsubscribed: z.number().int().nonnegative(),
   artists: z.number().int().nonnegative(),
-  fans: z.number().int().nonnegative(),
+  listeners: z.number().int().nonnegative(),
 });
 export type AdminUserSummary = z.infer<typeof adminUserSummarySchema>;
 

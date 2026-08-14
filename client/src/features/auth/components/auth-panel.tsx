@@ -15,12 +15,12 @@ export const AuthPanel = () => {
   const dynamicConfigured = clientEnv.isDynamicConfigured;
 
   useEffect(() => {
-    if (!session?.profileComplete) {
+    if (!session || session.onboardingStatus !== "complete") {
       return;
     }
 
-    router.push("/dashboard");
-  }, [router, session?.profileComplete]);
+    router.push(session.primaryIntent === "artist" ? "/dashboard" : "/discover");
+  }, [router, session?.onboardingStatus, session?.primaryIntent]);
 
   return (
     <Card className="border-white/10 bg-white/5 text-white shadow-none">
@@ -32,7 +32,7 @@ export const AuthPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm leading-7 text-slate-300">
-          Sign in with email or your preferred provider to continue.
+          Connect your wallet to create your Music City profile and continue.
         </p>
 
         <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">

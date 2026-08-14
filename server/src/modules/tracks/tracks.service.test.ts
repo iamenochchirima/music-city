@@ -5,6 +5,44 @@ process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/mu
 
 const walletAddress = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
+const artistProfile = {
+  id: "artist-1",
+  walletAddress,
+  email: "",
+  displayName: "Artist",
+  primaryIntent: "artist" as const,
+  artistAccess: true,
+  onboardingStatus: "complete" as const,
+  onboardingStep: "complete" as const,
+  onboardingVersion: 1,
+  onboardingCompletedAt: new Date(0).toISOString(),
+  location: "",
+  genres: [],
+  favoriteArtistIds: [],
+  interestedInLocalMusic: false,
+  notificationPreferences: {
+    releaseNotifications: true,
+    artistUpdates: true,
+    productUpdates: false,
+  },
+  bio: "",
+  socialLinks: {
+    website: "",
+    instagram: "",
+    youtube: "",
+    soundcloud: "",
+    x: "",
+  },
+  profileImageUrl: undefined,
+  profileImageStorageKey: undefined,
+  headerImageUrl: undefined,
+  headerImageStorageKey: undefined,
+  hasReleasedMusic: false,
+  verified: false,
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+};
+
 const { tracksService } = await import("./tracks.service.js");
 const { usersService } = await import("../users/users.service.js");
 const { tracksRepository } = await import("./tracks.repository.js");
@@ -26,22 +64,7 @@ test("createTrack rejects subscriber-only access from creator-controlled input",
     restore(
       usersService,
       "requireArtistOnboardingAccess",
-      (async () => ({
-        id: "artist-1",
-        walletAddress,
-        email: "",
-        displayName: "Artist",
-        role: "artist" as const,
-        artistOnboardingFeePaid: true,
-        location: "",
-        profileImageUrl: undefined,
-        profileImageStorageKey: undefined,
-        headerImageUrl: undefined,
-        headerImageStorageKey: undefined,
-        verified: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })) as typeof usersService.requireArtistOnboardingAccess,
+      (async () => artistProfile) as typeof usersService.requireArtistOnboardingAccess,
     ),
   ];
 
@@ -64,22 +87,7 @@ test("updateTrackAccess rejects subscriber-only access from creator-controlled i
     restore(
       usersService,
       "requireArtistOnboardingAccess",
-      (async () => ({
-        id: "artist-1",
-        walletAddress,
-        email: "",
-        displayName: "Artist",
-        role: "artist" as const,
-        artistOnboardingFeePaid: true,
-        location: "",
-        profileImageUrl: undefined,
-        profileImageStorageKey: undefined,
-        headerImageUrl: undefined,
-        headerImageStorageKey: undefined,
-        verified: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })) as typeof usersService.requireArtistOnboardingAccess,
+      (async () => artistProfile) as typeof usersService.requireArtistOnboardingAccess,
     ),
     restore(
       tracksRepository,

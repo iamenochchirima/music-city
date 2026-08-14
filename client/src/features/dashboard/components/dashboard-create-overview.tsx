@@ -11,43 +11,44 @@ export const DashboardCreateOverview = () => {
 
   if (!session) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Connect your wallet before creating music.
       </div>
     );
   }
 
-  if (!session.profileComplete) {
+  if (session.onboardingStatus !== "complete") {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Complete onboarding before uploading your first track.
       </div>
     );
   }
 
-  if (session.role !== "artist") {
+  if (session.primaryIntent !== "artist" && session.primaryIntent !== "both") {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Create an artist profile before uploading music.
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-7">
-        <p className="text-sm uppercase tracking-[0.28em] text-emerald-400">
-          Create
-        </p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">
-          Start a new upload
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300">
-          Move from draft to released music in one place. Add track details, credits,
-          release placement, cover art, and audio without leaving the studio.
-        </p>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
+            Create
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">
+            New upload
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Add the details, audio, and artwork for a track.
+          </p>
+        </div>
         {createdCount > 0 ? (
-          <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-100">
             {createdCount} upload{createdCount === 1 ? "" : "s"} completed in this
             session.
           </div>

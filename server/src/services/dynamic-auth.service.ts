@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
-import type { AuthSession } from "@music-city/shared";
+import { profileCompletionSchema, type AuthSession } from "@music-city/shared";
 
 import { env } from "../config/env.js";
 import { usersService } from "../modules/users/users.service.js";
@@ -105,16 +105,13 @@ const findStellarWalletAddress = (
 };
 
 const buildDisplayName = (
-  payload: DynamicJwtPayload,
-  walletAddress: string,
+  _payload: DynamicJwtPayload,
+  _walletAddress: string,
   existingDisplayName?: string,
 ) => {
-  return (
-    existingDisplayName ??
-    payload.alias ??
-    payload.email ??
-    walletAddress.slice(0, 8)
-  );
+  // A login identity is not a product display name. Leave this blank until
+  // the user chooses one during onboarding instead of leaking their email.
+  return existingDisplayName ?? "";
 };
 
 export const dynamicAuthService = {
@@ -203,16 +200,36 @@ export const dynamicAuthService = {
       walletAddress,
       email: profile?.email ?? payload.email ?? "",
       displayName: buildDisplayName(payload, walletAddress, profile?.displayName),
-      role: profile?.role ?? "fan",
-      artistOnboardingFeePaid: await usersService.hasArtistOnboardingAccess(walletAddress),
-      profileComplete: Boolean(profile),
+      primaryIntent: profile?.primaryIntent ?? "listener",
+      artistAccess: profile?.artistAccess ?? false,
+      onboardingStatus: profile?.onboardingStatus ?? "required",
+      onboardingStep: profile?.onboardingStep ?? "identity",
+      onboardingVersion: profile?.onboardingVersion ?? 1,
+      onboardingCompletedAt: profile?.onboardingCompletedAt,
+      profileCompletion: profile
+        ? (await usersService.getOnboardingState(walletAddress))!.profileCompletion
+        : profileCompletionSchema.parse({
+            percentage: 0,
+            completed: [],
+            missing: [
+              "display_name",
+              "email",
+              "location",
+              "genres",
+              "favorites",
+              "local_music",
+              "notification_preferences",
+              "profile_image",
+            ],
+            requiredComplete: false,
+          }),
     };
 
     logDynamicAuth("session payload built", {
       walletAddress: session.walletAddress,
       displayName: session.displayName,
-      role: session.role,
-      profileComplete: session.profileComplete,
+      primaryIntent: session.primaryIntent,
+      onboardingStatus: session.onboardingStatus,
     });
 
     return session;

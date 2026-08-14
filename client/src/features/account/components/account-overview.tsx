@@ -19,8 +19,21 @@ import { usersApi } from "@/features/users/lib/users-api";
 import { WalletOverviewCard } from "@/features/wallet/components/wallet-overview-card";
 import { clientEnv } from "@/lib/config/env";
 
-const formatRole = (role?: "artist" | "fan") =>
-  role ? role.charAt(0).toUpperCase() + role.slice(1) : "Member";
+const formatIntent = (intent?: "listener" | "artist" | "both") => {
+  switch (intent) {
+    case "listener":
+      return "Listener";
+    case "artist":
+      return "Artist";
+    case "both":
+      return "Listener + artist";
+    default:
+      return "Member";
+  }
+};
+
+const compactWalletAddress = (walletAddress: string) =>
+  `${walletAddress.slice(0, 5)}…${walletAddress.slice(-4)}`;
 
 const activityLabel = (track: TrackSummary) => {
   if (track.playbackReady) {
@@ -44,13 +57,15 @@ const activityLabel = (track: TrackSummary) => {
 };
 
 export const AccountOverview = () => {
-  const { session } = useAuth();
+  const { session, refreshSessionProfile } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [onboardingState, setOnboardingState] = useState<Awaited<ReturnType<typeof usersApi.getOnboardingState>>>(null);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRecord[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingIntent, setIsUpdatingIntent] = useState(false);
 
   useEffect(() => {
     const token = session?.token;
@@ -69,8 +84,9 @@ export const AccountOverview = () => {
       setLoadError(null);
 
       try {
-        const [nextProfile, nextTracks, nextPayments, nextSubscriptions] = await Promise.all([
+        const [nextProfile, nextOnboardingState, nextTracks, nextPayments, nextSubscriptions] = await Promise.all([
           usersApi.getMe(token),
+          usersApi.getOnboardingState(token),
           tracksApi.listMyTracks(token),
           paymentsApi.listMine(token),
           subscriptionsApi.listMine(token),
@@ -78,6 +94,7 @@ export const AccountOverview = () => {
 
         if (!cancelled) {
           setProfile(nextProfile ?? null);
+          setOnboardingState(nextOnboardingState);
           setTracks(Array.isArray(nextTracks) ? nextTracks : []);
           setPayments(Array.isArray(nextPayments) ? nextPayments : []);
           setSubscriptions(Array.isArray(nextSubscriptions) ? nextSubscriptions : []);
@@ -85,6 +102,7 @@ export const AccountOverview = () => {
       } catch (error) {
         if (!cancelled) {
           setProfile(null);
+          setOnboardingState(null);
           setTracks([]);
           setPayments([]);
           setSubscriptions([]);
@@ -103,6 +121,23 @@ export const AccountOverview = () => {
       cancelled = true;
     };
   }, [session?.token]);
+
+  const updateIntent = async (primaryIntent: "listener" | "artist" | "both") => {
+    if (!session?.token || primaryIntent === (profile?.primaryIntent ?? session.primaryIntent)) {
+      return;
+    }
+
+    setIsUpdatingIntent(true);
+    try {
+      const nextProfile = await usersApi.updateProfile(session.token, { primaryIntent });
+      setProfile(nextProfile);
+      await refreshSessionProfile();
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Unable to update account intent.");
+    } finally {
+      setIsUpdatingIntent(false);
+    }
+  };
 
   if (!session) {
     return (
@@ -126,7 +161,8 @@ export const AccountOverview = () => {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <Card className="border-white/10 bg-white/5 text-white shadow-none">
+      <div className="space-y-6">
+        <Card className="border-white/10 bg-white/5 text-white shadow-none">
         {profile?.headerImageUrl ? (
           <div className="h-40 overflow-hidden rounded-t-xl border-b border-white/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -162,13 +198,13 @@ export const AccountOverview = () => {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Account</p>
             <p className="text-base text-white">
-              {formatRole(profile?.role ?? session.role)}
+              {formatIntent(profile?.primaryIntent ?? session.primaryIntent)}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Artist access</p>
             <p className="text-base text-white">
-              {profile?.artistOnboardingFeePaid || session.artistOnboardingFeePaid
+              {profile?.artistAccess || session.artistAccess
                 ? "Onboarding fee paid"
                 : "Not unlocked"}
             </p>
@@ -181,14 +217,92 @@ export const AccountOverview = () => {
           </div>
           <div className="space-y-1 sm:col-span-2">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Wallet</p>
-            <p className="break-all text-base text-white">{session.walletAddress}</p>
+            <p className="text-base text-white" title={session.walletAddress}>
+              {compactWalletAddress(session.walletAddress)}
+            </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Location</p>
             <p className="text-base text-white">{profile?.location || "Not added"}</p>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+
+        {onboardingState ? (
+          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-2xl">Profile completion</CardTitle>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Optional details you can add whenever you are ready.
+                  </p>
+                </div>
+                <span className="text-2xl font-semibold text-emerald-300">
+                  {onboardingState.profileCompletion.percentage}%
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-emerald-400 transition-all"
+                  style={{ width: `${onboardingState.profileCompletion.percentage}%` }}
+                />
+              </div>
+              {onboardingState.profileCompletion.missing.length > 0 ? (
+                <p className="text-sm text-slate-300">
+                  Still available: {onboardingState.profileCompletion.missing.slice(0, 4).map((item) => item.replaceAll("_", " ")).join(", ")}.
+                </p>
+              ) : (
+                <p className="text-sm text-emerald-200">Your profile has all available details.</p>
+              )}
+              <Button
+                asChild
+                variant="outline"
+                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+              >
+                <Link href="/onboarding">Review profile details</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {profile ? (
+          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+            <CardHeader>
+              <CardTitle className="text-2xl">How you use Music City</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-400">
+                Change your starting point any time. Artist tools remain separately access-controlled.
+              </p>
+              <div className="grid gap-2">
+                {(
+                  [
+                    ["listener", "I’m here to listen"],
+                    ["artist", "I release music"],
+                    ["both", "Both"],
+                  ] as const
+                ).map(([intent, label]) => (
+                  <Button
+                    key={intent}
+                    type="button"
+                    variant={profile.primaryIntent === intent ? "default" : "outline"}
+                    className={profile.primaryIntent === intent
+                      ? "justify-start bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                      : "justify-start border-white/10 bg-white/5 text-white hover:bg-white/10"}
+                    onClick={() => void updateIntent(intent)}
+                    disabled={isUpdatingIntent}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
 
       <div className="space-y-6">
         {clientEnv.isDynamicConfigured ? <WalletOverviewCard /> : null}
@@ -226,7 +340,7 @@ export const AccountOverview = () => {
           </CardContent>
         </Card>
 
-        {profile?.role === "artist" ? (
+        {profile?.primaryIntent === "artist" || profile?.primaryIntent === "both" ? (
           <Card className="border-white/10 bg-white/5 text-white shadow-none">
             <CardHeader>
                   <CardTitle className="text-2xl">Music City Pass</CardTitle>

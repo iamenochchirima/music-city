@@ -19,13 +19,20 @@ export const usersRepository = {
     await databaseService.upsertUser(
       user.id,
       user.walletAddress,
-      user.role,
+      user.primaryIntent,
+      user.onboardingStatus,
+      user.onboardingStep,
+      user.onboardingVersion,
+      user.onboardingCompletedAt,
       user,
     );
     return user;
   },
 
   async listArtists() {
-    return databaseService.listUsersByRole<UserProfile>("artist");
+    return databaseService.listUsersByPrimaryIntents<UserProfile>([
+      "artist",
+      "both",
+    ]);
   },
 };

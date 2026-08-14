@@ -327,7 +327,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
 
   if (!session) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Connect your account before managing a release.
       </div>
     );
@@ -335,7 +335,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Loading release details...
       </div>
     );
@@ -343,14 +343,14 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
 
   if (!release) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Release not found.
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <Button
         asChild
         variant="outline"
@@ -363,21 +363,18 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       </Button>
 
       <form
-        className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8"
+        className="space-y-5 rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
         onSubmit={saveRelease}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-              Release management
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+              Release
             </p>
-            <h2 className="text-3xl font-semibold text-white">{release.title}</h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Current status:{" "}
-              <span className="capitalize text-white">{release.status}</span>
-            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-white">{release.title}</h2>
+            <p className="mt-1 text-sm capitalize text-slate-400">{release.status}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -488,7 +485,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               <button
                 key={option.value}
                 type="button"
-                className={`rounded-2xl border p-4 text-left transition ${
+                className={`rounded-xl border p-3 text-left transition ${
                   launchMode === option.value
                     ? "border-emerald-400/40 bg-emerald-400/10"
                     : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-white/[0.05]"
@@ -496,7 +493,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                 onClick={() => setLaunchMode(option.value)}
               >
                 <p className="text-sm font-semibold text-white">{option.label}</p>
-                <p className="mt-2 text-xs leading-6 text-slate-400">
+                <p className="mt-1 text-xs leading-5 text-slate-400">
                   {option.description}
                 </p>
               </button>
@@ -534,11 +531,11 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             <p className="text-sm text-slate-300">Cover art</p>
             {release.coverImageUrl ? (
               <div
-                className="aspect-square rounded-3xl border border-white/10 bg-cover bg-center"
+                className="aspect-square rounded-xl border border-white/10 bg-cover bg-center"
                 style={{ backgroundImage: `url(${release.coverImageUrl})` }}
               />
             ) : (
-              <div className="flex aspect-square items-center justify-center rounded-3xl border border-dashed border-white/10 bg-slate-950/40 text-sm text-slate-400">
+              <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-white/10 bg-slate-950/40 text-sm text-slate-400">
                 No cover uploaded
               </div>
             )}
@@ -582,19 +579,18 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         </Button>
       </form>
 
-      <section className="rounded-[28px] border border-rose-500/20 bg-rose-500/5 p-6 sm:p-8">
+      <section className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl space-y-2">
-            <p className="text-sm uppercase tracking-[0.3em] text-rose-300">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-rose-300">
               Danger zone
             </p>
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-rose-300" />
               <h3 className="text-xl font-semibold text-white">Delete this release</h3>
             </div>
-            <p className="text-sm leading-7 text-rose-100/80">
-              Deleting a release removes its public page and studio record. Tracks stay in
-              your library, but they will be detached from this release.
+            <p className="text-sm text-rose-100/80">
+              Removes the release page and detaches its tracks. Tracks stay in your library.
             </p>
           </div>
           <Button
@@ -611,13 +607,11 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-2xl font-semibold text-white">Tracklist</h3>
-              <p className="text-sm text-slate-400">
-                Set ordering and focus track details for this release.
-              </p>
+              <h3 className="text-xl font-semibold text-white">Tracklist</h3>
+              <p className="text-xs text-slate-500">Reorder tracks and choose a focus track.</p>
             </div>
             <Button
               className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
@@ -637,7 +631,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               release.tracks.map((item) => (
                 <div
                   key={item.trackId}
-                  className="grid gap-4 rounded-3xl border border-white/10 bg-slate-950/50 p-4 lg:grid-cols-[minmax(0,1fr)_100px_100px_100px_40px]"
+                  className="grid gap-4 rounded-xl border border-white/10 bg-slate-950/50 p-3 lg:grid-cols-[minmax(0,1fr)_100px_100px_100px_40px]"
                 >
                   <div className="flex items-start gap-3">
                     <GripVertical className="mt-1 h-4 w-4 text-slate-500" />
@@ -694,11 +688,9 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           </div>
         </section>
 
-        <aside className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+        <aside className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
           <h3 className="text-xl font-semibold text-white">Add track</h3>
-          <p className="mt-2 text-sm text-slate-400">
-            Attach an uploaded track to this release.
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Attach an uploaded track.</p>
 
           <div className="mt-5 space-y-4">
             <select

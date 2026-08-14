@@ -1710,7 +1710,7 @@ const UsersPage = () => {
           <StatTile label="Subscribed" value={String(data?.summary.subscribed ?? 0)} />
           <StatTile label="Unsubscribed" value={String(data?.summary.unsubscribed ?? 0)} />
           <StatTile label="Artists" value={String(data?.summary.artists ?? 0)} />
-          <StatTile label="Fans" value={String(data?.summary.fans ?? 0)} />
+          <StatTile label="Listeners" value={String(data?.summary.listeners ?? 0)} />
         </div>
 
         {!data || data.items.length === 0 ? (
@@ -1742,7 +1742,7 @@ const UsersPage = () => {
                 <p className="truncate text-slate-300">{item.walletAddress}</p>
                 <div>
                   <span className="inline-flex border border-white/10 px-2 py-1 text-xs text-slate-300">
-                    {item.role}
+                    {item.primaryIntent}
                   </span>
                 </div>
                 <div>

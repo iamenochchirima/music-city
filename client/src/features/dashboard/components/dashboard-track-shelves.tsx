@@ -76,8 +76,8 @@ const TrackTableSection = ({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h3 className="text-2xl font-semibold text-white">{title}</h3>
-        <p className="text-sm text-slate-400">{description}</p>
+        <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <p className="text-xs text-slate-500">{description}</p>
       </div>
       <TrackTable
         tracks={tracks}
@@ -113,7 +113,7 @@ const TrackTableSection = ({
           const isActive = activeTrackId === track.id;
 
           return (
-            <div className="flex flex-wrap justify-start gap-3 lg:justify-end">
+            <div className="flex flex-wrap justify-start gap-1.5 lg:justify-end">
               {track.playbackReady ? (
                 <Button
                   variant={isActive ? "default" : "outline"}
@@ -428,10 +428,10 @@ export const DashboardTrackShelves = ({
   };
 
   return (
-    <div className="space-y-10 pb-40">
+    <div className="space-y-6 pb-32">
       {bulkDeleteCount ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#171a2a] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#171a2a] p-5 shadow-2xl">
             <div className="space-y-3">
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-red-300">
                 Confirm delete
@@ -467,7 +467,7 @@ export const DashboardTrackShelves = ({
 
       {trackPendingDelete ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#171a2a] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#171a2a] p-5 shadow-2xl">
             <div className="space-y-3">
               <p className="text-sm font-medium uppercase tracking-[0.28em] text-red-300">
                 Confirm delete
@@ -543,17 +543,9 @@ export const DashboardTrackShelves = ({
         </div>
       ) : null}
 
-      {!selectionMode ? (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-          <span>
-            Music City Pass access is managed by the platform. In the studio, you only control whether tracks are published or unpublished.
-          </span>
-        </div>
-      ) : null}
-
       <TrackTableSection
         title="Ready to play"
-        description="Finished releases you can preview right now."
+        description="Playable tracks"
         tracks={readyTracks}
         activeTrackId={activeTrackId}
         syncingTrackId={syncingTrackId}
@@ -570,7 +562,7 @@ export const DashboardTrackShelves = ({
       />
       <TrackTableSection
         title="Processing"
-        description="Uploads still being finalized by Mux or waiting for sync."
+        description="Uploads still processing"
         tracks={pipelineTracks}
         activeTrackId={activeTrackId}
         syncingTrackId={syncingTrackId}

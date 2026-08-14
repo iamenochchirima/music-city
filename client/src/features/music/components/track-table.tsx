@@ -37,14 +37,14 @@ export const TrackThumbnail = ({ track }: { track: TrackSummary }) => {
   if (track.coverImageUrl) {
     return (
       <div
-        className="h-14 w-14 shrink-0 rounded-2xl bg-cover bg-center"
+        className="h-12 w-12 shrink-0 rounded-lg bg-cover bg-center"
         style={{ backgroundImage: `url(${track.coverImageUrl})` }}
       />
     );
   }
 
   return (
-    <div className="h-14 w-14 shrink-0 rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
+    <div className="h-12 w-12 shrink-0 rounded-lg bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
   );
 };
 
@@ -70,8 +70,8 @@ export const TrackTable = ({
   renderOverflowAction,
 }: TrackTableProps) => {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
-      <div className="hidden grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-white/10 px-6 py-4 text-xs uppercase tracking-[0.24em] text-slate-500 lg:grid">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.025]">
+      <div className="hidden grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-white/10 px-4 py-3 text-[11px] uppercase tracking-[0.18em] text-slate-500 lg:grid">
         <span>Track</span>
         <span className="text-right">{actionHeader}</span>
       </div>
@@ -84,7 +84,7 @@ export const TrackTable = ({
             <article
               key={track.id}
               className={cn(
-                "relative px-4 py-4 transition sm:px-6",
+                "relative px-4 py-3 transition sm:px-4",
                 rowClickable && "cursor-pointer hover:bg-white/[0.03]",
               )}
               onClick={() => {
@@ -96,22 +96,20 @@ export const TrackTable = ({
               }}
             >
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_120px] lg:items-center lg:gap-4">
-                <div className="flex min-w-0 items-center gap-3 pr-14 sm:gap-4 lg:pr-0">
+                <div className="flex min-w-0 items-center gap-3 pr-14 lg:pr-0">
                   {renderSelectionCell?.(track)}
-                  <div className="scale-90 sm:scale-100">
-                    <TrackThumbnail track={track} />
-                  </div>
+                  <TrackThumbnail track={track} />
                   <div className="min-w-0 space-y-1">
                     {titleHref ? (
                       <Link
                         href={titleHref(track)}
-                        className="block truncate text-lg font-semibold text-white transition hover:text-emerald-300"
+                        className="block truncate text-base font-semibold text-white transition hover:text-emerald-300"
                         onClick={(event) => event.stopPropagation()}
                       >
                         {track.title}
                       </Link>
                     ) : (
-                      <h3 className="truncate text-lg font-semibold text-white">
+                      <h3 className="truncate text-base font-semibold text-white">
                         {track.title}
                       </h3>
                     )}
@@ -121,7 +119,7 @@ export const TrackTable = ({
                   </div>
                 </div>
 
-                <div className="absolute right-4 top-4 flex justify-end gap-2 sm:right-6 lg:static lg:justify-end">
+                <div className="absolute right-4 top-3 flex justify-end gap-1.5 lg:static lg:justify-end">
                   {renderAction(track)}
                   {renderOverflowAction?.(track)}
                 </div>

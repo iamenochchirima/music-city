@@ -2,19 +2,67 @@ import { z } from "zod";
 
 import { stellarWalletAddressSchema } from "./commerce.js";
 
-export const userRoleSchema = z.enum(["artist", "fan"]);
-export type UserRole = z.infer<typeof userRoleSchema>;
+export const primaryIntentSchema = z.enum(["listener", "artist", "both"]);
+export type PrimaryIntent = z.infer<typeof primaryIntentSchema>;
+
+export const onboardingStatusSchema = z.enum([
+  "required",
+  "in_progress",
+  "complete",
+]);
+export type OnboardingStatus = z.infer<typeof onboardingStatusSchema>;
+
+export const onboardingStepSchema = z.enum([
+  "intent",
+  "identity",
+  "personalize",
+  "artist_identity",
+  "visuals",
+  "complete",
+]);
+export type OnboardingStep = z.infer<typeof onboardingStepSchema>;
+
+export const profileCompletionItemSchema = z.enum([
+  "display_name",
+  "email",
+  "location",
+  "genres",
+  "favorites",
+  "local_music",
+  "notification_preferences",
+  "bio",
+  "social_links",
+  "profile_image",
+  "header_image",
+]);
+export type ProfileCompletionItem = z.infer<
+  typeof profileCompletionItemSchema
+>;
+
+export const profileCompletionSchema = z.object({
+  percentage: z.number().int().min(0).max(100),
+  completed: z.array(profileCompletionItemSchema),
+  missing: z.array(profileCompletionItemSchema),
+  requiredComplete: z.boolean(),
+});
+export type ProfileCompletion = z.infer<typeof profileCompletionSchema>;
 
 export const authSessionSchema = z.object({
   walletAddress: stellarWalletAddressSchema,
   email: z.string().email().optional().or(z.literal("")),
-  displayName: z.string().min(1),
-  role: userRoleSchema,
-  artistOnboardingFeePaid: z.boolean().default(false),
+  // New accounts do not have a display name until the first onboarding screen
+  // is submitted. The onboarding API enforces the non-empty requirement.
+  displayName: z.string().max(80),
+  primaryIntent: primaryIntentSchema,
+  artistAccess: z.boolean().default(false),
   profileImageUrl: z.string().optional(),
   headerImageUrl: z.string().optional(),
   token: z.string().optional(),
-  profileComplete: z.boolean().default(false),
+  onboardingStatus: onboardingStatusSchema,
+  onboardingStep: onboardingStepSchema,
+  onboardingVersion: z.number().int().positive(),
+  onboardingCompletedAt: z.string().optional(),
+  profileCompletion: profileCompletionSchema,
 });
 export type AuthSession = z.infer<typeof authSessionSchema>;
 

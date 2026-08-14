@@ -138,7 +138,7 @@ const syncTrackReleaseFields = async (
 const ensureOwnerProfile = async (walletAddress: string) => {
   const profile = await usersService.getProfile(walletAddress);
 
-  if (!profile || profile.role !== "artist") {
+  if (!profile || !["artist", "both"].includes(profile.primaryIntent)) {
     throw new Error("Create an artist profile before managing releases");
   }
 

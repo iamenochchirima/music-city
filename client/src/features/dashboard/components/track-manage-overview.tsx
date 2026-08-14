@@ -125,7 +125,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
 
   if (!session) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Connect your account before managing a track.
       </div>
     );
@@ -133,7 +133,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Loading track details...
       </div>
     );
@@ -141,7 +141,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
 
   if (!track) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Track not found.
       </div>
     );
@@ -150,7 +150,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
   const currentVisibility = track.visibility;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Button
           asChild
@@ -172,58 +172,53 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
         </Button>
       </div>
 
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-        <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-            Track details
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+            Track
           </p>
-          <h2 className="text-3xl font-semibold text-white">{track.title}</h2>
-          <p className="text-slate-400">
+          <h2 className="mt-1 text-2xl font-semibold text-white">{track.title}</h2>
+          <p className="mt-1 text-sm text-slate-400">
             {track.artistName} · {track.genre} · {track.runtime}
           </p>
         </div>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-3">
-          <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5">
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+        <div className="mt-5 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
               Status
             </p>
-            <p className="mt-3 text-xl text-white">{track.status}</p>
+            <p className="mt-2 text-base text-white">{track.status}</p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5">
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
               Playback
             </p>
-            <p className="mt-3 text-xl text-white">
+            <p className="mt-2 text-base text-white">
               {track.playbackReady ? "Ready" : "Not ready"}
             </p>
           </div>
-          <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-5">
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
               Visibility
             </p>
-            <p className="mt-3 text-xl capitalize text-emerald-300">
+            <p className="mt-2 text-base capitalize text-emerald-300">
               {currentVisibility === "published" ? "Published" : "Unpublished"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-8">
-        <div className="max-w-3xl space-y-2">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">
-            Publishing
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <div className="max-w-3xl space-y-1">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+            Visibility
           </p>
-          <h3 className="text-2xl font-semibold text-white">
-            Control whether this song is live or held back.
-          </h3>
-          <p className="text-slate-400">
-            Unpublished songs stay out of discovery. Published songs appear in the
-            listening surfaces once playback is ready.
-          </p>
+          <h3 className="text-xl font-semibold text-white">Who can hear this track?</h3>
+          <p className="text-sm text-slate-400">Change this any time.</p>
         </div>
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
           {visibilityOptions.map((option) => {
             const isActive = option.value === currentVisibility;
 
@@ -231,7 +226,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
               <button
                 key={option.value}
                 type="button"
-                className={`rounded-[24px] border p-5 text-left transition ${
+                className={`rounded-xl border p-4 text-left transition ${
                   isActive
                     ? "border-emerald-400/50 bg-emerald-400/10"
                     : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
@@ -239,15 +234,10 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
                 disabled={isSaving}
                 onClick={() => void updateVisibility(option.value)}
               >
-                <p className="text-xl font-semibold text-white">{option.label}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-400">
+                <p className="text-base font-semibold text-white">{option.label}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
                   {option.description}
                 </p>
-                {isActive ? (
-                  <p className="mt-4 text-xs uppercase tracking-[0.24em] text-emerald-300">
-                    Active
-                  </p>
-                ) : null}
               </button>
             );
           })}
@@ -260,7 +250,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </div>
         ) : null}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-wrap gap-2">
           <Button
             variant="outline"
             className="border-white/10 bg-white/5 text-white hover:bg-white/10"

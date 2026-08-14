@@ -116,7 +116,7 @@ const paymentResultFromExistingRecord = async (
   }
 
   if (intent.productType === "artist_onboarding_fee") {
-    return { payment, artistOnboardingFeePaid: true };
+    return { payment, artistAccess: true };
   }
 
   throw new HttpError(400, "Unsupported payment product");

@@ -375,7 +375,7 @@ export const adminService = {
       activeListeners,
       releaseViews,
       newFollows,
-      totalArtists: users.filter((user) => user.role === "artist").length,
+      totalArtists: users.filter((user) => ["artist", "both"].includes(user.primaryIntent)).length,
       totalTracks: tracks.length,
       topArtists,
       topTracks,
@@ -414,7 +414,7 @@ export const adminService = {
           walletAddress: user.walletAddress,
           email: user.email,
           displayName: user.displayName,
-          role: user.role,
+          primaryIntent: user.primaryIntent,
           location: user.location,
           subscriptionStatus:
             activeSubscriptionCount > 0 ? "subscribed" : "unsubscribed",
@@ -431,8 +431,8 @@ export const adminService = {
         .length,
       unsubscribed: items.filter((item) => item.subscriptionStatus === "unsubscribed")
         .length,
-      artists: items.filter((item) => item.role === "artist").length,
-      fans: items.filter((item) => item.role === "fan").length,
+      artists: items.filter((item) => ["artist", "both"].includes(item.primaryIntent)).length,
+      listeners: items.filter((item) => ["listener", "both"].includes(item.primaryIntent)).length,
     };
 
     return adminUserListSchema.parse({

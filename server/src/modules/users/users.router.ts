@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 
 import { requireSession } from "../../middleware/require-session.js";
+import { onboardingWriteRateLimit } from "../../middleware/onboarding-write-rate-limit.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { usersService } from "./users.service.js";
 
@@ -21,6 +22,44 @@ usersRouter.put(
   requireSession,
   asyncHandler(async (request, response) => {
     const profile = await usersService.upsertProfile(
+      request.session!.walletAddress,
+      request.body,
+    );
+
+    response.json({ profile });
+  }),
+);
+
+usersRouter.get(
+  "/me/onboarding",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    response.json(
+      await usersService.getOnboardingState(request.session!.walletAddress),
+    );
+  }),
+);
+
+usersRouter.put(
+  "/me/onboarding",
+  requireSession,
+  onboardingWriteRateLimit,
+  asyncHandler(async (request, response) => {
+    const profile = await usersService.saveOnboardingStep(
+      request.session!.walletAddress,
+      request.body,
+    );
+
+    response.json({ profile });
+  }),
+);
+
+usersRouter.post(
+  "/me/onboarding/complete",
+  requireSession,
+  onboardingWriteRateLimit,
+  asyncHandler(async (request, response) => {
+    const profile = await usersService.completeOnboarding(
       request.session!.walletAddress,
       request.body,
     );

@@ -36,9 +36,9 @@ const envSchema = z
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    PORT: z.coerce.number().default(4000),
-    CLIENT_ORIGIN: z.string().default("http://localhost:3000"),
-    ADMIN_CLIENT_ORIGIN: z.string().default("http://localhost:3001"),
+    PORT: z.coerce.number().default(4319),
+    CLIENT_ORIGIN: z.string().default("http://localhost:4317"),
+    ADMIN_CLIENT_ORIGIN: z.string().default("http://localhost:4318"),
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().default("music-city-dev-secret"),
     ADMIN_JWT_SECRET: z.string().default("music-city-admin-secret"),
@@ -46,9 +46,9 @@ const envSchema = z
       .string()
       .default("Test SDF Network ; September 2015"),
     STELLAR_HOME_DOMAIN: z.string().default("localhost"),
-    STELLAR_WEB_AUTH_DOMAIN: z.string().default("localhost:4000"),
+    STELLAR_WEB_AUTH_DOMAIN: z.string().default("localhost:4319"),
     STELLAR_SEP10_SECRET: z.string().optional(),
-    APP_BASE_URL: z.string().default("http://localhost:4000"),
+    APP_BASE_URL: z.string().default("http://localhost:4319"),
     STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
     STORAGE_BUCKET: z.string().default("music-city-dev"),
     STORAGE_REGION: z.string().default("auto"),
@@ -260,7 +260,7 @@ const envSchema = z
         });
       }
 
-      if (value.STELLAR_WEB_AUTH_DOMAIN === "localhost:4000") {
+      if (value.STELLAR_WEB_AUTH_DOMAIN === "localhost:4319") {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["STELLAR_WEB_AUTH_DOMAIN"],

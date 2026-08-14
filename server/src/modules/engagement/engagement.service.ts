@@ -39,7 +39,7 @@ const ensureProfile = async (walletAddress: string) => {
 const ensureArtist = async (artistId: string) => {
   const artist = await usersService.getProfileById(artistId);
 
-  if (!artist || artist.role !== "artist") {
+  if (!artist || !["artist", "both"].includes(artist.primaryIntent)) {
     throw new Error("Artist not found");
   }
 
@@ -458,7 +458,7 @@ export const engagementService = {
   ): Promise<ArtistAnalyticsSummary> {
     const profile = await ensureProfile(walletAddress);
 
-    if (profile.role !== "artist") {
+    if (!["artist", "both"].includes(profile.primaryIntent)) {
       throw new Error("Artist analytics are only available for artist accounts");
     }
 

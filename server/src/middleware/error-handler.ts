@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
 
 import { HttpError } from "../utils/http-error.js";
 import { logger } from "../utils/logger.js";
@@ -19,6 +20,20 @@ export const errorHandler = (
 
   if (error instanceof HttpError) {
     response.status(error.statusCode).json({ error: error.message });
+    return;
+  }
+
+  if (error instanceof ZodError) {
+    const fields = Object.fromEntries(
+      error.issues.map((issue) => [
+        issue.path.join(".") || "form",
+        issue.message,
+      ]),
+    );
+    response.status(400).json({
+      error: "Please check the highlighted fields",
+      fields,
+    });
     return;
   }
 

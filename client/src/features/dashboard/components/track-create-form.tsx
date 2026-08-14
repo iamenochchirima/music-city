@@ -456,7 +456,7 @@ export const TrackCreateForm = ({
   return (
     <>
       <div
-      className="space-y-8 rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-7"
+      className="space-y-6 rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
       onKeyDown={(event) => {
         if (
           event.key !== "Enter" ||
@@ -478,18 +478,18 @@ export const TrackCreateForm = ({
         goNext();
       }}
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-sm uppercase tracking-[0.28em] text-emerald-400">
-              Upload wizard
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
+              Upload
             </p>
-            <h4 className="text-2xl font-semibold text-white">
+            <h4 className="text-xl font-semibold text-white">
               {steps[stepIndex].label}
             </h4>
             <p className="text-sm text-slate-400">{steps[stepIndex].description}</p>
           </div>
-          <div className="text-sm text-slate-400">
+          <div className="text-xs text-slate-500">
             Step {stepIndex + 1} of {steps.length}
           </div>
         </div>
@@ -497,12 +497,12 @@ export const TrackCreateForm = ({
           value={progressValue}
           className="h-2 bg-white/10 [&>div]:bg-emerald-400"
         />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => (
             <button
               key={step.id}
               type="button"
-              className={`rounded-2xl border px-4 py-3 text-sm ${
+              className={`rounded-lg border px-3 py-2.5 text-sm ${
                 index === stepIndex
                   ? "border-emerald-400/40 bg-emerald-400/10 text-white"
                   : index < stepIndex
@@ -698,7 +698,7 @@ export const TrackCreateForm = ({
 
           <div className="space-y-3">
             <Label htmlFor="featuredArtists">Featured artists</Label>
-            <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
+            <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
               <div className="flex flex-wrap gap-2">
                 {featuredArtists.map((entry) => (
                   <div
@@ -789,8 +789,8 @@ export const TrackCreateForm = ({
                 onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)}
                 className="border-white/10 bg-slate-950/70 text-white file:text-white"
               />
-              <p className="text-sm text-slate-500">
-                Upload the artwork shown across shelves and the player.
+              <p className="text-xs text-slate-500">
+                JPG, PNG, or WebP.
               </p>
             </div>
             <div className="space-y-2">
@@ -802,8 +802,8 @@ export const TrackCreateForm = ({
                 onChange={(event) => setAudioFile(event.target.files?.[0] ?? null)}
                 className="border-white/10 bg-slate-950/70 text-white file:text-white"
               />
-              <p className="text-sm text-slate-500">
-                High quality master audio. Mux will process playback versions after upload.
+              <p className="text-xs text-slate-500">
+                High-quality audio file.
               </p>
             </div>
           </div>
@@ -812,16 +812,13 @@ export const TrackCreateForm = ({
 
       {stepIndex === 3 ? (
         <div className="space-y-5">
-          <div className="max-w-3xl space-y-2">
-            <p className="text-sm uppercase tracking-[0.28em] text-emerald-400">
-              Final decision
+          <div className="max-w-3xl space-y-1">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
+              Visibility
             </p>
-            <h5 className="text-2xl font-semibold text-white">
-              Decide how this track leaves the studio
-            </h5>
-            <p className="text-sm leading-7 text-slate-400">
-              Published tracks can appear in listening surfaces once playback is ready.
-              Unpublished tracks stay hidden so you can come back and release them later.
+            <h5 className="text-xl font-semibold text-white">Choose who can hear it</h5>
+            <p className="text-sm text-slate-400">
+              You can change this later from track settings.
             </p>
           </div>
 
@@ -848,37 +845,27 @@ export const TrackCreateForm = ({
                 <button
                   key={option.value}
                   type="button"
-                  className={`rounded-[24px] border p-5 text-left transition ${
+                  className={`rounded-xl border p-4 text-left transition ${
                     isActive
                       ? "border-emerald-400/50 bg-emerald-400/10"
                       : "border-white/10 bg-slate-950/50 hover:border-white/20 hover:bg-white/[0.06]"
                   }`}
                   onClick={() => setVisibility(option.value)}
                 >
-                  <p className="text-xl font-semibold text-white">{option.label}</p>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                  <p className="text-base font-semibold text-white">{option.label}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
                     {option.description}
                   </p>
-                  {isActive ? (
-                    <p className="mt-4 text-xs uppercase tracking-[0.24em] text-emerald-300">
-                      Selected
-                    </p>
-                  ) : null}
                 </button>
               );
             })}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4 text-sm leading-7 text-slate-300">
-            {visibility === "published"
-              ? "This upload will be created as a published track."
-              : "This upload will be created as an unpublished track."}
-          </div>
         </div>
       ) : null}
 
       {isSaving && (audioFile || coverFile) ? (
-        <div className="space-y-2 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+        <div className="space-y-2 rounded-xl border border-white/10 bg-slate-950/60 p-3">
           <div className="flex items-center justify-between text-sm text-slate-300">
             <span>{uploadStage ?? "Uploading..."}</span>
             <span>{uploadProgress}%</span>

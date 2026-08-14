@@ -82,6 +82,8 @@ type SchemaExpectationGroup = {
   name: string;
   relations: string[];
   indexes?: string[];
+  columns?: string[];
+  constraints?: string[];
   statements: string[];
   migrationName?: string;
 };
@@ -91,6 +93,8 @@ type SchemaExpectationStatus = {
   migrationApplied: boolean;
   missingRelations: string[];
   missingIndexes: string[];
+  missingColumns: string[];
+  missingConstraints: string[];
 };
 
 type SchemaHealthReport = {
@@ -119,8 +123,18 @@ const baseSchemaStatements = [
   `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     wallet_address TEXT NOT NULL UNIQUE,
-    role TEXT NOT NULL,
-    payload JSONB NOT NULL
+    primary_intent TEXT NOT NULL,
+    onboarding_status TEXT NOT NULL DEFAULT 'required',
+    onboarding_step TEXT NOT NULL DEFAULT 'identity',
+    onboarding_version INTEGER NOT NULL DEFAULT 1,
+    onboarding_completed_at TIMESTAMPTZ,
+    payload JSONB NOT NULL,
+    CONSTRAINT users_primary_intent_check
+      CHECK (primary_intent IN ('listener', 'artist', 'both')),
+    CONSTRAINT users_onboarding_status_check
+      CHECK (onboarding_status IN ('required', 'in_progress', 'complete')),
+    CONSTRAINT users_onboarding_step_check
+      CHECK (onboarding_step IN ('intent', 'identity', 'personalize', 'artist_identity', 'visuals', 'complete'))
   )`,
   `CREATE TABLE IF NOT EXISTS tracks (
     id TEXT PRIMARY KEY,
@@ -333,7 +347,6 @@ const baseSchemaStatements = [
       CHECK (status IN ('pending', 'started', 'completed', 'skipped', 'failed'))
   )`,
   "CREATE INDEX IF NOT EXISTS users_wallet_address_idx ON users (wallet_address)",
-  "CREATE INDEX IF NOT EXISTS users_role_idx ON users (role)",
   "CREATE INDEX IF NOT EXISTS admins_email_idx ON admins (email)",
   "CREATE INDEX IF NOT EXISTS tracks_artist_id_idx ON tracks (artist_id)",
   "CREATE INDEX IF NOT EXISTS tracks_status_idx ON tracks (status)",
@@ -374,6 +387,80 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  {
+    name: "2026-08-14-onboarding-intent-foundation",
+    statements: [
+      `DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'users'
+            AND column_name = 'role'
+        ) THEN
+          ALTER TABLE users RENAME COLUMN role TO primary_intent;
+        END IF;
+      END $$`,
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_intent TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_status TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step TEXT",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_version INTEGER",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ",
+      `UPDATE users
+       SET primary_intent = CASE
+         WHEN primary_intent = 'fan' THEN 'listener'
+         WHEN primary_intent IN ('artist', 'listener', 'both') THEN primary_intent
+         ELSE 'listener'
+       END
+       WHERE primary_intent IS NULL OR primary_intent NOT IN ('listener', 'artist', 'both')`,
+      `UPDATE users
+       SET payload = (payload - 'role' - 'artistOnboardingFeePaid' - 'profileComplete')
+         || jsonb_build_object(
+           'primaryIntent', primary_intent,
+           'onboardingStatus', COALESCE(NULLIF(payload->>'onboardingStatus', ''), 'complete'),
+           'onboardingStep', 'complete',
+           'onboardingVersion', 1
+         )`,
+      "UPDATE users SET onboarding_status = COALESCE(onboarding_status, 'complete')",
+      "UPDATE users SET onboarding_step = COALESCE(onboarding_step, 'complete')",
+      "UPDATE users SET onboarding_version = COALESCE(onboarding_version, 1)",
+      "ALTER TABLE users ALTER COLUMN primary_intent SET NOT NULL",
+      "ALTER TABLE users ALTER COLUMN onboarding_status SET NOT NULL",
+      "ALTER TABLE users ALTER COLUMN onboarding_step SET NOT NULL",
+      "ALTER TABLE users ALTER COLUMN onboarding_version SET NOT NULL",
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check",
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_primary_intent_check",
+      `ALTER TABLE users
+       ADD CONSTRAINT users_primary_intent_check
+       CHECK (primary_intent IN ('listener', 'artist', 'both'))`,
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_onboarding_status_check",
+      `ALTER TABLE users
+       ADD CONSTRAINT users_onboarding_status_check
+       CHECK (onboarding_status IN ('required', 'in_progress', 'complete'))`,
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_onboarding_step_check",
+      `ALTER TABLE users
+       ADD CONSTRAINT users_onboarding_step_check
+       CHECK (onboarding_step IN ('intent', 'identity', 'personalize', 'artist_identity', 'visuals', 'complete'))`,
+      "DROP INDEX IF EXISTS users_role_idx",
+      "CREATE INDEX IF NOT EXISTS users_primary_intent_idx ON users (primary_intent)",
+      "CREATE INDEX IF NOT EXISTS users_onboarding_status_idx ON users (onboarding_status)",
+    ],
+  },
+  {
+    name: "2026-08-14-onboarding-welcome-step",
+    statements: [
+      "ALTER TABLE users ALTER COLUMN onboarding_step SET DEFAULT 'identity'",
+      `UPDATE users
+       SET onboarding_step = 'identity'
+       WHERE onboarding_status <> 'complete'
+         AND onboarding_step = 'intent'`,
+      `UPDATE users
+       SET payload = jsonb_set(payload, '{onboardingStep}', to_jsonb(onboarding_step), true)
+       WHERE onboarding_status <> 'complete'
+         AND onboarding_step = 'identity'`,
+    ],
+  },
   {
     name: "2026-07-02-engagement-analytics-foundation",
     statements: [
@@ -753,6 +840,38 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     statements: baseSchemaStatements,
   },
   {
+    name: "2026-08-14-onboarding-intent-foundation",
+    migrationName: "2026-08-14-onboarding-intent-foundation",
+    relations: [],
+    indexes: ["users_primary_intent_idx", "users_onboarding_status_idx"],
+    columns: [
+      "users.primary_intent",
+      "users.onboarding_status",
+      "users.onboarding_step",
+      "users.onboarding_version",
+      "users.onboarding_completed_at",
+    ],
+    constraints: [
+      "users_primary_intent_check",
+      "users_onboarding_status_check",
+      "users_onboarding_step_check",
+    ],
+    statements:
+      schemaMigrations.find(
+        (migration) =>
+          migration.name === "2026-08-14-onboarding-intent-foundation",
+      )?.statements ?? [],
+  },
+  {
+    name: "2026-08-14-onboarding-welcome-step",
+    migrationName: "2026-08-14-onboarding-welcome-step",
+    relations: [],
+    statements:
+      schemaMigrations.find(
+        (migration) => migration.name === "2026-08-14-onboarding-welcome-step",
+      )?.statements ?? [],
+  },
+  {
     name: "2026-07-02-engagement-analytics-foundation",
     migrationName: "2026-07-02-engagement-analytics-foundation",
     relations: [
@@ -799,6 +918,12 @@ const inspectSchemaGroups = async (): Promise<SchemaExpectationStatus[]> => {
   const indexNames = criticalSchemaExpectationGroups.flatMap(
     (group) => group.indexes ?? [],
   );
+  const columnTargets = criticalSchemaExpectationGroups.flatMap(
+    (group) => group.columns ?? [],
+  );
+  const constraintNames = criticalSchemaExpectationGroups.flatMap(
+    (group) => group.constraints ?? [],
+  );
   const uniqueNames = [...new Set([...relationNames, ...indexNames])];
 
   const relationLookup = new Map<string, boolean>();
@@ -816,6 +941,33 @@ const inspectSchemaGroups = async (): Promise<SchemaExpectationStatus[]> => {
     }
   }
 
+  const columnLookup = new Map<string, boolean>();
+  if (columnTargets.length > 0) {
+    const columnResult = await pool.query<{ target: string }>(
+      `SELECT table_name || '.' || column_name AS target
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND (table_name || '.' || column_name) = ANY($1::text[])`,
+      [columnTargets],
+    );
+    for (const row of columnResult.rows) {
+      columnLookup.set(row.target, true);
+    }
+  }
+
+  const constraintLookup = new Set<string>();
+  if (constraintNames.length > 0) {
+    const constraintResult = await pool.query<{ conname: string }>(
+      `SELECT conname
+       FROM pg_constraint
+       WHERE conname = ANY($1::text[])`,
+      [constraintNames],
+    );
+    for (const row of constraintResult.rows) {
+      constraintLookup.add(row.conname);
+    }
+  }
+
   return criticalSchemaExpectationGroups.map((group) => ({
     name: group.name,
     migrationApplied: group.migrationName
@@ -826,6 +978,12 @@ const inspectSchemaGroups = async (): Promise<SchemaExpectationStatus[]> => {
     ),
     missingIndexes: (group.indexes ?? []).filter(
       (indexName) => !relationLookup.get(indexName),
+    ),
+    missingColumns: (group.columns ?? []).filter(
+      (column) => !columnLookup.get(column),
+    ),
+    missingConstraints: (group.constraints ?? []).filter(
+      (constraint) => !constraintLookup.has(constraint),
     ),
   }));
 };
@@ -905,7 +1063,9 @@ export const databaseService = {
         (group) =>
           group.migrationApplied &&
           group.missingRelations.length === 0 &&
-          group.missingIndexes.length === 0,
+          group.missingIndexes.length === 0 &&
+          group.missingColumns.length === 0 &&
+          group.missingConstraints.length === 0,
       ),
       checkedAt: new Date().toISOString(),
       groups,
@@ -920,7 +1080,10 @@ export const databaseService = {
 
       if (
         !status ||
-        (status.missingRelations.length === 0 && status.missingIndexes.length === 0)
+        (status.missingRelations.length === 0 &&
+          status.missingIndexes.length === 0 &&
+          status.missingColumns.length === 0 &&
+          status.missingConstraints.length === 0)
       ) {
         continue;
       }
@@ -1121,17 +1284,43 @@ export const databaseService = {
   async upsertUser(
     id: string,
     walletAddress: string,
-    role: string,
+    primaryIntent: string,
+    onboardingStatus: string,
+    onboardingStep: string,
+    onboardingVersion: number,
+    onboardingCompletedAt: string | undefined,
     payload: unknown,
   ) {
     await pool.query(
-      `INSERT INTO users (id, wallet_address, role, payload)
-       VALUES ($1, $2, $3, $4::jsonb)
+      `INSERT INTO users (
+        id,
+        wallet_address,
+        primary_intent,
+        onboarding_status,
+        onboarding_step,
+        onboarding_version,
+        onboarding_completed_at,
+        payload
+      )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
        ON CONFLICT (id) DO UPDATE SET
          wallet_address = EXCLUDED.wallet_address,
-         role = EXCLUDED.role,
+         primary_intent = EXCLUDED.primary_intent,
+         onboarding_status = EXCLUDED.onboarding_status,
+         onboarding_step = EXCLUDED.onboarding_step,
+         onboarding_version = EXCLUDED.onboarding_version,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
          payload = EXCLUDED.payload`,
-      [id, walletAddress, role, JSON.stringify(payload)],
+      [
+        id,
+        walletAddress,
+        primaryIntent,
+        onboardingStatus,
+        onboardingStep,
+        onboardingVersion,
+        onboardingCompletedAt ?? null,
+        JSON.stringify(payload),
+      ],
     );
   },
 
@@ -1144,10 +1333,10 @@ export const databaseService = {
     return result.rows[0]?.payload as T | null;
   },
 
-  async listUsersByRole<T>(role: string) {
+  async listUsersByPrimaryIntents<T>(primaryIntents: string[]) {
     const result = await pool.query<PersistedRow>(
-      `SELECT id, payload FROM users WHERE role = $1 ORDER BY id`,
-      [role],
+      `SELECT id, payload FROM users WHERE primary_intent = ANY($1::text[]) ORDER BY id`,
+      [primaryIntents],
     );
 
     return mapPayloadRows<T>(result.rows);

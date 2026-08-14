@@ -48,7 +48,7 @@ test("createSession returns the direct local media URL for local playback", asyn
         mediaProvider: "local" as const,
         playbackReady: true,
         streamMediaUrl:
-          "http://localhost:4000/api/v1/uploads/content/tracks%2Ftrk_local%2Faudio.mp3",
+          "http://localhost:4319/api/v1/uploads/content/tracks%2Ftrk_local%2Faudio.mp3",
       })) as typeof tracksService.getTrackForPlayback,
     ),
     restore(
@@ -87,7 +87,7 @@ test("createSession returns the direct local media URL for local playback", asyn
 
     assert.equal(
       session.streamUrl,
-      "http://localhost:4000/api/v1/uploads/content/tracks%2Ftrk_local%2Faudio.mp3",
+      "http://localhost:4319/api/v1/uploads/content/tracks%2Ftrk_local%2Faudio.mp3",
     );
     assert.equal(session.provider, "local");
     assert.ok(session.token.length > 0);
@@ -190,7 +190,7 @@ test("createSession still succeeds when analytics persistence fails", async () =
         likes: 0,
         mediaProvider: "local" as const,
         playbackReady: true,
-        streamMediaUrl: "http://localhost:4000/tracks/trk_resilient.mp3",
+        streamMediaUrl: "http://localhost:4319/tracks/trk_resilient.mp3",
       })) as typeof tracksService.getTrackForPlayback,
     ),
     restore(

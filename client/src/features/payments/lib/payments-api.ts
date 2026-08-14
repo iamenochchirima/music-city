@@ -61,7 +61,7 @@ export const paymentsApi = {
       payment: PaymentRecord;
       entitlement?: { id: string; trackId: string };
       subscription?: SubscriptionRecord;
-      artistOnboardingFeePaid?: boolean;
+      artistAccess?: boolean;
     }>("/payments/confirm", input, token);
   },
 };

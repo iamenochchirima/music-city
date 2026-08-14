@@ -5,6 +5,7 @@ export class ApiClientError extends Error {
     message: string,
     public readonly status?: number,
     public readonly detail?: string,
+    public readonly fieldErrors: Record<string, string> = {},
   ) {
     super(message);
     this.name = "ApiClientError";
@@ -25,11 +26,12 @@ type ErrorPayload = {
   message?: string;
   error?: string;
   detail?: string;
+  fields?: Record<string, string>;
 } | null;
 
 const buildApiClientError = (payload: ErrorPayload, status: number) => {
   const message = payload?.message ?? payload?.error ?? "Request failed";
-  return new ApiClientError(message, status, payload?.detail);
+  return new ApiClientError(message, status, payload?.detail, payload?.fields);
 };
 
 export const httpClient = {
