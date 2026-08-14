@@ -13,7 +13,9 @@ type ArtistAccessGateProps = {
 export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
   const router = useRouter();
   const { session } = useAuth();
-  const hasArtistProfile = session?.role === "artist";
+  const hasArtistIntent =
+    session?.primaryIntent === "artist" || session?.primaryIntent === "both";
+  const hasArtistAccess = Boolean(session?.artistAccess);
 
   const handleContinue = () => {
     if (!session?.token) {
@@ -21,7 +23,7 @@ export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
       return;
     }
 
-    if (hasArtistProfile) {
+    if (hasArtistIntent) {
       router.push("/dashboard");
       return;
     }
@@ -40,16 +42,20 @@ export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
         <h2 className="mt-2 text-2xl font-semibold text-white">
           {!session
             ? "Log in to unlock your artist studio"
-            : hasArtistProfile
+            : hasArtistIntent && hasArtistAccess
               ? "Your artist studio is ready"
-              : "Finish setting up your artist profile"}
+              : hasArtistIntent
+                ? "Unlock your artist studio"
+                : "Choose your artist path"}
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
           {!session
             ? `Log in with your wallet to set up an artist profile and ${action}.`
-            : hasArtistProfile
+            : hasArtistIntent && hasArtistAccess
               ? `Continue to the studio to ${action}.`
-              : `Complete your artist profile before you ${action}.`}
+              : hasArtistIntent
+                ? `Complete artist access before you ${action}.`
+                : `Choose an artist path before you ${action}.`}
         </p>
         <Button
           type="button"
@@ -58,9 +64,11 @@ export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
         >
           {!session
             ? "Log in to continue"
-            : hasArtistProfile
+            : hasArtistIntent && hasArtistAccess
               ? "Open artist studio"
-              : "Finish artist setup"}
+              : hasArtistIntent
+                ? "Open artist setup"
+                : "Set up artist profile"}
         </Button>
       </section>
   );

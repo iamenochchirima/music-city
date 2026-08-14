@@ -20,15 +20,15 @@ export const clientEnv = {
     readClientEnv(
       "VITE_API_BASE_URL",
       "NEXT_PUBLIC_API_BASE_URL",
-      "http://localhost:4000/api/v1",
-    ) ?? "http://localhost:4000/api/v1",
+      "http://localhost:4319/api/v1",
+    ) ?? "http://localhost:4319/api/v1",
   ),
   appBaseUrl: trimSlash(
     readClientEnv(
       "VITE_APP_BASE_URL",
       "NEXT_PUBLIC_APP_BASE_URL",
-      "http://localhost:3000",
-    ) ?? "http://localhost:3000",
+      "http://localhost:4317",
+    ) ?? "http://localhost:4317",
   ),
   dynamicEnvironmentId,
   stellarHorizonUrl:

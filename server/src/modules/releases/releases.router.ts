@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { ZodError } from "zod";
 
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -62,6 +63,10 @@ releasesRouter.post(
 
       response.status(201).json({ release });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Release creation failed",
@@ -83,6 +88,10 @@ releasesRouter.put(
 
       response.json({ release });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Release update failed",
@@ -104,6 +113,10 @@ releasesRouter.post(
 
       response.json({ release });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Add track to release failed",
@@ -125,6 +138,10 @@ releasesRouter.put(
 
       response.json({ release });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Release reorder failed",
@@ -145,6 +162,10 @@ releasesRouter.delete(
 
       response.status(204).send();
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Release deletion failed",
@@ -166,6 +187,10 @@ releasesRouter.delete(
 
       response.json({ release });
     } catch (error) {
+      if (error instanceof ZodError) {
+        throw error;
+      }
+
       throw new HttpError(
         400,
         error instanceof Error ? error.message : "Remove track from release failed",

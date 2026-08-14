@@ -55,19 +55,11 @@ const PageSection = ({
 );
 
 const StudioSection = ({
-  eyebrow,
-  title,
-  description,
   children,
 }: {
-  eyebrow: string;
-  title: string;
-  description: string;
   children: React.ReactNode;
 }) => (
-  <StudioShell eyebrow={eyebrow} title={title} description={description}>
-    {children}
-  </StudioShell>
+  <StudioShell>{children}</StudioShell>
 );
 
 const StreamPage = () => {
@@ -131,22 +123,14 @@ const DashboardTrackPage = () => {
   const { trackId = "" } = useParams();
 
   return (
-    <StudioSection
-      eyebrow="Track"
-      title="Manage release access"
-      description="Control whether this song stays private, becomes subscriber-only, or goes fully public."
-    >
+    <StudioSection>
       <TrackManageOverview trackId={trackId} />
     </StudioSection>
   );
 };
 
 const DashboardReleasesPage = () => (
-  <StudioSection
-    eyebrow="Studio"
-    title="Release management"
-    description="Create, organize, and publish singles, EPs, and albums."
-  >
+  <StudioSection>
     <DashboardReleasesOverview />
   </StudioSection>
 );
@@ -155,52 +139,32 @@ const DashboardReleasePage = () => {
   const { releaseId = "" } = useParams();
 
   return (
-    <StudioSection
-      eyebrow="Release"
-      title="Manage release"
-      description="Control metadata, track order, and publish state for this release."
-    >
+    <StudioSection>
       <ReleaseManageOverview releaseId={releaseId} />
     </StudioSection>
   );
 };
 
 const DashboardAnalyticsPage = () => (
-  <StudioSection
-    eyebrow="Studio"
-    title="Artist analytics"
-    description="Track your streams, followers, listeners, and top performing songs."
-  >
+  <StudioSection>
     <ArtistAnalyticsOverview />
   </StudioSection>
 );
 
 const DashboardCreatePage = () => (
-  <StudioSection
-    eyebrow="Studio"
-    title="Create music"
-    description="Upload a new track, assign it to a release, and prepare it for publishing."
-  >
+  <StudioSection>
     <DashboardCreateOverview />
   </StudioSection>
 );
 
 const DashboardTracksPage = () => (
-  <StudioSection
-    eyebrow="Studio"
-    title="Track catalog"
-    description="Manage playback readiness, access rules, and day-to-day catalog operations."
-  >
+  <StudioSection>
     <DashboardTracksOverview />
   </StudioSection>
 );
 
 const DashboardRevenuePage = () => (
-  <StudioSection
-    eyebrow="Studio"
-    title="Revenue"
-    description="Review purchases, subscription unlocks, and the current monetization mix across your catalog."
-  >
+  <StudioSection>
     <DashboardRevenueOverview />
   </StudioSection>
 );
@@ -355,11 +319,7 @@ export const AppRoutes = () => (
     <Route
       path="/dashboard"
       element={
-        <StudioSection
-          eyebrow="Studio"
-          title="Your music studio"
-          description="Create music, manage your catalog, and monitor performance from one workspace."
-        >
+        <StudioSection>
           <DashboardOverview />
         </StudioSection>
       }

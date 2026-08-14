@@ -1,4 +1,4 @@
-import { verifyChallengeSchema } from "@music-city/shared";
+import { profileCompletionSchema, verifyChallengeSchema } from "@music-city/shared";
 import { randomBytes } from "node:crypto";
 import {
   Keypair,
@@ -112,10 +112,30 @@ export const stellarAuthService = {
     return {
       walletAddress: source,
       email: profile?.email ?? "",
-      displayName: profile?.displayName ?? source.slice(0, 6),
-      role: profile?.role ?? ("fan" as const),
-      artistOnboardingFeePaid: await usersService.hasArtistOnboardingAccess(source),
-      profileComplete: Boolean(profile),
+      displayName: profile?.displayName ?? "",
+      primaryIntent: profile?.primaryIntent ?? "listener",
+      artistAccess: profile?.artistAccess ?? false,
+      onboardingStatus: profile?.onboardingStatus ?? "required",
+      onboardingStep: profile?.onboardingStep ?? "identity",
+      onboardingVersion: profile?.onboardingVersion ?? 1,
+      onboardingCompletedAt: profile?.onboardingCompletedAt,
+      profileCompletion: profile
+        ? (await usersService.getOnboardingState(source))!.profileCompletion
+        : profileCompletionSchema.parse({
+            percentage: 0,
+            completed: [],
+            missing: [
+              "display_name",
+              "email",
+              "location",
+              "genres",
+              "favorites",
+              "local_music",
+              "notification_preferences",
+              "profile_image",
+            ],
+            requiredComplete: false,
+          }),
     };
   },
 };

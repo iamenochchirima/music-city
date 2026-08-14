@@ -11,6 +11,14 @@ export const tracksRepository = {
     return databaseService.listTracksByArtist<TrackSummary>(artistId);
   },
 
+  async listPublicTrackIds(artistId?: string) {
+    return databaseService.listPublicTrackIds(artistId);
+  },
+
+  async isTrackInPublicRelease(trackId: string) {
+    return databaseService.isTrackInPublicRelease(trackId);
+  },
+
   async findById(trackId: string) {
     return databaseService.findPayloadById<TrackSummary>("tracks", trackId);
   },

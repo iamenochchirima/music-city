@@ -30,27 +30,46 @@ export const formatTrackStatus = (track: TrackSummary) => {
   return track.status;
 };
 
-export const formatTrackVisibilityLabel = (track: TrackSummary) =>
-  track.visibility === "published" ? "Published" : "Unpublished";
+export const formatTrackReleaseLabel = (track: TrackSummary) =>
+  track.releaseTitle ?? "Not in a release";
+
+export const formatTrackUploadedDate = (createdAt?: string) => {
+  if (!createdAt) {
+    return "Upload date unavailable";
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Upload date unavailable";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
 
 export const TrackThumbnail = ({ track }: { track: TrackSummary }) => {
   if (track.coverImageUrl) {
     return (
       <div
-        className="h-14 w-14 shrink-0 rounded-2xl bg-cover bg-center"
+        className="h-12 w-12 shrink-0 rounded-lg bg-cover bg-center"
         style={{ backgroundImage: `url(${track.coverImageUrl})` }}
       />
     );
   }
 
   return (
-    <div className="h-14 w-14 shrink-0 rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
+    <div className="h-12 w-12 shrink-0 rounded-lg bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
   );
 };
 
 interface TrackTableProps {
   tracks: TrackSummary[];
   actionHeader?: string;
+  showMetadata?: boolean;
   titleHref?: (track: TrackSummary) => string;
   onRowClick?: (track: TrackSummary) => void;
   isRowClickable?: (track: TrackSummary) => boolean;
@@ -62,6 +81,7 @@ interface TrackTableProps {
 export const TrackTable = ({
   tracks,
   actionHeader = "Action",
+  showMetadata = false,
   titleHref,
   onRowClick,
   isRowClickable,
@@ -70,21 +90,32 @@ export const TrackTable = ({
   renderOverflowAction,
 }: TrackTableProps) => {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03]">
-      <div className="hidden grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-white/10 px-6 py-4 text-xs uppercase tracking-[0.24em] text-slate-500 lg:grid">
-        <span>Track</span>
-        <span className="text-right">{actionHeader}</span>
-      </div>
-
-      <div className="divide-y divide-white/10">
+    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.025]">
+      <table className={cn("w-full text-left", showMetadata ? "min-w-[760px]" : "min-w-[520px]")}>
+        <caption className="sr-only">Track catalog</caption>
+        <thead className="border-b border-white/10 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          <tr>
+            <th scope="col" className="px-4 py-3 font-medium">Track</th>
+            {showMetadata ? (
+              <>
+                <th scope="col" className="px-4 py-3 font-medium">Artist</th>
+                <th scope="col" className="px-4 py-3 font-medium">Uploaded</th>
+                <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                <th scope="col" className="px-4 py-3 font-medium">Release</th>
+              </>
+            ) : null}
+            <th scope="col" className="px-4 py-3 text-right font-medium">{actionHeader}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/10">
         {tracks.map((track) => {
           const rowClickable = isRowClickable?.(track) ?? false;
 
           return (
-            <article
+            <tr
               key={track.id}
               className={cn(
-                "relative px-4 py-4 transition sm:px-6",
+                "transition",
                 rowClickable && "cursor-pointer hover:bg-white/[0.03]",
               )}
               onClick={() => {
@@ -94,42 +125,63 @@ export const TrackTable = ({
 
                 onRowClick(track);
               }}
+              onKeyDown={(event) => {
+                if (rowClickable && (event.key === "Enter" || event.key === " ") && onRowClick) {
+                  event.preventDefault();
+                  onRowClick(track);
+                }
+              }}
+              tabIndex={rowClickable ? 0 : undefined}
+              role={rowClickable ? "button" : undefined}
             >
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_120px] lg:items-center lg:gap-4">
-                <div className="flex min-w-0 items-center gap-3 pr-14 sm:gap-4 lg:pr-0">
+              <td className="px-4 py-3">
+                <div className="flex min-w-[220px] items-center gap-3">
                   {renderSelectionCell?.(track)}
-                  <div className="scale-90 sm:scale-100">
-                    <TrackThumbnail track={track} />
-                  </div>
+                  <TrackThumbnail track={track} />
                   <div className="min-w-0 space-y-1">
                     {titleHref ? (
                       <Link
                         href={titleHref(track)}
-                        className="block truncate text-lg font-semibold text-white transition hover:text-emerald-300"
+                        className="block truncate text-base font-semibold text-white transition hover:text-emerald-300"
                         onClick={(event) => event.stopPropagation()}
                       >
                         {track.title}
                       </Link>
                     ) : (
-                      <h3 className="truncate text-lg font-semibold text-white">
+                      <h3 className="truncate text-base font-semibold text-white">
                         {track.title}
                       </h3>
                     )}
-                    <p className="truncate text-sm text-slate-400">
-                      {track.artistName}
-                    </p>
                   </div>
                 </div>
-
-                <div className="absolute right-4 top-4 flex justify-end gap-2 sm:right-6 lg:static lg:justify-end">
+              </td>
+              {showMetadata ? (
+                <>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-300">
+                    {track.artistName}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-400">
+                    {formatTrackUploadedDate(track.createdAt)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-400">
+                    {formatTrackStatus(track)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-slate-400">
+                    {formatTrackReleaseLabel(track)}
+                  </td>
+                </>
+              ) : null}
+              <td className="px-4 py-3">
+                <div className="flex justify-end gap-1.5">
                   {renderAction(track)}
                   {renderOverflowAction?.(track)}
                 </div>
-              </div>
-            </article>
+              </td>
+            </tr>
           );
         })}
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 };

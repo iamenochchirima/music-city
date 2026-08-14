@@ -11,15 +11,15 @@ export const useArtistOnboardingPayment = () => {
   const { session, refreshSessionProfile } = useAuth();
   const runCheckout = useStellarCheckout();
   const [isPaid, setIsPaid] = useState(
-    session?.artistOnboardingFeePaid ?? false,
+    session?.artistAccess ?? false,
   );
   const [isChecking, setIsChecking] = useState(Boolean(session?.token));
   const [isPreparing, setIsPreparing] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
 
   useEffect(() => {
-    setIsPaid(session?.artistOnboardingFeePaid ?? false);
-  }, [session?.artistOnboardingFeePaid]);
+    setIsPaid(session?.artistAccess ?? false);
+  }, [session?.artistAccess]);
 
   useEffect(() => {
     if (!session?.token) {

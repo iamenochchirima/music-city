@@ -22,6 +22,13 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
+const restorePublicTrack = () =>
+  restore(
+    tracksService,
+    "isTrackPublic",
+    (async () => true) as typeof tracksService.isTrackPublic,
+  );
+
 const fanWallet = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 const artistWallet = "GCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
 
@@ -62,6 +69,7 @@ test("getPlaybackAdDecision skips ads for subscribed listeners", async () => {
       "getTrackForPlayback",
       (async () => createTrack()) as typeof tracksService.getTrackForPlayback,
     ),
+    restorePublicTrack(),
     restore(
       usersService,
       "getProfile",
@@ -100,6 +108,7 @@ test("getPlaybackAdDecision returns an eligible ad and creates a pending impress
       "getTrackForPlayback",
       (async () => createTrack()) as typeof tracksService.getTrackForPlayback,
     ),
+    restorePublicTrack(),
     restore(
       usersService,
       "getProfile",
@@ -171,6 +180,7 @@ test("getPlaybackAdDecision waits for a break even when the listener bought the 
       "getTrackForPlayback",
       (async () => createTrack()) as typeof tracksService.getTrackForPlayback,
     ),
+    restorePublicTrack(),
     restore(
       usersService,
       "getProfile",
@@ -219,6 +229,7 @@ test("getPlaybackAdDecision skips ads when the listener reached the daily cap", 
       "getTrackForPlayback",
       (async () => createTrack()) as typeof tracksService.getTrackForPlayback,
     ),
+    restorePublicTrack(),
     restore(
       usersService,
       "getProfile",
@@ -334,6 +345,7 @@ test("getPlaybackAdDecision skips ads when artists preview their own tracks", as
       "getTrackForPlayback",
       (async () => createTrack()) as typeof tracksService.getTrackForPlayback,
     ),
+    restorePublicTrack(),
     restore(
       usersService,
       "getProfile",

@@ -1,11 +1,11 @@
 import {
   trackMonetizationUpdateSchema,
-  trackVisibilityUpdateSchema,
+  trackMetadataUpdateSchema,
   trackCreateSchema,
-  type TrackVisibilityUpdateInput,
   type TrackMonetizationUpdateInput,
   type TrackSummary,
   type TrackCreateInput,
+  type TrackMetadataUpdateInput,
 } from "@music-city/shared";
 
 import { createId } from "../../services/id.service.js";
@@ -56,31 +56,45 @@ const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: 
   return nextTrack;
 };
 
+const hydrateTrackForView = (track: TrackSummary, isPublic: boolean): TrackSummary =>
+  hydrateTrackUrls({
+    ...track,
+    visibility: isPublic ? ("published" as const) : ("unpublished" as const),
+    priceLabel: isPublic ? "Published" : "Unpublished",
+  }) as TrackSummary;
+
 export const tracksService = {
+  async isTrackPublic(trackId: string) {
+    return tracksRepository.isTrackInPublicRelease(trackId);
+  },
+
   async listTracks() {
+    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds());
     const tracks = await tracksRepository.list();
     return tracks
-      .map(hydrateTrackUrls)
-      .filter((track) => track.playbackReady && track.visibility === "published");
+      .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
+      .map((track) => hydrateTrackForView(track, true));
   },
 
   async listMyTracks(walletAddress: string) {
     const profile = await usersService.getProfile(walletAddress);
 
-    if (!profile || profile.role !== "artist") {
+    if (!profile || !["artist", "both"].includes(profile.primaryIntent)) {
       return [];
     }
 
     const tracks = await tracksRepository.listByArtist(profile.id);
-    return tracks.map(hydrateTrackUrls);
+    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds(profile.id));
+    return tracks.map((track) => hydrateTrackForView(track, publicTrackIds.has(track.id)));
   },
 
   async listPublicTracksByArtist(artistId: string) {
     const tracks = await tracksRepository.listByArtist(artistId);
+    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds(artistId));
 
     return tracks
-      .map(hydrateTrackUrls)
-      .filter((track) => track.playbackReady && track.visibility === "published");
+      .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
+      .map((track) => hydrateTrackForView(track, true));
   },
 
   async getTrack(trackId: string) {
@@ -89,13 +103,11 @@ export const tracksService = {
       return null;
     }
 
-    const hydrated = hydrateTrackUrls(track);
-
-    if (!hydrated.playbackReady || hydrated.visibility !== "published") {
+    if (!track.playbackReady || !(await tracksRepository.isTrackInPublicRelease(track.id))) {
       return null;
     }
 
-    return hydrated;
+    return hydrateTrackForView(track, true);
   },
 
   async getTrackForPlayback(trackId: string) {
@@ -104,19 +116,25 @@ export const tracksService = {
       return null;
     }
 
-    const hydrated = hydrateTrackUrls(track);
-
-    if (!hydrated.playbackReady) {
+    if (!track.playbackReady) {
       return null;
     }
 
-    return hydrated;
+    return hydrateTrackForView(
+      track,
+      await tracksRepository.isTrackInPublicRelease(track.id),
+    );
   },
 
   async getTrackForUpload(trackId: string) {
     const track = await tracksRepository.findById(trackId);
 
-    return track ? hydrateTrackUrls(track) : null;
+    return track
+      ? hydrateTrackForView(
+          track,
+          await tracksRepository.isTrackInPublicRelease(track.id),
+        )
+      : null;
   },
 
   async getManageTrack(walletAddress: string, trackId: string) {
@@ -130,7 +148,10 @@ export const tracksService = {
       return null;
     }
 
-    return hydrateTrackUrls(track);
+    return hydrateTrackForView(
+      track,
+      await tracksRepository.isTrackInPublicRelease(track.id),
+    );
   },
 
   async userOwnsTrack(walletAddress: string, trackId: string) {
@@ -225,17 +246,14 @@ export const tracksService = {
       artistName: parsed.artistName?.trim() || profile.displayName,
       releaseArtistName: parsed.artistName?.trim() || profile.displayName,
       featuredArtists: parsed.featuredArtists ?? [],
-      composer: parsed.composer?.trim() || undefined,
-      producer: parsed.producer?.trim() || undefined,
       isrc: parsed.isrc?.trim() || undefined,
-      recordLabel: parsed.recordLabel?.trim() || undefined,
-      publisher: parsed.publisher?.trim() || undefined,
-      country: parsed.country?.trim() || undefined,
+      credits: parsed.credits ?? [],
+      isExplicit: parsed.isExplicit,
       genre: parsed.genre,
       runtime: "Not processed",
       priceLabel: parsed.priceLabel ?? "Unpublished",
       status: "awaiting_upload",
-      visibility: parsed.visibility,
+      visibility: "unpublished",
       purchaseEnabled,
       purchasePrice,
       purchaseAssetCode: purchaseAsset?.code,
@@ -253,10 +271,10 @@ export const tracksService = {
     return track;
   },
 
-  async updateTrackVisibility(
+  async updateTrackMetadata(
     walletAddress: string,
     trackId: string,
-    input: TrackVisibilityUpdateInput,
+    input: TrackMetadataUpdateInput,
   ) {
     const profile = await usersService.requireArtistOnboardingAccess(
       walletAddress,
@@ -268,12 +286,41 @@ export const tracksService = {
       throw new Error("Track not found");
     }
 
-    const parsed = trackVisibilityUpdateSchema.parse(input);
+    const parsed = trackMetadataUpdateSchema.parse(input);
+
+    const linkedArtistIds = [
+      ...new Set(
+        (parsed.credits ?? [])
+          .map((credit) => credit.artistId)
+          .filter((artistId): artistId is string => Boolean(artistId)),
+      ),
+    ];
+
+    for (const artistId of linkedArtistIds) {
+      const artist = await usersService.getProfileById(artistId);
+
+      if (!artist || !["artist", "both"].includes(artist.primaryIntent)) {
+        throw new Error("Linked credit profile must belong to an artist");
+      }
+    }
 
     return tracksRepository.upsert({
       ...existing,
-      visibility: parsed.visibility,
-      priceLabel: parsed.visibility === "published" ? "Published" : "Unpublished",
+      featuredArtists:
+        parsed.featuredArtists !== undefined
+          ? parsed.featuredArtists
+          : existing.featuredArtists,
+      credits: parsed.credits !== undefined ? parsed.credits : existing.credits,
+      isrc:
+        parsed.isrc !== undefined
+          ? parsed.isrc.replaceAll("-", "").toUpperCase() || undefined
+          : existing.isrc,
+      isExplicit:
+        parsed.isExplicit !== undefined ? parsed.isExplicit : existing.isExplicit,
+      description:
+        parsed.description !== undefined
+          ? parsed.description.trim() || undefined
+          : existing.description,
       updatedAt: new Date().toISOString(),
     });
   },
@@ -320,17 +367,18 @@ export const tracksService = {
             "Track purchase",
           )
         : undefined;
+    const isPublic = await tracksRepository.isTrackInPublicRelease(existing.id);
 
     return tracksRepository.upsert({
       ...existing,
-      visibility: existing.visibility,
+      visibility: isPublic ? "published" : "unpublished",
       purchaseEnabled,
       purchasePrice,
       purchaseAssetCode:
         purchaseAsset?.code ?? existing.purchaseAssetCode,
       purchaseAssetIssuer:
         purchaseAsset?.issuer ?? existing.purchaseAssetIssuer,
-      priceLabel: existing.visibility === "published" ? "Published" : "Unpublished",
+      priceLabel: isPublic ? "Published" : "Unpublished",
       updatedAt: new Date().toISOString(),
     });
   },

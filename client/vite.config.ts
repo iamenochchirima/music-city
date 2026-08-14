@@ -39,10 +39,11 @@ export default defineConfig(({ mode }) => {
       "process.env": JSON.stringify(env),
     },
     server: {
-      port: 3000,
+      port: 4317,
+      allowedHosts: [".ngrok-free.app"],
     },
     preview: {
-      port: 3000,
+      port: 4317,
     },
   };
 });

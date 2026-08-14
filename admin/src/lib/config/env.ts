@@ -7,9 +7,9 @@ const readEnv = (key: string, fallback: string) => {
 
 export const adminEnv = {
   apiBaseUrl: trimSlash(
-    readEnv("VITE_ADMIN_API_BASE_URL", "http://localhost:4000/api/v1/admin"),
+    readEnv("VITE_ADMIN_API_BASE_URL", "http://localhost:4319/api/v1/admin"),
   ),
   appBaseUrl: trimSlash(
-    readEnv("VITE_ADMIN_APP_BASE_URL", "http://localhost:3001"),
+    readEnv("VITE_ADMIN_APP_BASE_URL", "http://localhost:4318"),
   ),
 };

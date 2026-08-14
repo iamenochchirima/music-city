@@ -51,6 +51,7 @@ const toReleaseDetail = async (
   release: ReleaseSummary,
   includePrivateTracks: boolean,
 ): Promise<ReleaseDetail> => {
+  const isPublicRelease = release.status === "published";
   const assignments = [...(await releasesRepository.listTracks(release.id))].sort(
     (left, right) =>
       left.disc_number - right.disc_number ||
@@ -60,15 +61,23 @@ const toReleaseDetail = async (
   const tracks = await Promise.all(
     assignments.map(async (assignment) => {
       const track = await tracksRepository.findById(assignment.track_id);
-      return track
-        ? {
-            trackId: assignment.track_id,
-            trackNumber: assignment.track_number,
-            discNumber: assignment.disc_number,
-            isFocusTrack: assignment.is_focus_track,
-            track: hydrateTrackUrls(track),
-          }
-        : null;
+      if (!track) {
+        return null;
+      }
+
+      const viewTrack: TrackSummary = {
+        ...track,
+        visibility: isPublicRelease ? "published" : "unpublished",
+        priceLabel: isPublicRelease ? "Published" : "Unpublished",
+      };
+
+      return {
+        trackId: assignment.track_id,
+        trackNumber: assignment.track_number,
+        discNumber: assignment.disc_number,
+        isFocusTrack: assignment.is_focus_track,
+        track: hydrateTrackUrls(viewTrack),
+      };
     }),
   );
 
@@ -86,7 +95,7 @@ const toReleaseDetail = async (
       } =>
         item !== null &&
         (includePrivateTracks ||
-          Boolean(item.track.playbackReady && item.track.visibility === "published")),
+          Boolean(isPublicRelease && item.track.playbackReady)),
     ),
   };
 };
@@ -138,32 +147,125 @@ const syncTrackReleaseFields = async (
 const ensureOwnerProfile = async (walletAddress: string) => {
   const profile = await usersService.getProfile(walletAddress);
 
-  if (!profile || profile.role !== "artist") {
+  if (!profile || !["artist", "both"].includes(profile.primaryIntent)) {
     throw new Error("Create an artist profile before managing releases");
   }
 
   return profile;
 };
 
-const validateReleaseTracksForPublishing = async (
-  assignments: Awaited<ReturnType<typeof releasesRepository.listTracks>>,
-) => {
-  if (assignments.length === 0) {
+const validateReleaseTrackCount = (release: ReleaseSummary, trackCount: number) => {
+  if (trackCount === 0) {
     throw new Error("Add at least one track before releasing this project");
   }
+
+  if (release.type === "single" && trackCount !== 1) {
+    throw new Error("Singles must contain exactly one track");
+  }
+
+  if (release.type === "ep" && (trackCount < 2 || trackCount > 6)) {
+    throw new Error("EPs must contain between 2 and 6 tracks");
+  }
+
+  if (release.type === "album" && trackCount < 7) {
+    throw new Error("Albums must contain at least 7 tracks");
+  }
+};
+
+const validateReleaseTracklist = (
+  assignments: Array<{
+    track_id: string;
+    track_number: number;
+    disc_number: number;
+    is_focus_track: boolean;
+  }>,
+) => {
+  const trackIds = new Set<string>();
+  const positions = new Set<string>();
+  let focusTrackCount = 0;
+
+  for (const assignment of assignments) {
+    if (trackIds.has(assignment.track_id)) {
+      throw new Error("A release track can only appear once in the tracklist");
+    }
+
+    trackIds.add(assignment.track_id);
+
+    const position = `${assignment.disc_number}:${assignment.track_number}`;
+    if (positions.has(position)) {
+      throw new Error("Each track needs a unique disc and track number");
+    }
+
+    positions.add(position);
+
+    if (assignment.is_focus_track) {
+      focusTrackCount += 1;
+    }
+  }
+
+  if (focusTrackCount > 1) {
+    throw new Error("A release can have only one focus track");
+  }
+};
+
+const validateReleaseMetadata = (release: ReleaseSummary) => {
+  if (!release.title.trim() || !release.artistName.trim() || !release.genre.trim()) {
+    throw new Error("Add the release title, artist, and genre before publishing");
+  }
+
+  if (!release.coverStorageKey && !release.coverImageUrl) {
+    throw new Error("Upload release artwork before publishing");
+  }
+};
+
+const validateReleaseTracksForPublishing = async (
+  release: ReleaseSummary,
+  assignments: Awaited<ReturnType<typeof releasesRepository.listTracks>>,
+) => {
+  validateReleaseMetadata(release);
+  validateReleaseTrackCount(release, assignments.length);
+  validateReleaseTracklist(assignments);
 
   const assignedTracks = await Promise.all(
     assignments.map((assignment) => tracksRepository.findById(assignment.track_id)),
   );
   const hasBlockedTrack = assignedTracks.some(
-    (track) => !track || !track.playbackReady || track.visibility !== "published",
+    (track) => !track || !track.playbackReady,
   );
 
   if (hasBlockedTrack) {
     throw new Error(
-      "All tracks must be ready for playback and published before releasing this project",
+      "All tracks must finish audio processing before releasing this project",
     );
   }
+
+  return assignedTracks.filter((track): track is TrackSummary => Boolean(track));
+};
+
+const publishReleaseTracks = async (tracks: TrackSummary[]) => {
+  await Promise.all(
+    tracks.map((track) =>
+      tracksRepository.upsert({
+        ...track,
+        visibility: "published",
+        priceLabel: "Published",
+        updatedAt: new Date().toISOString(),
+      }),
+    ),
+  );
+};
+
+const unpublishReleaseTracks = async (tracks: TrackSummary[]) => {
+  await Promise.all(
+    tracks.map((track) =>
+      tracksRepository.upsert({
+        ...track,
+        visibility: "unpublished",
+        priceLabel: "Unpublished",
+        updatedAt: new Date().toISOString(),
+      }),
+    ),
+  );
 };
 
 const releaseDateHasArrived = (releaseDate?: string) =>
@@ -194,7 +296,8 @@ const resolvePublicReleaseState = async (release: ReleaseSummary) => {
   }
 
   const assignments = await releasesRepository.listTracks(release.id);
-  await validateReleaseTracksForPublishing(assignments);
+  const tracks = await validateReleaseTracksForPublishing(release, assignments);
+  await publishReleaseTracks(tracks);
 
   return releasesRepository.upsert({
     ...release,
@@ -285,6 +388,7 @@ export const releasesService = {
       status: "draft",
       genre: parsed.genre.trim(),
       description: parsed.description?.trim() || undefined,
+      recordLabel: parsed.recordLabel?.trim() || undefined,
       coverStorageKey: parsed.coverStorageKey?.trim() || undefined,
       releaseDate: parsed.releaseDate,
       trackCount: 0,
@@ -306,13 +410,34 @@ export const releasesService = {
     const parsed = releaseUpdateSchema.parse(input);
     const nextStatus = parsed.status ?? existing.status;
     const assignments = await releasesRepository.listTracks(releaseId);
+    const releaseForValidation: ReleaseSummary = {
+      ...existing,
+      title: parsed.title?.trim() || existing.title,
+      artistName: parsed.artistName?.trim() || existing.artistName,
+      type: parsed.type ?? existing.type,
+      genre: parsed.genre?.trim() || existing.genre,
+      description:
+        parsed.description !== undefined
+          ? parsed.description.trim() || undefined
+          : existing.description,
+      recordLabel:
+        parsed.recordLabel !== undefined
+          ? parsed.recordLabel.trim() || undefined
+          : existing.recordLabel,
+      coverStorageKey:
+        parsed.coverStorageKey !== undefined
+          ? parsed.coverStorageKey.trim() || undefined
+          : existing.coverStorageKey,
+    };
+
+    let tracksReadyForPublishing: TrackSummary[] | null = null;
 
     if (nextStatus === "published") {
-      await validateReleaseTracksForPublishing(assignments);
+      tracksReadyForPublishing = await validateReleaseTracksForPublishing(releaseForValidation, assignments);
     }
 
     if (nextStatus === "scheduled") {
-      await validateReleaseTracksForPublishing(assignments);
+      await validateReleaseTracksForPublishing(releaseForValidation, assignments);
 
       if (!parsed.releaseDate) {
         throw new Error("Choose a release date and time before scheduling");
@@ -333,6 +458,10 @@ export const releasesService = {
         parsed.description !== undefined
           ? parsed.description.trim() || undefined
           : existing.description,
+      recordLabel:
+        parsed.recordLabel !== undefined
+          ? parsed.recordLabel.trim() || undefined
+          : existing.recordLabel,
       coverStorageKey:
         parsed.coverStorageKey !== undefined
           ? parsed.coverStorageKey.trim() || undefined
@@ -352,6 +481,18 @@ export const releasesService = {
             : existing.publishedAt,
       updatedAt: new Date().toISOString(),
     });
+
+    if (nextStatus === "published" && tracksReadyForPublishing) {
+      await publishReleaseTracks(tracksReadyForPublishing);
+    } else {
+      await unpublishReleaseTracks(
+        (
+          await Promise.all(
+            assignments.map((assignment) => tracksRepository.findById(assignment.track_id)),
+          )
+        ).filter((track): track is TrackSummary => Boolean(track)),
+      );
+    }
 
     return toReleaseDetail(updated, true);
   },
@@ -375,6 +516,20 @@ export const releasesService = {
     const alreadyInRelease = existingAssignments.find(
       (assignment) => assignment.track_id === track.id,
     );
+
+    const artistReleases = await releasesRepository.listByArtist(profile.id);
+    for (const artistRelease of artistReleases) {
+      if (artistRelease.id === releaseId) {
+        continue;
+      }
+
+      const assignments = await releasesRepository.listTracks(artistRelease.id);
+
+      if (assignments.some((assignment) => assignment.track_id === track.id)) {
+        throw new Error("This track is already assigned to another release");
+      }
+    }
+
     const trackNumber =
       parsed.trackNumber ??
       alreadyInRelease?.track_number ??
@@ -390,6 +545,22 @@ export const releasesService = {
       }
     }
 
+    if (
+      release.type === "ep" &&
+      !alreadyInRelease &&
+      existingAssignments.length >= 6
+    ) {
+      throw new Error("EPs can contain at most 6 tracks");
+    }
+
+    if (
+      parsed.isFocusTrack &&
+      !alreadyInRelease &&
+      existingAssignments.some((assignment) => assignment.is_focus_track)
+    ) {
+      throw new Error("A release can have only one focus track");
+    }
+
     await releasesRepository.assignTrack(
       releaseId,
       track.id,
@@ -402,6 +573,11 @@ export const releasesService = {
       discNumber: parsed.discNumber,
       isFocusTrack: parsed.isFocusTrack,
     });
+    if (release.status === "published") {
+      await publishReleaseTracks([track]);
+    } else {
+      await unpublishReleaseTracks([track]);
+    }
     const syncedRelease = await syncReleaseTrackCount(release);
 
     return toReleaseDetail(syncedRelease, true);
@@ -416,6 +592,26 @@ export const releasesService = {
     }
 
     const parsed = releaseTrackReorderSchema.parse(input);
+    const existingTrackIds = new Set(
+      (await releasesRepository.listTracks(releaseId)).map(
+        (assignment) => assignment.track_id,
+      ),
+    );
+
+    if (
+      parsed.items.length !== existingTrackIds.size ||
+      parsed.items.some((item) => !existingTrackIds.has(item.trackId))
+    ) {
+      throw new Error("Reorder the existing release tracklist without adding tracks");
+    }
+
+    const proposedAssignments = parsed.items.map((item) => ({
+      track_id: item.trackId,
+      track_number: item.trackNumber,
+      disc_number: item.discNumber,
+      is_focus_track: item.isFocusTrack,
+    }));
+    validateReleaseTracklist(proposedAssignments);
 
     for (const item of parsed.items) {
       const track = await tracksRepository.findById(item.trackId);
@@ -449,6 +645,7 @@ export const releasesService = {
 
     await releasesRepository.removeTrack(releaseId, trackId);
     await syncTrackReleaseFields(track, null);
+    await unpublishReleaseTracks([track]);
     const syncedRelease = await syncReleaseTrackCount(release);
 
     return toReleaseDetail(syncedRelease, true);
@@ -472,6 +669,7 @@ export const releasesService = {
       }
 
       await syncTrackReleaseFields(track, null);
+      await unpublishReleaseTracks([track]);
     }
 
     await releasesRepository.delete(releaseId);

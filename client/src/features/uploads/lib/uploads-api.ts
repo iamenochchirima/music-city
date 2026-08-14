@@ -81,6 +81,10 @@ export const uploadsApi = {
     return response.headers.get("etag") ?? undefined;
   },
 
+  async cancelSession(token: string, uploadSessionId: string) {
+    await httpClient.delete(`/uploads/sessions/${uploadSessionId}`, token);
+  },
+
   async completeSession(
     token: string,
     uploadSessionId: string,

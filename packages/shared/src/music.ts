@@ -32,6 +32,27 @@ export const releaseStatusSchema = z.enum([
 ]);
 export type ReleaseStatus = z.infer<typeof releaseStatusSchema>;
 
+export const trackCreditRoleSchema = z.enum([
+  "songwriter",
+  "composer",
+  "producer",
+  "publisher",
+  "lyricist",
+  "remixer",
+  "engineer",
+]);
+export type TrackCreditRole = z.infer<typeof trackCreditRoleSchema>;
+
+export const trackCreditSchema = z.object({
+  role: trackCreditRoleSchema,
+  name: z.string().min(1).max(120),
+  artistId: z.string().min(1).optional(),
+});
+export type TrackCredit = z.infer<typeof trackCreditSchema>;
+
+const isValidIsrc = (value: string) =>
+  /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(value.replaceAll("-", "").toUpperCase());
+
 export const playlistVisibilitySchema = z.enum(["private", "public"]);
 export type PlaylistVisibility = z.infer<typeof playlistVisibilitySchema>;
 
@@ -58,12 +79,9 @@ export interface TrackSummary {
   discNumber?: number;
   isFocusTrack?: boolean;
   featuredArtists?: string[];
-  composer?: string;
-  producer?: string;
+  credits?: TrackCredit[];
   isrc?: string;
-  recordLabel?: string;
-  publisher?: string;
-  country?: string;
+  isExplicit?: boolean;
   genre: string;
   runtime: string;
   priceLabel: string;
@@ -117,6 +135,7 @@ export const releaseSummarySchema = z.object({
   description: z.string().max(1000).optional(),
   coverImageUrl: z.string().url().optional(),
   coverStorageKey: z.string().optional(),
+  recordLabel: z.string().max(120).optional(),
   releaseDate: z.string().optional(),
   publishedAt: z.string().optional(),
   trackCount: z.number().int().min(0).default(0),
@@ -138,6 +157,7 @@ export const releaseCreateSchema = z.object({
   type: releaseTypeSchema,
   genre: z.string().min(1).max(80),
   description: z.string().max(1000).optional(),
+  recordLabel: z.string().max(120).optional(),
   coverStorageKey: z.string().max(512).optional(),
   releaseDate: z.string().optional(),
 });
@@ -214,40 +234,67 @@ export const trackCreateSchema = z.object({
   title: z.string().min(1).max(160),
   artistName: z.string().min(1).max(120).optional(),
   featuredArtists: z.array(z.string().min(1).max(120)).max(8).optional(),
-  composer: z.string().max(120).optional(),
-  producer: z.string().max(120).optional(),
   isrc: z.string().max(32).optional(),
-  recordLabel: z.string().max(120).optional(),
-  publisher: z.string().max(120).optional(),
-  country: z.string().max(80).optional(),
+  credits: z.array(trackCreditSchema).max(32).optional(),
   genre: z.string().min(1).max(80),
   description: z.string().max(1000).optional(),
   priceLabel: z.string().max(80).optional(),
-  visibility: trackVisibilitySchema.default("unpublished"),
+  isExplicit: z.boolean().default(false),
   purchaseEnabled: z.boolean().optional(),
   purchasePrice: optionalPositiveAmountSchema,
   purchaseAssetCode: optionalStellarAssetCodeSchema,
   purchaseAssetIssuer: optionalStellarAssetIssuerSchema,
-}).superRefine((value, context) => {
-  const issue = requireIssuerForNonNativeAsset({
-    assetCode: value.purchaseAssetCode,
-    assetIssuer: value.purchaseAssetIssuer,
-  });
+})
+  .strict()
+  .superRefine((value, context) => {
+    if (value.isrc && !isValidIsrc(value.isrc)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["isrc"],
+        message: "Enter a valid 12-character ISRC or leave this blank",
+      });
+    }
 
-  if (issue) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["purchaseAssetIssuer"],
-      message: issue.message,
+    const issue = requireIssuerForNonNativeAsset({
+      assetCode: value.purchaseAssetCode,
+      assetIssuer: value.purchaseAssetIssuer,
     });
-  }
-});
+
+    if (issue) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["purchaseAssetIssuer"],
+        message: issue.message,
+      });
+    }
+  });
 export type TrackCreateInput = z.infer<typeof trackCreateSchema>;
 
-export const trackVisibilityUpdateSchema = z.object({
-  visibility: trackVisibilitySchema,
-});
-export type TrackVisibilityUpdateInput = z.infer<typeof trackVisibilityUpdateSchema>;
+export const trackMetadataUpdateSchema = z
+  .object({
+    featuredArtists: z.array(z.string().min(1).max(120)).max(8).optional(),
+    credits: z.array(trackCreditSchema).max(32).optional(),
+    isrc: z.string().max(32).optional(),
+    isExplicit: z.boolean().optional(),
+    description: z.string().max(1000).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (!value.isrc) {
+      return;
+    }
+
+    if (!isValidIsrc(value.isrc)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["isrc"],
+        message: "Enter a valid 12-character ISRC or leave this blank",
+      });
+    }
+  });
+export type TrackMetadataUpdateInput = z.infer<
+  typeof trackMetadataUpdateSchema
+>;
 
 export const trackMonetizationUpdateSchema = z
   .object({

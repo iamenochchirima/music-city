@@ -2,7 +2,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!_vercel/insights|[a-f0-9]{16}/).*)",
       "destination": "/index.html"
     }
   ]

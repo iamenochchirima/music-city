@@ -18,4 +18,8 @@ export const uploadsRepository = {
     );
     return session;
   },
+
+  async delete(id: string) {
+    await databaseService.deletePayloadById("upload_sessions", id);
+  },
 };

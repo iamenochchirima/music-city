@@ -16,6 +16,7 @@ import { ReleaseGrid } from "@/features/music/components/release-grid";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { usersApi } from "@/features/users/lib/users-api";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent } from "@/lib/analytics";
 
 export const ArtistDetailOverview = ({ artistId }: { artistId: string }) => {
   const { session } = useAuth();
@@ -41,6 +42,7 @@ export const ArtistDetailOverview = ({ artistId }: { artistId: string }) => {
           setProfile(nextProfile);
           setReleases(nextReleases);
           setTracks(nextTracks);
+          trackEvent("artist_profile_viewed");
         }
       } catch (error) {
         if (!cancelled) {
@@ -133,6 +135,9 @@ export const ArtistDetailOverview = ({ artistId }: { artistId: string }) => {
       setProfile((current) =>
         current ? { ...current, followerCount: state.followerCount } : current,
       );
+      if (state.following) {
+        trackEvent("artist_followed");
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Unable to update follow status",

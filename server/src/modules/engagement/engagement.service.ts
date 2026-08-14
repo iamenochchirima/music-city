@@ -39,7 +39,7 @@ const ensureProfile = async (walletAddress: string) => {
 const ensureArtist = async (artistId: string) => {
   const artist = await usersService.getProfileById(artistId);
 
-  if (!artist || artist.role !== "artist") {
+  if (!artist || !["artist", "both"].includes(artist.primaryIntent)) {
     throw new Error("Artist not found");
   }
 
@@ -458,7 +458,7 @@ export const engagementService = {
   ): Promise<ArtistAnalyticsSummary> {
     const profile = await ensureProfile(walletAddress);
 
-    if (profile.role !== "artist") {
+    if (!["artist", "both"].includes(profile.primaryIntent)) {
       throw new Error("Artist analytics are only available for artist accounts");
     }
 
@@ -466,6 +466,9 @@ export const engagementService = {
       windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
 
     const tracks = await tracksRepository.listByArtist(profile.id);
+    const publicTrackIds = new Set(
+      await tracksRepository.listPublicTrackIds(profile.id),
+    );
     const trackAnalytics = await Promise.all(
       tracks.map(async (track) => {
         const [saves, uniqueListeners, playbackStarts, playbackCompletions] =
@@ -481,7 +484,7 @@ export const engagementService = {
           title: track.title,
           releaseId: track.releaseId,
           releaseTitle: track.releaseTitle,
-          visibility: track.visibility ?? "published",
+          visibility: publicTrackIds.has(track.id) ? "published" : "unpublished",
           status: track.status,
           plays: track.plays,
           likes: track.likes,
@@ -597,7 +600,7 @@ export const engagementService = {
       totalSaves: trackAnalytics.reduce((sum, track) => sum + track.saves, 0),
       uniqueListeners,
       totalTracks: tracks.length,
-      publishedTracks: tracks.filter((track) => track.visibility === "published").length,
+      publishedTracks: tracks.filter((track) => publicTrackIds.has(track.id)).length,
       streamsLast7Days,
       streamsLast30Days,
       selectedWindowDays,

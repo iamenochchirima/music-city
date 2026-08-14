@@ -8,32 +8,25 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchablePicker } from "@/components/ui/searchable-picker";
 import { Textarea } from "@/components/ui/textarea";
+import { musicGenres } from "@/features/music/data/metadata-options";
 import { ReleaseGrid } from "@/features/music/components/release-grid";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 
 const initialForm: ReleaseCreateInput = {
   title: "",
   artistName: "",
   type: "single",
   genre: "",
+  recordLabel: "",
   description: "",
-  releaseDate: "",
 };
-
-type ReleaseLaunchMode = "draft" | "now" | "scheduled";
-
-const toIsoString = (value?: string) => {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
-};
+const MAX_COVER_SIZE_BYTES = 10 * 1024 * 1024;
 
 const getReleaseBuckets = (releases: ReleaseSummary[]) => ({
   drafts: releases.filter((release) => release.status === "draft").length,
@@ -42,6 +35,7 @@ const getReleaseBuckets = (releases: ReleaseSummary[]) => ({
 });
 
 export const DashboardReleasesOverview = () => {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const [releases, setReleases] = useState<ReleaseSummary[]>([]);
   const [form, setForm] = useState<ReleaseCreateInput>(initialForm);
@@ -50,7 +44,19 @@ export const DashboardReleasesOverview = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
-  const [launchMode, setLaunchMode] = useState<ReleaseLaunchMode>("draft");
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [coverFile]);
 
   useEffect(() => {
     if (!session?.displayName) {
@@ -71,7 +77,10 @@ export const DashboardReleasesOverview = () => {
       return;
     }
 
-    if (session?.role !== "artist") {
+    if (
+      session?.primaryIntent !== "artist" &&
+      session?.primaryIntent !== "both"
+    ) {
       setReleases([]);
       return;
     }
@@ -89,27 +98,6 @@ export const DashboardReleasesOverview = () => {
     void loadReleases();
   }, [session?.token]);
 
-  const updateReleaseStatus = async (
-    releaseId: string,
-    status: Extract<ReleaseSummary["status"], "draft" | "published">,
-  ) => {
-    const token = session?.token;
-
-    if (!token) {
-      return;
-    }
-
-    try {
-      const updated = await releasesApi.updateRelease(token, releaseId, { status });
-      setReleases((current) =>
-        current.map((release) => (release.id === updated.id ? updated : release)),
-      );
-      toast.success(status === "published" ? "Release published." : "Release unpublished.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to update release");
-    }
-  };
-
   const handleCreated = (release: ReleaseDetail) => {
     setReleases((current) => [release, ...current.filter((item) => item.id !== release.id)]);
     setIsCreateOpen(false);
@@ -117,9 +105,10 @@ export const DashboardReleasesOverview = () => {
       ...initialForm,
       artistName: session?.displayName ?? "",
     });
-    setLaunchMode("draft");
     setCoverFile(null);
+    setCoverPreviewUrl(null);
     setCoverUploadProgress(0);
+    navigate(`/dashboard/releases/${release.id}`);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -131,13 +120,13 @@ export const DashboardReleasesOverview = () => {
       return;
     }
 
+    let uploadSessionId: string | null = null;
+
     try {
       setIsCreating(true);
-      const releaseDate = toIsoString(form.releaseDate?.trim());
       let release = await releasesApi.createRelease(token, {
         ...form,
         artistName: form.artistName?.trim() || undefined,
-        releaseDate,
       });
 
       if (coverFile) {
@@ -148,6 +137,7 @@ export const DashboardReleasesOverview = () => {
           contentType: coverFile.type || "application/octet-stream",
           sizeBytes: coverFile.size,
         });
+        uploadSessionId = uploadSession.id;
         const eTag = await uploadsApi.uploadFile(
           token,
           uploadSession,
@@ -164,37 +154,47 @@ export const DashboardReleasesOverview = () => {
         }
       }
 
-      if (launchMode !== "draft") {
-        release = await releasesApi.updateRelease(token, release.id, {
-          status: launchMode === "scheduled" ? "scheduled" : "published",
-          releaseDate: launchMode === "scheduled" ? releaseDate : undefined,
-        });
+      handleCreated(release);
+      toast.success("Release draft created.");
+    } catch (error) {
+      if (uploadSessionId) {
+        await uploadsApi.cancelSession(token, uploadSessionId).catch(() => undefined);
       }
 
-      handleCreated(release);
-      toast.success(
-        launchMode === "scheduled"
-          ? "Release scheduled."
-          : launchMode === "now"
-            ? "Release published."
-            : "Release created.",
-      );
-    } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to create release");
     } finally {
       setIsCreating(false);
     }
   };
 
+  const handleCoverFileChange = (file: File | undefined) => {
+    if (!file) {
+      setCoverFile(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose a JPG, PNG, or WebP image for the release artwork.");
+      return;
+    }
+
+    if (file.size > MAX_COVER_SIZE_BYTES) {
+      toast.error("Release artwork must be 10 MB or smaller.");
+      return;
+    }
+
+    setCoverFile(file);
+  };
+
   if (!session) {
     return (
-      <div className="rounded-lg border border-white/10 bg-white/5 p-8 text-sm text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
         Connect your wallet before managing releases.
       </div>
     );
   }
 
-  if (session.role !== "artist") {
+  if (session.primaryIntent !== "artist" && session.primaryIntent !== "both") {
     return <ArtistAccessGate action="create or manage releases" />;
   }
 
@@ -202,13 +202,11 @@ export const DashboardReleasesOverview = () => {
   const featuredScheduled = releases.find((release) => release.status === "scheduled");
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/5 p-6">
-        <div className="space-y-1">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <div>
           <h2 className="text-xl font-semibold text-white">Release management</h2>
-          <p className="text-sm text-slate-300">
-            Create singles, EPs, and albums, then organize the tracks inside them.
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Build and publish your discography.</p>
         </div>
         <Button
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
@@ -219,42 +217,37 @@ export const DashboardReleasesOverview = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
           <div className="flex items-center gap-3 text-amber-200">
             <WandSparkles className="h-5 w-5" />
-            <p className="text-sm uppercase tracking-[0.24em]">Drafts</p>
+            <p className="text-xs font-medium uppercase tracking-[0.18em]">Drafts</p>
           </div>
-          <p className="mt-4 text-3xl font-semibold text-white">{releaseBuckets.drafts}</p>
-          <p className="mt-2 text-sm text-slate-400">Still private while you finish setup.</p>
+          <p className="mt-3 text-2xl font-semibold text-white">{releaseBuckets.drafts}</p>
         </div>
-        <div className="rounded-3xl border border-sky-400/20 bg-sky-400/5 p-5">
+        <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-4">
           <div className="flex items-center gap-3 text-sky-200">
             <CalendarClock className="h-5 w-5" />
-            <p className="text-sm uppercase tracking-[0.24em]">Scheduled</p>
+            <p className="text-xs font-medium uppercase tracking-[0.18em]">Scheduled</p>
           </div>
-          <p className="mt-4 text-3xl font-semibold text-white">{releaseBuckets.scheduled}</p>
-          <p className="mt-2 text-sm text-slate-400">Upcoming drops with public countdowns.</p>
+          <p className="mt-3 text-2xl font-semibold text-white">{releaseBuckets.scheduled}</p>
         </div>
-        <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
+        <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4">
           <div className="flex items-center gap-3 text-emerald-200">
             <Radio className="h-5 w-5" />
-            <p className="text-sm uppercase tracking-[0.24em]">Live</p>
+            <p className="text-xs font-medium uppercase tracking-[0.18em]">Live</p>
           </div>
-          <p className="mt-4 text-3xl font-semibold text-white">{releaseBuckets.live}</p>
-          <p className="mt-2 text-sm text-slate-400">Available to fans right now.</p>
+          <p className="mt-3 text-2xl font-semibold text-white">{releaseBuckets.live}</p>
         </div>
       </div>
 
       {featuredScheduled ? (
-        <div className="rounded-[28px] border border-sky-400/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(15,23,42,0.7))] p-6 sm:p-8">
-          <p className="text-sm uppercase tracking-[0.28em] text-sky-200">Next countdown page</p>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-            <div className="space-y-2">
+        <div className="rounded-xl border border-sky-400/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(15,23,42,0.7))] p-5">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-sky-200">Upcoming</p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+            <div>
               <h3 className="text-2xl font-semibold text-white">{featuredScheduled.title}</h3>
-              <p className="text-sm text-sky-100/80">
-                Fans can already see this release and count down to launch.
-              </p>
+              <p className="mt-1 text-sm text-sky-100/80">Countdown page is live.</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button
@@ -280,14 +273,12 @@ export const DashboardReleasesOverview = () => {
 
       {isCreateOpen ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#171a2a] p-6 shadow-2xl sm:p-8">
-            <div className="mb-6 space-y-2">
-              <p className="text-sm font-medium uppercase tracking-[0.3em] text-emerald-400">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#171a2a] p-5 shadow-2xl sm:p-6">
+            <div className="mb-5 space-y-1">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
                 New release
               </p>
-              <h3 className="text-3xl font-semibold tracking-tight text-white">
-                Create a release
-              </h3>
+              <h3 className="text-2xl font-semibold tracking-tight text-white">Create a release</h3>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -319,90 +310,57 @@ export const DashboardReleasesOverview = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm text-slate-300">Type</label>
-                  <select
-                    value={form.type}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        type: event.target.value as ReleaseCreateInput["type"],
-                      }))
-                    }
-                    className="flex h-10 w-full rounded-md border border-white/10 bg-slate-950 px-3 text-white"
-                  >
-                    <option value="single">Single</option>
-                    <option value="ep">EP</option>
-                    <option value="album">Album</option>
-                  </select>
+                  <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Release type">
+                    {(
+                      [
+                        ["single", "Single", "1 track"],
+                        ["ep", "EP", "2–6 tracks"],
+                        ["album", "Album", "7+ tracks"],
+                      ] as const
+                    ).map(([value, label, detail]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`rounded-lg border px-3 py-2 text-left transition ${
+                          form.type === value
+                            ? "border-emerald-400/50 bg-emerald-400/10 text-white"
+                            : "border-white/10 bg-slate-950/60 text-slate-400 hover:border-white/20"
+                        }`}
+                        onClick={() => setForm((current) => ({ ...current, type: value }))}
+                        aria-pressed={form.type === value}
+                      >
+                        <span className="block text-sm font-medium">{label}</span>
+                        <span className="mt-1 block text-xs text-slate-500">{detail}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm text-slate-300">Genre</label>
-                  <Input
+                  <SearchablePicker
+                    id="new-release-genre"
                     value={form.genre}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, genre: event.target.value }))
+                    onValueChange={(genre) =>
+                      setForm((current) => ({ ...current, genre }))
                     }
-                    className="border-white/10 bg-slate-950 text-white"
+                    options={musicGenres}
+                    placeholder="Select a genre"
+                    searchPlaceholder="Search genres"
                     required
                   />
                 </div>
               </div>
-              <div className="space-y-3">
-                <label className="text-sm text-slate-300">Release plan</label>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {(
-                    [
-                      {
-                        value: "draft",
-                        label: "Save draft",
-                        description: "Create the release without making it public yet.",
-                      },
-                      {
-                        value: "now",
-                        label: "Release now",
-                        description: "Publish immediately after creation.",
-                      },
-                      {
-                        value: "scheduled",
-                        label: "Schedule",
-                        description: "Make it public with a countdown before launch.",
-                      },
-                    ] as const
-                  ).map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        launchMode === option.value
-                          ? "border-emerald-400/40 bg-emerald-400/10"
-                          : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-white/[0.05]"
-                      }`}
-                      onClick={() => setLaunchMode(option.value)}
-                    >
-                      <p className="text-sm font-semibold text-white">{option.label}</p>
-                      <p className="mt-2 text-xs leading-6 text-slate-400">
-                        {option.description}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm text-slate-300">Record label <span className="text-slate-500">(optional)</span></label>
+                <Input
+                  value={form.recordLabel ?? ""}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, recordLabel: event.target.value }))
+                  }
+                  placeholder="Independent or label name"
+                  className="border-white/10 bg-slate-950 text-white"
+                />
               </div>
-              {launchMode === "scheduled" ? (
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-300">Scheduled release date</label>
-                  <Input
-                    type="datetime-local"
-                    value={form.releaseDate ?? ""}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        releaseDate: event.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-slate-950 text-white"
-                    required
-                  />
-                </div>
-              ) : null}
               <div className="space-y-2">
                 <label className="text-sm text-slate-300">Description</label>
                 <Textarea
@@ -421,11 +379,13 @@ export const DashboardReleasesOverview = () => {
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={(event) =>
-                    setCoverFile(event.target.files?.[0] ?? null)
-                  }
+                  onChange={(event) => handleCoverFileChange(event.target.files?.[0])}
                   className="border-white/10 bg-slate-950 text-white file:text-white"
                 />
+                <p className="text-xs text-slate-500">Square JPG, PNG, or WebP · up to 10 MB. This artwork represents the release.</p>
+                {coverPreviewUrl ? (
+                  <img src={coverPreviewUrl} alt="Selected release artwork preview" className="h-24 w-24 rounded-lg object-cover" />
+                ) : null}
                 {coverFile ? (
                   <p className="text-xs text-slate-400">
                     {coverFile.name}
@@ -442,8 +402,8 @@ export const DashboardReleasesOverview = () => {
                   className="border-white/10 bg-white/5 text-white hover:bg-white/10"
                   onClick={() => {
                     setIsCreateOpen(false);
-                    setLaunchMode("draft");
                     setCoverFile(null);
+                    setCoverPreviewUrl(null);
                     setCoverUploadProgress(0);
                   }}
                 >
@@ -454,13 +414,7 @@ export const DashboardReleasesOverview = () => {
                   className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
                   disabled={isCreating}
                 >
-                  {isCreating
-                    ? "Creating..."
-                    : launchMode === "scheduled"
-                      ? "Schedule release"
-                      : launchMode === "now"
-                        ? "Create and release"
-                        : "Create draft"}
+                  {isCreating ? "Creating..." : "Create draft & add tracks"}
                 </Button>
               </div>
             </form>
@@ -483,57 +437,6 @@ export const DashboardReleasesOverview = () => {
               showArtist={false}
               emptyMessage="You have not created any releases yet."
             />
-            <div className="grid gap-4 xl:grid-cols-2">
-              {releases.map((release) => (
-                <div
-                  key={release.id}
-                  className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-white">{release.title}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">
-                        {release.status} · {release.type}
-                      </p>
-                    </div>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    >
-                      <Link href={`/dashboard/releases/${release.id}`}>Open</Link>
-                    </Button>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    {release.status !== "published" ? (
-                      <Button
-                        type="button"
-                        className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-                        onClick={() => void updateReleaseStatus(release.id, "published")}
-                      >
-                        Release now
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                        onClick={() => void updateReleaseStatus(release.id, "draft")}
-                      >
-                        Unpublish
-                      </Button>
-                    )}
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    >
-                      <Link href={`/releases/${release.id}`}>View fan page</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>

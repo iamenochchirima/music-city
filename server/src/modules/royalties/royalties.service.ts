@@ -685,14 +685,11 @@ export const royaltiesService = {
     }
 
     const allTracks = await tracksRepository.list();
+    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds());
     const eligibleTracks = (
       await Promise.all(
         allTracks.map(async (track) => {
-          if (
-            track.status !== "published" ||
-            !track.playbackReady ||
-            track.visibility === "unpublished"
-          ) {
+          if (track.status !== "published" || !track.playbackReady || !publicTrackIds.has(track.id)) {
             return null;
           }
 

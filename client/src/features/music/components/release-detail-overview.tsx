@@ -11,6 +11,7 @@ import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent } from "@/lib/analytics";
 
 const formatReleaseDateTime = (value?: string) => {
   if (!value) {
@@ -72,6 +73,7 @@ export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
 
         if (!cancelled) {
           setRelease(nextRelease);
+          trackEvent("release_viewed");
         }
       } catch (error) {
         if (!cancelled) {

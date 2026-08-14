@@ -88,6 +88,6 @@ export const entitlementsService = {
 
     const profile = await usersService.getProfile(walletAddress);
 
-    return track.visibility === "published" || (profile?.id === track.artistId);
+    return (await tracksService.isTrackPublic(track.id)) || profile?.id === track.artistId;
   },
 };

@@ -124,7 +124,7 @@ export const ReleaseGrid = ({
 }) => {
   if (releases.length === 0) {
     return (
-      <div className="rounded-lg border border-white/10 bg-white/5 p-8 text-sm text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm text-slate-300">
         {emptyMessage ?? "No releases are available yet."}
       </div>
     );
@@ -134,7 +134,7 @@ export const ReleaseGrid = ({
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {releases.map((release) => (
         <Link key={release.id} href={hrefBuilder ? hrefBuilder(release) : `/releases/${release.id}`}>
-          <Card className="h-full border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
+          <Card className="h-full overflow-hidden rounded-xl border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
             <div className="overflow-hidden border-b border-white/10">
               {release.coverImageUrl ? (
                 <div
@@ -151,7 +151,7 @@ export const ReleaseGrid = ({
                   {formatReleaseType(release.type)}
                 </p>
                 <span
-                  className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] ${getStatusClasses(release)}`}
+                  className={`rounded-md border px-2 py-1 text-[10px] uppercase tracking-[0.16em] ${getStatusClasses(release)}`}
                 >
                   {getStatusLabel(release)}
                 </span>
@@ -160,11 +160,11 @@ export const ReleaseGrid = ({
               {showArtist ? <p className="text-sm text-slate-400">{release.artistName}</p> : null}
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-300">
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2">
+              <div className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2">
                 <span>{release.trackCount} tracks</span>
                 <span>{release.genre}</span>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-3">
+              <div className="rounded-lg border border-white/10 bg-slate-950/40 px-3 py-3">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
                   {getTimingCopy(release).label}
                 </p>

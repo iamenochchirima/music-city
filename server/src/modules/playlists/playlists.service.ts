@@ -12,6 +12,7 @@ import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { engagementService } from "../engagement/engagement.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
+import { tracksService } from "../tracks/tracks.service.js";
 import { usersService } from "../users/users.service.js";
 import { playlistsRepository } from "./playlists.repository.js";
 
@@ -62,6 +63,7 @@ const toPlaylistDetail = async (
             trackId: assignment.track_id,
             position: assignment.position,
             track: hydrateTrackUrls(track),
+            isPublic: await tracksService.isTrackPublic(track.id),
           }
         : null;
     }),
@@ -76,11 +78,11 @@ const toPlaylistDetail = async (
         trackId: string;
         position: number;
         track: TrackSummary;
+        isPublic: boolean;
       } =>
         item !== null &&
-        (includePrivateTracks ||
-          Boolean(item.track.playbackReady && item.track.visibility === "published")),
-    ),
+        (includePrivateTracks || Boolean(item.track.playbackReady && item.isPublic)),
+    ).map(({ trackId, position, track }) => ({ trackId, position, track })),
   };
 };
 
@@ -191,7 +193,7 @@ export const playlistsService = {
       throw new Error("Track not found");
     }
 
-    if (track.visibility === "unpublished" && track.artistId !== profile.id) {
+    if (!(await tracksService.isTrackPublic(track.id)) && track.artistId !== profile.id) {
       throw new Error("Private tracks cannot be added to this playlist");
     }
 

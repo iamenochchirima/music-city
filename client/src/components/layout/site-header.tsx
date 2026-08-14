@@ -162,7 +162,7 @@ export const SiteHeader = () => {
                 {session.displayName ||
                   `${session.walletAddress.slice(0, 6)}...${session.walletAddress.slice(-4)}`}
               </span>
-              {session.role === "artist" ? (
+              {session.primaryIntent === "artist" || session.primaryIntent === "both" ? (
                 <Button
                   asChild
                   variant="outline"
@@ -216,7 +216,7 @@ export const SiteHeader = () => {
                       Account
                     </Link>
                   </DropdownMenuItem>
-                  {session.role === "artist" ? (
+                  {session.primaryIntent === "artist" || session.primaryIntent === "both" ? (
                     <DropdownMenuItem
                       asChild
                       className="cursor-pointer focus:bg-white/10 focus:text-white sm:hidden"

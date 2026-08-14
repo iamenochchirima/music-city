@@ -10,10 +10,10 @@ import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api
 import { useAuth } from "@/hooks/use-auth";
 
 const StatTile = ({ label, value, hint }: { label: string; value: string; hint: string }) => (
-  <div className="rounded-[24px] border border-white/10 bg-slate-950/35 p-5">
-    <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{label}</p>
-    <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-    <p className="mt-2 text-sm text-slate-400">{hint}</p>
+  <div className="rounded-xl border border-white/10 bg-slate-950/35 p-4">
+    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">{label}</p>
+    <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+    <p className="mt-1 text-xs text-slate-400">{hint}</p>
   </div>
 );
 
@@ -39,7 +39,10 @@ export const DashboardRevenueOverview = () => {
       return;
     }
 
-    if (session?.role !== "artist") {
+    if (
+      session?.primaryIntent !== "artist" &&
+      session?.primaryIntent !== "both"
+    ) {
       setPayments([]);
       setSubscriptions([]);
       setTracks([]);
@@ -122,7 +125,7 @@ export const DashboardRevenueOverview = () => {
 
   if (!session) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Connect your wallet before viewing revenue.
       </div>
     );
@@ -130,38 +133,32 @@ export const DashboardRevenueOverview = () => {
 
   if (isLoading) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Loading revenue...
       </div>
     );
   }
 
-  if (session.role !== "artist") {
+  if (session.primaryIntent !== "artist" && session.primaryIntent !== "both") {
     return <ArtistAccessGate action="view artist revenue" />;
   }
 
   if (error) {
     return (
-      <div className="rounded-[28px] border border-red-500/20 bg-red-500/10 p-8 text-red-100">
+      <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-5 text-red-100">
         {error}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 sm:p-7">
-        <p className="text-sm uppercase tracking-[0.28em] text-emerald-400">
+    <div className="space-y-5">
+      <div className="border-b border-white/10 pb-5">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
           Revenue
         </p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">
-          Sales and unlock performance
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300">
-          Monitor one-time purchases, platform subscription unlocks, and how your
-          monetized catalog is currently set up. This gives the studio a real revenue
-          surface now, even before deeper royalty rollups land.
-        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Sales</h2>
+        <p className="mt-1 text-sm text-slate-400">Confirmed purchases and subscriptions.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -187,13 +184,13 @@ export const DashboardRevenueOverview = () => {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-          <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
               Recent confirmed payments
             </p>
-            <h3 className="text-2xl font-semibold text-white">Payment feed</h3>
+            <h3 className="mt-1 text-xl font-semibold text-white">Payment feed</h3>
           </div>
 
           {metrics.recentPayments.length === 0 ? (
@@ -201,11 +198,11 @@ export const DashboardRevenueOverview = () => {
               No confirmed payments yet.
             </div>
           ) : (
-            <div className="mt-6 space-y-3">
+            <div className="mt-4 space-y-2">
               {metrics.recentPayments.slice(0, 10).map((payment) => (
                 <div
                   key={payment.id}
-                  className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 md:grid-cols-[minmax(0,1.3fr)_120px_110px]"
+                  className="grid gap-3 rounded-lg border border-white/10 bg-slate-950/35 px-3 py-3 md:grid-cols-[minmax(0,1.3fr)_120px_110px]"
                 >
                   <div className="min-w-0">
                     <p className="font-semibold text-white">
@@ -216,11 +213,11 @@ export const DashboardRevenueOverview = () => {
                           : "Artist onboarding fee"}
                     </p>
                     <p className="mt-1 truncate text-sm text-slate-500">
-                      {payment.trackId || payment.walletAddress}
+                      {payment.trackId ? "Track catalog sale" : "Platform subscription"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
                       Amount
                     </p>
                     <p className="mt-1 text-white">
@@ -228,7 +225,7 @@ export const DashboardRevenueOverview = () => {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">
                       Confirmed
                     </p>
                     <p className="mt-1 text-white">
@@ -241,28 +238,23 @@ export const DashboardRevenueOverview = () => {
           )}
         </section>
 
-        <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-          <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+        <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
             Monetization setup
           </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">Catalog mix</h3>
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3">
+          <h3 className="mt-1 text-xl font-semibold text-white">Catalog mix</h3>
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-950/35 px-3 py-2.5">
               <span className="text-slate-300">Published tracks</span>
               <span className="font-semibold text-white">
                 {metrics.publishedTracks}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-950/35 px-3 py-2.5">
               <span className="text-slate-300">Unpublished tracks</span>
               <span className="font-semibold text-white">
                 {metrics.privateTracks}
               </span>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-4 text-sm leading-7 text-slate-300">
-              Listener subscriptions are handled at the platform level. This area can
-              absorb deeper royalties and payout reporting next without changing the
-              studio structure again.
             </div>
           </div>
         </section>

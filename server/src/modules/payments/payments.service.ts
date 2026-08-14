@@ -116,7 +116,7 @@ const paymentResultFromExistingRecord = async (
   }
 
   if (intent.productType === "artist_onboarding_fee") {
-    return { payment, artistOnboardingFeePaid: true };
+    return { payment, artistAccess: true };
   }
 
   throw new HttpError(400, "Unsupported payment product");
@@ -239,7 +239,7 @@ export const paymentsService = {
   async createTrackPurchaseIntent(walletAddress: string, trackId: string) {
     const track = await tracksService.getTrackForPlayback(trackId);
 
-    if (!track || !track.playbackReady || track.visibility !== "published") {
+    if (!track || !track.playbackReady || !(await tracksService.isTrackPublic(track.id))) {
       throw new HttpError(404, "Track not found");
     }
 

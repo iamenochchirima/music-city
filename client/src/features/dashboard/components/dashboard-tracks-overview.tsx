@@ -50,39 +50,35 @@ export const DashboardTracksOverview = () => {
 
   if (!session) {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Connect your wallet before using the studio catalog.
       </div>
     );
   }
 
-  if (!session.profileComplete) {
+  if (session.onboardingStatus !== "complete") {
     return (
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
         Complete onboarding before managing tracks.
       </div>
     );
   }
 
-  if (session.role !== "artist") {
+  if (session.primaryIntent !== "artist" && session.primaryIntent !== "both") {
     return <ArtistAccessGate action="manage tracks" />;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-white/10 bg-white/[0.04] p-6">
-        <div className="space-y-2">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+        <div>
           <h2 className="text-2xl font-semibold text-white">Your track catalog</h2>
-          <p className="max-w-2xl text-sm leading-7 text-slate-300">
-            Review playback readiness, sync uploads, change access, and open each
-            song’s management page from one table-driven workspace.
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Manage uploads, metadata, and releases.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button
             asChild
-            variant="outline"
-            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+            className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
           >
             <Link href="/dashboard/create">New track</Link>
           </Button>
@@ -97,7 +93,7 @@ export const DashboardTracksOverview = () => {
       </div>
 
       {isLoading ? (
-        <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-sm text-slate-400">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400">
           Loading your tracks...
         </div>
       ) : (

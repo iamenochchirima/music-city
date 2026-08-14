@@ -209,15 +209,22 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    const onboarding = await usersApi.getOnboardingState(session.token);
+
     const nextSession: AuthSession = {
       ...session,
       email: profile.email,
       displayName: profile.displayName,
-      role: profile.role,
-      artistOnboardingFeePaid: profile.artistOnboardingFeePaid,
+      primaryIntent: profile.primaryIntent,
+      artistAccess: profile.artistAccess,
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
-      profileComplete: true,
+      onboardingStatus: profile.onboardingStatus,
+      onboardingStep: profile.onboardingStep,
+      onboardingVersion: profile.onboardingVersion,
+      onboardingCompletedAt: profile.onboardingCompletedAt,
+      profileCompletion:
+        onboarding?.profileCompletion ?? session.profileCompletion,
     };
 
     setSession(nextSession);
@@ -227,7 +234,6 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (
       !session?.token ||
-      !session.profileComplete ||
       autoProfileRefreshTokenRef.current === session.token
     ) {
       return;
@@ -241,7 +247,6 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [
     autoProfileRefreshTokenRef,
     refreshSessionProfile,
-    session?.profileComplete,
     session?.token,
   ]);
 
@@ -336,15 +341,22 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    const onboarding = await usersApi.getOnboardingState(session.token);
+
     const nextSession: AuthSession = {
       ...session,
       email: profile.email,
       displayName: profile.displayName,
-      role: profile.role,
-      artistOnboardingFeePaid: profile.artistOnboardingFeePaid,
+      primaryIntent: profile.primaryIntent,
+      artistAccess: profile.artistAccess,
       profileImageUrl: profile.profileImageUrl,
       headerImageUrl: profile.headerImageUrl,
-      profileComplete: true,
+      onboardingStatus: profile.onboardingStatus,
+      onboardingStep: profile.onboardingStep,
+      onboardingVersion: profile.onboardingVersion,
+      onboardingCompletedAt: profile.onboardingCompletedAt,
+      profileCompletion:
+        onboarding?.profileCompletion ?? session.profileCompletion,
     };
 
     setSession(nextSession);
@@ -354,7 +366,6 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (
       !session?.token ||
-      !session.profileComplete ||
       autoProfileRefreshTokenRef.current === session.token
     ) {
       return;
@@ -368,7 +379,6 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [
     autoProfileRefreshTokenRef,
     refreshSessionProfile,
-    session?.profileComplete,
     session?.token,
   ]);
 
@@ -541,7 +551,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       logDynamicAuth("backend session success", {
         walletAddress: verifiedSession.walletAddress,
         displayName: verifiedSession.displayName,
-        profileComplete: verifiedSession.profileComplete,
+        onboardingStatus: verifiedSession.onboardingStatus,
       });
       setSession(verifiedSession);
       persistSession(verifiedSession);

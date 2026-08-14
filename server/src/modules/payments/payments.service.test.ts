@@ -296,7 +296,7 @@ test("confirm returns artist onboarding completion for the onboarding fee produc
 
     assert.deepEqual(result, {
       payment,
-      artistOnboardingFeePaid: true,
+      artistAccess: true,
     });
   } finally {
     cleanup.reverse().forEach((fn) => fn());

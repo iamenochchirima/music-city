@@ -16,10 +16,10 @@ export default defineConfig(({ mode }) => {
       "process.env": JSON.stringify(env),
     },
     server: {
-      port: 3001,
+      port: 4318,
     },
     preview: {
-      port: 3001,
+      port: 4318,
     },
   };
 });
