@@ -23,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  browseNavigationItems,
   primaryNavigationItems,
 } from "@/lib/constants/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,8 +35,6 @@ export const SiteHeader = () => {
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
-
-  const isBrowseActive = browseNavigationItems.some((item) => isActive(item.href));
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-[#03030d]/70 backdrop-blur-xl">
@@ -59,7 +56,7 @@ export const SiteHeader = () => {
               className="w-72 border-white/10 bg-[#070718] p-2 text-white shadow-2xl shadow-black/40"
             >
               <DropdownMenuLabel className="px-3 pt-2 text-[11px] font-medium uppercase tracking-[0.24em] text-white/45">
-                Browse
+                Explore
               </DropdownMenuLabel>
               {primaryNavigationItems.map((item) => (
                 <DropdownMenuItem
@@ -69,21 +66,6 @@ export const SiteHeader = () => {
                 >
                   <Link href={item.href} className="flex flex-col items-start gap-1">
                     <span className="text-sm font-semibold text-white">{item.label}</span>
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator className="bg-white/10" />
-              {browseNavigationItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.href}
-                  asChild
-                  className="rounded-2xl px-3 py-3 focus:bg-white/10 focus:text-white"
-                >
-                  <Link href={item.href} className="flex flex-col items-start gap-1">
-                    <span className="text-sm font-semibold text-white">{item.label}</span>
-                    <span className="text-xs leading-relaxed text-white/55">
-                      {item.description}
-                    </span>
                   </Link>
                 </DropdownMenuItem>
               ))}
@@ -114,44 +96,6 @@ export const SiteHeader = () => {
                 {item.label}
               </Link>
             ))}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "h-auto rounded-full px-4 py-2 text-sm font-medium text-white/65 hover:bg-white/8 hover:text-white",
-                    isBrowseActive && "bg-white/10 text-white",
-                  )}
-                >
-                  Browse
-                  <ChevronDown className="h-4 w-4 text-white/55" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                className="w-80 border-white/10 bg-[#070718] p-2 text-white shadow-2xl shadow-black/40"
-              >
-                <DropdownMenuLabel className="px-3 pt-2 text-[11px] font-medium uppercase tracking-[0.24em] text-white/45">
-                  More music
-                </DropdownMenuLabel>
-                {browseNavigationItems.map((item) => (
-                  <DropdownMenuItem
-                    key={item.href}
-                    asChild
-                    className="rounded-2xl px-3 py-3 focus:bg-white/10 focus:text-white"
-                  >
-                    <Link href={item.href} className="flex flex-col items-start gap-1">
-                      <span className="text-sm font-semibold text-white">
-                        {item.label}
-                      </span>
-                      <span className="text-xs leading-relaxed text-white/55">
-                        {item.description}
-                      </span>
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </nav>
 

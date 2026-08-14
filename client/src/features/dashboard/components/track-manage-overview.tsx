@@ -32,6 +32,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMetadataSaving, setIsMetadataSaving] = useState(false);
   const [isrc, setIsrc] = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isExplicit, setIsExplicit] = useState(false);
   const [featuredArtists, setFeaturedArtists] = useState("");
@@ -60,6 +61,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           }
 
           setTrack(nextTrack);
+          setTitle(nextTrack.title);
           setIsrc(nextTrack.isrc ?? "");
           setDescription(nextTrack.description ?? "");
           setIsExplicit(nextTrack.isExplicit ?? false);
@@ -146,6 +148,27 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     setNewCreditArtistId("");
   };
 
+  const saveTitle = async () => {
+    if (!session?.token || !track) {
+      return;
+    }
+
+    try {
+      setIsMetadataSaving(true);
+      const updated = await tracksApi.updateTrackMetadata(session.token, track.id, {
+        title: title.trim(),
+      });
+      setTrack(updated);
+      toast.success("Track title saved.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save track metadata",
+      );
+    } finally {
+      setIsMetadataSaving(false);
+    }
+  };
+
   const saveMetadata = async () => {
     if (!session?.token || !track) {
       return;
@@ -154,6 +177,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
     try {
       setIsMetadataSaving(true);
       const updated = await tracksApi.updateTrackMetadata(session.token, track.id, {
+        title: title.trim(),
         isrc: isrc.trim(),
         description: description.trim(),
         isExplicit,
@@ -267,6 +291,32 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
+          Track details
+        </p>
+        <div className="mt-4 max-w-xl space-y-2">
+          <label htmlFor="track-title" className="text-sm text-slate-300">
+            Track title
+          </label>
+          <Input
+            id="track-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Track title"
+            className="border-white/10 bg-slate-950 text-white"
+          />
+        </div>
+        <Button
+          type="button"
+          className="mt-4 bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+          disabled={isMetadataSaving || !title.trim()}
+          onClick={() => void saveTitle()}
+        >
+          {isMetadataSaving ? "Saving..." : "Save changes"}
+        </Button>
       </div>
 
       <details className="group rounded-xl border border-white/10 bg-white/[0.04]">

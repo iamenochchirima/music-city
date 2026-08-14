@@ -272,6 +272,7 @@ export type TrackCreateInput = z.infer<typeof trackCreateSchema>;
 
 export const trackMetadataUpdateSchema = z
   .object({
+    title: z.string().trim().min(1).max(160).optional(),
     featuredArtists: z.array(z.string().min(1).max(120)).max(8).optional(),
     credits: z.array(trackCreditSchema).max(32).optional(),
     isrc: z.string().max(32).optional(),

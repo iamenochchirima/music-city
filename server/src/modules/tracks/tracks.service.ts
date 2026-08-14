@@ -306,6 +306,7 @@ export const tracksService = {
 
     return tracksRepository.upsert({
       ...existing,
+      title: parsed.title !== undefined ? parsed.title : existing.title,
       featuredArtists:
         parsed.featuredArtists !== undefined
           ? parsed.featuredArtists

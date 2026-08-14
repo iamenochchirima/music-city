@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type {
   ArtistSummary,
   PlaylistSummary,
@@ -16,6 +17,36 @@ import { releasesApi } from "@/features/music/lib/releases-api";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { usersApi } from "@/features/users/lib/users-api";
+
+const DiscoverSection = ({
+  title,
+  description,
+  href,
+  linkLabel,
+  children,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  linkLabel: string;
+  children: React.ReactNode;
+}) => (
+  <section className="space-y-5">
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-semibold text-white">{title}</h2>
+        <p className="text-sm text-slate-400">{description}</p>
+      </div>
+      <Link
+        href={href}
+        className="text-sm font-medium text-emerald-300 transition hover:text-emerald-200"
+      >
+        {linkLabel} →
+      </Link>
+    </div>
+    {children}
+  </section>
+);
 
 export const DiscoverOverview = () => {
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
@@ -66,37 +97,47 @@ export const DiscoverOverview = () => {
   return (
     <div className="space-y-12">
       {scheduledReleases.length > 0 ? (
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-white">Upcoming countdowns</h2>
-            <p className="text-sm text-slate-400">
-              Stay close to the next drops and watch the clock on scheduled releases.
-            </p>
-          </div>
-          <ReleaseGrid releases={scheduledReleases} emptyMessage="No scheduled releases yet." />
-        </div>
+        <DiscoverSection
+          title="Upcoming countdowns"
+          description="Stay close to the next drops and watch the clock on scheduled releases."
+          href="/releases"
+          linkLabel="View all releases"
+        >
+          <ReleaseGrid releases={scheduledReleases.slice(0, 3)} emptyMessage="No scheduled releases yet." />
+        </DiscoverSection>
       ) : null}
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-white">Latest live releases</h2>
-          <p className="text-sm text-slate-400">
-            Freshly released projects you can stream right now.
-          </p>
-        </div>
-        <ReleaseGrid releases={liveReleases} emptyMessage="No live releases yet." />
-      </div>
-      <div className="space-y-5">
-        <h2 className="text-2xl font-semibold text-white">Featured tracks</h2>
-        <TrackGrid tracks={tracks} />
-      </div>
-      <div className="space-y-5">
-        <h2 className="text-2xl font-semibold text-white">Community playlists</h2>
-        <PlaylistGrid playlists={playlists} />
-      </div>
-      <div className="space-y-5">
-        <h2 className="text-2xl font-semibold text-white">Artists in motion</h2>
-        <ArtistGrid artists={artists} />
-      </div>
+      <DiscoverSection
+        title="Latest live releases"
+        description="Freshly released projects you can stream right now."
+        href="/releases"
+        linkLabel="View all releases"
+      >
+        <ReleaseGrid releases={liveReleases.slice(0, 3)} emptyMessage="No live releases yet." />
+      </DiscoverSection>
+      <DiscoverSection
+        title="Featured tracks"
+        description="A quick way into the latest music on Music City."
+        href="/stream"
+        linkLabel="View all tracks"
+      >
+        <TrackGrid tracks={tracks.slice(0, 6)} />
+      </DiscoverSection>
+      <DiscoverSection
+        title="Community playlists"
+        description="Listening paths built by the Music City community."
+        href="/playlists"
+        linkLabel="View all playlists"
+      >
+        <PlaylistGrid playlists={playlists.slice(0, 3)} />
+      </DiscoverSection>
+      <DiscoverSection
+        title="Artists in motion"
+        description="Explore artists and the music they are sharing."
+        href="/artists"
+        linkLabel="View all artists"
+      >
+        <ArtistGrid artists={artists.slice(0, 6)} />
+      </DiscoverSection>
     </div>
   );
 };
