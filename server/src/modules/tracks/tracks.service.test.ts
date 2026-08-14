@@ -189,12 +189,14 @@ test("track metadata updates normalize identifiers and validate linked artist cr
 
   try {
     await tracksService.updateTrackMetadata(walletAddress, "trk-1", {
+      title: "Renamed track",
       isrc: "US-RC1-76-07839",
       credits: [{ role: "composer", name: "Composer", artistId: "artist-1" }],
       isExplicit: true,
     });
 
     const savedTrack = persistedTrack as unknown as Record<string, unknown>;
+    assert.equal(savedTrack["title"], "Renamed track");
     assert.equal(savedTrack["isrc"], "USRC17607839");
     assert.equal(savedTrack["isExplicit"], true);
     assert.deepEqual(savedTrack["credits"], [
@@ -239,6 +241,55 @@ test("track metadata updates reject edits from another artist", async () => {
         }),
       /Track not found/,
     );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("track title updates do not revalidate unrelated existing metadata", async () => {
+  let persistedTrack: Record<string, unknown> | null = null;
+  const existingTrack = {
+    id: "trk-title-only",
+    title: "Old title",
+    artistId: "artist-1",
+    artistName: "Artist",
+    genre: "Pop",
+    runtime: "3:00",
+    priceLabel: "Unpublished",
+    status: "uploaded" as const,
+    visibility: "unpublished" as const,
+    plays: 0,
+    likes: 0,
+    isrc: "legacy-invalid-isrc",
+  };
+  const cleanup = [
+    restore(
+      usersService,
+      "requireArtistOnboardingAccess",
+      (async () => artistProfile) as typeof usersService.requireArtistOnboardingAccess,
+    ),
+    restore(
+      tracksRepository,
+      "findById",
+      (async () => existingTrack) as typeof tracksRepository.findById,
+    ),
+    restore(
+      tracksRepository,
+      "upsert",
+      (async (track) => {
+        persistedTrack = track as unknown as Record<string, unknown>;
+        return track;
+      }) as typeof tracksRepository.upsert,
+    ),
+  ];
+
+  try {
+    await tracksService.updateTrackMetadata(walletAddress, "trk-title-only", {
+      title: "New title",
+    });
+
+    assert.equal(persistedTrack?.["title"], "New title");
+    assert.equal(persistedTrack?.["isrc"], "legacy-invalid-isrc");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
