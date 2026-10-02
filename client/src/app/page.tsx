@@ -17,7 +17,7 @@ const featuredDrops = [
     genre: "Synthwave",
     status: "New this week",
     duration: "3:42",
-    image: "/images/landing/artist-1.png",
+    image: "/images/landing/community-artist.webp",
     tone: "from-violet-500/80 via-fuchsia-500/20 to-cyan-300/10",
   },
   {
@@ -26,7 +26,7 @@ const featuredDrops = [
     genre: "Ambient pop",
     status: "Early preview",
     duration: "4:18",
-    image: "/images/landing/artist-2.png",
+    image: "/images/landing/community-vocalist.webp",
     tone: "from-cyan-300/60 via-sky-500/20 to-violet-500/20",
   },
   {
@@ -35,16 +35,16 @@ const featuredDrops = [
     genre: "Electronic",
     status: "Just added",
     duration: "2:56",
-    image: "/images/landing/artist-3.png",
+    image: "/images/landing/community-dj.webp",
     tone: "from-fuchsia-500/70 via-orange-400/20 to-violet-500/10",
   },
 ] as const;
 
 const popularTracks = [
-  { title: "Urban Flow", artist: "0xKilla", genre: "Hip-hop", image: "/images/landing/artist-3.png" },
-  { title: "Afterglow", artist: "Ethereal", genre: "Cyber-pop", image: "/images/landing/artist-2.png" },
-  { title: "Static Hearts", artist: "Neon Flux", genre: "Synthwave", image: "/images/landing/artist-1.png" },
-  { title: "Low Light", artist: "Club 808", genre: "Electronic", image: "/images/landing/artist-3.png" },
+  { title: "Urban Flow", artist: "0xKilla", genre: "Hip-hop", image: "/images/landing/community-dj.webp" },
+  { title: "Afterglow", artist: "Ethereal", genre: "Cyber-pop", image: "/images/landing/community-vocalist.webp" },
+  { title: "Static Hearts", artist: "Neon Flux", genre: "Synthwave", image: "/images/landing/community-artist.webp" },
+  { title: "Low Light", artist: "Club 808", genre: "Electronic", image: "/images/landing/community-dj.webp" },
 ] as const;
 
 const artists = [
@@ -52,19 +52,19 @@ const artists = [
     name: "Neon Flux",
     genre: "Synthwave",
     detail: "Glowing nights and analogue warmth",
-    image: "/images/landing/artist-1.png",
+    image: "/images/landing/community-artist.webp",
   },
   {
     name: "Ethereal",
     genre: "Cyber-pop",
     detail: "Soft vocals for wide-open spaces",
-    image: "/images/landing/artist-2.png",
+    image: "/images/landing/community-vocalist.webp",
   },
   {
     name: "Block Beats",
     genre: "Underground",
     detail: "Rough edges, heavy low end",
-    image: "/images/landing/artist-3.png",
+    image: "/images/landing/community-dj.webp",
   },
 ] as const;
 
@@ -120,8 +120,8 @@ export default function LandingPage() {
           <div className="relative min-h-[52vh] overflow-hidden lg:min-h-[calc(100svh-4rem)]">
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#03030d] via-[#03030d]/20 to-transparent lg:bg-gradient-to-r lg:from-[#03030d] lg:via-[#03030d]/35 lg:to-transparent" />
             <Image
-              src="/images/landing/musiccity-hero.png"
-              alt="Artist in a cinematic Music City listening scene"
+              src="/images/landing/community-listener.webp"
+              alt="Music creator listening through headphones in a purple-lit studio"
               fill
               priority
               sizes="(min-width: 1024px) 50vw, 100vw"
@@ -195,7 +195,7 @@ export default function LandingPage() {
                 alt=""
                 fill
                 sizes="(min-width: 1024px) 55vw, 100vw"
-                className="object-cover object-center opacity-70 transition duration-700 group-hover:scale-105 group-hover:opacity-85"
+                className="object-cover object-[center_25%] opacity-70 transition duration-700 group-hover:scale-105 group-hover:opacity-85"
               />
               <div className={`absolute inset-0 bg-gradient-to-br ${featuredDrops[0].tone}`} />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
@@ -232,7 +232,7 @@ export default function LandingPage() {
                     alt=""
                     fill
                     sizes="(min-width: 1024px) 40vw, 100vw"
-                    className="object-cover object-center opacity-45 transition duration-700 group-hover:scale-105 group-hover:opacity-65"
+                    className="object-cover object-[center_25%] opacity-45 transition duration-700 group-hover:scale-105 group-hover:opacity-65"
                   />
                   <div className={`absolute inset-0 bg-gradient-to-br ${drop.tone}`} />
                   <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/45 to-transparent" />
@@ -289,7 +289,7 @@ export default function LandingPage() {
                     alt=""
                     fill
                     sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover opacity-65 transition duration-500 group-hover:scale-105 group-hover:opacity-85"
+                    className="object-cover object-[center_25%] opacity-65 transition duration-500 group-hover:scale-105 group-hover:opacity-85"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <span className="absolute left-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/75 backdrop-blur-md">
@@ -345,7 +345,7 @@ export default function LandingPage() {
                     alt={artist.name}
                     fill
                     sizes="96px"
-                    className="object-cover transition duration-500 group-hover:scale-110"
+                    className="object-cover object-[center_25%] transition duration-500 group-hover:scale-110"
                   />
                 </div>
                 <div className="min-w-0">
