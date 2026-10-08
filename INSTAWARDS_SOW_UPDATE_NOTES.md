@@ -1,6 +1,6 @@
 # Instawards SOW Update Notes
 
-Working notes to apply to the SOW after review. These are decisions and implementation pointers only; the Google Doc has not been updated yet.
+Historical working notes, superseded wherever they conflict with the [authoritative Music City Instawards SOW](https://docs.google.com/document/d/1Nk0WR6laCp2meQT_VANp3oYFr9YkuZyVKe5ziuPWFoc/edit). In particular, the exclusions of direct fan support below are superseded: direct support remains part of Deliverable 2. It is deferred from the current contributor-agreements milestone, not removed from the SOW. Use the [implementation plan](docs/contributor-agreements-implementation-plan.md) for this milestone's checklist and completion gates.
 
 ## Core replacement
 
@@ -58,7 +58,7 @@ If Yellow Card or MoneyGram remain in the SOW, they must be clearly separated as
 ## Feature decisions
 
 - Do not include NFTs, tokenized editions, collectibles, secondary trading, or a speculative marketplace.
-- Do not include direct fan-to-artist or fan-to-collaborator support in this core deliverable. That is a separate payment product with additional refund, abuse, fee, and compliance concerns.
+- Superseded: the authoritative SOW includes direct fan-to-artist support in Deliverable 2. Its implementation follows the contributor-agreements milestone as a separate payment flow.
 - Do not describe contributor approvals as on-chain transactions unless they are actually submitted on-chain. Use “wallet-signed acceptance records” for cryptographic approvals and reserve transaction hashes for actual Stellar/Soroban transactions.
 - Do not make splits permanently immutable. Finalized versions remain auditable, while corrections create controlled amendments and new versions.
 - Initially require each contributor to have a Music City account linked to a verified Stellar wallet. This keeps the first implementation complete and demonstrable.
@@ -73,7 +73,7 @@ If Yellow Card or MoneyGram remain in the SOW, they must be clearly separated as
 - **Deliverable 2:** Replace the NFT marketplace with Collaborative Royalty Agreements and Multi-Recipient Stellar Settlement.
 - **Fiat integrations:** State that Yellow Card and MoneyGram are not required for Deliverable 2 or its core demo.
 - **Budget:** Replace the $1,000 NFT line with the new collaboration-settlement system, preserving the $5,000 total.
-- **Out of scope:** Add NFTs, tokenized editions, secondary trading, direct support payments, cross-chain settlement, marketing, paid acquisition, incentives, and promotional campaigns.
+- **Out of scope (historical proposal):** NFTs, tokenized editions, secondary trading, cross-chain settlement, marketing, paid acquisition, incentives, and promotional campaigns. Direct support payments are included by the authoritative SOW and must not be treated as excluded.
 - **Timeline:** Replace edition design, minting, and supply-limit work with proposal, wallet acceptance, dispute, finalization, settlement, reconciliation, and failure-recovery work.
 - **Evidence:** Require acceptance signature artifacts, state transitions, Soroban finalization evidence, multi-recipient settlement hashes, and reconciliation reports.
 - **Validation targets:** Treat the 50 artists and 200 listeners as validation targets, not funded acquisition activities.

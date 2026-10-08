@@ -39,7 +39,7 @@ These items protect the first impression and prevent incorrect product behavior.
 - [ ] Make subscription and purchase enforcement match the UI and server behavior.
 - [ ] Add a seeded, resettable demo catalog with playable audio and complete artwork.
 - [ ] Add error states and retry actions to all public catalog pages.
-- [ ] Align authentication copy with the actual Dynamic/Stellar flow, or add the promised email/social path.
+- [ ] Align authentication copy with the direct Stellar wallet-signature flow, or add the promised email/social path.
 - [ ] Add global search across artists, tracks, releases, and playlists.
 - [ ] Add shareable public URLs and social preview metadata for artists, tracks, releases, and playlists.
 - [ ] Add upload progress, retry, processing status, and actionable failure states.
@@ -131,7 +131,7 @@ These items protect the first impression and prevent incorrect product behavior.
 - [ ] Make wallet requirements explicit in the login screen.
 - [ ] Provide testnet setup and funding instructions for the demo environment.
 - [ ] Handle cancelled wallet login without trapping the user.
-- [ ] Handle missing Dynamic configuration with a clear environment error.
+- [ ] Handle a missing Freighter extension and wallet-network mismatch with clear corrective steps.
 - [ ] Handle expired sessions and logout across browser tabs.
 - [ ] Review client-side token storage and reduce exposure to XSS where practical.
 
@@ -442,7 +442,7 @@ Spotify, YouTube, and SoundCloud all expose some combination of geographic, sour
 
 - [ ] Server starts with the intended demo environment variables.
 - [ ] Client points to the correct API base URL.
-- [ ] Dynamic authentication environment is configured, or demo auth bypass is intentionally enabled.
+- [ ] Stellar challenge signer is configured; Freighter can sign on the selected demo network.
 - [ ] Media provider is configured and tested.
 - [ ] Stellar network, asset, contract, and receiving wallet settings are correct.
 - [ ] Database schema is current.
@@ -529,4 +529,3 @@ The next external demo is ready when:
 - [ ] The team can reset and reseed the demo environment quickly.
 - [ ] The admin can diagnose the most likely failures without reading server logs manually.
 - [ ] The client can try the product themselves without requiring live developer intervention for every step.
-

@@ -107,8 +107,7 @@ Pointers:
 - [x] Rename the client profile method from `saveMe` to `updateProfile`.
 - [x] Return field-level Zod validation errors from the server.
 - [x] Map field-level errors into the client API error type.
-- [x] Return primary intent, artist access, onboarding state, and profile completion from Dynamic sessions.
-- [x] Return the same fields from Stellar sessions.
+- [x] Return primary intent, artist access, onboarding state, and profile completion from verified Stellar wallet-signature sessions.
 - [x] Stop deriving completion from user-row existence.
 - [x] Remove active product use of `profileComplete` and `artistOnboardingFeePaid`.
 
