@@ -7,12 +7,16 @@ import { Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { clientEnv } from "@/lib/config/env";
 
 export const AuthPanel = () => {
   const router = useRouter();
-  const { connectWallet, error, isLoading, session } = useAuth();
-  const dynamicConfigured = clientEnv.isDynamicConfigured;
+  const {
+    connectWallet,
+    error,
+    isLoading,
+    session,
+    walletSignInTimedOut,
+  } = useAuth();
 
   useEffect(() => {
     if (!session || session.onboardingStatus !== "complete") {
@@ -32,7 +36,7 @@ export const AuthPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm leading-7 text-slate-300">
-          Connect your wallet to create your Music City profile and continue.
+          Connect Freighter and sign a short Stellar challenge to create your Music City profile. Sign-in does not submit a transaction or charge a fee.
         </p>
 
         <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
@@ -42,12 +46,8 @@ export const AuthPanel = () => {
           </div>
           {session ? (
             <p>Connected. Redirecting you now.</p>
-          ) : dynamicConfigured ? (
-            <p>Ready to sign in.</p>
           ) : (
-            <p>
-              Login is not available right now.
-            </p>
+            <p>Ready to connect a Stellar wallet.</p>
           )}
         </div>
 
@@ -59,10 +59,18 @@ export const AuthPanel = () => {
 
         <Button
           className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          onClick={() => void connectWallet()}
-          disabled={isLoading || !dynamicConfigured}
+          onClick={() =>
+            walletSignInTimedOut
+              ? window.location.reload()
+              : void connectWallet()
+          }
+          disabled={isLoading}
         >
-          {isLoading ? "Opening login..." : "Login"}
+          {walletSignInTimedOut
+            ? "Reload to retry"
+            : isLoading
+              ? "Waiting for wallet..."
+              : "Connect with Freighter"}
         </Button>
       </CardContent>
     </Card>

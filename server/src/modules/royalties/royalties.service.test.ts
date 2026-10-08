@@ -7,7 +7,7 @@ const { royaltiesService } = await import("./royalties.service.js");
 const { royaltiesRepository } = await import("./royalties.repository.js");
 const { tracksRepository } = await import("../tracks/tracks.repository.js");
 const { stellarPayoutService } = await import("./stellar-payout.service.js");
-const { sorobanRegistryService } = await import("./soroban-registry.service.js");
+const { finalizedSplitsRepository } = await import("../agreements/effective-split.js");
 
 const basePayoutSettings = {
   approvalMode: "admin" as const,
@@ -40,296 +40,6 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
-test("upsertTrackSplits rejects split totals that do not add up to 10000 bps", async () => {
-  const cleanup = [
-    restore(
-      tracksRepository,
-      "findById",
-      (async () => ({
-        id: "trk_1",
-      })) as unknown as typeof tracksRepository.findById,
-    ),
-    restore(
-      royaltiesRepository,
-      "listTrackSplits",
-      (async () => []) as typeof royaltiesRepository.listTrackSplits,
-    ),
-  ];
-
-  try {
-    await assert.rejects(
-      () =>
-        royaltiesService.upsertTrackSplits("trk_1", {
-          recipients: [
-            {
-              walletAddress: "GD6R4ND0MADDR355000000000000000000000000000000000000000000",
-              chain: "stellar",
-              role: "artist",
-              shareBps: 9000,
-            },
-          ],
-          activate: true,
-        }),
-      (error) =>
-        error instanceof Error &&
-        error.message.includes("must total exactly 10000 bps"),
-    );
-  } finally {
-    cleanup.reverse().forEach((fn) => fn());
-  }
-});
-
-test("upsertTrackSplits supersedes previous active splits and increments version", async () => {
-  const upserts: Array<{ id: string; version: number; status: string }> = [];
-
-  const cleanup = [
-    restore(
-      tracksRepository,
-      "findById",
-      (async () => ({
-        id: "trk_2",
-      })) as unknown as typeof tracksRepository.findById,
-    ),
-    restore(
-      royaltiesRepository,
-      "listTrackSplits",
-      (async () => [
-        {
-          id: "rsplit_old",
-          trackId: "trk_2",
-          version: 1,
-          status: "active" as const,
-          registryKind: "offchain" as const,
-          registryChain: "stellar" as const,
-          registryNetwork: "stellar:testnet",
-          recipients: [
-            {
-              walletAddress:
-                "GD6R4ND0MADDR355000000000000000000000000000000000000000001",
-              chain: "stellar" as const,
-              role: "artist" as const,
-              shareBps: 10_000,
-            },
-          ],
-          totalBps: 10_000,
-          createdAt: "2026-07-01T00:00:00.000Z",
-          updatedAt: "2026-07-01T00:00:00.000Z",
-        },
-      ]) as typeof royaltiesRepository.listTrackSplits,
-    ),
-    restore(
-      royaltiesRepository,
-      "upsertSplit",
-      (async (split) => {
-        upserts.push({
-          id: split.id,
-          version: split.version,
-          status: split.status,
-        });
-        return split;
-      }) as typeof royaltiesRepository.upsertSplit,
-    ),
-  ];
-
-  try {
-    const split = await royaltiesService.upsertTrackSplits("trk_2", {
-      recipients: [
-        {
-          walletAddress:
-            "GD6R4ND0MADDR355000000000000000000000000000000000000000002",
-          chain: "stellar",
-          role: "artist",
-          shareBps: 7000,
-        },
-        {
-          walletAddress:
-            "GD6R4ND0MADDR355000000000000000000000000000000000000000003",
-          chain: "stellar",
-          role: "producer",
-          shareBps: 3000,
-        },
-      ],
-      activate: true,
-    });
-
-    assert.equal(split.version, 2);
-    assert.equal(split.status, "active");
-    assert.deepEqual(
-      upserts.map((item) => item.status),
-      ["superseded", "active"],
-    );
-  } finally {
-    cleanup.reverse().forEach((fn) => fn());
-  }
-});
-
-test("publishTrackSplit anchors the active split on Soroban and stores evidence", async () => {
-  const timestamp = "2026-07-21T08:00:00.000Z";
-  const activeSplit = {
-    id: "rsplit_publish",
-    trackId: "trk_publish",
-    version: 1,
-    status: "active" as const,
-    registryKind: "offchain" as const,
-    registryChain: "stellar" as const,
-    registryNetwork: "stellar:testnet",
-    registryContractId: "CCONTRACT",
-    recipients: [
-      {
-        walletAddress: "GARTIST",
-        chain: "stellar" as const,
-        role: "artist" as const,
-        shareBps: 10_000,
-      },
-    ],
-    totalBps: 10_000,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  const metadataHash = sorobanRegistryService.metadataHashForSplit(activeSplit);
-  const onChainSplit = {
-    version: 1,
-    recipients: activeSplit.recipients,
-    metadataHash,
-    frozen: false,
-    updatedLedger: 123,
-  };
-  const persisted: Array<{
-    registryKind: string;
-    registryVerificationStatus?: string;
-  }> = [];
-
-  const cleanup = [
-    restore(
-      royaltiesRepository,
-      "listTrackSplits",
-      (async () => [activeSplit]) as typeof royaltiesRepository.listTrackSplits,
-    ),
-    restore(
-      royaltiesRepository,
-      "upsertSplit",
-      (async (split) => {
-        persisted.push(split);
-        return split;
-      }) as typeof royaltiesRepository.upsertSplit,
-    ),
-    restore(
-      sorobanRegistryService,
-      "getConfig",
-      (() => ({
-        contractId: "CCONTRACT",
-        network: "stellar:testnet",
-        networkPassphrase: "Test SDF Network ; September 2015",
-        rpcUrl: "https://soroban-testnet.stellar.org",
-      })) as typeof sorobanRegistryService.getConfig,
-    ),
-    restore(
-      sorobanRegistryService,
-      "getTrackSplit",
-      (async () => undefined) as typeof sorobanRegistryService.getTrackSplit,
-    ),
-    restore(
-      sorobanRegistryService,
-      "publishTrackSplit",
-      (async () => ({
-        onChainSplit,
-        metadataHash,
-        txHash: "soroban-publish-tx",
-        ledger: 123,
-        contractId: "CCONTRACT",
-        network: "stellar:testnet",
-        explorerUrl:
-          "https://stellar.expert/explorer/testnet/tx/soroban-publish-tx",
-      })) as typeof sorobanRegistryService.publishTrackSplit,
-    ),
-  ];
-
-  try {
-    const result = await royaltiesService.publishTrackSplit("trk_publish");
-
-    assert.equal(result.txHash, "soroban-publish-tx");
-    assert.equal(result.split.registryKind, "soroban");
-    assert.equal(result.split.registryVerificationStatus, "match");
-    assert.equal(persisted.length, 1);
-    assert.equal(persisted[0]?.registryKind, "soroban");
-  } finally {
-    cleanup.reverse().forEach((fn) => fn());
-  }
-});
-
-test("verifyTrackSplit records a mismatch returned by Soroban", async () => {
-  const timestamp = "2026-07-21T08:00:00.000Z";
-  const activeSplit = {
-    id: "rsplit_verify",
-    trackId: "trk_verify",
-    version: 1,
-    status: "active" as const,
-    registryKind: "soroban" as const,
-    registryChain: "stellar" as const,
-    registryNetwork: "stellar:testnet",
-    registryContractId: "CCONTRACT",
-    recipients: [
-      {
-        walletAddress: "GARTIST",
-        chain: "stellar" as const,
-        role: "artist" as const,
-        shareBps: 10_000,
-      },
-    ],
-    totalBps: 10_000,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  let persistedStatus: string | undefined;
-
-  const cleanup = [
-    restore(
-      royaltiesRepository,
-      "listTrackSplits",
-      (async () => [activeSplit]) as typeof royaltiesRepository.listTrackSplits,
-    ),
-    restore(
-      royaltiesRepository,
-      "upsertSplit",
-      (async (split) => {
-        persistedStatus = split.registryVerificationStatus;
-        return split;
-      }) as typeof royaltiesRepository.upsertSplit,
-    ),
-    restore(
-      sorobanRegistryService,
-      "getConfig",
-      (() => ({
-        contractId: "CCONTRACT",
-        network: "stellar:testnet",
-        networkPassphrase: "Test SDF Network ; September 2015",
-        rpcUrl: "https://soroban-testnet.stellar.org",
-      })) as typeof sorobanRegistryService.getConfig,
-    ),
-    restore(
-      sorobanRegistryService,
-      "getTrackSplitVersion",
-      (async () => ({
-        version: 1,
-        recipients: activeSplit.recipients,
-        metadataHash: "0".repeat(64),
-        frozen: false,
-        updatedLedger: 124,
-      })) as typeof sorobanRegistryService.getTrackSplitVersion,
-    ),
-  ];
-
-  try {
-    const result = await royaltiesService.verifyTrackSplit("trk_verify");
-
-    assert.equal(result.matches, false);
-    assert.ok(result.differences.some((item) => item.includes("metadata hash")));
-    assert.equal(persistedStatus, "mismatch");
-  } finally {
-    cleanup.reverse().forEach((fn) => fn());
-  }
-});
-
 test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve entries", async () => {
   const insertedEntries: Array<{
     walletAddress: string;
@@ -340,6 +50,7 @@ test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve
   }> = [];
 
   const cleanup = [
+    restore(finalizedSplitsRepository,"effective",async trackId => (await finalizedSplitsRepository.list(trackId)).find(split => split.status === "active") ?? null),
     restore(
       royaltiesService,
       "getPayoutSettings",
@@ -362,15 +73,16 @@ test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve
       (async () => []) as typeof royaltiesRepository.listLedgerEntriesBySource,
     ),
     restore(
-      royaltiesRepository,
-      "listTrackSplits",
+      finalizedSplitsRepository,
+      "list",
       (async () => [
         {
           id: "rsplit_active",
           trackId: "trk_3",
           version: 1,
           status: "active" as const,
-          registryKind: "offchain" as const,
+          historical: false,
+          registryKind: "soroban" as const,
           registryChain: "stellar" as const,
           registryNetwork: "stellar:testnet",
           recipients: [
@@ -393,7 +105,7 @@ test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve
           createdAt: "2026-07-01T00:00:00.000Z",
           updatedAt: "2026-07-01T00:00:00.000Z",
         },
-      ]) as typeof royaltiesRepository.listTrackSplits,
+      ]) as typeof finalizedSplitsRepository.list,
     ),
     restore(
       royaltiesRepository,
@@ -455,6 +167,7 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
   const insertedEntries: Array<{ trackId: string; walletAddress: string; amount: string }> = [];
 
   const cleanup = [
+    restore(finalizedSplitsRepository,"effective",async trackId => (await finalizedSplitsRepository.list(trackId)).find(split => split.status === "active") ?? null),
     restore(
       royaltiesService,
       "getPayoutSettings",
@@ -521,11 +234,11 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
     restore(
       tracksRepository,
       "listPublicTrackIds",
-      (async () => ["trk_sub_1", "trk_sub_2", "trk_public"]) as typeof tracksRepository.listPublicTrackIds,
+      (async () => ["trk_sub_1", "trk_sub_2"]) as typeof tracksRepository.listPublicTrackIds,
     ),
     restore(
-      royaltiesRepository,
-      "listTrackSplits",
+      finalizedSplitsRepository,
+      "list",
       (async (trackId: string) => {
         if (trackId === "trk_sub_1") {
           return [
@@ -534,7 +247,8 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
               trackId,
               version: 1,
               status: "active" as const,
-              registryKind: "offchain" as const,
+          historical: false,
+              registryKind: "soroban" as const,
               registryChain: "stellar" as const,
               registryNetwork: "stellar:testnet",
               recipients: [
@@ -560,7 +274,8 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
               trackId,
               version: 1,
               status: "active" as const,
-              registryKind: "offchain" as const,
+          historical: false,
+              registryKind: "soroban" as const,
               registryChain: "stellar" as const,
               registryNetwork: "stellar:testnet",
               recipients: [
@@ -587,7 +302,7 @@ test("ensurePlatformSubscriptionLedgerEntries allocates evenly across eligible s
         }
 
         return [];
-      }) as typeof royaltiesRepository.listTrackSplits,
+      }) as typeof finalizedSplitsRepository.list,
     ),
     restore(
       royaltiesRepository,

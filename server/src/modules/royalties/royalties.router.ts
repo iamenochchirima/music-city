@@ -37,34 +37,4 @@ royaltiesRouter.get(
   }),
 );
 
-royaltiesRouter.put(
-  "/tracks/:trackId/splits",
-  asyncHandler(async (request, response) => {
-    response.json({
-      split: await royaltiesService.upsertTrackSplits(
-        String(request.params.trackId),
-        request.body,
-      ),
-    });
-  }),
-);
-
-royaltiesRouter.post(
-  "/tracks/:trackId/splits/publish",
-  asyncHandler(async (request, response) => {
-    response.json(
-      await royaltiesService.publishTrackSplit(String(request.params.trackId)),
-    );
-  }),
-);
-
-royaltiesRouter.get(
-  "/tracks/:trackId/splits/verify",
-  asyncHandler(async (request, response) => {
-    response.json(
-      await royaltiesService.verifyTrackSplit(String(request.params.trackId)),
-    );
-  }),
-);
-
 export { royaltiesRouter };

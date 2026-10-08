@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import type { WalletAccount, WalletBalance } from "@music-city/shared";
 import {
   ArrowUpRight,
@@ -24,9 +23,9 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
 import {
-  ensureActiveStellarAccount,
-  resolveStellarWallet,
-} from "@/features/wallet/lib/resolve-stellar-wallet";
+  addFreighterTrustline,
+  sendFreighterPayment,
+} from "@/features/wallet/lib/freighter";
 import { clientEnv } from "@/lib/config/env";
 
 const formatBalance = (amount: string) =>
@@ -50,9 +49,6 @@ const shortenAddress = (value: string) => `${value.slice(0, 6)}...${value.slice(
 
 const assetLabel = (balance: WalletBalance) =>
   balance.isNative ? "XLM" : `${balance.assetCode} token`;
-
-const buildTokenAddress = (balance: WalletBalance) =>
-  balance.isNative ? undefined : `${balance.assetCode}:${balance.assetIssuer ?? ""}`;
 
 const findBalance = (account: WalletAccount | null, assetCode: string) =>
   account?.balances.find((balance) => balance.assetCode === assetCode) ?? null;
@@ -129,8 +125,6 @@ const describeWalletError = (caughtError: unknown, fallback: string) => {
 
 export const WalletOverviewCard = () => {
   const { session } = useAuth();
-  const { primaryWallet } = useDynamicContext();
-  const userWallets = useUserWallets();
   const [account, setAccount] = useState<WalletAccount | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -200,11 +194,6 @@ export const WalletOverviewCard = () => {
       spendableBalances.find((balance) => balance.assetKey === selectedAssetKey) ?? null,
     [selectedAssetKey, spendableBalances],
   );
-  const stellarWallet = resolveStellarWallet(
-    session?.walletAddress,
-    primaryWallet,
-    userWallets,
-  );
   const xlmBalance = findBalance(account, "XLM");
   const usdcBalance = findBalance(account, "USDC");
   const hasUsdcTrustline = Boolean(
@@ -215,7 +204,7 @@ export const WalletOverviewCard = () => {
     ),
   );
   const canSend =
-    Boolean(stellarWallet?.address) &&
+    Boolean(session?.walletAddress) &&
     spendableBalances.length > 0;
 
   const handleCopyAddress = async () => {
@@ -234,8 +223,8 @@ export const WalletOverviewCard = () => {
   };
 
   const handleSend = async () => {
-    if (!stellarWallet) {
-      toast.error("Connect a Stellar wallet first.");
+    if (!session?.walletAddress) {
+      toast.error("Sign in with your Stellar wallet first.");
       return;
     }
 
@@ -251,16 +240,12 @@ export const WalletOverviewCard = () => {
 
     try {
       setIsSending(true);
-      await stellarWallet.connector.connect();
-      await ensureActiveStellarAccount(stellarWallet);
-      const txHash = await stellarWallet.sendBalance({
+      const txHash = await sendFreighterPayment({
+        accountAddress: session.walletAddress,
+        destinationAddress: recipient.trim(),
         amount: amount.trim(),
-        toAddress: recipient.trim(),
-        token: buildTokenAddress(selectedBalance)
-          ? {
-              address: buildTokenAddress(selectedBalance)!,
-            }
-          : undefined,
+        assetCode: selectedBalance.assetCode,
+        assetIssuer: selectedBalance.assetIssuer,
       });
 
       toast.success(
@@ -277,8 +262,8 @@ export const WalletOverviewCard = () => {
   };
 
   const handleAddUsdcTrustline = async () => {
-    if (!stellarWallet) {
-      toast.error("Connect a Stellar wallet first.");
+    if (!session?.walletAddress) {
+      toast.error("Sign in with your Stellar wallet first.");
       return;
     }
 
@@ -294,14 +279,10 @@ export const WalletOverviewCard = () => {
       setIsTrustlineApprovalSlow(true);
     }, 5000);
 
-    void stellarWallet
-      .connector.connect()
-      .then(async () => {
-        await ensureActiveStellarAccount(stellarWallet);
-        return stellarWallet.addTrustline({
-          assetCode: clientEnv.stellarTestnetUsdcCode,
-          assetIssuer: clientEnv.stellarTestnetUsdcIssuer,
-        });
+    void addFreighterTrustline({
+      accountAddress: session.walletAddress,
+      assetCode: clientEnv.stellarTestnetUsdcCode,
+      assetIssuer: clientEnv.stellarTestnetUsdcIssuer,
       })
       .then(async (txHash: string) => {
         toast.success(
@@ -453,7 +434,7 @@ export const WalletOverviewCard = () => {
               ) : null}
               {isTrustlineApprovalSlow ? (
                 <p className="mt-2 text-xs text-emerald-100/80">
-                  If nothing popped up, unlock your connected wallet or reopen the Dynamic wallet prompt, then try again.
+                  If nothing popped up, open Freighter, unlock your wallet, and try again.
                 </p>
               ) : null}
             </div>

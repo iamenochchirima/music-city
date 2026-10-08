@@ -7,21 +7,8 @@ import type {
 import { databaseService } from "../../services/database.service.js";
 
 export const royaltiesRepository = {
-  async listTrackSplits(trackId: string) {
-    return databaseService.listRoyaltySplitsByTrack<TrackRoyaltySplitRecord>(trackId);
-  },
-
-  async upsertSplit(split: TrackRoyaltySplitRecord) {
-    await databaseService.upsertRoyaltySplit(
-      split.id,
-      split.trackId,
-      split.version,
-      split.status,
-      split.registryChain ?? null,
-      split,
-    );
-
-    return split;
+  async listHistoricalTrackSplits(trackId: string) {
+    return databaseService.listHistoricalRoyaltySplitsByTrack<TrackRoyaltySplitRecord>(trackId);
   },
 
   async listLedgerEntriesByTrack(trackId: string) {

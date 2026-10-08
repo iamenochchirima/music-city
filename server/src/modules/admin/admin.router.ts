@@ -341,19 +341,6 @@ adminRouter.post(
   }),
 );
 
-adminRouter.put(
-  "/royalties/tracks/:trackId/splits",
-  requireAdminSession,
-  asyncHandler(async (request, response) => {
-    response.json({
-      split: await adminService.upsertTrackRoyaltySplits(
-        String(request.params.trackId),
-        request.body,
-      ),
-    });
-  }),
-);
-
 adminRouter.get(
   "/treasury",
   requireAdminSession,

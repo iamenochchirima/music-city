@@ -1,4 +1,5 @@
 import LandingPage from "@/app/page";
+import { AgreementsOverview } from "@/features/agreements/agreements-overview";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHero } from "@/components/common/page-hero";
 import { AccountOverview } from "@/features/account/components/account-overview";
@@ -266,6 +267,7 @@ export const AppRoutes = () => (
       }
     />
     <Route path="/account/playlists" element={<AccountPlaylistsPage />} />
+    <Route path="/account/agreements" element={<PageContainer><div className="py-10"><AgreementsOverview /></div></PageContainer>} />
     <Route
       path="/account/playlists/:playlistId"
       element={<AccountPlaylistManagePage />}

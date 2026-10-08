@@ -519,7 +519,5 @@ export const adminService = {
     return royaltiesService.reconcilePayouts(input as never);
   },
 
-  upsertTrackRoyaltySplits(trackId: string, input: unknown) {
-    return royaltiesService.upsertTrackSplits(trackId, input as never);
-  },
+
 };

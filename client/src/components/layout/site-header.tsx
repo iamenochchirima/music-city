@@ -29,7 +29,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 export const SiteHeader = () => {
-  const { session, connectWallet, isLoading, logout } = useAuth();
+  const {
+    session,
+    connectWallet,
+    isLoading,
+    logout,
+    walletSignInTimedOut,
+  } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -194,10 +200,18 @@ export const SiteHeader = () => {
           ) : (
             <Button
               className="rounded-full bg-white px-5 font-bold text-black hover:bg-white/90 sm:px-6"
-              onClick={() => void connectWallet()}
+              onClick={() =>
+                walletSignInTimedOut
+                  ? window.location.reload()
+                  : void connectWallet()
+              }
               disabled={isLoading}
             >
-              {isLoading ? "Opening..." : "Login"}
+              {walletSignInTimedOut
+                ? "Reload to retry"
+                : isLoading
+                  ? "Opening..."
+                  : "Login"}
             </Button>
           )}
         </div>

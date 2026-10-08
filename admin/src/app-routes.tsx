@@ -51,11 +51,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdsPage } from "@/features/ads/components/ads-page";
+import { AdminAgreementsPage } from "@/features/agreements/agreements-page";
 import { adminApi } from "@/features/auth/lib/admin-api";
 import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/console/agreements", label: "Agreements", description: "Contributor consent", icon: ShieldCheck },
   {
     href: "/console/analytics",
     label: "Analytics",
@@ -1768,19 +1770,7 @@ const UsersPage = () => {
   );
 };
 
-type EditableRoyaltyRecipient = {
-  walletAddress: string;
-  chain: "stellar" | "evm" | "solana" | "manual";
-  role:
-    | "artist"
-    | "producer"
-    | "writer"
-    | "featured_artist"
-    | "label"
-    | "platform"
-    | "other";
-  shareBps: string;
-};
+
 
 const royaltySourceTypeOptions = [
   "track_purchase",
@@ -1801,8 +1791,6 @@ const RoyaltiesPage = () => {
   const [payoutHistory, setPayoutHistory] = useState<RoyaltyPayoutRecord[]>([]);
   const [splitHistory, setSplitHistory] = useState<TrackRoyaltySplitRecord[]>([]);
   const [ledgerEntries, setLedgerEntries] = useState<RoyaltyLedgerEntry[]>([]);
-  const [draftRecipients, setDraftRecipients] = useState<EditableRoyaltyRecipient[]>([]);
-  const [draftNotes, setDraftNotes] = useState("");
   const [ledgerStatusFilter, setLedgerStatusFilter] = useState<
     RoyaltyLedgerEntry["status"] | "all"
   >("pending");
@@ -1823,7 +1811,6 @@ const RoyaltiesPage = () => {
     useState<RoyaltyPayoutReconciliationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorkspaceRefreshing, setIsWorkspaceRefreshing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isSavingPayoutSettings, setIsSavingPayoutSettings] = useState(false);
   const [isSavingFeeSettings, setIsSavingFeeSettings] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -1831,8 +1818,6 @@ const RoyaltiesPage = () => {
   const [isRunningPayouts, setIsRunningPayouts] = useState(false);
   const [isReconcilingPayouts, setIsReconcilingPayouts] = useState(false);
   const [isSplitLoading, setIsSplitLoading] = useState(false);
-  const [isPublishingSplit, setIsPublishingSplit] = useState(false);
-  const [isVerifyingSplit, setIsVerifyingSplit] = useState(false);
 
   const fetchRoyaltyWorkspace = async (token: string) => {
     const [
@@ -1886,16 +1871,8 @@ const RoyaltiesPage = () => {
     [selectedTrackId, tracks],
   );
   const activeSplit = useMemo(
-    () => splitHistory.find((split) => split.status === "active") ?? splitHistory[0] ?? null,
+    () => splitHistory.find((split) => !split.historical && split.status === "active") ?? null,
     [splitHistory],
-  );
-  const totalDraftBps = useMemo(
-    () =>
-      draftRecipients.reduce(
-        (sum, recipient) => sum + (Number.parseInt(recipient.shareBps, 10) || 0),
-        0,
-      ),
-    [draftRecipients],
   );
   const filteredGlobalLedgerEntries = useMemo(() => {
     const normalizedRecipient = ledgerRecipientFilter.trim().toLowerCase();
@@ -1996,31 +1973,6 @@ const RoyaltiesPage = () => {
     [approvedEntries],
   );
 
-  const syncDraftFromSplit = (split: TrackRoyaltySplitRecord | null) => {
-    if (!split) {
-      setDraftRecipients([
-        {
-          walletAddress: "",
-          chain: "stellar",
-          role: "artist",
-          shareBps: "10000",
-        },
-      ]);
-      setDraftNotes("");
-      return;
-    }
-
-    setDraftRecipients(
-      split.recipients.map((recipient) => ({
-        walletAddress: recipient.walletAddress,
-        chain: recipient.chain,
-        role: recipient.role,
-        shareBps: String(recipient.shareBps),
-      })),
-    );
-    setDraftNotes(split.notes ?? "");
-  };
-
   useEffect(() => {
     let cancelled = false;
 
@@ -2083,7 +2035,7 @@ const RoyaltiesPage = () => {
       if (!session?.token || !selectedTrackId) {
         setSplitHistory([]);
         setLedgerEntries([]);
-        syncDraftFromSplit(null);
+
         return;
       }
 
@@ -2096,11 +2048,7 @@ const RoyaltiesPage = () => {
         if (!cancelled) {
           setSplitHistory(nextSplitHistory);
           setLedgerEntries(nextLedgerEntries);
-          syncDraftFromSplit(
-            nextSplitHistory.find((split) => split.status === "active") ??
-              nextSplitHistory[0] ??
-              null,
-          );
+
         }
       } catch (error) {
         if (!cancelled) {
@@ -2131,37 +2079,6 @@ const RoyaltiesPage = () => {
       />
     );
   }
-
-  const updateRecipient = (
-    index: number,
-    patch: Partial<EditableRoyaltyRecipient>,
-  ) => {
-    setDraftRecipients((current) =>
-      current.map((recipient, recipientIndex) =>
-        recipientIndex === index ? { ...recipient, ...patch } : recipient,
-      ),
-    );
-  };
-
-  const addRecipient = () => {
-    setDraftRecipients((current) => [
-      ...current,
-      {
-        walletAddress: "",
-        chain: "stellar",
-        role: "other",
-        shareBps: "0",
-      },
-    ]);
-  };
-
-  const removeRecipient = (index: number) => {
-    setDraftRecipients((current) =>
-      current.length === 1
-        ? current
-        : current.filter((_, recipientIndex) => recipientIndex !== index),
-    );
-  };
 
   const refreshWorkspace = async (token: string) => {
     setIsWorkspaceRefreshing(true);
@@ -2197,11 +2114,7 @@ const RoyaltiesPage = () => {
       );
       setSplitHistory(nextSplitHistory);
       setLedgerEntries(nextLedgerEntries);
-      syncDraftFromSplit(
-        nextSplitHistory.find((split) => split.status === "active") ??
-          nextSplitHistory[0] ??
-          null,
-      );
+
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to refresh selected track royalties",
@@ -2220,90 +2133,6 @@ const RoyaltiesPage = () => {
       refreshWorkspace(session.token),
       selectedTrackId ? refreshSelectedTrack(selectedTrackId, session.token) : Promise.resolve(),
     ]);
-  };
-
-  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!session?.token || !selectedTrackId) {
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      await adminApi.updateTrackRoyaltySplits(
-        selectedTrackId,
-        {
-          recipients: draftRecipients.map((recipient) => ({
-            walletAddress: recipient.walletAddress.trim(),
-            chain: recipient.chain,
-            role: recipient.role,
-            shareBps: Number.parseInt(recipient.shareBps, 10) || 0,
-          })),
-          notes: draftNotes.trim() || undefined,
-          activate: true,
-        },
-        session.token,
-      );
-
-      toast.success("Royalty split updated.");
-      await refreshSelectedTrack(selectedTrackId, session.token);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save royalty split",
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handlePublishSplit = async () => {
-    if (!session?.token || !selectedTrackId || !activeSplit) {
-      return;
-    }
-
-    try {
-      setIsPublishingSplit(true);
-      const result = await adminApi.publishTrackRoyaltySplit(
-        selectedTrackId,
-        session.token,
-      );
-      toast.success(`Published split v${result.split.version} to Soroban.`);
-      await refreshSelectedTrack(selectedTrackId, session.token);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to publish split to Soroban",
-      );
-    } finally {
-      setIsPublishingSplit(false);
-    }
-  };
-
-  const handleVerifySplit = async () => {
-    if (!session?.token || !selectedTrackId || !activeSplit) {
-      return;
-    }
-
-    try {
-      setIsVerifyingSplit(true);
-      const result = await adminApi.verifyTrackRoyaltySplit(
-        selectedTrackId,
-        session.token,
-      );
-      if (result.matches) {
-        toast.success(`Split v${result.split.version} matches Soroban.`);
-      } else {
-        toast.error(result.differences.join(" "));
-      }
-      await refreshSelectedTrack(selectedTrackId, session.token);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to verify the Soroban split",
-      );
-    } finally {
-      setIsVerifyingSplit(false);
-    }
   };
 
   const toggleLedgerSelection = (entryId: string) => {
@@ -2502,7 +2331,7 @@ const RoyaltiesPage = () => {
             value={config?.primaryChain?.toUpperCase() ?? "—"}
           />
           <StatTile label="Network" value={config?.primaryNetwork ?? "—"} />
-          <StatTile label="Registry" value={config?.registryKind ?? "offchain"} />
+          <StatTile label="Registry" value={config?.registryKind ?? "Unconfigured"} />
           <StatTile label="Pending volume" value={formatAssetSummary(
             pendingEntries.map((entry) => ({
               amount: entry.netAmount,
@@ -3294,7 +3123,7 @@ const RoyaltiesPage = () => {
             {!selectedTrack ? (
               <EmptyState
                 title="Select a track"
-                description="Choose a track from the list to manage its royalty split."
+                description="Choose a track to review its finalized agreement and financial history."
               />
             ) : (
               <>
@@ -3310,11 +3139,11 @@ const RoyaltiesPage = () => {
                     </div>
                     {activeSplit ? (
                       <div className="border border-emerald-400/20 bg-emerald-400/8 px-3 py-2 text-sm text-emerald-200">
-                        Active split v{activeSplit.version}
+                        Effective agreement v{activeSplit.version}
                       </div>
                     ) : (
                       <div className="border border-white/8 bg-[#0b1220] px-3 py-2 text-sm text-slate-300">
-                        No split yet
+                        No finalized agreement
                       </div>
                     )}
                   </div>
@@ -3323,11 +3152,11 @@ const RoyaltiesPage = () => {
                     <StatTile label="Status" value={activeSplit?.status ?? "Draft"} />
                     <StatTile
                       label="Recipients"
-                      value={String(activeSplit?.recipients.length ?? draftRecipients.length)}
+                      value={String(activeSplit?.recipients.length ?? 0)}
                     />
                     <StatTile
                       label="Total"
-                      value={formatSharePercent(activeSplit?.totalBps ?? totalDraftBps)}
+                      value={formatSharePercent(activeSplit?.totalBps ?? 0)}
                     />
                     <StatTile label="Ledger entries" value={String(ledgerEntries.length)} />
                     <StatTile
@@ -3336,189 +3165,10 @@ const RoyaltiesPage = () => {
                     />
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/8 pt-4">
-                    <Button
-                      type="button"
-                      className="h-10 rounded-md"
-                      disabled={!activeSplit || isPublishingSplit}
-                      onClick={() => void handlePublishSplit()}
-                    >
-                      {isPublishingSplit ? "Publishing..." : "Publish to Soroban"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-10 border border-white/8 text-slate-300 hover:bg-white/[0.04]"
-                      disabled={!activeSplit || isVerifyingSplit}
-                      onClick={() => void handleVerifySplit()}
-                    >
-                      {isVerifyingSplit ? "Verifying..." : "Verify on-chain"}
-                    </Button>
-                    {activeSplit?.registryTxHash ? (
-                      <a
-                        href={stellarTransactionExplorerUrl(
-                          activeSplit.registryTxHash,
-                          activeSplit.registryNetwork,
-                        )}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-10 items-center border border-white/8 px-3 text-sm text-emerald-200 hover:bg-white/[0.04]"
-                      >
-                        View publish transaction
-                        <CircleArrowOutUpRight className="ml-2 h-4 w-4" />
-                      </a>
-                    ) : config?.registryExplorerUrl ? (
-                      <a
-                        href={config.registryExplorerUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-10 items-center border border-white/8 px-3 text-sm text-slate-300 hover:bg-white/[0.04]"
-                      >
-                        View contract
-                        <CircleArrowOutUpRight className="ml-2 h-4 w-4" />
-                      </a>
-                    ) : null}
-                    {activeSplit?.registryVerificationMessage ? (
-                      <p
-                        className={cn(
-                          "text-sm",
-                          activeSplit.registryVerificationStatus === "match"
-                            ? "text-emerald-200"
-                            : "text-amber-200",
-                        )}
-                      >
-                        {activeSplit.registryVerificationMessage}
-                      </p>
-                    ) : null}
+                  <div className="mt-4 flex flex-wrap gap-3 border-t border-white/8 pt-4">
+                    <NavLink to="/console/agreements" className="inline-flex h-10 items-center rounded-md border border-white/10 px-3 text-sm text-emerald-200">Review contributor agreements</NavLink>
+                    {activeSplit?.registryTxHash && <a href={stellarTransactionExplorerUrl(activeSplit.registryTxHash,activeSplit.registryNetwork)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center px-3 text-sm text-emerald-200">View confirmed publication</a>}
                   </div>
-                </section>
-
-                <section className={cn(shellPanelClassName, "p-5")}>
-                  <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/8 pb-3">
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">Split editor</h3>
-                      <p className="text-sm text-slate-400">
-                        Percentages must total exactly 100%.
-                      </p>
-                    </div>
-                    <div className="text-sm text-slate-300">
-                      Draft total:{" "}
-                      <span
-                        className={cn(
-                          totalDraftBps === 10_000 ? "text-emerald-300" : "text-amber-300",
-                        )}
-                      >
-                        {formatSharePercent(totalDraftBps)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <form className="space-y-4" onSubmit={handleSave}>
-                    <div className="space-y-3">
-                      {draftRecipients.map((recipient, index) => (
-                        <div
-                          key={`${selectedTrack.id}-recipient-${index}`}
-                          className="grid gap-3 border border-white/8 bg-[#0b1220] p-4 lg:grid-cols-[minmax(0,1.3fr)_110px_150px_120px_72px]"
-                        >
-                          <Input
-                            value={recipient.walletAddress}
-                            onChange={(event) =>
-                              updateRecipient(index, {
-                                walletAddress: event.target.value,
-                              })
-                            }
-                            placeholder="Recipient wallet / address"
-                            className={fieldClassName}
-                            required
-                          />
-                          <select
-                            value={recipient.chain}
-                            onChange={(event) =>
-                              updateRecipient(index, {
-                                chain: event.target.value as EditableRoyaltyRecipient["chain"],
-                              })
-                            }
-                            className={selectClassName}
-                          >
-                            <option value="stellar">stellar</option>
-                            <option value="evm">evm</option>
-                            <option value="solana">solana</option>
-                            <option value="manual">manual</option>
-                          </select>
-                          <select
-                            value={recipient.role}
-                            onChange={(event) =>
-                              updateRecipient(index, {
-                                role: event.target.value as EditableRoyaltyRecipient["role"],
-                              })
-                            }
-                            className={selectClassName}
-                          >
-                            <option value="artist">artist</option>
-                            <option value="producer">producer</option>
-                            <option value="writer">writer</option>
-                            <option value="featured_artist">featured artist</option>
-                            <option value="label">label</option>
-                            <option value="platform">platform</option>
-                            <option value="other">other</option>
-                          </select>
-                          <Input
-                            value={recipient.shareBps}
-                            onChange={(event) =>
-                              updateRecipient(index, { shareBps: event.target.value })
-                            }
-                            inputMode="numeric"
-                            placeholder="BPS"
-                            className={fieldClassName}
-                            required
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
-                            disabled={draftRecipients.length === 1}
-                            onClick={() => removeRecipient(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
-                        onClick={addRecipient}
-                      >
-                        Add recipient
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="border border-white/8 text-slate-300 hover:bg-white/[0.04]"
-                        onClick={() => syncDraftFromSplit(activeSplit)}
-                      >
-                        Reset to active split
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="royalty-notes">Notes</Label>
-                      <textarea
-                        id="royalty-notes"
-                        value={draftNotes}
-                        onChange={(event) => setDraftNotes(event.target.value)}
-                        placeholder="Optional internal note about this split version"
-                        className={cn(fieldClassName, "min-h-[90px] py-3")}
-                      />
-                    </div>
-
-                    <Button type="submit" className="h-10 rounded-md" disabled={isSaving}>
-                      {isSaving ? "Saving split..." : "Save active split"}
-                    </Button>
-                  </form>
                 </section>
 
                 <section className={cn(shellPanelClassName, "overflow-hidden")}>
@@ -3544,17 +3194,17 @@ const RoyaltiesPage = () => {
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-medium text-white">
-                              Version {split.version}
+                              {split.historical ? "Historical split" : "Agreement version"} {split.version}
                             </span>
                             <span
                               className={cn(
                                 "inline-flex border px-2 py-1 text-xs",
-                                split.status === "active"
+                                !split.historical && split.status === "active"
                                   ? "border-emerald-400/25 bg-emerald-400/8 text-emerald-200"
                                   : "border-white/10 text-slate-300",
                               )}
                             >
-                              {split.status}
+                              {split.historical ? `historical ${split.status}` : split.status}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500">
@@ -4181,6 +3831,7 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/console/agreements" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route
         path="/console/treasury"
         element={

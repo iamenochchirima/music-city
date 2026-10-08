@@ -305,7 +305,7 @@ export const AccountOverview = () => {
       </div>
 
       <div className="space-y-6">
-        {clientEnv.isDynamicConfigured ? <WalletOverviewCard /> : null}
+        <WalletOverviewCard />
 
         <Card className="border-white/10 bg-white/5 text-white shadow-none">
           <CardHeader>
@@ -321,6 +321,9 @@ export const AccountOverview = () => {
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white">
+              <Link href="/account/agreements">Royalty agreements</Link>
+            </Button>
             <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                 Tracks

@@ -25,14 +25,10 @@ import type {
   RoyaltyPayoutReconciliationResult,
   RoyaltyPayoutSettings,
   TrackRoyaltySplitList,
-  TrackRoyaltySplitRecord,
   RoyaltyPayoutExecutionResult,
   RoyaltyPayoutRecord,
-  RoyaltySplitPublicationResult,
-  RoyaltySplitVerificationResult,
   RunRoyaltyPayoutsInput,
   TrackSummary,
-  UpsertTrackRoyaltySplitInput,
 } from "@music-city/shared";
 
 import { httpClient } from "@/lib/api/http-client";
@@ -321,35 +317,6 @@ export const adminApi = {
     return httpClient.post<RoyaltyPayoutReconciliationResult>(
       "/royalties/payouts/reconcile",
       input,
-      token,
-    );
-  },
-
-  updateTrackRoyaltySplits(
-    trackId: string,
-    input: UpsertTrackRoyaltySplitInput,
-    token: string,
-  ) {
-    return httpClient
-      .put<{ split: TrackRoyaltySplitRecord }>(
-        `/royalties/tracks/${trackId}/splits`,
-        input,
-        token,
-      )
-      .then((response) => response.split);
-  },
-
-  publishTrackRoyaltySplit(trackId: string, token: string) {
-    return httpClient.post<RoyaltySplitPublicationResult>(
-      `/royalties/tracks/${trackId}/splits/publish`,
-      {},
-      token,
-    );
-  },
-
-  verifyTrackRoyaltySplit(trackId: string, token: string) {
-    return httpClient.get<RoyaltySplitVerificationResult>(
-      `/royalties/tracks/${trackId}/splits/verify`,
       token,
     );
   },
