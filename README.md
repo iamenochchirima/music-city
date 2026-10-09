@@ -114,3 +114,15 @@ STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true
 ```
 
 Do not set that flag for a mainnet deployment.
+
+## Registration referrals
+
+Set `REFERRALS_ENABLED=true` in the server environment to enable artist invitation links. Restart the server to apply migrations and the flag. Users with completed onboarding can invite from `/account/referrals`; admins inspect registrations at `/console/referrals`. Disabling the flag pauses new invitations without removing existing attribution.
+
+Run `pnpm test:referrals` for focused registration, payment qualification, UI, and type checks against an isolated database. Cash rewards are disabled. See [the implementation checklist](docs/referral-registration-implementation-plan.md) and [verification evidence](docs/referral-registration-evidence/README.md).
+
+## Early-user artist activation
+
+The active `EARLYUSER` campaign automatically covers the one-time USD $20 artist activation for eligible new accounts. Artist onboarding shows the $20 standard price, the 100% discount, and $0 due; completing registration activates artist tools without creating a payment. Eligibility and activation are separate from personal referral attribution. Admins can review the campaign at `/console/sponsorships`; super admins can pause or resume new eligibility with an audit reason. Pausing keeps existing eligibility, grants, and receipts intact.
+
+`ARTIST_ONBOARDING_FEE_PRICE` is the Stellar settlement-asset amount, not a USD amount. Leave it at `0` unless the operator has verified the matching USD $20 equivalent and set `ARTIST_ONBOARDING_FEE_PRICE_USD_EQUIVALENT=20`; this avoids treating $20 as 20 XLM. Without that explicit mapping, paid activation remains disabled. Run `pnpm test:early-user-discount` for isolated PostgreSQL, API, client, admin, and type checks. Run `pnpm exec playwright install chromium` once, then `pnpm test:e2e:early-user-discount` for the end-to-end browser path. See the [implementation checklist](docs/early-user-discount-implementation-plan.md) and [verification evidence](docs/early-user-discount-evidence/README.md). For rollback, pause new eligibility, keep existing grants and receipts, reconcile interrupted completions, and never recreate synthetic waiver payments.

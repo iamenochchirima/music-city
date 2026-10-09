@@ -52,6 +52,7 @@ export const paymentIntentSchema = z.object({
   memo: z.string(),
   status: paymentIntentStatusSchema,
   txHash: z.string().optional(),
+  networkPassphrase: z.string().optional(),
   expiresAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -71,6 +72,7 @@ export const paymentRecordSchema = z.object({
   assetIssuer: optionalStellarAssetIssuerSchema,
   status: paymentStatusSchema,
   waived: z.boolean().optional(),
+  networkPassphrase: z.string().optional(),
   confirmedAt: z.string(),
   createdAt: z.string(),
 });

@@ -48,6 +48,17 @@ const { releasesRepository } = await import("./releases.repository.js");
 const { tracksRepository } = await import("../tracks/tracks.repository.js");
 const { usersService } = await import("../users/users.service.js");
 
+test("unpaid artist cannot create a release", async () => {
+  const original = usersService.getProfile;
+  usersService.getProfile = async () => ({ ...artistProfile, artistAccess: false });
+  try {
+    await assert.rejects(
+      releasesService.createRelease(walletAddress,{ title: "Locked release",type: "single",genre: "Pop" }),
+      (error: { statusCode?: number }) => error.statusCode === 402,
+    );
+  } finally { usersService.getProfile = original; }
+});
+
 const restore = <T extends object, K extends keyof T>(
   target: T,
   key: K,

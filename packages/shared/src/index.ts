@@ -1,5 +1,6 @@
 export * from "./analytics.js";
 export * from "./agreements.js";
+export * from "./artist-activation.js";
 export * from "./ads.js";
 export * from "./admin.js";
 export * from "./auth.js";
@@ -13,3 +14,5 @@ export * from "./royalties.js";
 export * from "./uploads.js";
 export * from "./user.js";
 export * from "./wallet.js";
+
+export * from "./referrals.js";

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { AuthSession } from "@music-city/shared";
 
 import { usersApi } from "@/features/users/lib/users-api";
+import { bindReferralWallet, clearReferral } from "@/features/referrals/referral-storage";
 import { signInWithFreighter } from "@/features/wallet/lib/freighter";
 
 type AuthContextValue = {
@@ -128,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const nextSession = await signInWithFreighter(controller.signal);
+      bindReferralWallet(nextSession.walletAddress);
       setSession(nextSession);
       persistSession(nextSession);
       profileRefreshTokenRef.current = nextSession.token ?? null;
@@ -150,6 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [walletSignInTimedOut]);
 
   const logout = useCallback(async () => {
+    clearReferral();
     setSession(null);
     setError(null);
     profileRefreshTokenRef.current = null;

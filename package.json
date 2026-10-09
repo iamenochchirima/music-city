@@ -11,6 +11,12 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter server --filter client --filter admin test"
+    "test": "pnpm --filter server --filter client --filter admin test",
+    "test:referrals": "bash scripts/verify-referrals.sh",
+    "test:early-user-discount": "bash scripts/verify-referrals.sh",
+    "test:e2e:early-user-discount": "bash scripts/verify-early-user-discount-browser.sh"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
   }
 }

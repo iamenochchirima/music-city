@@ -1,3 +1,5 @@
+import { AdminReferralsPage } from "@/features/referrals/referrals-page";
+import { AdminSponsorshipsPage } from "@/features/sponsorships/sponsorships-page";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import {
@@ -57,6 +59,8 @@ import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/console/sponsorships", label: "Artist sponsorship", description: "Early-user discount", icon: Ticket },
+  { href: "/console/referrals", label: "Referrals", description: "Artist registration", icon: ShieldCheck },
   { href: "/console/agreements", label: "Agreements", description: "Contributor consent", icon: ShieldCheck },
   {
     href: "/console/analytics",
@@ -3831,6 +3835,8 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route path="/console/referrals" element={<ProtectedRoute><SidebarLayout><AdminReferralsPage /></SidebarLayout></ProtectedRoute>} />
+      <Route path="/console/sponsorships" element={<ProtectedRoute><SidebarLayout><AdminSponsorshipsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/agreements" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route
         path="/console/treasury"

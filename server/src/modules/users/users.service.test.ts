@@ -7,7 +7,7 @@ process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/mu
 const walletAddress = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 const { usersService } = await import("./users.service.js");
 const { usersRepository } = await import("./users.repository.js");
-const { paymentsRepository } = await import("../payments/payments.repository.js");
+const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -21,7 +21,7 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
-test("zero-priced artist onboarding grants artist access", async () => {
+test("legacy free artist access remains readable without creating a synthetic payment", async () => {
   const profile = {
     id: "usr-artist-1",
     walletAddress,
@@ -60,21 +60,7 @@ test("zero-priced artist onboarding grants artist access", async () => {
       "findByWallet",
       (async () => profile) as typeof usersRepository.findByWallet,
     ),
-    restore(
-      paymentsRepository,
-      "listPaymentsByWallet",
-      (async () => []) as typeof paymentsRepository.listPaymentsByWallet,
-    ),
-    restore(
-      paymentsRepository,
-      "upsertIntent",
-      (async (intent) => intent) as typeof paymentsRepository.upsertIntent,
-    ),
-    restore(
-      paymentsRepository,
-      "upsertPayment",
-      (async (payment) => payment) as typeof paymentsRepository.upsertPayment,
-    ),
+    restore(sponsorshipsService,"getMyActivation",(async () => ({ currency: "USD",originalAmountMinor: 2000,discountAmountMinor: 0,discountPercent: 0,amountDueMinor: 0,campaignCode: null,termsRevision: null,status: "legacy_free",profileExists: true,artistAccess: true,activatedAt: new Date(0).toISOString() })) as typeof sponsorshipsService.getMyActivation),
   ];
 
   try {
@@ -229,21 +215,7 @@ test("both intent persists listener and artist personalization without role ambi
       "listArtists",
       (async () => []) as typeof usersRepository.listArtists,
     ),
-    restore(
-      paymentsRepository,
-      "listPaymentsByWallet",
-      (async () => []) as typeof paymentsRepository.listPaymentsByWallet,
-    ),
-    restore(
-      paymentsRepository,
-      "upsertIntent",
-      (async (intent) => intent) as typeof paymentsRepository.upsertIntent,
-    ),
-    restore(
-      paymentsRepository,
-      "upsertPayment",
-      (async (payment) => payment) as typeof paymentsRepository.upsertPayment,
-    ),
+    restore(sponsorshipsService,"getMyActivation",(async () => ({ currency: "USD",originalAmountMinor: 2000,discountAmountMinor: 0,discountPercent: 0,amountDueMinor: 2000,campaignCode: null,termsRevision: null,status: "payment_required",profileExists: true,artistAccess: false,activatedAt: null })) as typeof sponsorshipsService.getMyActivation),
   ];
 
   try {

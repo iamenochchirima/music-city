@@ -1,3 +1,4 @@
+import { pendingReferral, clearReferral } from "@/features/referrals/referral-storage";
 import type {
   AuthSession,
   ArtistSummary,
@@ -50,10 +51,10 @@ export const usersApi = {
   async saveOnboardingStep(token: string, input: SaveOnboardingStepInput) {
     const response = await httpClient.put<{ profile: UserProfile }>(
       "/users/me/onboarding",
-      input,
+      input.step === "identity" ? { ...input, referralReceipt: pendingReferral()?.receipt } : input,
       token,
     );
-
+    if (input.step === "identity") clearReferral();
     return response.profile;
   },
 

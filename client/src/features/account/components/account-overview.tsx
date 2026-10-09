@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type {
+  ArtistActivationQuote,
   PaymentRecord,
   SubscriptionRecord,
   TrackSummary,
@@ -18,6 +19,8 @@ import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api
 import { usersApi } from "@/features/users/lib/users-api";
 import { WalletOverviewCard } from "@/features/wallet/components/wallet-overview-card";
 import { clientEnv } from "@/lib/config/env";
+import { sponsorshipsApi } from "@/features/sponsorships/sponsorships-api";
+import { ArtistActivationSummary } from "@/features/sponsorships/artist-activation-summary";
 
 const formatIntent = (intent?: "listener" | "artist" | "both") => {
   switch (intent) {
@@ -63,6 +66,7 @@ export const AccountOverview = () => {
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRecord[]>([]);
+  const [activationQuote, setActivationQuote] = useState<ArtistActivationQuote | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingIntent, setIsUpdatingIntent] = useState(false);
@@ -73,6 +77,7 @@ export const AccountOverview = () => {
     if (!token) {
       setProfile(null);
       setTracks([]);
+      setActivationQuote(null);
       setIsLoading(false);
       return;
     }
@@ -84,12 +89,13 @@ export const AccountOverview = () => {
       setLoadError(null);
 
       try {
-        const [nextProfile, nextOnboardingState, nextTracks, nextPayments, nextSubscriptions] = await Promise.all([
+        const [nextProfile, nextOnboardingState, nextTracks, nextPayments, nextSubscriptions, nextActivationQuote] = await Promise.all([
           usersApi.getMe(token),
           usersApi.getOnboardingState(token),
           tracksApi.listMyTracks(token),
           paymentsApi.listMine(token),
           subscriptionsApi.listMine(token),
+          sponsorshipsApi.getMyArtistActivation(token),
         ]);
 
         if (!cancelled) {
@@ -98,6 +104,7 @@ export const AccountOverview = () => {
           setTracks(Array.isArray(nextTracks) ? nextTracks : []);
           setPayments(Array.isArray(nextPayments) ? nextPayments : []);
           setSubscriptions(Array.isArray(nextSubscriptions) ? nextSubscriptions : []);
+          setActivationQuote(nextActivationQuote);
         }
       } catch (error) {
         if (!cancelled) {
@@ -106,6 +113,7 @@ export const AccountOverview = () => {
           setTracks([]);
           setPayments([]);
           setSubscriptions([]);
+          setActivationQuote(null);
           setLoadError(error instanceof Error ? error.message : "Failed to load account.");
         }
       } finally {
@@ -131,6 +139,7 @@ export const AccountOverview = () => {
     try {
       const nextProfile = await usersApi.updateProfile(session.token, { primaryIntent });
       setProfile(nextProfile);
+      setActivationQuote(await sponsorshipsApi.getMyArtistActivation(session.token));
       await refreshSessionProfile();
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Unable to update account intent.");
@@ -162,6 +171,7 @@ export const AccountOverview = () => {
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <div className="space-y-6">
+        <Link href="/account/referrals" className="inline-flex rounded-md border border-emerald-400/30 px-4 py-2 text-emerald-300">Invite artists</Link>
         <Card className="border-white/10 bg-white/5 text-white shadow-none">
         {profile?.headerImageUrl ? (
           <div className="h-40 overflow-hidden rounded-t-xl border-b border-white/10">
@@ -204,9 +214,17 @@ export const AccountOverview = () => {
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Artist access</p>
             <p className="text-base text-white">
-              {profile?.artistAccess || session.artistAccess
-                ? "Onboarding fee paid"
-                : "Not unlocked"}
+              {activationQuote?.status === "sponsored"
+                ? "Activated by Music City"
+                : activationQuote?.status === "paid"
+                  ? "Activated by confirmed payment"
+                  : activationQuote?.status === "legacy_free"
+                    ? "Legacy free access"
+                    : activationQuote?.status === "eligible"
+                      ? "Eligible for early-user discount"
+                      : profile?.artistAccess || session.artistAccess
+                        ? "Artist access active"
+                        : "Not unlocked"}
             </p>
           </div>
           <div className="space-y-1 sm:col-span-2">
@@ -227,6 +245,11 @@ export const AccountOverview = () => {
           </div>
         </CardContent>
         </Card>
+
+        {activationQuote && (
+          activationQuote.status !== "payment_required" ||
+          profile?.primaryIntent === "artist" || profile?.primaryIntent === "both"
+        ) ? <ArtistActivationSummary quote={activationQuote} /> : null}
 
         {onboardingState ? (
           <Card className="border-white/10 bg-white/5 text-white shadow-none">

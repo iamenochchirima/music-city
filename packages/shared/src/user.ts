@@ -94,6 +94,7 @@ export const onboardingIntentStepSchema = z.object({
 });
 
 export const onboardingIdentityStepSchema = z.object({
+  referralReceipt: z.string().max(2048).optional(),
   step: z.literal("identity"),
   displayName: z.string().trim().min(1).max(80),
   email: z.string().email().optional().or(z.literal("")),

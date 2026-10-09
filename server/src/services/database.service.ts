@@ -1,6 +1,8 @@
+import { referralSchemaStatements, referralActivationSchemaStatements, referralCampaignControlStatements } from "../modules/referrals/referral-schema.js";
 import { Pool, type PoolClient } from "pg";
 import { agreementSchemaStatements } from "../modules/agreements/agreement-schema.js";
 import { finalizationSchemaStatements, finalizationIntegrityStatements } from "../modules/agreements/finalization-schema.js";
+import { sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
 
 import { env } from "../config/env.js";
 
@@ -393,6 +395,10 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
+  { name: "2026-10-08-registration-referrals", statements: referralSchemaStatements },
+  { name: "2026-10-08-referral-paid-activation", statements: referralActivationSchemaStatements },
+  { name: "2026-10-08-referral-campaign-controls", statements: referralCampaignControlStatements },
   { name: "2026-10-02-contributor-agreements", statements: agreementSchemaStatements },
   { name: "2026-10-02-agreement-finalization", statements: finalizationSchemaStatements },
   { name: "2026-10-02-agreement-finalization-integrity", statements: finalizationIntegrityStatements },
@@ -900,6 +906,33 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     statements: baseSchemaStatements,
   },
   {
+    name: "2026-10-08-registration-referrals",
+    migrationName: "2026-10-08-registration-referrals",
+    relations: ["referral_campaigns", "referral_codes", "referrals", "referral_events"],
+    indexes: ["referrals_inviter_idx"],
+    statements: referralSchemaStatements,
+  },
+  {
+    name: "2026-10-09-early-user-sponsorship",
+    migrationName: "2026-10-09-early-user-sponsorship",
+    relations: ["artist_sponsorship_campaigns", "artist_sponsorship_eligibilities", "artist_sponsorship_grants", "artist_sponsorship_events"],
+    indexes: ["artist_sponsorship_eligibilities_campaign_idx", "artist_sponsorship_events_created_idx"],
+    statements: sponsorshipSchemaStatements,
+  },
+  {
+    name: "2026-10-08-referral-campaign-controls",
+    migrationName: "2026-10-08-referral-campaign-controls",
+    relations: [],
+    columns: ["referral_campaigns.active"],
+    statements: referralCampaignControlStatements,
+  },
+  {
+    name: "2026-10-08-referral-paid-activation",
+    migrationName: "2026-10-08-referral-paid-activation",
+    relations: ["referral_paid_activations"],
+    statements: referralActivationSchemaStatements,
+  },
+  {
     name: "2026-08-14-onboarding-intent-foundation",
     migrationName: "2026-08-14-onboarding-intent-foundation",
     relations: [],
@@ -1392,8 +1425,9 @@ export const databaseService = {
     onboardingVersion: number,
     onboardingCompletedAt: string | undefined,
     payload: unknown,
+    client?: PoolClient,
   ) {
-    await pool.query(
+    await (client ?? pool).query(
       `INSERT INTO users (
         id,
         wallet_address,

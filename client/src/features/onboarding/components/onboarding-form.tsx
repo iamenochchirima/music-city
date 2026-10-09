@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MUSIC_GENRES, type ArtistSummary, type PrimaryIntent, type SaveOnboardingStepInput } from "@music-city/shared";
+import { MUSIC_GENRES, type ArtistActivationQuote, type ArtistSummary, type PrimaryIntent, type SaveOnboardingStepInput } from "@music-city/shared";
 
+import { ReferralCodeInput } from "@/features/referrals/referral-code-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { usersApi } from "@/features/users/lib/users-api";
 import { ApiClientError } from "@/lib/api/http-client";
 import { trackEvent } from "@/lib/analytics";
+import { sponsorshipsApi } from "@/features/sponsorships/sponsorships-api";
+import { ArtistActivationSummary } from "@/features/sponsorships/artist-activation-summary";
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
@@ -222,10 +225,41 @@ export const OnboardingForm = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [artistActivationQuote, setArtistActivationQuote] = useState<ArtistActivationQuote | null>(null);
+  const [artistActivationError, setArtistActivationError] = useState<string | null>(null);
+  const [isLoadingArtistActivation, setIsLoadingArtistActivation] = useState(false);
+  const [artistActivationRetry, setArtistActivationRetry] = useState(0);
 
   useEffect(() => {
     setEmail((current) => current || session?.email || "");
   }, [session?.email]);
+
+  useEffect(() => {
+    if (!session?.token || !isArtistIntent(primaryIntent)) {
+      setArtistActivationQuote(null);
+      setArtistActivationError(null);
+      setIsLoadingArtistActivation(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingArtistActivation(true);
+    setArtistActivationError(null);
+    void sponsorshipsApi.getMyArtistActivation(session.token)
+      .then((quote) => {
+        if (!cancelled) setArtistActivationQuote(quote);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setArtistActivationQuote(null);
+          setArtistActivationError(error instanceof Error ? error.message : "Artist activation price could not be loaded.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingArtistActivation(false);
+      });
+    return () => { cancelled = true; };
+  }, [session?.token, primaryIntent, artistActivationRetry]);
 
   useEffect(() => {
     if (!session?.token) {
@@ -419,7 +453,16 @@ export const OnboardingForm = ({
     }
 
     await usersApi.completeOnboarding(session.token);
+    await refreshSessionProfile();
     setStep("complete");
+    if (isArtistIntent(primaryIntent)) {
+      try {
+        setArtistActivationQuote(await sponsorshipsApi.getMyArtistActivation(session.token));
+      } catch (error) {
+        setArtistActivationQuote(null);
+        setArtistActivationError(error instanceof Error ? error.message : "Your activation receipt could not be loaded.");
+      }
+    }
   };
 
   const submitCurrentStep = async (skipOptional = false) => {
@@ -441,6 +484,9 @@ export const OnboardingForm = ({
         });
         setStep("intent");
       } else if (step === "intent") {
+        if (isArtistIntent(primaryIntent) && !artistActivationQuote) {
+          throw new Error("Load the artist activation price before continuing.");
+        }
         await saveStep({
           step: "intent",
           primaryIntent,
@@ -634,6 +680,7 @@ export const OnboardingForm = ({
               />
               {fieldErrors.displayName ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.displayName}</p> : null}
             </div>
+            {!profileId && <ReferralCodeInput />}
             <div className="space-y-2">
               <Label htmlFor="email">
                 Email <span className="text-slate-500">(optional)</span>
@@ -721,6 +768,21 @@ export const OnboardingForm = ({
               })}
             </div>
           </fieldset>
+
+          {isArtistIntent(primaryIntent) ? (
+            <div className="space-y-2">
+              {isLoadingArtistActivation ? (
+                <p role="status" className="rounded-2xl border border-white/10 bg-slate-950/55 p-4 text-sm text-slate-400">Loading artist activation price…</p>
+              ) : artistActivationQuote ? (
+                <ArtistActivationSummary quote={artistActivationQuote} />
+              ) : (
+                <div className="rounded-2xl border border-rose-300/20 bg-rose-400/[0.06] p-4 text-sm text-rose-100">
+                  <p>{artistActivationError ?? "Artist activation price could not be loaded."}</p>
+                  <button type="button" className="mt-2 underline underline-offset-4" onClick={() => setArtistActivationRetry((value) => value + 1)}>Try again</button>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -1042,6 +1104,9 @@ export const OnboardingForm = ({
               ? "Start with a fresh release, follow an artist, or build your first playlist."
               : "Your profile is ready. Continue into the studio whenever you want to release music."}
           </p>
+          {primaryIntent !== "listener" && artistActivationQuote ? (
+            <div className="mx-auto max-w-md text-left"><ArtistActivationSummary quote={artistActivationQuote} /></div>
+          ) : null}
         </div>
       ) : null}
 
@@ -1097,7 +1162,7 @@ export const OnboardingForm = ({
               </Button>
             </>
           ) : (
-            <Button type="submit" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" disabled={isSaving || isPreparingMedia}>
+            <Button type="submit" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" disabled={isSaving || isPreparingMedia || (step === "intent" && isArtistIntent(primaryIntent) && (isLoadingArtistActivation || !artistActivationQuote))}>
               {isPreparingMedia ? "Preparing image..." : isSaving ? "Saving..." : step === "visuals" ? "Finish setup" : "Continue"}
             </Button>
           )}

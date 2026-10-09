@@ -144,15 +144,10 @@ const syncTrackReleaseFields = async (
         }),
   });
 
-const ensureOwnerProfile = async (walletAddress: string) => {
-  const profile = await usersService.getProfile(walletAddress);
-
-  if (!profile || !["artist", "both"].includes(profile.primaryIntent)) {
-    throw new Error("Create an artist profile before managing releases");
-  }
-
-  return profile;
-};
+const ensureOwnerProfile = async (walletAddress: string) =>
+  usersService.requireArtistOnboardingAccess(walletAddress,
+    "Create an artist profile before managing releases",
+    "Pay the onboarding fee before managing releases");
 
 const validateReleaseTrackCount = (release: ReleaseSummary, trackCount: number) => {
   if (trackCount === 0) {

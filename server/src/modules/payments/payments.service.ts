@@ -1,3 +1,4 @@
+import { referralsService } from "../referrals/referrals.service.js";
 import type {
   ConfirmPaymentInput,
   PaymentIntentRecord,
@@ -22,6 +23,7 @@ import { paymentsRepository } from "./payments.repository.js";
 import { subscriptionsService } from "../subscriptions/subscriptions.service.js";
 import { adminService } from "../admin/admin.service.js";
 import { royaltiesService } from "../royalties/royalties.service.js";
+import { sponsorshipsService } from "../sponsorships/sponsorships.service.js";
 
 const INTENT_TTL_MS = 15 * 60 * 1000;
 
@@ -78,6 +80,7 @@ const createIntentRecord = async (input: {
     expiresAt: new Date(Date.now() + INTENT_TTL_MS).toISOString(),
     createdAt: timestamp,
     updatedAt: timestamp,
+    networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE,
   });
 };
 
@@ -116,6 +119,7 @@ const paymentResultFromExistingRecord = async (
   }
 
   if (intent.productType === "artist_onboarding_fee") {
+    await referralsService.recordPaidActivation(payment);
     return { payment, artistAccess: true };
   }
 
@@ -190,6 +194,9 @@ const verifyTransactionAgainstIntent = async (
   txHash: string,
   intent: PaymentIntentRecord,
 ) => {
+  if (intent.networkPassphrase && intent.networkPassphrase !== env.STELLAR_NETWORK_PASSPHRASE) {
+    throw new HttpError(409, "Payment network changed. Create a new payment intent.");
+  }
   const transaction = await fetchTransaction(txHash);
 
   if (!transaction.successful) {
@@ -306,12 +313,23 @@ export const paymentsService = {
   },
 
   async createArtistOnboardingFeeIntent(walletAddress: string) {
-    if (await usersService.hasArtistOnboardingAccess(walletAddress)) {
+    const activation = await sponsorshipsService.getMyActivation(walletAddress);
+    if (!activation.profileExists) {
+      throw new HttpError(409, "Complete your account registration before preparing artist activation");
+    }
+    if (activation.status === "eligible" || activation.status === "sponsored") {
+      throw new HttpError(409, "Music City has covered your artist activation fee");
+    }
+
+    if (activation.artistAccess) {
       throw new HttpError(400, "Artist onboarding has already been unlocked");
     }
 
-    if (Number(env.ARTIST_ONBOARDING_FEE_PRICE) === 0) {
-      throw new HttpError(400, "Artist onboarding is free");
+    if (
+      Number(env.ARTIST_ONBOARDING_FEE_PRICE) <= 0 ||
+      Number(env.ARTIST_ONBOARDING_FEE_PRICE_USD_EQUIVALENT) !== activation.originalAmountMinor / 100
+    ) {
+      throw new HttpError(503, "Artist activation checkout is not configured for the USD 20 price");
     }
 
     const intent = await createIntentRecord({
@@ -328,9 +346,7 @@ export const paymentsService = {
   },
 
   async getArtistOnboardingFeeStatus(walletAddress: string) {
-    return {
-      paid: await usersService.hasArtistOnboardingAccess(walletAddress),
-    };
+    return sponsorshipsService.getMyActivation(walletAddress);
   },
 
   async confirm(walletAddress: string, input: ConfirmPaymentInput) {
@@ -399,6 +415,7 @@ export const paymentsService = {
       assetCode: intent.assetCode,
       assetIssuer: intent.assetIssuer,
       status: "confirmed",
+      networkPassphrase: intent.networkPassphrase ?? "unknown",
       confirmedAt: timestamp,
       createdAt: timestamp,
     };
