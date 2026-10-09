@@ -5,6 +5,10 @@ const readClientEnv = (key: string, fallback?: string) => {
   return (typeof value === "string" && value) || fallback;
 };
 
+const dynamicEnvironmentId =
+  readClientEnv("VITE_DYNAMIC_ENVIRONMENT_ID", "dynamic-environment-id-required")?.trim() ||
+  "dynamic-environment-id-required";
+
 export const clientEnv = {
   apiBaseUrl: trimSlash(
     readClientEnv(
@@ -18,6 +22,8 @@ export const clientEnv = {
       "http://localhost:4317",
     ) ?? "http://localhost:4317",
   ),
+  dynamicEnvironmentId,
+  isDynamicConfigured: dynamicEnvironmentId !== "dynamic-environment-id-required",
   stellarHorizonUrl:
     readClientEnv(
       "VITE_STELLAR_HORIZON_URL",

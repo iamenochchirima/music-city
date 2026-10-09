@@ -1,28 +1,76 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
-  signIn: vi.fn(),
+  dynamicToken: "dynamic-jwt",
+  user: null as null | {
+    userId: string;
+    email: string;
+    verifiedCredentials: { chain: string; address: string }[];
+  },
+  setShowAuthFlow: vi.fn(),
+  setShowLinkNewWalletModal: vi.fn(),
+  handleLogOut: vi.fn(),
+  createDynamicSession: vi.fn(),
+  getMe: vi.fn(),
+  getOnboardingState: vi.fn(),
+  bindReferralWallet: vi.fn(),
+  clearReferral: vi.fn(),
   toast: vi.fn(),
 }));
 
-vi.mock("@/features/wallet/lib/freighter", () => ({
-  signInWithFreighter: mocks.signIn,
+vi.mock("@dynamic-labs/sdk-react-core", () => ({
+  getAuthToken: () => mocks.dynamicToken,
+  useDynamicContext: () => ({
+    sdkHasLoaded: true,
+    user: mocks.user,
+    userWithMissingInfo: false,
+    primaryWallet: mocks.user
+      ? { address: mocks.user.verifiedCredentials[0]?.address, connector: {} }
+      : null,
+    showAuthFlow: false,
+    setShowAuthFlow: mocks.setShowAuthFlow,
+    handleLogOut: mocks.handleLogOut,
+  }),
+  useDynamicModals: () => ({
+    setShowLinkNewWalletModal: mocks.setShowLinkNewWalletModal,
+  }),
+}));
+vi.mock("@/features/auth/lib/auth-api", () => ({
+  authApi: { createDynamicSession: mocks.createDynamicSession },
+}));
+vi.mock("@/features/users/lib/users-api", () => ({
+  usersApi: {
+    getMe: mocks.getMe,
+    getOnboardingState: mocks.getOnboardingState,
+  },
+}));
+vi.mock("@/features/referrals/referral-storage", () => ({
+  bindReferralWallet: mocks.bindReferralWallet,
+  clearReferral: mocks.clearReferral,
+}));
+vi.mock("@/lib/config/env", () => ({
+  clientEnv: {
+    isDynamicConfigured: true,
+    dynamicEnvironmentId: "test-dynamic-environment",
+  },
 }));
 vi.mock("sonner", () => ({ toast: { error: mocks.toast } }));
 
 import { AuthProvider, useAuthContext } from "./auth-provider";
 
+const walletAddress = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const session = {
-  walletAddress: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+  walletAddress,
+  email: "artist@example.com",
   displayName: "",
   primaryIntent: "listener" as const,
   artistAccess: false,
   onboardingStatus: "required" as const,
   onboardingStep: "identity" as const,
   onboardingVersion: 1,
-  token: "session-token",
+  token: "music-city-session",
   profileCompletion: {
     percentage: 0,
     completed: [],
@@ -31,24 +79,11 @@ const session = {
   },
 };
 
-function Login() {
+function LoginControls() {
   const auth = useAuthContext();
   return (
     <>
-      <button
-        disabled={auth.isLoading}
-        onClick={() =>
-          auth.walletSignInTimedOut
-            ? window.location.reload()
-            : void auth.connectWallet()
-        }
-      >
-        {auth.walletSignInTimedOut
-          ? "Reload to retry"
-          : auth.isLoading
-            ? "Waiting for wallet…"
-            : "Connect wallet"}
-      </button>
+      <button onClick={() => void auth.connectWallet()}>Sign in</button>
       {auth.session && <p role="status">Signed in as {auth.session.walletAddress}</p>}
       {auth.error && <p role="alert">{auth.error}</p>}
     </>
@@ -58,71 +93,47 @@ function Login() {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  mocks.signIn.mockResolvedValue(session);
-});
-afterEach(() => {
-  cleanup();
-  vi.useRealTimers();
+  mocks.user = null;
+  mocks.dynamicToken = "dynamic-jwt";
+  mocks.createDynamicSession.mockResolvedValue(session);
+  mocks.getMe.mockResolvedValue(null);
+  mocks.getOnboardingState.mockResolvedValue(null);
 });
 
-it("creates the app session from a Freighter wallet signature", async () => {
+afterEach(() => cleanup());
+
+it("opens Dynamic's configured sign-in flow without requesting Freighter", async () => {
   render(
     <AuthProvider>
-      <Login />
+      <LoginControls />
     </AuthProvider>,
   );
 
-  await userEvent.click(await screen.findByRole("button", { name: "Connect wallet" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Sign in" }));
 
-  expect(mocks.signIn).toHaveBeenCalledOnce();
-  expect((await screen.findByRole("status")).textContent).toContain(session.walletAddress);
+  expect(mocks.setShowAuthFlow).toHaveBeenCalledWith(true);
+  expect(mocks.createDynamicSession).not.toHaveBeenCalled();
+});
+
+it("verifies a Dynamic login, creates the app session, and binds a referral to its Stellar wallet", async () => {
+  mocks.user = {
+    userId: "dynamic-user",
+    email: "artist@example.com",
+    verifiedCredentials: [{ chain: "stellar", address: walletAddress }],
+  };
+
+  render(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  expect((await screen.findByRole("status")).textContent).toContain(walletAddress);
+  expect(mocks.createDynamicSession).toHaveBeenCalledWith(
+    { walletAddress },
+    "dynamic-jwt",
+  );
+  expect(mocks.bindReferralWallet).toHaveBeenCalledWith(walletAddress);
   expect(JSON.parse(localStorage.getItem("music-city-auth-session") ?? "{}"))
-    .toMatchObject({ walletAddress: session.walletAddress, token: session.token });
-});
-
-it("shows wallet errors without blocking another attempt", async () => {
-  mocks.signIn.mockRejectedValueOnce(new Error("Freighter is not installed"));
-  render(
-    <AuthProvider>
-      <Login />
-    </AuthProvider>,
-  );
-
-  await userEvent.click(await screen.findByRole("button", { name: "Connect wallet" }));
-
-  expect((await screen.findByRole("alert")).textContent).toContain("Freighter is not installed");
-  expect((screen.getByRole("button", { name: "Connect wallet" }) as HTMLButtonElement).disabled).toBe(false);
-  expect(mocks.toast).toHaveBeenCalledWith("Freighter is not installed");
-});
-
-it("stops waiting when Freighter does not respond and requires a page reload", async () => {
-  vi.useFakeTimers();
-  mocks.signIn.mockImplementation(
-    (signal: AbortSignal) =>
-      new Promise((_resolve, reject) => {
-        signal.addEventListener("abort", () => reject(signal.reason), {
-          once: true,
-        });
-      }),
-  );
-
-  render(
-    <AuthProvider>
-      <Login />
-    </AuthProvider>,
-  );
-
-  await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "Connect wallet" }));
-    await vi.advanceTimersByTimeAsync(30_000);
-  });
-
-  const message = screen.getByRole("alert").textContent ?? "";
-  expect(message).toContain("Freighter did not respond in time");
-  expect(message).toContain("reload this page");
-  expect(
-    (screen.getByRole("button", { name: "Reload to retry" }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(false);
-  expect(mocks.signIn).toHaveBeenCalledOnce();
+    .toMatchObject({ walletAddress, token: session.token });
 });

@@ -1,6 +1,7 @@
 import type {
   AuthSession,
   ChallengeResponse,
+  DynamicSessionRequest,
   VerifyChallengeRequest,
 } from "@music-city/shared";
 
@@ -17,6 +18,16 @@ export const authApi = {
     const response = await httpClient.post<{ session: AuthSession }>(
       "/auth/verify",
       payload,
+    );
+
+    return response.session;
+  },
+
+  async createDynamicSession(payload: DynamicSessionRequest, token: string) {
+    const response = await httpClient.post<{ session: AuthSession }>(
+      "/auth/dynamic/session",
+      payload,
+      token,
     );
 
     return response.session;

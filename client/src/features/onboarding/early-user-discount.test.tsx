@@ -13,6 +13,12 @@ const mocks = vi.hoisted(() => ({
   refreshSessionProfile: vi.fn(),
 }));
 
+vi.mock("@dynamic-labs/sdk-react-core", () => ({
+  useDynamicContext: () => ({ primaryWallet: null }),
+  useUserWallets: () => [],
+}));
+vi.mock("@dynamic-labs/stellar", () => ({ isStellarWallet: () => false }));
+
 vi.mock("@/hooks/use-auth", () => ({ useAuth: () => ({
   session: { token: "test-token",walletAddress: "GTEST",primaryIntent: "listener",displayName: "",email: "",artistAccess: false,onboardingStatus: "required",onboardingStep: "identity" },
   refreshSessionProfile: mocks.refreshSessionProfile,

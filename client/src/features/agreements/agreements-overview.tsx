@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import { agreementTermsSchema, royaltyRecipientRoleSchema, type AgreementAction, type AgreementVersion, type AgreementFinalization, type TrackSummary } from "@music-city/shared";
 import { useAuth } from "@/hooks/use-auth";
 import { httpClient } from "@/lib/api/http-client";
 import { clientEnv } from "@/lib/config/env";
 import { tracksApi } from "@/features/music/lib/tracks-api";
-import { signWithFreighter } from "@/features/wallet/lib/freighter";
+import { ensureActiveStellarAccount, resolveStellarWallet } from "@/features/wallet/lib/resolve-stellar-wallet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,6 +17,9 @@ const stateLabel = (state: string) => state === "ready" ? "Ready for treasury fi
 
 export function AgreementsOverview() {
   const { session, error: authError } = useAuth();
+  const { primaryWallet } = useDynamicContext();
+  const userWallets = useUserWallets();
+  const stellarWallet = resolveStellarWallet(session?.walletAddress, primaryWallet, userWallets);
   const [items,setItems] = useState<Summary[]>([]);
   const [tracks,setTracks] = useState<TrackSummary[]>([]);
   const [detail,setDetail] = useState<Detail | null>(null);
@@ -93,14 +97,18 @@ export function AgreementsOverview() {
       const challenge = await httpClient.post<{ transaction: string; id: string; proposalHash: string; networkPassphrase: string }>(`/agreements/${detail!.id}/challenges`,{ action,reason: action === "accept" ? "" : reason },token);
       if (challenge.proposalHash !== current!.proposalHash) throw new Error("The proposal changed. Refresh and review it before signing");
       if (challenge.networkPassphrase !== clientEnv.stellarNetworkPassphrase) throw new Error("Agreement network does not match the configured wallet network");
-      const signedTransaction = await signWithFreighter(challenge.transaction,session!.walletAddress);
+      if (!stellarWallet || stellarWallet.address !== session!.walletAddress) {
+        throw new Error("Your signed-in Stellar wallet is unavailable. Sign in again and retry.");
+      }
+      await ensureActiveStellarAccount(stellarWallet);
+      const signedTransaction = await stellarWallet.signTransaction(challenge.transaction);
       await httpClient.post(`/agreements/${detail!.id}/responses`,{ challengeId: challenge.id,signedTransaction },token);
       await load(detail!.id); setReason("");
     });
   }
 
   if (!session) return <div className="space-y-3 rounded-2xl border border-white/10 p-6 text-slate-300">
-    <p>Log in with your Stellar wallet to view and respond to royalty agreements.</p>
+    <p>Sign in to view and respond to royalty agreements. Signing uses your linked Stellar wallet.</p>
     {authError && <p role="alert" className="text-sm text-rose-200">{authError}</p>}
   </div>;
   return <div className="space-y-6 text-white">

@@ -34,7 +34,6 @@ export const SiteHeader = () => {
     connectWallet,
     isLoading,
     logout,
-    walletSignInTimedOut,
   } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
@@ -200,18 +199,10 @@ export const SiteHeader = () => {
           ) : (
             <Button
               className="rounded-full bg-white px-5 font-bold text-black hover:bg-white/90 sm:px-6"
-              onClick={() =>
-                walletSignInTimedOut
-                  ? window.location.reload()
-                  : void connectWallet()
-              }
+              onClick={() => void connectWallet()}
               disabled={isLoading}
             >
-              {walletSignInTimedOut
-                ? "Reload to retry"
-                : isLoading
-                  ? "Opening..."
-                  : "Login"}
+              {isLoading ? "Opening..." : "Login"}
             </Button>
           )}
         </div>

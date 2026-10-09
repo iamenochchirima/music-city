@@ -9,8 +9,12 @@ const mocks = vi.hoisted(() => ({ session: { token: "test-session",walletAddress
 vi.mock("@/hooks/use-auth",()=>({ useAuth: ()=>({ session: mocks.session }) }));
 vi.mock("@/lib/api/http-client",()=>({ httpClient: { get: mocks.get,post: mocks.post,put: mocks.put } }));
 vi.mock("@/features/music/lib/tracks-api",()=>({ tracksApi: { listMyTracks: mocks.tracks } }));
-vi.mock("@/features/wallet/lib/freighter",()=>({ signWithFreighter: mocks.sign }));
-vi.mock("@/lib/config/env",()=>({ clientEnv: { stellarNetworkPassphrase: "Test SDF Network ; September 2015" } }));
+vi.mock("@dynamic-labs/sdk-react-core",()=>({
+  useDynamicContext:()=>({primaryWallet:{address:mocks.session.walletAddress,chain:"stellar",connector:{},signTransaction:mocks.sign}}),
+  useUserWallets:()=>[{address:mocks.session.walletAddress,chain:"stellar",connector:{},signTransaction:mocks.sign}],
+}));
+vi.mock("@dynamic-labs/stellar",()=>({isStellarWallet:(wallet: {chain?: string})=>wallet?.chain === "stellar"}));
+vi.mock("@/lib/config/env",()=>({ clientEnv: { stellarNetworkPassphrase: "Test SDF Network ; September 2015", stellarHorizonUrl: "https://horizon-testnet.stellar.org" } }));
 
 // These are component integration tests: HTTP and wallet transports are mocked.
 // Real consent verification and chain authorization are covered separately.
@@ -46,7 +50,7 @@ describe("contributor agreement UI",()=>{
     const user = await open();
     await user.click(screen.getByRole("button",{ name: "Accept and sign with wallet" }));
     await waitFor(()=>expect(mocks.post).toHaveBeenCalledWith(`/agreements/${version.proposal.agreementId}/responses`,{ challengeId: "challenge-id",signedTransaction: "signed-envelope" },"test-session"));
-    expect(mocks.sign).toHaveBeenCalledWith("exact-challenge",version.proposal.ownerWallet);
+    expect(mocks.sign).toHaveBeenCalledWith("exact-challenge");
   });
   it("keeps consent unrecorded when the wallet cancels signing",async()=>{
     mocks.sign.mockRejectedValueOnce(new Error("Signing cancelled by wallet"));

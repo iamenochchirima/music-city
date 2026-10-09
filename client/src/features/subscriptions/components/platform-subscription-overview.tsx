@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import { ArrowLeft, CheckCircle2, LoaderCircle, Ticket } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,9 +18,12 @@ import { Button } from "@/components/ui/button";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checkout";
-import { addFreighterTrustline } from "@/features/wallet/lib/freighter";
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
+import {
+  ensureActiveStellarAccount,
+  resolveStellarWallet,
+} from "@/features/wallet/lib/resolve-stellar-wallet";
 import { useAuth } from "@/hooks/use-auth";
 import { clientEnv } from "@/lib/config/env";
 
@@ -116,6 +120,8 @@ export const PlatformSubscriptionOverview = ({
 }) => {
   const router = useRouter();
   const { session } = useAuth();
+  const { primaryWallet } = useDynamicContext();
+  const userWallets = useUserWallets();
   const runCheckout = useStellarCheckout();
   const [plan, setPlan] = useState<PlatformSubscriptionPlan | null>(null);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
@@ -126,6 +132,12 @@ export const PlatformSubscriptionOverview = ({
   const [isAddingUsdcTrustline, setIsAddingUsdcTrustline] = useState(false);
   const [isTrustlineApprovalSlow, setIsTrustlineApprovalSlow] = useState(false);
   const trustlineApprovalTimerRef = useRef<number | null>(null);
+
+  const stellarWallet = resolveStellarWallet(
+    session?.walletAddress,
+    primaryWallet,
+    userWallets,
+  );
 
   const load = async () => {
     setIsLoading(true);
@@ -238,8 +250,8 @@ export const PlatformSubscriptionOverview = ({
       return;
     }
 
-    if (!session.walletAddress) {
-      toast.error("Sign in with your Stellar wallet first.");
+    if (!stellarWallet) {
+      toast.error("Connect a Stellar wallet first.");
       return;
     }
 
@@ -255,16 +267,18 @@ export const PlatformSubscriptionOverview = ({
       setIsTrustlineApprovalSlow(true);
     }, 5000);
 
-    void addFreighterTrustline({
-      accountAddress: session.walletAddress,
-      assetCode: plan.assetCode,
-      assetIssuer: plan.assetIssuer ?? clientEnv.stellarTestnetUsdcIssuer,
-    })
+    void stellarWallet.connector
+      .connect()
       .then(async () => {
-        return load();
+        await ensureActiveStellarAccount(stellarWallet);
+        return stellarWallet.addTrustline({
+          assetCode: plan.assetCode,
+          assetIssuer: plan.assetIssuer ?? clientEnv.stellarTestnetUsdcIssuer,
+        });
       })
-      .then(() => {
+      .then(async () => {
         toast.success("USDC is now enabled for this wallet.");
+        await load();
       })
       .catch((caughtError: unknown) => {
         toast.error(describeWalletError(caughtError, "Unable to enable USDC."));
