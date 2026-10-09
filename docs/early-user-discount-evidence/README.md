@@ -1,6 +1,6 @@
 # Early-user sponsorship verification
 
-Status: local implementation and end-to-end acceptance verified on 9 October 2026. Production migration and rollout are separate future release steps.
+Status: local implementation and end-to-end acceptance verified; production commit `b9b4fba12fab51e69b261409abf7df89fcbaf51c` deployed on 9 October 2026. The API, database readiness, sponsorship schema, and live artist/admin frontend bundles are healthy. An owner-controlled production signup remains to be checked.
 
 ## Automated checks
 
@@ -30,9 +30,9 @@ On 9 October 2026, the connected PC's configured development database was querie
 
 No legacy payment migration is needed for this development database. Production inventory remains pending.
 
-## Optional production database access note
+## Production database access note
 
-The production environment was inspected only to determine whether production inventory was necessary for local verification. Its database is private and the workspace has no usable SSH key; the connected PC has only development settings. No production SQL query or change was made. This is relevant only if a production rollout is requested later; it does not affect or block the local acceptance results.
+The production database is private and the workspace has no usable SSH key; the connected PC has only development settings. No production SQL inventory was run. The production migration is additive and the live readiness endpoint reports the sponsorship migration applied with no missing relations or indexes. Existing payment rows are not rewritten, and legacy access is resolved from confirmed payment records or the historical profile grant.
 
 ## Browser acceptance
 
@@ -56,8 +56,8 @@ The runner creates an isolated temporary PostgreSQL database and starts disposab
 
 The browser used the signed challenge result as a test session in local storage rather than driving the Freighter popup. This still exercised the application's real post-auth registration and activation path. Authentication signing is separate from artist-payment approval. The run verified a long display name and recovered an interrupted artist registration after reload. A second authenticated browser followed the actual referral URL; the inviter totals increased by one, the admin referral row retained the inviter, and no paid activation was recorded. During onboarding and activation, the browser observed zero artist-payment-intent requests and zero wallet-balance requests. Opening the existing account wallet overview separately made four wallet-balance requests; those calls are not part of the sponsored activation and did not create a payment. A third account registered during campaign pause saw the full $20 due and no automatic discount. The artist payment signer was not invoked. No payment intent, payment record, or blockchain transaction was created. The stale sponsored session was rejected with HTTP 409. The mobile check reported viewport width 390 and document width 390.
 
-Real-database/API tests additionally cover listener-to-artist upgrade, rollback, concurrent registration, legacy history, and idempotent reconciliation. Use the checklist in [the implementation plan](../early-user-discount-implementation-plan.md) before production rollout.
+Real-database/API tests additionally cover listener-to-artist upgrade, rollback, concurrent registration, legacy history, and idempotent reconciliation. Use the remaining owner acceptance steps in [the implementation plan](../early-user-discount-implementation-plan.md) to verify a controlled production registration.
 
 ## Production boundary
 
-These results prove local and connected-PC development behavior. No production database inventory, migration, campaign activation, or deployment has been performed, and none was needed for the locally verified implementation. The paid fallback for accounts registered while the campaign is paused remains disabled until an operator verifies the USD $20 equivalent for the configured Stellar settlement asset. Keep the campaign active for the free early-user offer, or configure and verify that mapping before pausing new eligibility.
+The production commit and database migration are live. The API readiness endpoint returned 200 with the sponsorship migration applied; both Vercel frontends returned 200 and their bundles contain the new features. A wallet-authenticated production registration and admin totals have not yet been verified. The paid fallback for accounts registered while the campaign is paused remains disabled until an operator verifies the USD $20 equivalent for the configured Stellar settlement asset. Keep the campaign active for the free early-user offer, or configure and verify that mapping before pausing new eligibility.

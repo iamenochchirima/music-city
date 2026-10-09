@@ -1,6 +1,6 @@
 # Music City automatic early user discount implementation plan
 
-Status: Implemented and locally verified on 9 October 2026. The owner authorized production release on 9 October 2026; deployment and live smoke checks are in progress.
+Status: Deployed to production on 9 October 2026 as commit `b9b4fba`. API health, database readiness, the sponsorship migration, and both live frontend bundles were verified. Owner-controlled registration acceptance remains.
 
 Prepared on 9 October 2026 against the current working tree, including the registration referral implementation.
 
@@ -186,9 +186,10 @@ The local implementation and end-to-end acceptance are complete. Production uses
 - [x] Check available production access. The Railway database is private and cannot be reached from this workstation; the workspace has no registered SSH key and the connected PC has development settings. No production SQL query has run. The additive migration does not alter user/payment rows, and the resolver preserves legacy access from confirmed payment records or the historical profile grant. See the access note in the evidence README.
 - [x] Keep the seeded `EARLYUSER` campaign active as the initial new-user activation path, matching the requested offer. Do not pause new eligibility until a verified USD $20 Stellar settlement amount is configured; never treat `20` as 20 XLM by default.
 - [x] Receive the owner's authorization to commit and deploy for live testing.
-- [ ] Apply the migration through the production deployment and verify all sponsorship relations and indexes are healthy.
+- [x] Apply the migration through the production deployment and verify all sponsorship relations and indexes are healthy. The live `/api/v1/health/ready` report returned 200 with the sponsorship migration applied and no missing relations or indexes.
 - [ ] Publish the controlled production registration steps and verify the live journey with an owner-controlled test wallet: automatic quote, saved receipt, artist tool access, referral attribution, no payment intent, and matching admin totals.
-- [ ] Record the deployed commit, production health, campaign state, and rollback path. Production database before/after counts are unavailable without a read-only connection.
+- [x] Record the deployed commit, production health, and rollback path. Commit: `b9b4fba12fab51e69b261409abf7df89fcbaf51c`; API and both frontend hosts returned 200. Production database before/after counts remain unavailable without a read-only connection.
+- [ ] Confirm active campaign state in the admin report during the owner-controlled test. The migration seeds `EARLYUSER` active; no production admin session was available for a separate state read.
 - [x] Verify locally that the displayed price is USD $20 and the default configuration cannot turn it into a 20 XLM intent. A payment amount remains disabled unless the operator supplies an explicit $20-equivalent Stellar asset amount.
 - [x] Enable the seeded campaign in an isolated local pilot and complete automated checks and the browser acceptance path.
 - [x] Update configuration examples, onboarding/operator documentation, and this implementation checklist. Personal referral accounting remains separately documented.
@@ -196,4 +197,4 @@ The local implementation and end-to-end acceptance are complete. Production uses
 - [x] Audit the release requirements against local code, database constraints, automated tests, and captured browser evidence.
 - [x] Keep production deployment status explicit. Local verification does not establish a production rollout or a live payment test.
 
-Local implementation is complete: the saved price breakdown, access grant, referral attribution, and admin report agree, and the sponsored activation creates no payment transaction or revenue. The initial campaign decision is to keep `EARLYUSER` active. Production rollout is authorized and underway; the checks above distinguish deployment from owner-run account acceptance.
+Local implementation is complete: the saved price breakdown, access grant, referral attribution, and admin report agree, and the sponsored activation creates no payment transaction or revenue. The production release is deployed; the checks above distinguish deployment from owner-run account acceptance.

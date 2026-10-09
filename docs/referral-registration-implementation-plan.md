@@ -1,6 +1,6 @@
 # Music City registration referral implementation plan
 
-Status: Implemented and locally verified. Registration attribution, user and admin views, reconciliation, and paid activation recording are complete. Cash rewards are disabled. The owner authorized production deployment on 9 October 2026; rollout and live checks are in progress.
+Status: Implemented, locally verified, and deployed to production on 9 October 2026 as commit `b9b4fba`. Production API and database readiness are healthy, and referral links are enabled. Owner-controlled signup acceptance and ongoing monitoring remain.
 
 Prepared on 8 October 2026 against commit `2ac781a`; implementation and verification completed in the current working tree.
 
@@ -152,11 +152,12 @@ Implemented test locations:
 
 Automated tests plus this browser path establish the registration release. They do not prove cash reward settlement, which is outside its scope.
 
-## Phase 6 Release and follow-on paid activation
+## Phase 6 Production release and follow-on paid activation
 
 - [x] Put referral capture behind a feature flag. Disabling new capture must preserve existing records and permit already-bound onboarding to finish.
-- [ ] Deploy and verify migrations before enabling the client entry points.
-- [ ] Enable a small internal pilot, check attribution and dashboard totals, then open registration referrals to users.
+- [x] Deploy commit `b9b4fba` and verify production database readiness and the sponsorship migration.
+- [x] Enable referral links for live testing at `https://music-city.vercel.app`; the admin dashboards are at `https://music-city-admin.vercel.app`.
+- [ ] Complete an owner-controlled production registration and confirm attribution and admin totals.
 - [ ] Monitor binding failures, signup-to-completion conversion, duplicate claims, and exclusions. Log record IDs and error reasons without wallet secrets or authentication tokens.
 
 ### Paid activation milestone
@@ -177,6 +178,6 @@ The separate early-user sponsorship program is documented in [its implementation
 
 At planning time, `.env` sets `ARTIST_ONBOARDING_FEE_PRICE=0`; the environment schema and example also default to zero. This describes this checkout, not an independently verified production environment.
 
-The existing users and payments tests passed 11 checks after rebuilding the shared package. Those tests verify existing onboarding and payment behavior; they do not verify the planned referral flow. Referral implementation, focused checks, and browser evidence are recorded in [verification evidence](referral-registration-evidence/README.md). Production rollout and cash reward decisions remain open.
+The existing users and payments tests passed 11 checks after rebuilding the shared package. Referral implementation, focused checks, and browser evidence are recorded in [verification evidence](referral-registration-evidence/README.md). Production deployment is complete; owner acceptance and cash reward decisions remain open.
 
 Practice references: [Dropbox referral progress and qualification](https://help.dropbox.com/storage-space/earn-space-referring-friends) and [Wise qualifying actions and registration campaign terms](https://wise.com/help/articles/2487043/how-does-the-free-transfer-invite-program-work). Music City's thirty-day attribution window and registration rules are proposed project defaults.
