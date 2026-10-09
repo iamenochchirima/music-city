@@ -44,6 +44,12 @@ const nextStepFor = (
   step: OnboardingStep,
 ): OnboardingStep => {
   if (step === "intent") {
+    return isArtistIntent(primaryIntent)
+      ? "artist_activation"
+      : "personalize";
+  }
+
+  if (step === "artist_activation") {
     return isListenerIntent(primaryIntent) ? "personalize" : "artist_identity";
   }
 
@@ -69,10 +75,11 @@ const nextStepFor = (
 const onboardingStepOrder: Record<OnboardingStep, number> = {
   identity: 0,
   intent: 1,
-  personalize: 2,
-  artist_identity: 3,
-  visuals: 4,
-  complete: 5,
+  artist_activation: 2,
+  personalize: 3,
+  artist_identity: 4,
+  visuals: 5,
+  complete: 6,
 };
 
 const getProfileCompletion = (profile: UserProfile): ProfileCompletion => {
@@ -390,6 +397,15 @@ export const usersService = {
           ? await getArtistOnboardingAccess(walletAddress)
           : false;
         nextProfile.onboardingStep = nextStepFor(parsed.primaryIntent, parsed.step);
+        break;
+      case "artist_activation":
+        if (!isArtistIntent(nextProfile.primaryIntent)) {
+          throw new HttpError(400, "Artist activation is not available for this account");
+        }
+        nextProfile.onboardingStep = nextStepFor(
+          nextProfile.primaryIntent,
+          parsed.step,
+        );
         break;
       case "identity":
         nextProfile.displayName = parsed.displayName.trim();

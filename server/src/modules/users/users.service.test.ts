@@ -158,6 +158,62 @@ test("saving the required intent advances a profile created by the welcome step"
   }
 });
 
+test("artist activation is a saved onboarding step between intent and artist profile", async () => {
+  let stored: UserProfile | null = null;
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 2000,
+        discountPercent: 100,
+        amountDueMinor: 0,
+        campaignCode: "EARLYUSER",
+        termsRevision: "v1",
+        status: "eligible",
+        profileExists: true,
+        artistAccess: false,
+        activatedAt: null,
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+  ];
+
+  try {
+    await usersService.saveOnboardingStep(walletAddress, {
+      step: "identity",
+      displayName: "New Artist",
+      email: "artist@example.com",
+    });
+    const intentProfile = await usersService.saveOnboardingStep(walletAddress, {
+      step: "intent",
+      primaryIntent: "artist",
+    });
+    assert.equal(intentProfile?.onboardingStep, "artist_activation");
+
+    const artistProfile = await usersService.saveOnboardingStep(walletAddress, {
+      step: "artist_activation",
+    });
+    assert.equal(artistProfile?.onboardingStep, "artist_identity");
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
 test("saving welcome details creates the profile before intent selection", async () => {
   let stored: UserProfile | null = null;
   const cleanup = [
@@ -228,6 +284,9 @@ test("both intent persists listener and artist personalization without role ambi
     await usersService.saveOnboardingStep(walletAddress, {
       step: "intent",
       primaryIntent: "both",
+    });
+    await usersService.saveOnboardingStep(walletAddress, {
+      step: "artist_activation",
     });
     await usersService.saveOnboardingStep(walletAddress, {
       step: "personalize",

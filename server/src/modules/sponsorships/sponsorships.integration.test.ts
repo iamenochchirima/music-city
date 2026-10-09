@@ -39,6 +39,9 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
   const welcome = (w: string, referralReceipt?: string) => usersService.saveOnboardingStep(w,{ step: "identity",displayName: "Early artist",referralReceipt });
   const complete = async (w: string, intent: "artist" | "both" | "listener") => {
     await usersService.saveOnboardingStep(w,{ step: "intent",primaryIntent: intent });
+    if (intent === "artist" || intent === "both") {
+      await usersService.saveOnboardingStep(w,{ step: "artist_activation" });
+    }
     await usersService.completeOnboarding(w);
   };
   const counts = async (w: string) => databaseService.transaction(async client => {

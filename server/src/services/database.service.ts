@@ -142,7 +142,7 @@ const baseSchemaStatements = [
     CONSTRAINT users_onboarding_status_check
       CHECK (onboarding_status IN ('required', 'in_progress', 'complete')),
     CONSTRAINT users_onboarding_step_check
-      CHECK (onboarding_step IN ('intent', 'identity', 'personalize', 'artist_identity', 'visuals', 'complete'))
+      CHECK (onboarding_step IN ('intent', 'identity', 'artist_activation', 'personalize', 'artist_identity', 'visuals', 'complete'))
   )`,
   `CREATE TABLE IF NOT EXISTS tracks (
     id TEXT PRIMARY KEY,
@@ -486,6 +486,15 @@ const schemaMigrations: SchemaMigration[] = [
        SET payload = jsonb_set(payload, '{onboardingStep}', to_jsonb(onboarding_step), true)
        WHERE onboarding_status <> 'complete'
          AND onboarding_step = 'identity'`,
+    ],
+  },
+  {
+    name: "2026-10-09-onboarding-artist-activation-step",
+    statements: [
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_onboarding_step_check",
+      `ALTER TABLE users
+       ADD CONSTRAINT users_onboarding_step_check
+       CHECK (onboarding_step IN ('intent', 'identity', 'artist_activation', 'personalize', 'artist_identity', 'visuals', 'complete'))`,
     ],
   },
   {
@@ -904,6 +913,17 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
       "ad_impressions_ad_id_idx",
     ],
     statements: baseSchemaStatements,
+  },
+  {
+    name: "2026-10-09-onboarding-artist-activation-step",
+    migrationName: "2026-10-09-onboarding-artist-activation-step",
+    relations: [],
+    constraints: ["users_onboarding_step_check"],
+    statements:
+      schemaMigrations.find(
+        (migration) =>
+          migration.name === "2026-10-09-onboarding-artist-activation-step",
+      )?.statements ?? [],
   },
   {
     name: "2026-10-08-registration-referrals",

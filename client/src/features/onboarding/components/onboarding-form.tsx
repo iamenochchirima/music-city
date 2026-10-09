@@ -22,7 +22,7 @@ type OnboardingFormProps = {
   onCompleted?: (intent: PrimaryIntent, destination: string) => void;
 };
 
-type FlowStep = "identity" | "intent" | "personalize" | "artist_identity" | "visuals" | "complete";
+type FlowStep = "identity" | "intent" | "artist_activation" | "personalize" | "artist_identity" | "visuals" | "complete";
 type MusicGenre = (typeof MUSIC_GENRES)[number];
 
 const COUNTRY_OPTIONS = [
@@ -65,7 +65,7 @@ const intentOptions: Array<{
   {
     value: "artist",
     label: "I’m an artist",
-    description: "Build your artist profile, release music, and grow your audience.",
+    description: "Build your artist profile, release music, and review your activation offer.",
   },
   {
     value: "both",
@@ -84,16 +84,16 @@ const isEmailDerivedDisplayName = (displayName: string, email?: string) =>
   Boolean(email?.trim()) && displayName.trim().toLowerCase() === email!.trim().toLowerCase();
 
 const nextStepFor = (intent: PrimaryIntent): FlowStep => {
-  if (isListenerIntent(intent)) {
-    return "personalize";
-  }
-
-  return "artist_identity";
+  return isArtistIntent(intent) ? "artist_activation" : "personalize";
 };
+
+const nextStepAfterArtistActivation = (intent: PrimaryIntent): FlowStep =>
+  isListenerIntent(intent) ? "personalize" : "artist_identity";
 
 const stepLabels = (intent: PrimaryIntent) => [
   "Welcome",
   "How you’ll use Music City",
+  ...(isArtistIntent(intent) ? ["Artist activation"] : []),
   ...(isListenerIntent(intent) ? ["Personalize"] : []),
   ...(isArtistIntent(intent) ? ["Artist identity"] : []),
   "Profile visuals",
@@ -315,7 +315,7 @@ export const OnboardingForm = ({
         if (state.onboardingStatus === "complete") {
           setStep("complete");
         } else if (
-          ["identity", "intent", "personalize", "artist_identity", "visuals"].includes(
+          ["identity", "intent", "artist_activation", "personalize", "artist_identity", "visuals"].includes(
             state.onboardingStep,
           )
         ) {
@@ -337,7 +337,7 @@ export const OnboardingForm = ({
     }
 
     const savedStep = session.onboardingStep as FlowStep;
-    if (["identity", "intent", "personalize", "artist_identity", "visuals"].includes(savedStep)) {
+    if (["identity", "intent", "artist_activation", "personalize", "artist_identity", "visuals"].includes(savedStep)) {
       setStep(savedStep);
     }
   }, [session?.onboardingStatus, session?.onboardingStep]);
@@ -406,13 +406,15 @@ export const OnboardingForm = ({
       ? "Welcome"
       : step === "intent"
         ? "How you’ll use Music City"
-        : step === "personalize"
-          ? "Personalize"
-          : step === "artist_identity"
-            ? "Artist identity"
-            : step === "visuals"
-              ? "Profile visuals"
-              : "Ready";
+        : step === "artist_activation"
+          ? "Artist activation"
+          : step === "personalize"
+            ? "Personalize"
+            : step === "artist_identity"
+              ? "Artist identity"
+              : step === "visuals"
+                ? "Profile visuals"
+                : "Ready";
   const currentIndex = Math.max(labels.indexOf(currentLabel), 0);
   const progress = Math.round((currentIndex / Math.max(labels.length - 1, 1)) * 100);
 
@@ -492,6 +494,12 @@ export const OnboardingForm = ({
           primaryIntent,
         });
         setStep(nextStepFor(primaryIntent));
+      } else if (step === "artist_activation") {
+        if (!artistActivationQuote) {
+          throw new Error("Load the artist activation price before continuing.");
+        }
+        await saveStep({ step: "artist_activation" });
+        setStep(nextStepAfterArtistActivation(primaryIntent));
       } else if (step === "personalize") {
         await saveStep({
           step: "personalize",
@@ -565,10 +573,16 @@ export const OnboardingForm = ({
   const handleBack = () => {
     if (step === "intent") {
       setStep("identity");
-    } else if (step === "personalize") {
+    } else if (step === "artist_activation") {
       setStep("intent");
+    } else if (step === "personalize") {
+      setStep(isArtistIntent(primaryIntent) ? "artist_activation" : "intent");
     } else if (step === "artist_identity") {
-      setStep(isListenerIntent(primaryIntent) ? "personalize" : "intent");
+      setStep(
+        isListenerIntent(primaryIntent)
+          ? "personalize"
+          : "artist_activation",
+      );
     } else if (step === "visuals") {
       setStep(isArtistIntent(primaryIntent) ? "artist_identity" : "personalize");
     }
@@ -774,20 +788,45 @@ export const OnboardingForm = ({
             </div>
           </fieldset>
 
-          {isArtistIntent(primaryIntent) ? (
-            <div className="space-y-2">
-              {isLoadingArtistActivation ? (
-                <p role="status" className="rounded-2xl border border-white/10 bg-slate-950/55 p-4 text-sm text-slate-400">Loading artist activation price…</p>
-              ) : artistActivationQuote ? (
-                <ArtistActivationSummary quote={artistActivationQuote} />
-              ) : (
-                <div className="rounded-2xl border border-rose-300/20 bg-rose-400/[0.06] p-4 text-sm text-rose-100">
-                  <p>{artistActivationError ?? "Artist activation price could not be loaded."}</p>
-                  <button type="button" className="mt-2 underline underline-offset-4" onClick={() => setArtistActivationRetry((value) => value + 1)}>Try again</button>
-                </div>
-              )}
+        </div>
+      ) : null}
+
+      {step === "artist_activation" ? (
+        <div className="space-y-7">
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
+              Artist activation
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">
+              {artistActivationQuote?.discountAmountMinor
+                ? "Your early-user offer is applied"
+                : artistActivationQuote?.status === "paid"
+                  ? "Artist activation is confirmed"
+                  : artistActivationQuote?.status === "legacy_free"
+                    ? "Your artist access is active"
+                    : "Review your artist activation"}
+            </h1>
+            <p className="max-w-xl text-sm leading-7 text-slate-300">
+              {artistActivationQuote?.discountAmountMinor
+                ? "Music City automatically applied the platform offer to your one-time artist activation. Review the full price and amount due before continuing."
+                : "Review your one-time artist activation and any available offer before continuing."}
+            </p>
+          </div>
+
+          {isLoadingArtistActivation ? (
+            <p role="status" className="rounded-2xl border border-white/10 bg-slate-950/55 p-6 text-sm text-slate-400">
+              Loading your artist activation offer…
+            </p>
+          ) : artistActivationQuote ? (
+            <ArtistActivationSummary quote={artistActivationQuote} variant="step" />
+          ) : (
+            <div className="rounded-2xl border border-rose-300/20 bg-rose-400/[0.06] p-5 text-sm text-rose-100">
+              <p>{artistActivationError ?? "Artist activation price could not be loaded."}</p>
+              <button type="button" className="mt-3 underline underline-offset-4" onClick={() => setArtistActivationRetry((value) => value + 1)}>
+                Try again
+              </button>
             </div>
-          ) : null}
+          )}
         </div>
       ) : null}
 
@@ -1167,8 +1206,27 @@ export const OnboardingForm = ({
               </Button>
             </>
           ) : (
-            <Button type="submit" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" disabled={isSaving || isPreparingMedia || (step === "intent" && isArtistIntent(primaryIntent) && (isLoadingArtistActivation || !artistActivationQuote))}>
-              {isPreparingMedia ? "Preparing image..." : isSaving ? "Saving..." : step === "visuals" ? "Finish setup" : "Continue"}
+            <Button
+              type="submit"
+              className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+              disabled={
+                isSaving ||
+                isPreparingMedia ||
+                (step === "artist_activation" &&
+                  (isLoadingArtistActivation || !artistActivationQuote))
+              }
+            >
+              {isPreparingMedia
+                ? "Preparing image..."
+                : isSaving
+                  ? "Saving..."
+                  : step === "visuals"
+                    ? "Finish setup"
+                    : step === "artist_activation"
+                      ? isListenerIntent(primaryIntent)
+                        ? "Continue to listening setup"
+                        : "Continue to artist profile"
+                      : "Continue"}
             </Button>
           )}
         </div>

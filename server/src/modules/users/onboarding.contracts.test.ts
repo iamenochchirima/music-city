@@ -5,6 +5,7 @@ import {
   authSessionSchema,
   completeOnboardingSchema,
   onboardingArtistIdentityStepSchema,
+  onboardingArtistActivationStepSchema,
   onboardingIdentityStepSchema,
   onboardingIntentStepSchema,
   onboardingPersonalizeStepSchema,
@@ -69,6 +70,10 @@ test("welcome input requires a display name and intent is a separate step", () =
   assert.deepEqual(
     onboardingIntentStepSchema.parse({ step: "intent", primaryIntent: "both" }),
     { step: "intent", primaryIntent: "both" },
+  );
+  assert.deepEqual(
+    onboardingArtistActivationStepSchema.parse({ step: "artist_activation" }),
+    { step: "artist_activation" },
   );
   assert.throws(() =>
     onboardingIdentityStepSchema.parse({

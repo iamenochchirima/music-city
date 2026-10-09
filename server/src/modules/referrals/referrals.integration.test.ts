@@ -31,6 +31,9 @@ test("registration referrals through real PostgreSQL and HTTP routes", { skip: !
   const welcome = (w: string, receipt?: string) => usersService.saveOnboardingStep(w,{ step: "identity", displayName: "Test artist",referralReceipt: receipt });
   const completion = async (w: string, intent: "artist" | "both" | "listener") => {
     await usersService.saveOnboardingStep(w,{ step: "intent",primaryIntent: intent });
+    if (intent === "artist" || intent === "both") {
+      await usersService.saveOnboardingStep(w,{ step: "artist_activation" });
+    }
     return usersService.completeOnboarding(w);
   };
   const sessionToken = (w: string) => tokenService.issueSession({ walletAddress: w,email: "",displayName: "",primaryIntent: "listener",artistAccess: false,onboardingStatus: "required",onboardingStep: "identity",onboardingVersion: 1,profileCompletion: { percentage: 0,completed: [],missing: [],requiredComplete: false } });
