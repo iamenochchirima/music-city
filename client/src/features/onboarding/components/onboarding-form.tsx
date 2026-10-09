@@ -680,7 +680,6 @@ export const OnboardingForm = ({
               />
               {fieldErrors.displayName ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.displayName}</p> : null}
             </div>
-            {!profileId && <ReferralCodeInput />}
             <div className="space-y-2">
               <Label htmlFor="email">
                 Email <span className="text-slate-500">(optional)</span>
@@ -717,6 +716,12 @@ export const OnboardingForm = ({
               {fieldErrors.location ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.location}</p> : null}
             </div>
           </div>
+
+          {!profileId ? (
+            <div className="max-w-xl">
+              <ReferralCodeInput />
+            </div>
+          ) : null}
 
         </div>
       ) : null}

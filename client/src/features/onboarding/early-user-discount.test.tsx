@@ -47,7 +47,10 @@ it("shows the $20 price and automatic 100% discount in the activation summary", 
   render(<ArtistActivationSummary quote={eligibleQuote} />);
   const summary = screen.getByLabelText("Artist activation");
   expect(summary.textContent).toContain("$20.00");
-  expect(summary.textContent).toContain("100% early-user discount");
+  expect(summary.textContent).toContain("EARLYUSER code applied automatically");
+  expect(summary.textContent).toContain("100% discount");
+  expect(summary.textContent).toContain("You save $20.00");
+  expect(summary.textContent).toContain("Amount due $0.00");
   expect(summary.textContent).toContain("Amount due");
   expect(summary.textContent).toContain("No payment or transaction is needed");
 });

@@ -30,10 +30,20 @@ export const ArtistActivationSummary = ({ quote }: { quote: ArtistActivationQuot
   return (
     <section aria-label="Artist activation" className="rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.07] p-4 text-sm text-slate-200">
       <p className="font-semibold text-white">One-time artist activation</p>
+      {quote.discountAmountMinor > 0 ? (
+        <div role="status" className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-400/10 p-3">
+          <p className="font-semibold text-emerald-100">
+            {quote.campaignCode ?? "Early-user"} code applied automatically
+          </p>
+          <p className="mt-1 text-sm text-emerald-100/80">
+            {quote.discountPercent}% discount · You save {formatUsd(quote.discountAmountMinor)} · Amount due {formatUsd(quote.amountDueMinor)}
+          </p>
+        </div>
+      ) : null}
       <dl className="mt-3 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2">
         <dt>Standard price</dt><dd className="text-right">{formatUsd(quote.originalAmountMinor)}</dd>
         {quote.discountAmountMinor > 0 ? <>
-          <dt>{quote.discountPercent}% early-user discount</dt>
+          <dt>Early-user discount</dt>
           <dd className="text-right text-emerald-300">−{formatUsd(quote.discountAmountMinor)}</dd>
         </> : null}
         <dt className="border-t border-white/10 pt-2 font-semibold text-white">{quote.amountDueMinor === 0 ? "Amount due" : "Due today"}</dt>

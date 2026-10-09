@@ -42,11 +42,18 @@ it("expired and corrupt storage clears; switching wallets and logout clear attri
 it("explicit correction replaces attribution and removal allows ordinary registration",async () => {
   const user = userEvent.setup(); rememberReferral(invitation); render(<ReferralCodeInput />);
   mocks.post.mockResolvedValue({ ...invitation,receipt: "replacement",inviterName: "Nomsa" });
-  await user.type(screen.getByLabelText(/Invitation code/),"MCFEDCBA9876543210"); await user.click(screen.getByRole("button",{ name: "Apply" }));
+  await user.type(screen.getByLabelText(/Invitation code/),"MCFEDCBA9876543210"); await user.click(screen.getByRole("button",{ name: "Apply code" }));
   await screen.findByText(/Invited by Nomsa/); expect(pendingReferral()?.receipt).toBe("replacement");
   await user.click(screen.getByRole("button",{ name: "Remove invitation" }));
   await usersApi.saveOnboardingStep("token",{ step: "identity",displayName: "Artist" });
   expect(mocks.put).toHaveBeenCalledWith("/users/me/onboarding",expect.objectContaining({ referralReceipt: undefined }),"token");
+});
+it("keeps an optional invitation code tucked away until the user chooses to add one", async () => {
+  const user = userEvent.setup();
+  render(<ReferralCodeInput />);
+  expect(screen.queryByLabelText(/Invitation code/)).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Add code" }));
+  expect(screen.getByLabelText(/Invitation code/)).toBeTruthy();
 });
 it("invalid link offers ordinary signup without retaining attribution",async () => {
   mocks.post.mockRejectedValue(new Error("Invitation code was not found."));
