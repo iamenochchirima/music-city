@@ -1,4 +1,8 @@
-import { Pool } from "pg";
+import { referralSchemaStatements, referralActivationSchemaStatements, referralCampaignControlStatements } from "../modules/referrals/referral-schema.js";
+import { Pool, type PoolClient } from "pg";
+import { agreementSchemaStatements } from "../modules/agreements/agreement-schema.js";
+import { finalizationSchemaStatements, finalizationIntegrityStatements } from "../modules/agreements/finalization-schema.js";
+import { sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
 
 import { env } from "../config/env.js";
 
@@ -138,7 +142,7 @@ const baseSchemaStatements = [
     CONSTRAINT users_onboarding_status_check
       CHECK (onboarding_status IN ('required', 'in_progress', 'complete')),
     CONSTRAINT users_onboarding_step_check
-      CHECK (onboarding_step IN ('intent', 'identity', 'personalize', 'artist_identity', 'visuals', 'complete'))
+      CHECK (onboarding_step IN ('intent', 'identity', 'artist_activation', 'personalize', 'artist_identity', 'visuals', 'complete'))
   )`,
   `CREATE TABLE IF NOT EXISTS tracks (
     id TEXT PRIMARY KEY,
@@ -391,6 +395,25 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
+  { name: "2026-10-08-registration-referrals", statements: referralSchemaStatements },
+  { name: "2026-10-08-referral-paid-activation", statements: referralActivationSchemaStatements },
+  { name: "2026-10-08-referral-campaign-controls", statements: referralCampaignControlStatements },
+  { name: "2026-10-02-contributor-agreements", statements: agreementSchemaStatements },
+  { name: "2026-10-02-agreement-finalization", statements: finalizationSchemaStatements },
+  { name: "2026-10-02-agreement-finalization-integrity", statements: finalizationIntegrityStatements },
+  {
+    name: "2026-10-05-single-use-stellar-auth-challenges",
+    statements: [
+      `CREATE TABLE stellar_auth_challenges (
+        transaction_hash TEXT PRIMARY KEY CHECK (transaction_hash ~ '^[a-f0-9]{64}$'),
+        wallet_address TEXT NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      "CREATE INDEX stellar_auth_challenges_expires_at_idx ON stellar_auth_challenges (expires_at)",
+    ],
+  },
   {
     name: "2026-08-14-onboarding-intent-foundation",
     statements: [
@@ -463,6 +486,15 @@ const schemaMigrations: SchemaMigration[] = [
        SET payload = jsonb_set(payload, '{onboardingStep}', to_jsonb(onboarding_step), true)
        WHERE onboarding_status <> 'complete'
          AND onboarding_step = 'identity'`,
+    ],
+  },
+  {
+    name: "2026-10-09-onboarding-artist-activation-step",
+    statements: [
+      "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_onboarding_step_check",
+      `ALTER TABLE users
+       ADD CONSTRAINT users_onboarding_step_check
+       CHECK (onboarding_step IN ('intent', 'identity', 'artist_activation', 'personalize', 'artist_identity', 'visuals', 'complete'))`,
     ],
   },
   {
@@ -883,6 +915,44 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     statements: baseSchemaStatements,
   },
   {
+    name: "2026-10-09-onboarding-artist-activation-step",
+    migrationName: "2026-10-09-onboarding-artist-activation-step",
+    relations: [],
+    constraints: ["users_onboarding_step_check"],
+    statements:
+      schemaMigrations.find(
+        (migration) =>
+          migration.name === "2026-10-09-onboarding-artist-activation-step",
+      )?.statements ?? [],
+  },
+  {
+    name: "2026-10-08-registration-referrals",
+    migrationName: "2026-10-08-registration-referrals",
+    relations: ["referral_campaigns", "referral_codes", "referrals", "referral_events"],
+    indexes: ["referrals_inviter_idx"],
+    statements: referralSchemaStatements,
+  },
+  {
+    name: "2026-10-09-early-user-sponsorship",
+    migrationName: "2026-10-09-early-user-sponsorship",
+    relations: ["artist_sponsorship_campaigns", "artist_sponsorship_eligibilities", "artist_sponsorship_grants", "artist_sponsorship_events"],
+    indexes: ["artist_sponsorship_eligibilities_campaign_idx", "artist_sponsorship_events_created_idx"],
+    statements: sponsorshipSchemaStatements,
+  },
+  {
+    name: "2026-10-08-referral-campaign-controls",
+    migrationName: "2026-10-08-referral-campaign-controls",
+    relations: [],
+    columns: ["referral_campaigns.active"],
+    statements: referralCampaignControlStatements,
+  },
+  {
+    name: "2026-10-08-referral-paid-activation",
+    migrationName: "2026-10-08-referral-paid-activation",
+    relations: ["referral_paid_activations"],
+    statements: referralActivationSchemaStatements,
+  },
+  {
     name: "2026-08-14-onboarding-intent-foundation",
     migrationName: "2026-08-14-onboarding-intent-foundation",
     relations: [],
@@ -1063,8 +1133,47 @@ const applySchemaExpectationRepair = async (group: SchemaExpectationGroup) => {
 };
 
 export const databaseService = {
+  async transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await work(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
   async close() {
     await pool.end();
+  },
+
+  async createStellarAuthChallenge(
+    transactionHash: string,
+    walletAddress: string,
+    expiresAt: Date,
+  ) {
+    await pool.query(
+      "DELETE FROM stellar_auth_challenges WHERE expires_at <= NOW()",
+    );
+    await pool.query(
+      `INSERT INTO stellar_auth_challenges (transaction_hash, wallet_address, expires_at)
+       VALUES ($1, $2, $3)`,
+      [transactionHash, walletAddress, expiresAt],
+    );
+  },
+
+  async consumeStellarAuthChallenge(transactionHash: string, walletAddress: string) {
+    const result = await pool.query(
+      `DELETE FROM stellar_auth_challenges
+       WHERE transaction_hash = $1 AND wallet_address = $2 AND expires_at > NOW()
+       RETURNING transaction_hash`,
+      [transactionHash, walletAddress],
+    );
+    return result.rows.length === 1;
   },
 
   async initialize(options?: { repair?: boolean }) {
@@ -1084,22 +1193,16 @@ export const databaseService = {
         continue;
       }
 
-      await pool.query("BEGIN");
-
-      try {
+      await this.transaction(async (client) => {
         for (const statement of migration.statements) {
-          await pool.query(statement);
+          await client.query(statement);
         }
 
-        await pool.query(
+        await client.query(
           "INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING",
           [migration.name],
         );
-        await pool.query("COMMIT");
-      } catch (error) {
-        await pool.query("ROLLBACK");
-        throw error;
-      }
+      });
     }
 
     if (options?.repair !== false) {
@@ -1342,8 +1445,9 @@ export const databaseService = {
     onboardingVersion: number,
     onboardingCompletedAt: string | undefined,
     payload: unknown,
+    client?: PoolClient,
   ) {
-    await pool.query(
+    await (client ?? pool).query(
       `INSERT INTO users (
         id,
         wallet_address,
@@ -2311,28 +2415,7 @@ export const databaseService = {
 
     return mapPayloadRows<T>(result.rows);
   },
-  async upsertRoyaltySplit(
-    id: string,
-    trackId: string,
-    version: number,
-    status: string,
-    registryChain: string | null,
-    payload: unknown,
-  ) {
-    await pool.query(
-      `INSERT INTO royalty_splits (id, track_id, version, status, registry_chain, payload)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-       ON CONFLICT (id) DO UPDATE SET
-         track_id = EXCLUDED.track_id,
-         version = EXCLUDED.version,
-         status = EXCLUDED.status,
-         registry_chain = EXCLUDED.registry_chain,
-         payload = EXCLUDED.payload`,
-      [id, trackId, version, status, registryChain, JSON.stringify(payload)],
-    );
-  },
-
-  async listRoyaltySplitsByTrack<T>(trackId: string) {
+  async listHistoricalRoyaltySplitsByTrack<T>(trackId: string) {
     const result = await pool.query<PersistedRow>(
       `SELECT id, payload FROM royalty_splits WHERE track_id = $1 ORDER BY version DESC, id DESC`,
       [trackId],

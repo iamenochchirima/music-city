@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  ArtistActivationQuote,
   ConfirmPaymentInput,
   PaymentIntentRecord,
   PaymentRecord,
@@ -11,7 +12,7 @@ import { httpClient } from "@/lib/api/http-client";
 
 export const paymentsApi = {
   async getArtistOnboardingFeeStatus(token: string) {
-    return httpClient.get<{ paid: boolean }>(
+    return httpClient.get<ArtistActivationQuote>(
       "/payments/artist-onboarding-fee/status",
       token,
     );

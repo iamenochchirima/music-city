@@ -1,3 +1,5 @@
+import { referralsRouter, adminReferralsRouter } from "../modules/referrals/referrals.router.js";
+import { sponsorshipsRouter, adminSponsorshipsRouter } from "../modules/sponsorships/sponsorships.router.js";
 import { Router } from "express";
 
 import { adsRouter } from "../modules/ads/ads.router.js";
@@ -13,6 +15,8 @@ import { playbackRouter } from "../modules/playback/playback.router.js";
 import { playlistsRouter } from "../modules/playlists/playlists.router.js";
 import { releasesRouter } from "../modules/releases/releases.router.js";
 import { royaltiesRouter } from "../modules/royalties/royalties.router.js";
+import { agreementsRouter } from "../modules/agreements/agreements.router.js";
+import { adminAgreementsRouter } from "../modules/agreements/admin-agreements.router.js";
 import { subscriptionsRouter } from "../modules/subscriptions/subscriptions.router.js";
 import { tracksRouter } from "../modules/tracks/tracks.router.js";
 import { uploadsRouter } from "../modules/uploads/uploads.router.js";
@@ -22,8 +26,13 @@ import { walletRouter } from "../modules/wallet/wallet.router.js";
 const apiRouter = Router();
 
 apiRouter.use("/health", healthRouter);
+apiRouter.use("/referrals", referralsRouter);
+apiRouter.use("/admin/referrals", adminReferralsRouter);
+apiRouter.use("/sponsorships", sponsorshipsRouter);
+apiRouter.use("/admin/sponsorships", adminSponsorshipsRouter);
 apiRouter.use("/ads", adsRouter);
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/admin/agreements", adminAgreementsRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/archives", archivesRouter);
 apiRouter.use("/engagement", engagementRouter);
@@ -34,6 +43,7 @@ apiRouter.use("/media", mediaRouter);
 apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/releases", releasesRouter);
 apiRouter.use("/royalties", royaltiesRouter);
+apiRouter.use("/agreements", agreementsRouter);
 apiRouter.use("/subscriptions", subscriptionsRouter);
 apiRouter.use("/tracks", tracksRouter);
 apiRouter.use("/uploads", uploadsRouter);

@@ -124,6 +124,10 @@ export const trackRoyaltySplitRecordSchema = z.object({
   trackId: z.string().min(1),
   version: z.number().int().positive(),
   status: royaltySplitStatusSchema,
+  historical: z.boolean().default(false),
+  agreementId: z.string().optional(),
+  finalizationId: z.string().optional(),
+  proposalHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   registryKind: royaltyRegistryKindSchema.default("offchain"),
   registryChain: royaltyChainSchema.optional(),
   registryNetwork: z.string().trim().min(1).max(80).optional(),
@@ -136,50 +140,16 @@ export const trackRoyaltySplitRecordSchema = z.object({
   registryVerificationMessage: z.string().trim().min(1).max(500).optional(),
   recipients: z.array(royaltySplitRecipientSchema).min(1),
   totalBps: z.number().int().min(1).max(10_000),
-  notes: z.string().trim().max(500).optional(),
+  notes: z.string().trim().max(2000).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 export type TrackRoyaltySplitRecord = z.infer<typeof trackRoyaltySplitRecordSchema>;
 
-export const sorobanTrackSplitSchema = z.object({
-  version: z.number().int().positive(),
-  recipients: z.array(royaltySplitRecipientSchema).min(1).max(20),
-  metadataHash: z.string().regex(/^[a-f0-9]{64}$/),
-  frozen: z.boolean(),
-  updatedLedger: z.number().int().nonnegative(),
-});
-export type SorobanTrackSplit = z.infer<typeof sorobanTrackSplitSchema>;
-
-export const royaltySplitPublicationResultSchema = z.object({
-  split: trackRoyaltySplitRecordSchema,
-  onChainSplit: sorobanTrackSplitSchema,
-  contractId: z.string().trim().min(1).max(160),
-  network: z.string().trim().min(1).max(80),
-  txHash: z.string().trim().min(1).max(160),
-  explorerUrl: z.string().url(),
-});
-export type RoyaltySplitPublicationResult = z.infer<
-  typeof royaltySplitPublicationResultSchema
->;
-
-export const royaltySplitVerificationResultSchema = z.object({
-  split: trackRoyaltySplitRecordSchema,
-  onChainSplit: sorobanTrackSplitSchema.optional(),
-  contractId: z.string().trim().min(1).max(160),
-  network: z.string().trim().min(1).max(80),
-  matches: z.boolean(),
-  differences: z.array(z.string()),
-  verifiedAt: z.string(),
-});
-export type RoyaltySplitVerificationResult = z.infer<
-  typeof royaltySplitVerificationResultSchema
->;
-
 export const royaltyEngineConfigSchema = z.object({
-  primaryChain: royaltyChainSchema.default("stellar"),
+  primaryChain: z.literal("stellar"),
   primaryNetwork: z.string().trim().min(1).max(80),
-  registryKind: royaltyRegistryKindSchema.default("offchain"),
+  registryKind: z.literal("soroban"),
   registryContractId: z.string().trim().min(1).max(160).optional(),
   registryExplorerUrl: z.string().url().optional(),
   settlementRails: z.array(royaltySettlementRailSchema).min(1),
@@ -339,15 +309,6 @@ export const royaltyPayoutReconciliationResultSchema = z.object({
 });
 export type RoyaltyPayoutReconciliationResult = z.infer<
   typeof royaltyPayoutReconciliationResultSchema
->;
-
-export const upsertTrackRoyaltySplitSchema = z.object({
-  recipients: z.array(royaltySplitRecipientSchema).min(1).max(20),
-  notes: z.string().trim().max(500).optional(),
-  activate: z.boolean().default(true),
-});
-export type UpsertTrackRoyaltySplitInput = z.infer<
-  typeof upsertTrackRoyaltySplitSchema
 >;
 
 export const trackRoyaltySplitListSchema = z.object({

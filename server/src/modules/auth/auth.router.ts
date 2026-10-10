@@ -13,7 +13,7 @@ authRouter.get(
   "/challenge",
   asyncHandler(async (request, response) => {
     const account = String(request.query.account ?? "");
-    const challenge = stellarAuthService.createChallenge(account);
+    const challenge = await stellarAuthService.createChallenge(account);
 
     response.json(challenge);
   }),

@@ -32,7 +32,7 @@ export const AuthPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm leading-7 text-slate-300">
-          Connect your wallet to create your Music City profile and continue.
+          Sign in with the email, passkey, social account, or wallet enabled for Music City. Your Stellar wallet is linked for on-chain actions.
         </p>
 
         <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">

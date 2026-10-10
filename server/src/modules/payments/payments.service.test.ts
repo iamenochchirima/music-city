@@ -12,6 +12,8 @@ const { subscriptionsService } = await import("../subscriptions/subscriptions.se
 const { entitlementsService } = await import("../entitlements/entitlements.service.js");
 const { royaltiesService } = await import("../royalties/royalties.service.js");
 const { usersService } = await import("../users/users.service.js");
+const { referralsService } = await import("../referrals/referrals.service.js");
+const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -229,9 +231,9 @@ test("confirm is idempotent after an intent has already been confirmed", async (
 test("createArtistOnboardingFeeIntent rejects wallets that already unlocked artist access", async () => {
   const cleanup = [
     restore(
-      usersService,
-      "hasArtistOnboardingAccess",
-      (async () => true) as typeof usersService.hasArtistOnboardingAccess,
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({ currency: "USD",originalAmountMinor: 2000,discountAmountMinor: 0,discountPercent: 0,amountDueMinor: 0,campaignCode: null,termsRevision: null,status: "paid",profileExists: true,artistAccess: true,activatedAt: new Date().toISOString() })) as typeof sponsorshipsService.getMyActivation,
     ),
   ];
 
@@ -276,6 +278,7 @@ test("confirm returns artist onboarding completion for the onboarding fee produc
   };
 
   const cleanup = [
+    restore(referralsService,"recordPaidActivation",async () => {}),
     restore(
       paymentsRepository,
       "findIntentById",

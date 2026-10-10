@@ -46,7 +46,6 @@ const envSchema = z
       .string()
       .default("Test SDF Network ; September 2015"),
     STELLAR_HOME_DOMAIN: z.string().default("localhost"),
-    STELLAR_WEB_AUTH_DOMAIN: z.string().default("localhost:4319"),
     STELLAR_SEP10_SECRET: z.string().optional(),
     APP_BASE_URL: z.string().default("http://localhost:4319"),
     STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
@@ -79,11 +78,10 @@ const envSchema = z
     STELLAR_ACCESS_ASSET_CODE: z.string().optional(),
     STELLAR_ACCESS_ASSET_ISSUER: z.string().optional(),
     STELLAR_TREASURY_ADDRESS: z.string().optional(),
+    AGREEMENT_TREASURY_ADDRESS: z.string().optional(),
     STELLAR_TREASURY_SECRET: z.string().optional(),
     STELLAR_SETTLEMENT_ASSET_CODE: z.string().default("XLM"),
     STELLAR_SETTLEMENT_ASSET_ISSUER: z.string().optional(),
-    ROYALTY_REGISTRY_CHAIN: z.enum(["stellar", "evm", "solana"]).default("stellar"),
-    ROYALTY_REGISTRY_NETWORK: z.string().default("stellar:testnet"),
     ROYALTY_REGISTRY_CONTRACT_ID: z.string().optional(),
     ROYALTY_PAYOUT_APPROVAL_MODE: z.enum(["admin", "automatic"]).default("admin"),
     ROYALTY_PAYOUT_CADENCE: z
@@ -113,7 +111,9 @@ const envSchema = z
     ROYALTY_FEE_AD_REVENUE_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     ROYALTY_FEE_MANUAL_ADJUSTMENT_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     TRACK_PURCHASE_DEFAULT_PRICE: z.string().default("5"),
+    REFERRALS_ENABLED: z.string().optional().transform(value => value === "true"),
     ARTIST_ONBOARDING_FEE_PRICE: z.string().default("0"),
+    ARTIST_ONBOARDING_FEE_PRICE_USD_EQUIVALENT: z.string().default(""),
     PLATFORM_SUBSCRIPTION_ENABLED: z
       .string()
       .optional()
@@ -230,6 +230,14 @@ const envSchema = z
         });
       }
 
+      if (!value.STELLAR_SEP10_SECRET) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STELLAR_SEP10_SECRET"],
+          message: "Production requires a Stellar auth challenge signing key.",
+        });
+      }
+
       for (const [key, url] of [
         ["CLIENT_ORIGIN", value.CLIENT_ORIGIN],
         ["ADMIN_CLIENT_ORIGIN", value.ADMIN_CLIENT_ORIGIN],
@@ -260,14 +268,6 @@ const envSchema = z
         });
       }
 
-      if (value.STELLAR_WEB_AUTH_DOMAIN === "localhost:4319") {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["STELLAR_WEB_AUTH_DOMAIN"],
-          message: "STELLAR_WEB_AUTH_DOMAIN must be configured for production.",
-        });
-      }
-
       if (
         !value.STELLAR_ALLOW_TESTNET_IN_PRODUCTION &&
         usesTestnetHost(value.STELLAR_HORIZON_URL)
@@ -277,18 +277,6 @@ const envSchema = z
           path: ["STELLAR_HORIZON_URL"],
           message:
             "Production must not use a Stellar testnet horizon URL unless STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true.",
-        });
-      }
-
-      if (
-        !value.STELLAR_ALLOW_TESTNET_IN_PRODUCTION &&
-        usesTestnetHost(value.ROYALTY_REGISTRY_NETWORK)
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["ROYALTY_REGISTRY_NETWORK"],
-          message:
-            "Production must not use a testnet royalty registry network unless STELLAR_ALLOW_TESTNET_IN_PRODUCTION=true.",
         });
       }
 

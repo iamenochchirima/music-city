@@ -34,7 +34,7 @@ export const useArtistOnboardingPayment = () => {
       .getArtistOnboardingFeeStatus(session.token)
       .then((status) => {
         if (!cancelled) {
-          setIsPaid(status.paid);
+          setIsPaid(status.artistAccess);
         }
       })
       .catch(() => undefined)
@@ -57,6 +57,13 @@ export const useArtistOnboardingPayment = () => {
     setIsPreparing(true);
 
     try {
+      const activation = await paymentsApi.getArtistOnboardingFeeStatus(session.token);
+      if (activation.status === "eligible" || activation.status === "sponsored") {
+        throw new Error("Music City has covered your artist activation fee");
+      }
+      if (activation.artistAccess) {
+        throw new Error("Artist onboarding has already been unlocked");
+      }
       return await paymentsApi.createArtistOnboardingFeeIntent(session.token);
     } finally {
       setIsPreparing(false);

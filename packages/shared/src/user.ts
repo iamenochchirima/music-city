@@ -93,7 +93,12 @@ export const onboardingIntentStepSchema = z.object({
   primaryIntent: primaryIntentSchema,
 });
 
+export const onboardingArtistActivationStepSchema = z.object({
+  step: z.literal("artist_activation"),
+});
+
 export const onboardingIdentityStepSchema = z.object({
+  referralReceipt: z.string().max(2048).optional(),
   step: z.literal("identity"),
   displayName: z.string().trim().min(1).max(80),
   email: z.string().email().optional().or(z.literal("")),
@@ -126,6 +131,7 @@ export const onboardingVisualsStepSchema = z.object({
 
 export const saveOnboardingStepSchema = z.discriminatedUnion("step", [
   onboardingIntentStepSchema,
+  onboardingArtistActivationStepSchema,
   onboardingIdentityStepSchema,
   onboardingPersonalizeStepSchema,
   onboardingArtistIdentityStepSchema,

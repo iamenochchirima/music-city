@@ -29,7 +29,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 export const SiteHeader = () => {
-  const { session, connectWallet, isLoading, logout } = useAuth();
+  const {
+    session,
+    connectWallet,
+    isLoading,
+    logout,
+  } = useAuth();
   const location = useLocation();
   const pathname = location.pathname;
 

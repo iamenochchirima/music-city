@@ -21,7 +21,7 @@ import { env } from "../../config/env.js";
 import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
-import { paymentsRepository } from "../payments/payments.repository.js";
+import { sponsorshipsService } from "../sponsorships/sponsorships.service.js";
 import { usersRepository } from "./users.repository.js";
 
 const nowIso = () => new Date().toISOString();
@@ -44,6 +44,12 @@ const nextStepFor = (
   step: OnboardingStep,
 ): OnboardingStep => {
   if (step === "intent") {
+    return isArtistIntent(primaryIntent)
+      ? "artist_activation"
+      : "personalize";
+  }
+
+  if (step === "artist_activation") {
     return isListenerIntent(primaryIntent) ? "personalize" : "artist_identity";
   }
 
@@ -69,10 +75,11 @@ const nextStepFor = (
 const onboardingStepOrder: Record<OnboardingStep, number> = {
   identity: 0,
   intent: 1,
-  personalize: 2,
-  artist_identity: 3,
-  visuals: 4,
-  complete: 5,
+  artist_activation: 2,
+  personalize: 3,
+  artist_identity: 4,
+  visuals: 5,
+  complete: 6,
 };
 
 const getProfileCompletion = (profile: UserProfile): ProfileCompletion => {
@@ -217,79 +224,8 @@ const withoutEmailDerivedDisplayName = (profile: UserProfile | null) => {
   };
 };
 
-const hasArtistOnboardingPayment = async (walletAddress: string) => {
-  const payments = await paymentsRepository.listPaymentsByWallet(walletAddress);
-
-  return payments.some(
-    (payment) => payment.productType === "artist_onboarding_fee" && payment.status === "confirmed",
-  );
-};
-
-const isArtistOnboardingFree = () =>
-  Number(env.ARTIST_ONBOARDING_FEE_PRICE) === 0;
-
-const ensureFreeArtistOnboardingRecord = async (walletAddress: string) => {
-  if (!isArtistOnboardingFree()) {
-    return;
-  }
-
-  const existing = await paymentsRepository.listPaymentsByWallet(walletAddress);
-  if (
-    existing.some(
-      (payment) =>
-        payment.productType === "artist_onboarding_fee" &&
-        payment.status === "confirmed",
-    )
-  ) {
-    return;
-  }
-
-  const timestamp = nowIso();
-  const recordKey = createHash("sha256")
-    .update(walletAddress)
-    .digest("hex")
-    .slice(0, 24);
-  const intentId = `payi_waived_${recordKey}`;
-  const paymentId = `pay_waived_${recordKey}`;
-  const waivedTxHash = `waived:artist-onboarding:${recordKey}`;
-
-  await paymentsRepository.upsertIntent({
-    id: intentId,
-    walletAddress,
-    productType: "artist_onboarding_fee",
-    amount: "0",
-    assetCode: "XLM",
-    destinationAddress: walletAddress,
-    memo: `artist_onboarding_fee:waived:${recordKey}`,
-    status: "confirmed",
-    txHash: waivedTxHash,
-    expiresAt: timestamp,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  });
-
-  await paymentsRepository.upsertPayment({
-    id: paymentId,
-    intentId,
-    walletAddress,
-    productType: "artist_onboarding_fee",
-    txHash: waivedTxHash,
-    amount: "0",
-    assetCode: "XLM",
-    status: "confirmed",
-    waived: true,
-    confirmedAt: timestamp,
-    createdAt: timestamp,
-  });
-};
-
 const getArtistOnboardingAccess = async (walletAddress: string) => {
-  if (isArtistOnboardingFree()) {
-    await ensureFreeArtistOnboardingRecord(walletAddress);
-    return true;
-  }
-
-  return hasArtistOnboardingPayment(walletAddress);
+  return (await sponsorshipsService.getMyActivation(walletAddress)).artistAccess;
 };
 
 const withArtistAccess = async (profile: UserProfile | null) => {
@@ -462,6 +398,15 @@ export const usersService = {
           : false;
         nextProfile.onboardingStep = nextStepFor(parsed.primaryIntent, parsed.step);
         break;
+      case "artist_activation":
+        if (!isArtistIntent(nextProfile.primaryIntent)) {
+          throw new HttpError(400, "Artist activation is not available for this account");
+        }
+        nextProfile.onboardingStep = nextStepFor(
+          nextProfile.primaryIntent,
+          parsed.step,
+        );
+        break;
       case "identity":
         nextProfile.displayName = parsed.displayName.trim();
         nextProfile.email = parsed.email ?? "";
@@ -535,7 +480,7 @@ export const usersService = {
       nextProfile.onboardingStep = existing?.onboardingStep ?? nextProfile.onboardingStep;
     }
 
-    return withArtistAccess(await usersRepository.upsert(nextProfile));
+    return withArtistAccess(await usersRepository.upsert(nextProfile, { referralReceipt: parsed.step === "identity" ? parsed.referralReceipt : undefined }));
   },
 
   async completeOnboarding(
@@ -568,7 +513,7 @@ export const usersService = {
   async requireArtistOnboardingAccess(
     walletAddress: string,
     missingProfileMessage: string,
-    missingFeeMessage = "Pay the onboarding fee before accessing artist tools",
+    missingFeeMessage = "Complete artist activation before accessing artist tools",
   ) {
     const profile = await this.getProfile(walletAddress);
 

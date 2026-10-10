@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import {
   DynamicContextProvider,
   DynamicMultiWalletPromptsWidget,
@@ -43,24 +42,21 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
             settings={{
               environmentId: clientEnv.dynamicEnvironmentId,
               redirectUrl: redirectOrigin,
-            walletConnectors: [
-              EthereumWalletConnectors,
-              DynamicWaasStellarConnectors,
-            ],
-            social: {
-              strategy: "redirect",
-            },
-            events: {
-              onAuthSuccess: (_args) => {
-                dispatchDynamicEvent(DYNAMIC_AUTH_SUCCESS_EVENT);
+              walletConnectors: [DynamicWaasStellarConnectors],
+              social: {
+                strategy: "redirect",
               },
-              onAuthFailure: (_args) => {
-                dispatchDynamicEvent(DYNAMIC_AUTH_FAILURE_EVENT);
+              events: {
+                onAuthSuccess: (_args) => {
+                  dispatchDynamicEvent(DYNAMIC_AUTH_SUCCESS_EVENT);
+                },
+                onAuthFailure: (_args) => {
+                  dispatchDynamicEvent(DYNAMIC_AUTH_FAILURE_EVENT);
+                },
+                onAuthFlowCancel: () => {
+                  dispatchDynamicEvent(DYNAMIC_AUTH_CANCEL_EVENT);
+                },
               },
-              onAuthFlowCancel: () => {
-                dispatchDynamicEvent(DYNAMIC_AUTH_CANCEL_EVENT);
-              },
-            },
             }}
           >
             <AuthProvider>

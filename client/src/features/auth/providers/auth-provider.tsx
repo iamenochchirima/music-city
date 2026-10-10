@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { AuthSession } from "@music-city/shared";
 
 import { usersApi } from "@/features/users/lib/users-api";
+import { bindReferralWallet, clearReferral } from "@/features/referrals/referral-storage";
 import { clientEnv } from "@/lib/config/env";
 import { authApi } from "../lib/auth-api";
 
@@ -555,6 +556,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setSession(verifiedSession);
       persistSession(verifiedSession);
+      bindReferralWallet(verifiedSession.walletAddress);
       lastSyncedKeyRef.current = syncKey;
       failedSyncKeyRef.current = null;
       persistFailedSyncKey(null);
@@ -689,6 +691,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   }, [setError, setIsLoading, setShowAuthFlow, setShowLinkNewWalletModal, user]);
 
   const logout = useCallback(async () => {
+    clearReferral();
     clearSession();
     await handleLogOut();
     redirectToLandingPage();

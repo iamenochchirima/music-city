@@ -1,6 +1,6 @@
 {
   "generators": {
-    "address": 2,
+    "address": 4,
     "nonce": 0,
     "mux_id": 0
   },
@@ -14,26 +14,21 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
-              "function_name": "set_track_split",
+              "function_name": "finalize_split",
               "args": [
                 {
-                  "string": "track-001"
+                  "string": "track-1"
                 },
                 {
-                  "u32": 1
+                  "string": "agreement-1"
+                },
+                {
+                  "u32": 2
                 },
                 {
                   "vec": [
                     {
                       "map": [
-                        {
-                          "key": {
-                            "symbol": "chain"
-                          },
-                          "val": {
-                            "string": "stellar"
-                          }
-                        },
                         {
                           "key": {
                             "symbol": "role"
@@ -52,24 +47,16 @@
                         },
                         {
                           "key": {
-                            "symbol": "wallet_address"
+                            "symbol": "wallet"
                           },
                           "val": {
-                            "string": "GARTIST"
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                           }
                         }
                       ]
                     },
                     {
                       "map": [
-                        {
-                          "key": {
-                            "symbol": "chain"
-                          },
-                          "val": {
-                            "string": "stellar"
-                          }
-                        },
                         {
                           "key": {
                             "symbol": "role"
@@ -88,10 +75,10 @@
                         },
                         {
                           "key": {
-                            "symbol": "wallet_address"
+                            "symbol": "wallet"
                           },
                           "val": {
-                            "string": "GPRODUCER"
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                           }
                         }
                       ]
@@ -100,6 +87,9 @@
                 },
                 {
                   "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
+                },
+                {
+                  "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
                 }
               ]
             }
@@ -116,10 +106,13 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
-              "function_name": "set_track_split",
+              "function_name": "finalize_split",
               "args": [
                 {
-                  "string": "track-001"
+                  "string": "track-1"
+                },
+                {
+                  "string": "agreement-1"
                 },
                 {
                   "u32": 2
@@ -128,14 +121,6 @@
                   "vec": [
                     {
                       "map": [
-                        {
-                          "key": {
-                            "symbol": "chain"
-                          },
-                          "val": {
-                            "string": "stellar"
-                          }
-                        },
                         {
                           "key": {
                             "symbol": "role"
@@ -149,15 +134,134 @@
                             "symbol": "share_bps"
                           },
                           "val": {
-                            "u32": 10000
+                            "u32": 7000
                           }
                         },
                         {
                           "key": {
-                            "symbol": "wallet_address"
+                            "symbol": "wallet"
                           },
                           "val": {
-                            "string": "GARTIST"
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "role"
+                          },
+                          "val": {
+                            "string": "producer"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "share_bps"
+                          },
+                          "val": {
+                            "u32": 3000
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "wallet"
+                          },
+                          "val": {
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
+                },
+                {
+                  "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+              "function_name": "finalize_split",
+              "args": [
+                {
+                  "string": "track-1"
+                },
+                {
+                  "string": "agreement-1"
+                },
+                {
+                  "u32": 4
+                },
+                {
+                  "vec": [
+                    {
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "role"
+                          },
+                          "val": {
+                            "string": "artist"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "share_bps"
+                          },
+                          "val": {
+                            "u32": 7000
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "wallet"
+                          },
+                          "val": {
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "role"
+                          },
+                          "val": {
+                            "string": "producer"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "share_bps"
+                          },
+                          "val": {
+                            "u32": 3000
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "wallet"
+                          },
+                          "val": {
+                            "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                           }
                         }
                       ]
@@ -166,6 +270,9 @@
                 },
                 {
                   "bytes": "0202020202020202020202020202020202020202020202020202020202020202"
+                },
+                {
+                  "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
                 }
               ]
             }
@@ -175,11 +282,12 @@
       ]
     ],
     [],
+    [],
     []
   ],
   "ledger": {
     "protocol_version": 26,
-    "sequence_number": 0,
+    "sequence_number": 10,
     "timestamp": 0,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
@@ -216,6 +324,26 @@
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
               "key": {
                 "ledger_key_nonce": {
+                  "nonce": "1033654523790656264"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6312009
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "key": {
+                "ledger_key_nonce": {
                   "nonce": "5541220902715666415"
                 }
               },
@@ -225,7 +353,7 @@
           },
           "ext": "v0"
         },
-        "live_until": 6311999
+        "live_until": 6312009
       },
       {
         "entry": {
@@ -240,19 +368,19 @@
                     "symbol": "LatestVersion"
                   },
                   {
-                    "string": "track-001"
+                    "string": "track-1"
                   }
                 ]
               },
               "durability": "persistent",
               "val": {
-                "u32": 2
+                "u32": 4
               }
             }
           },
           "ext": "v0"
         },
-        "live_until": 4095
+        "live_until": 500000
       },
       {
         "entry": {
@@ -267,10 +395,10 @@
                     "symbol": "Split"
                   },
                   {
-                    "string": "track-001"
+                    "string": "track-1"
                   },
                   {
-                    "u32": 1
+                    "u32": 2
                   }
                 ]
               },
@@ -279,15 +407,31 @@
                 "map": [
                   {
                     "key": {
-                      "symbol": "frozen"
+                      "symbol": "agreement_id"
                     },
                     "val": {
-                      "bool": false
+                      "string": "agreement-1"
                     }
                   },
                   {
                     "key": {
-                      "symbol": "metadata_hash"
+                      "symbol": "finalized_ledger"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "previous_finalized_hash"
+                    },
+                    "val": {
+                      "bytes": "0000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "proposal_hash"
                     },
                     "val": {
                       "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
@@ -301,14 +445,6 @@
                       "vec": [
                         {
                           "map": [
-                            {
-                              "key": {
-                                "symbol": "chain"
-                              },
-                              "val": {
-                                "string": "stellar"
-                              }
-                            },
                             {
                               "key": {
                                 "symbol": "role"
@@ -327,24 +463,16 @@
                             },
                             {
                               "key": {
-                                "symbol": "wallet_address"
+                                "symbol": "wallet"
                               },
                               "val": {
-                                "string": "GARTIST"
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                               }
                             }
                           ]
                         },
                         {
                           "map": [
-                            {
-                              "key": {
-                                "symbol": "chain"
-                              },
-                              "val": {
-                                "string": "stellar"
-                              }
-                            },
                             {
                               "key": {
                                 "symbol": "role"
@@ -363,131 +491,15 @@
                             },
                             {
                               "key": {
-                                "symbol": "wallet_address"
+                                "symbol": "wallet"
                               },
                               "val": {
-                                "string": "GPRODUCER"
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                               }
                             }
                           ]
                         }
                       ]
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "updated_ledger"
-                    },
-                    "val": {
-                      "u32": 0
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "version"
-                    },
-                    "val": {
-                      "u32": 1
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "ext": "v0"
-        },
-        "live_until": 4095
-      },
-      {
-        "entry": {
-          "last_modified_ledger_seq": 0,
-          "data": {
-            "contract_data": {
-              "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
-              "key": {
-                "vec": [
-                  {
-                    "symbol": "Split"
-                  },
-                  {
-                    "string": "track-001"
-                  },
-                  {
-                    "u32": 2
-                  }
-                ]
-              },
-              "durability": "persistent",
-              "val": {
-                "map": [
-                  {
-                    "key": {
-                      "symbol": "frozen"
-                    },
-                    "val": {
-                      "bool": false
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "metadata_hash"
-                    },
-                    "val": {
-                      "bytes": "0202020202020202020202020202020202020202020202020202020202020202"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "recipients"
-                    },
-                    "val": {
-                      "vec": [
-                        {
-                          "map": [
-                            {
-                              "key": {
-                                "symbol": "chain"
-                              },
-                              "val": {
-                                "string": "stellar"
-                              }
-                            },
-                            {
-                              "key": {
-                                "symbol": "role"
-                              },
-                              "val": {
-                                "string": "artist"
-                              }
-                            },
-                            {
-                              "key": {
-                                "symbol": "share_bps"
-                              },
-                              "val": {
-                                "u32": 10000
-                              }
-                            },
-                            {
-                              "key": {
-                                "symbol": "wallet_address"
-                              },
-                              "val": {
-                                "string": "GARTIST"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "updated_ledger"
-                    },
-                    "val": {
-                      "u32": 0
                     }
                   },
                   {
@@ -504,7 +516,143 @@
           },
           "ext": "v0"
         },
-        "live_until": 4095
+        "live_until": 500000
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Split"
+                  },
+                  {
+                    "string": "track-1"
+                  },
+                  {
+                    "u32": 4
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "map": [
+                  {
+                    "key": {
+                      "symbol": "agreement_id"
+                    },
+                    "val": {
+                      "string": "agreement-1"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "finalized_ledger"
+                    },
+                    "val": {
+                      "u32": 10
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "previous_finalized_hash"
+                    },
+                    "val": {
+                      "bytes": "0101010101010101010101010101010101010101010101010101010101010101"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "proposal_hash"
+                    },
+                    "val": {
+                      "bytes": "0202020202020202020202020202020202020202020202020202020202020202"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "recipients"
+                    },
+                    "val": {
+                      "vec": [
+                        {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "role"
+                              },
+                              "val": {
+                                "string": "artist"
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "share_bps"
+                              },
+                              "val": {
+                                "u32": 7000
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "wallet"
+                              },
+                              "val": {
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "map": [
+                            {
+                              "key": {
+                                "symbol": "role"
+                              },
+                              "val": {
+                                "string": "producer"
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "share_bps"
+                              },
+                              "val": {
+                                "u32": 3000
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "wallet"
+                              },
+                              "val": {
+                                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "version"
+                    },
+                    "val": {
+                      "u32": 4
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 500010
       },
       {
         "entry": {
@@ -525,7 +673,7 @@
                       "key": {
                         "vec": [
                           {
-                            "symbol": "Admin"
+                            "symbol": "Treasury"
                           }
                         ]
                       },
@@ -540,7 +688,7 @@
           },
           "ext": "v0"
         },
-        "live_until": 4095
+        "live_until": 500000
       },
       {
         "entry": {
@@ -554,7 +702,7 @@
           },
           "ext": "v0"
         },
-        "live_until": 4095
+        "live_until": 500000
       }
     ]
   },

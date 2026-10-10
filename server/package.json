@@ -9,14 +9,14 @@
     "start": "node dist/main.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test --test-concurrency=1 src/**/*.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "db:bootstrap": "tsx src/scripts/bootstrap-postgres.ts",
     "db:doctor": "tsx src/scripts/db-doctor.ts",
     "db:repair": "tsx src/scripts/db-repair.ts",
     "admin:reset-password": "tsx src/scripts/reset-admin-password.ts",
     "treasury:derive-secret": "tsx src/scripts/derive-treasury-key-from-mnemonic.ts",
     "treasury:add-trustline": "tsx src/scripts/add-treasury-trustline.ts",
-    "royalty:verify-soroban": "tsx src/scripts/verify-soroban-registry.ts"
+    "agreements:demo:testnet": "tsx src/scripts/demo-contributor-agreements-testnet.ts"
   },
   "dependencies": {
     "@music-city/shared": "workspace:*",

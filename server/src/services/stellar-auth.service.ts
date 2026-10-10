@@ -5,12 +5,12 @@ import {
   StrKey,
   TransactionBuilder,
   BASE_FEE,
-  Networks,
   Operation,
   Account,
 } from "@stellar/stellar-sdk";
 
 import { env } from "../config/env.js";
+import { databaseService } from "./database.service.js";
 import { usersService } from "../modules/users/users.service.js";
 import { HttpError } from "../utils/http-error.js";
 
@@ -20,7 +20,7 @@ const nonceForAccount = (account: string) => {
 };
 
 export const stellarAuthService = {
-  createChallenge(account: string) {
+  async createChallenge(account: string) {
     if (!StrKey.isValidEd25519PublicKey(account)) {
       throw new HttpError(400, "Invalid Stellar account");
     }
@@ -34,12 +34,14 @@ export const stellarAuthService = {
 
     const signer = Keypair.fromSecret(env.STELLAR_SEP10_SECRET);
     const source = new Account(signer.publicKey(), "-1");
+    const networkPassphrase = env.STELLAR_NETWORK_PASSPHRASE;
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     const challenge = new TransactionBuilder(source, {
       fee: BASE_FEE,
-      networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE || Networks.TESTNET,
+      networkPassphrase,
       timebounds: {
         minTime: 0,
-        maxTime: Math.floor(Date.now() / 1000) + 300,
+        maxTime: Math.floor(expiresAt.getTime() / 1000),
       },
     })
       .addOperation(
@@ -52,10 +54,15 @@ export const stellarAuthService = {
       .build();
 
     challenge.sign(signer);
+    await databaseService.createStellarAuthChallenge(
+      challenge.hash().toString("hex"),
+      account,
+      expiresAt,
+    );
 
     return {
       transaction: challenge.toXDR(),
-      networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE,
+      networkPassphrase,
     };
   },
 
@@ -77,8 +84,16 @@ export const stellarAuthService = {
 
     const operation = tx.operations[0];
     const source = operation.source;
+    const transactionSource = "source" in tx ? tx.source : undefined;
 
-    if (!source || !StrKey.isValidEd25519PublicKey(source)) {
+    if (
+      tx.operations.length !== 1 ||
+      operation.type !== "manageData" ||
+      operation.name !== `${env.STELLAR_HOME_DOMAIN} auth` ||
+      !source ||
+      !StrKey.isValidEd25519PublicKey(source) ||
+      transactionSource !== signer.publicKey()
+    ) {
       throw new HttpError(400, "Signed challenge is missing a valid source");
     }
 
@@ -105,6 +120,14 @@ export const stellarAuthService = {
 
     if (!signedByUser) {
       throw new HttpError(401, "Challenge was not signed by the wallet owner");
+    }
+
+    const consumed = await databaseService.consumeStellarAuthChallenge(
+      tx.hash().toString("hex"),
+      source,
+    );
+    if (!consumed) {
+      throw new HttpError(401, "Stellar sign-in challenge is expired or already used");
     }
 
     const profile = await usersService.getProfile(source);

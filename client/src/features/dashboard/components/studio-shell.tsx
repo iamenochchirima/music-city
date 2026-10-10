@@ -46,6 +46,7 @@ const studioNavItems = [
     label: "Revenue",
     icon: CircleDollarSign,
   },
+  { href: "/account/agreements", label: "Royalty agreements", icon: Disc3 },
 ] as const;
 
 export const StudioShell = ({

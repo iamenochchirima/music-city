@@ -16,6 +16,7 @@ export const onboardingStepSchema = z.enum([
   "intent",
   "identity",
   "personalize",
+  "artist_activation",
   "artist_identity",
   "visuals",
   "complete",
