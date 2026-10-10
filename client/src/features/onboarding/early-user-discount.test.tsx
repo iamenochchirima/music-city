@@ -55,6 +55,20 @@ it("shows the $20 price and automatic 100% discount in the activation summary", 
   expect(summary.textContent).toContain("No payment or transaction is needed");
 });
 
+it("keeps the dedicated activation step focused on the offer and amount due", () => {
+  render(<ArtistActivationSummary quote={eligibleQuote} variant="step" />);
+  const summary = screen.getByLabelText("Artist activation");
+
+  expect(summary.textContent).toContain("EARLYUSER applied automatically");
+  expect(summary.textContent).toContain("100% off");
+  expect(summary.textContent).toContain("Standard price$20.00");
+  expect(summary.textContent).toContain("Early-user discount−$20.00");
+  expect(summary.textContent).toContain("Amount due$0.00");
+  expect(summary.textContent).toContain("No payment or transaction needed.");
+  expect(summary.textContent).not.toContain("Music City covers this fee through");
+  expect(summary.textContent).not.toContain("Amount due $0.00");
+});
+
 it("does not prepare or sign a payment when the server says activation is sponsored", async () => {
   mocks.getActivation.mockResolvedValue(eligibleQuote);
   const { result } = renderHook(() => useArtistOnboardingPayment());

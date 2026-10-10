@@ -17,8 +17,8 @@ export const ArtistActivationSummary = ({
   if (quote.status === "legacy_free") {
     return (
       <section aria-label="Artist activation" className={`rounded-2xl border border-white/10 bg-slate-950/55 ${isStep ? "p-7 text-base" : "p-4 text-sm"} text-slate-300`}>
-        <p className="font-semibold text-white">Artist activation</p>
-        <p className="mt-3">Your account has legacy free artist access.</p>
+        {!isStep ? <p className="font-semibold text-white">Artist activation</p> : null}
+        <p className={isStep ? "" : "mt-2"}>Your artist access is active.</p>
         {quote.activatedAt ? <p className="mt-2 text-xs text-slate-500">Activated {new Date(quote.activatedAt).toLocaleDateString()}</p> : null}
       </section>
     );
@@ -27,8 +27,8 @@ export const ArtistActivationSummary = ({
   if (quote.status === "paid") {
     return (
       <section aria-label="Artist activation" className={`rounded-2xl border border-white/10 bg-slate-950/55 ${isStep ? "p-7 text-base" : "p-4 text-sm"} text-slate-300`}>
-        <p className="font-semibold text-white">Artist activation</p>
-        <p className="mt-3">Your artist activation payment is confirmed.</p>
+        {!isStep ? <p className="font-semibold text-white">Artist activation</p> : null}
+        <p className={isStep ? "" : "mt-2"}>Your payment is confirmed.</p>
         {quote.activatedAt ? <p className="mt-2 text-xs text-slate-500">Confirmed {new Date(quote.activatedAt).toLocaleDateString()}</p> : null}
       </section>
     );
@@ -37,16 +37,16 @@ export const ArtistActivationSummary = ({
   const sponsored = quote.status === "eligible" || quote.status === "sponsored";
   return (
     <section aria-label="Artist activation" className={`rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.07] ${isStep ? "p-7 sm:p-8" : "p-4"} text-slate-200`}>
-      <p className={`${isStep ? "text-lg" : "text-sm"} font-semibold text-white`}>
-        One-time artist activation
-      </p>
+      {!isStep ? <p className="text-sm font-semibold text-white">One-time artist activation</p> : null}
       {quote.discountAmountMinor > 0 ? (
-        <div role="status" className={`mt-4 rounded-xl border border-emerald-300/20 bg-emerald-400/10 ${isStep ? "p-5" : "p-3"}`}>
+        <div role="status" className={`${isStep ? "mt-0" : "mt-3"} rounded-xl border border-emerald-300/20 bg-emerald-400/10 ${isStep ? "p-5" : "p-3"}`}>
           <p className="font-semibold text-emerald-100">
-            {quote.campaignCode ?? "Early-user"} code applied automatically
+            {quote.campaignCode ?? "Early-user"} {isStep ? "applied automatically" : "code applied automatically"}
           </p>
           <p className="mt-1 text-sm text-emerald-100/80">
-            {quote.discountPercent}% discount · You save {formatUsd(quote.discountAmountMinor)} · Amount due {formatUsd(quote.amountDueMinor)}
+            {isStep
+              ? `${quote.discountPercent}% off`
+              : `${quote.discountPercent}% discount · You save ${formatUsd(quote.discountAmountMinor)} · Amount due ${formatUsd(quote.amountDueMinor)}`}
           </p>
         </div>
       ) : null}
@@ -60,9 +60,12 @@ export const ArtistActivationSummary = ({
         <dd className={`border-t border-white/10 ${isStep ? "pt-4 text-lg" : "pt-2"} text-right font-semibold text-white`}>{formatUsd(quote.amountDueMinor)}</dd>
       </dl>
       {sponsored ? (
-        <p className={`mt-5 leading-7 text-emerald-100 ${isStep ? "text-base" : "text-sm"}`}>
-          Music City covers this fee through the {quote.campaignCode ?? "early-user"} offer. No payment or transaction is needed.
-          {quote.status === "eligible" ? " Artist access activates when you finish registration." : " Your artist access is active."}
+        <p className="mt-5 text-sm leading-6 text-emerald-100">
+          {isStep
+            ? quote.status === "eligible"
+              ? "No payment or transaction needed. Artist access starts after registration."
+              : "Your artist access is active."
+            : `Music City covers this fee through the ${quote.campaignCode ?? "early-user"} offer. No payment or transaction is needed.${quote.status === "eligible" ? " Artist access activates when you finish registration." : " Your artist access is active."}`}
         </p>
       ) : (
         <p className="mt-3 leading-6 text-slate-400">The early-user offer is not available for this account.</p>

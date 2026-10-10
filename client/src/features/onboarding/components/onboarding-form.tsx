@@ -792,25 +792,17 @@ export const OnboardingForm = ({
       ) : null}
 
       {step === "artist_activation" ? (
-        <div className="space-y-7">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Artist activation
-            </p>
+        <div className="space-y-6">
+          <div>
             <h1 className="text-3xl font-semibold tracking-tight text-white">
               {artistActivationQuote?.discountAmountMinor
-                ? "Your early-user offer is applied"
+                ? "Your early-user discount is applied"
                 : artistActivationQuote?.status === "paid"
-                  ? "Artist activation is confirmed"
+                  ? "Artist activation confirmed"
                   : artistActivationQuote?.status === "legacy_free"
                     ? "Your artist access is active"
-                    : "Review your artist activation"}
+                    : "Artist activation"}
             </h1>
-            <p className="max-w-xl text-sm leading-7 text-slate-300">
-              {artistActivationQuote?.discountAmountMinor
-                ? "Music City automatically applied the platform offer to your one-time artist activation. Review the full price and amount due before continuing."
-                : "Review your one-time artist activation and any available offer before continuing."}
-            </p>
           </div>
 
           {isLoadingArtistActivation ? (
