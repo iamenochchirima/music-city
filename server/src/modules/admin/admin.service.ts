@@ -1,3 +1,4 @@
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import {
   type AdminAdListItem,
   adminAccountSchema,
@@ -33,6 +34,7 @@ import { env } from "../../config/env.js";
 import { databaseService } from "../../services/database.service.js";
 import { createId } from "../../services/id.service.js";
 import { passwordService } from "../../services/password.service.js";
+import { logger } from "../../utils/logger.js";
 import { treasuryConfigService } from "../../services/treasury-config.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { walletService } from "../wallet/wallet.service.js";
@@ -76,6 +78,14 @@ const defaultTreasurySettings = (): AdminTreasurySettings => ({
 });
 
 const nowMs = () => Date.now();
+const dummyPasswordHash = passwordService.hashPassword(randomBytes(32).toString("hex"));
+const authBucket = (kind: "ip" | "email", value: string) =>
+  createHash("sha256").update(`${kind}:${value}`).digest("hex");
+const bootstrapTokenMatches = (candidate: string) => {
+  const expected = createHash("sha256").update(env.ADMIN_BOOTSTRAP_TOKEN).digest();
+  const actual = createHash("sha256").update(candidate).digest();
+  return timingSafeEqual(expected, actual);
+};
 
 const normalizeSubscriptionStatus = (subscription: SubscriptionRecord) =>
   subscription.status === "active" && Date.parse(subscription.endsAt) <= nowMs()
@@ -106,11 +116,13 @@ export const adminService = {
   },
 
   async bootstrap(input: unknown) {
+    const parsed = bootstrapAdminInputSchema.parse(input);
+    if (!bootstrapTokenMatches(parsed.bootstrapToken)) {
+      throw new HttpError(403, "Admin bootstrap authorization failed");
+    }
     if (!(await this.bootstrapRequired())) {
       throw new HttpError(409, "Admin bootstrap has already been completed");
     }
-
-    const parsed = bootstrapAdminInputSchema.parse(input);
     const timestamp = new Date().toISOString();
     const admin: PersistedAdminAccount = {
       id: createId("adm"),
@@ -122,7 +134,8 @@ export const adminService = {
       updatedAt: timestamp,
     };
 
-    await databaseService.upsertAdmin(admin.id, admin.email, admin.role, admin);
+    const inserted = await databaseService.createFirstAdmin(admin.id, admin.email, admin.role, admin);
+    if (!inserted) throw new HttpError(409, "Admin bootstrap has already been completed");
 
     return {
       admin: sanitizeAdmin(admin),
@@ -130,13 +143,19 @@ export const adminService = {
     };
   },
 
-  async login(input: unknown) {
+  async login(input: unknown, sourceIp = "unknown") {
     const parsed = adminLoginInputSchema.parse(input);
+    const email = parsed.email.trim().toLowerCase();
+    const bucketKeys = [authBucket("ip", sourceIp), authBucket("email", email)];
+    const allowed = await databaseService.consumeAdminAuthRateLimits(bucketKeys, 5, 900);
+    if (!allowed) throw new HttpError(429, "Too many sign-in attempts. Try again later.");
     const existing = await databaseService.findAdminByEmail<PersistedAdminAccount>(
-      parsed.email.trim().toLowerCase(),
+      email,
     );
 
     if (!existing) {
+      await passwordService.verifyPassword(parsed.password, await dummyPasswordHash);
+      logger.warn("Admin sign-in failed", { emailHash: authBucket("email", email), ipHash: authBucket("ip", sourceIp) });
       throw new HttpError(401, "Invalid email or password");
     }
 
@@ -146,8 +165,12 @@ export const adminService = {
     );
 
     if (!valid) {
+      logger.warn("Admin sign-in failed", { emailHash: authBucket("email", email), ipHash: authBucket("ip", sourceIp) });
       throw new HttpError(401, "Invalid email or password");
     }
+
+    await databaseService.clearAdminAuthRateLimits(bucketKeys);
+    logger.info("Admin sign-in succeeded", { adminId: existing.id, ipHash: authBucket("ip", sourceIp) });
 
     return {
       admin: sanitizeAdmin(existing),

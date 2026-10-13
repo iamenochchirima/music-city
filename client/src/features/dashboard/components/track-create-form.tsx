@@ -333,6 +333,17 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     setAudioFile(file);
   };
 
+  const audioContentType = (file: File) => {
+    if (file.type.startsWith("audio/")) return file.type;
+    switch (file.name.split(".").pop()?.toLowerCase()) {
+      case "mp3": return "audio/mpeg";
+      case "wav": return "audio/wav";
+      case "m4a": return "audio/mp4";
+      case "flac": return "audio/flac";
+      default: return file.type || "application/octet-stream";
+    }
+  };
+
   const createTrack = async () => {
     if (!session?.token) {
       toast.error("Connect your wallet first");
@@ -371,7 +382,7 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
         trackId: track.id,
         purpose: "audio",
         fileName: audioFile.name,
-        contentType: audioFile.type || "application/octet-stream",
+        contentType: audioContentType(audioFile),
         sizeBytes: audioFile.size,
       });
       uploadSessionId = uploadSession.id;

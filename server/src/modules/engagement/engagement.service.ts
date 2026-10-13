@@ -39,7 +39,12 @@ const ensureProfile = async (walletAddress: string) => {
 const ensureArtist = async (artistId: string) => {
   const artist = await usersService.getProfileById(artistId);
 
-  if (!artist || !["artist", "both"].includes(artist.primaryIntent)) {
+  if (
+    !artist ||
+    !["artist", "both"].includes(artist.primaryIntent) ||
+    artist.onboardingStatus !== "complete" ||
+    !artist.artistAccess
+  ) {
     throw new Error("Artist not found");
   }
 

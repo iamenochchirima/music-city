@@ -35,6 +35,10 @@ const profileImageContentTypes = new Set([
 
 const isArtistIntent = (primaryIntent: PrimaryIntent) =>
   primaryIntent === "artist" || primaryIntent === "both";
+const isPublicArtist = (profile: UserProfile) =>
+  isArtistIntent(profile.primaryIntent) &&
+  profile.onboardingStatus === "complete" &&
+  profile.artistAccess;
 
 const isListenerIntent = (primaryIntent: PrimaryIntent) =>
   primaryIntent === "listener" || primaryIntent === "both";
@@ -159,6 +163,16 @@ const ensureOwnedProfileStorageKey = (
     throw new HttpError(400, "Profile media does not belong to this account");
   }
 
+  const keySegments = storageKey.split("/");
+  if (
+    storageKey.includes("\\") ||
+    storageKey.includes("\0") ||
+    storageKey.includes("%") ||
+    keySegments.some((segment) => !segment || segment === "." || segment === "..")
+  ) {
+    throw new HttpError(400, "Invalid profile media key");
+  }
+
   return storageKey;
 };
 
@@ -168,7 +182,12 @@ const ensureFavoriteArtistIds = async (favoriteArtistIds: string[]) => {
   }
 
   const artists = await usersRepository.listArtists();
-  const artistIds = new Set(artists.map((artist) => artist.id));
+  const visibleArtists = await Promise.all(artists.map(async (artist) =>
+    artist.onboardingStatus === "complete" && await getArtistOnboardingAccess(artist.walletAddress)
+      ? artist
+      : null,
+  ));
+  const artistIds = new Set(visibleArtists.filter((artist): artist is UserProfile => Boolean(artist)).map((artist) => artist.id));
 
   if (favoriteArtistIds.some((artistId) => !artistIds.has(artistId))) {
     throw new HttpError(400, "Choose artists from the Music City artist list");
@@ -255,7 +274,7 @@ export const usersService = {
   async getPublicArtistProfile(id: string) {
     const profile = await this.getProfileById(id);
 
-    if (!profile || !isArtistIntent(profile.primaryIntent)) {
+    if (!profile || !isPublicArtist(profile)) {
       return null;
     }
 
@@ -281,7 +300,7 @@ export const usersService = {
   async getPublicArtistTracks(id: string) {
     const profile = await this.getProfileById(id);
 
-    if (!profile || !isArtistIntent(profile.primaryIntent)) {
+    if (!profile || !isPublicArtist(profile)) {
       return [];
     }
 
@@ -292,7 +311,7 @@ export const usersService = {
   async getPublicArtistReleases(id: string) {
     const profile = await this.getProfileById(id);
 
-    if (!profile || !isArtistIntent(profile.primaryIntent)) {
+    if (!profile || !isPublicArtist(profile)) {
       return [];
     }
 
@@ -507,7 +526,9 @@ export const usersService = {
       updatedAt: nowIso(),
     };
 
-    return withArtistAccess(await usersRepository.upsert(completed));
+    return withArtistAccess(await usersRepository.upsert(completed, {
+      requireArtistAccess: isArtistIntent(completed.primaryIntent),
+    }));
   },
 
   async requireArtistOnboardingAccess(
@@ -669,8 +690,15 @@ export const usersService = {
       "../engagement/engagement.repository.js"
     );
 
+    const activatedArtists = await Promise.all(artists.map(async (artist) => {
+      if (artist.onboardingStatus !== "complete" || !(await getArtistOnboardingAccess(artist.walletAddress))) {
+        return null;
+      }
+      return artist;
+    }));
+
     return Promise.all(
-      artists.map(async (artist) => ({
+      activatedArtists.filter((artist): artist is UserProfile => Boolean(artist)).map(async (artist) => ({
         id: artist.id,
         walletAddress: artist.walletAddress,
         name: artist.displayName,

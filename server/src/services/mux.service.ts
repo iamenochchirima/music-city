@@ -52,6 +52,15 @@ export const muxService = {
     return upload;
   },
 
+  async createAssetFromUrl(sourceUrl: string, trackId: string) {
+    return requireClient().video.assets.create({
+      inputs: [{ url: sourceUrl }],
+      passthrough: trackId,
+      normalize_audio: true,
+      playback_policies: [this.usesSignedPlayback() ? "signed" : "public"],
+    });
+  },
+
   async getUpload(uploadId: string) {
     return requireClient().video.uploads.retrieve(uploadId);
   },

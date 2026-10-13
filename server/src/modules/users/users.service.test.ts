@@ -77,6 +77,28 @@ test("legacy free artist access remains readable without creating a synthetic pa
   }
 });
 
+test("profile media uploads reject traversal segments and encoded separators", async () => {
+  const target = usersService.createMediaUploadTarget(walletAddress, {
+    purpose: "profile_image",
+    fileName: "avatar.png",
+    contentType: "image/png",
+    sizeBytes: 3,
+  });
+  const ownedPrefix = target.storageKey.split("/").slice(0, 2).join("/");
+  const invalidKeys = [
+    `${ownedPrefix}/profile-images/../another-account/avatar.png`,
+    `${ownedPrefix}/profile-images/%2e%2e/another-account/avatar.png`,
+    `${ownedPrefix}/profile-images\\..\\another-account\\avatar.png`,
+  ];
+
+  for (const key of invalidKeys) {
+    await assert.rejects(
+      usersService.uploadMedia(walletAddress, key, Buffer.from("PNG"), "image/png"),
+      /Invalid profile media key/,
+    );
+  }
+});
+
 const createProfile = (
   overrides: Partial<UserProfile> = {},
 ): UserProfile => ({

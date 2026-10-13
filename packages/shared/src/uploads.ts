@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const MAX_AUDIO_UPLOAD_BYTES = 500 * 1024 * 1024;
+export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const uploadMaxBytes = (purpose: "audio" | "cover") =>
+  purpose === "audio" ? MAX_AUDIO_UPLOAD_BYTES : MAX_IMAGE_UPLOAD_BYTES;
+
 export const createUploadSessionSchema = z
   .object({
     trackId: z.string().min(1).optional(),
@@ -40,8 +45,7 @@ export const createUploadSessionSchema = z
       });
     }
 
-    const maxSizeBytes =
-      value.purpose === "audio" ? 500 * 1024 * 1024 : 10 * 1024 * 1024;
+    const maxSizeBytes = uploadMaxBytes(value.purpose);
 
     if (value.sizeBytes > maxSizeBytes) {
       context.addIssue({

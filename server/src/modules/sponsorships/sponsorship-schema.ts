@@ -7,11 +7,14 @@ export const sponsorshipSchemaStatements = [
     discount_amount_minor INTEGER NOT NULL CHECK(discount_amount_minor >= 0),
     amount_due_minor INTEGER NOT NULL CHECK(amount_due_minor >= 0),
     discount_percent INTEGER NOT NULL CHECK(discount_percent BETWEEN 0 AND 100),
+    max_grants INTEGER NOT NULL DEFAULT 20 CHECK(max_grants > 0),
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CHECK(original_amount_minor - discount_amount_minor = amount_due_minor)
   )`,
+  `ALTER TABLE artist_sponsorship_campaigns
+    ADD COLUMN IF NOT EXISTS max_grants INTEGER NOT NULL DEFAULT 20 CHECK(max_grants > 0)`,
   `INSERT INTO artist_sponsorship_campaigns
     (code,terms_revision,currency,original_amount_minor,discount_amount_minor,amount_due_minor,discount_percent,active)
     VALUES('EARLYUSER','v1','USD',2000,2000,0,100,TRUE) ON CONFLICT(code) DO NOTHING`,
@@ -84,4 +87,9 @@ export const sponsorshipSchemaStatements = [
   `DROP TRIGGER IF EXISTS artist_sponsorship_event_guard ON artist_sponsorship_events`,
   `CREATE TRIGGER artist_sponsorship_event_guard
     BEFORE UPDATE OR DELETE ON artist_sponsorship_events FOR EACH ROW EXECUTE FUNCTION protect_artist_sponsorship_event()`,
+];
+
+export const sponsorshipCapacityMigrationStatements = [
+  `ALTER TABLE artist_sponsorship_campaigns
+    ADD COLUMN IF NOT EXISTS max_grants INTEGER NOT NULL DEFAULT 20 CHECK(max_grants > 0)`,
 ];

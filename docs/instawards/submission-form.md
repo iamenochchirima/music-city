@@ -102,15 +102,18 @@ By the end of the 30-day sprint, Music City will have a tested Soroban royalty-s
 
 **Budget rationale:**
 
-| Workstream | Amount | Intended use |
-| --- | ---: | --- |
-| Soroban contract engineering and tests | $2,000 | Contract design, implementation, authorization, versioning, testnet deployment, and documentation |
-| Backend and admin integration | $1,500 | Publish/read/verify flows, persistence, API work, and reviewer links |
-| End-to-end QA and testnet demonstration | $1,000 | Integration testing, wallet scenarios, transaction verification, recording, and bug fixes |
-| Technical documentation and evidence packaging | $500 | Reproduction guide, evidence map, final screenshots, and handoff |
-| **Total** | **$5,000** | |
+| Technical deliverable | Amount |
+| --- | ---: |
+| Soroban royalty settlement and crypto withdrawals | $1,400 |
+| On-chain music editions marketplace | $1,000 |
+| Fiat payout integrations | $750 |
+| Fiat on-ramp integrations | $550 |
+| Backend, admin, creator interfaces, and reconciliation | $500 |
+| Security, testing, and failure handling | $500 |
+| Deployment, documentation, and evidence packaging | $300 |
+| **Total** | **$5,000** |
 
-The request does not charge for the existing artist portal, streaming interface, wallet authentication, or baseline payout implementation. Those components are evidence that the project is ready to execute this new scope.
+The request does not charge for the existing artist portal, streaming interface, wallet authentication, or baseline payout implementation. Those components are evidence that the project is ready to execute this new scope. The budget also excludes marketing, paid user acquisition, promotional campaigns, incentives, provider fees, compliance fees, and fiat payout funds.
 
 ## 6. 30-day execution plan
 

@@ -42,6 +42,8 @@ export const sponsorshipCampaignStatusSchema = z.object({
   amountDueMinor: z.number().int().nonnegative(),
   discountPercent: z.number().int().min(0).max(100),
   active: z.boolean(),
+  maxGrants: z.number().int().positive(),
+  remainingGrants: z.number().int().nonnegative(),
   eligibleAccounts: z.number().int().nonnegative(),
   activatedArtists: z.number().int().nonnegative(),
   pendingEligibility: z.number().int().nonnegative(),

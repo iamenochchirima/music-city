@@ -127,12 +127,14 @@ const PasswordField = ({
   onChange,
   placeholder,
   autoComplete,
+  minLength,
 }: {
   id: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   autoComplete?: string;
+  minLength?: number;
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -145,6 +147,7 @@ const PasswordField = ({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        minLength={minLength}
         className={cn(fieldClassName, "pr-10")}
         required
       />
@@ -601,6 +604,7 @@ const AuthPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [bootstrapToken, setBootstrapToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -615,7 +619,7 @@ const AuthPage = () => {
 
     try {
       if (bootstrapRequired) {
-        await bootstrapAdmin({ name, email, password });
+        await bootstrapAdmin({ name, email, password, bootstrapToken });
         toast.success("Super admin created.");
         return;
       }
@@ -649,7 +653,7 @@ const AuthPage = () => {
             </h1>
             <p className="max-w-sm text-sm text-slate-400">
               {bootstrapRequired
-                ? "Create the first admin account."
+                ? "Create the first admin account with the one-time setup token supplied by the operator."
                 : "Sign in to manage subscriptions and admin access."}
             </p>
           </div>
@@ -667,6 +671,7 @@ const AuthPage = () => {
           <CardContent className="pt-5">
             <form className="space-y-4" onSubmit={handleSubmit}>
               {mode === "bootstrap" ? (
+                <>
                 <div className="space-y-2">
                   <Label htmlFor="name">Full name</Label>
                   <Input
@@ -679,6 +684,17 @@ const AuthPage = () => {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+          <Label htmlFor="bootstrap-token">Admin setup token</Label>
+                  <PasswordField
+                    id="bootstrap-token"
+                    value={bootstrapToken}
+                    onChange={(event) => setBootstrapToken(event.target.value)}
+                    placeholder="Provided by the operator"
+                    autoComplete="off"
+                  />
+                </div>
+                </>
               ) : null}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -703,6 +719,7 @@ const AuthPage = () => {
                   autoComplete={
                     mode === "bootstrap" ? "new-password" : "current-password"
                   }
+                  minLength={mode === "bootstrap" ? 12 : undefined}
                 />
               </div>
               <Button
@@ -3483,6 +3500,7 @@ const AdminManagementPage = () => {
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Temporary password"
                       autoComplete="new-password"
+                      minLength={12}
                     />
                   </div>
                   <div className="space-y-2">

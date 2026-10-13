@@ -56,11 +56,13 @@ export function AdminSponsorshipsPage() {
       </div>
       {error ? <p role="alert" className="text-rose-200">{error}</p> : null}
       {!report ? <p role="status" className="text-sm text-slate-400">Loading campaign…</p> : <>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
             ["Campaign", report.campaign.active ? "Active" : "Paused"],
             ["Eligible accounts", String(report.campaign.eligibleAccounts)],
             ["Artist activations", String(report.campaign.activatedArtists)],
+            ["Slots remaining", String(report.campaign.remainingGrants)],
+            ["Activation limit", String(report.campaign.maxGrants)],
             ["Pending eligibility", String(report.campaign.pendingEligibility)],
           ].map(([label, value]) => <article key={label} className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-semibold">{value}</p></article>)}
         </div>

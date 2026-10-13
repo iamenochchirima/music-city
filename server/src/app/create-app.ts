@@ -12,6 +12,7 @@ import { logger } from "../utils/logger.js";
 
 export const createApp = () => {
   const app = express();
+  if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
   const allowedOrigins = [env.CLIENT_ORIGIN, env.ADMIN_CLIENT_ORIGIN].filter(Boolean);
 
   app.use(

@@ -37,9 +37,10 @@ export const adminAccountSchema = z.object({
 export type AdminAccount = z.infer<typeof adminAccountSchema>;
 
 export const bootstrapAdminInputSchema = z.object({
+  bootstrapToken: z.string().min(1).max(200),
   email: z.string().email(),
   name: z.string().min(1).max(120),
-  password: z.string().min(8).max(200),
+  password: z.string().min(12, "Use a password with at least 12 characters").max(200),
 });
 export type BootstrapAdminInput = z.infer<typeof bootstrapAdminInputSchema>;
 
@@ -52,7 +53,7 @@ export type AdminLoginInput = z.infer<typeof adminLoginInputSchema>;
 export const createAdminInputSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(120),
-  password: z.string().min(8).max(200),
+  password: z.string().min(12, "Use a password with at least 12 characters").max(200),
   role: adminRoleSchema.default("admin"),
 });
 export type CreateAdminInput = z.infer<typeof createAdminInputSchema>;

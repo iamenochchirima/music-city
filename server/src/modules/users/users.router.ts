@@ -93,7 +93,7 @@ usersRouter.put(
 
     await usersService.uploadMedia(
       request.session!.walletAddress,
-      decodeURIComponent(String(request.params[0])),
+      String(request.params[0]),
       request.body,
       Array.isArray(request.headers["content-type"])
         ? request.headers["content-type"][0]

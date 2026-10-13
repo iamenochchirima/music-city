@@ -10,16 +10,29 @@ export const errorHandler = (
   response: Response,
   _next: NextFunction,
 ) => {
+  const statusCode = error instanceof HttpError
+    ? error.statusCode
+    : error instanceof ZodError
+      ? 400
+      : error instanceof URIError && _request.path.startsWith("/api/v1/uploads/content/")
+        ? 404
+        : 500;
+
   logger.error("Unhandled request error", {
     error: error.message,
     name: error.name,
     path: _request.path,
     method: _request.method,
-    statusCode: error instanceof HttpError ? error.statusCode : 500,
+    statusCode,
   });
 
   if (error instanceof HttpError) {
     response.status(error.statusCode).json({ error: error.message });
+    return;
+  }
+
+  if (error instanceof URIError && _request.path.startsWith("/api/v1/uploads/content/")) {
+    response.status(404).json({ error: "Media not found" });
     return;
   }
 

@@ -55,7 +55,7 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
   try {
     await databaseService.initialize({ repair: false });
     const schemaHealth = await databaseService.inspectSchemaHealth();
-    const sponsorshipSchema = schemaHealth.groups.find(group => group.name === "2026-10-09-early-user-sponsorship");
+    const sponsorshipSchema = schemaHealth.groups.find(group => group.name === "2026-10-11-early-user-sponsorship-capacity");
     assert.ok(sponsorshipSchema && sponsorshipSchema.missingRelations.length === 0 && sponsorshipSchema.missingIndexes.length === 0,"sponsorship tables and indexes are registered in schema health");
     await databaseService.transaction(client => client.query("UPDATE artist_sponsorship_campaigns SET active=TRUE WHERE code='EARLYUSER'"));
 
@@ -141,11 +141,9 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       const activatedBefore = (await sponsorshipsService.getAdminReport()).campaign.activatedArtists;
       const listener = wallet();
       await welcome(listener);
-      await sponsorshipsService.updateCampaign("admin:test",{ active: false,reason: "Pause for integration test" });
       await complete(listener,"listener");
       await usersService.upsertProfile(listener,{ primaryIntent: "artist" });
-      await usersService.upsertProfile(listener,{ primaryIntent: "both" });
-      assert.equal((await sponsorshipsService.getMyActivation(listener)).status,"sponsored");
+      await sponsorshipsService.updateCampaign("admin:test",{ active: false,reason: "Pause for integration test" });
       assert.equal((await sponsorshipsService.getAdminReport()).campaign.activatedArtists,activatedBefore + 1);
 
       const afterPause = wallet();
@@ -154,6 +152,16 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       const blocked = await request("/payments/intents/artist-onboarding-fee","POST",{},session(afterPause));
       assert.equal(blocked.status,503,"no USD-to-Stellar price mapping is configured");
       assert.deepEqual(await counts(afterPause),{ intents: 0,payments: 0,activations: 0 });
+      const unpaidDraft = await usersService.saveOnboardingStep(afterPause,{ step: "intent",primaryIntent: "artist" });
+      await usersService.saveOnboardingStep(afterPause,{ step: "artist_activation" });
+      await assert.rejects(
+        usersService.completeOnboarding(afterPause),
+        (error: unknown) => error instanceof Error && "statusCode" in error && error.statusCode === 402,
+      );
+      assert.equal((await usersService.getPublicArtistProfile(unpaidDraft!.id)),null);
+      assert.deepEqual(await usersService.getPublicArtistTracks(unpaidDraft!.id),[]);
+      assert.deepEqual(await usersService.getPublicArtistReleases(unpaidDraft!.id),[]);
+      assert.ok(!(await usersService.listArtists()).some(artist => artist.id === unpaidDraft!.id));
 
       await sponsorshipsService.updateCampaign("admin:test",{ active: true,reason: "Resume after integration test" });
       const resumed = wallet();
@@ -201,9 +209,10 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       await sponsorshipsService.updateCampaign("admin:test",{ active: false,reason: "Create legacy test accounts" });
       const profileGrantWallet = wallet();
       await welcome(profileGrantWallet);
-      await complete(profileGrantWallet,"artist");
+      await complete(profileGrantWallet,"listener");
       await databaseService.transaction(client => client.query(
-        "UPDATE users SET payload=jsonb_set(payload,'{artistAccess}','true'::jsonb) WHERE wallet_address=$1",
+        `UPDATE users SET primary_intent='artist',payload=jsonb_set(jsonb_set(payload,'{artistAccess}','true'::jsonb),'{primaryIntent}','\"artist\"'::jsonb)
+         WHERE wallet_address=$1`,
         [profileGrantWallet],
       ));
       const profileGrant = await sponsorshipsService.getMyActivation(profileGrantWallet);
@@ -235,6 +244,37 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       assert.equal(paid.artistAccess,true);
       assert.equal(paid.campaignCode,null);
       await sponsorshipsService.updateCampaign("admin:test",{ active: true,reason: "Restore after legacy test" });
+    });
+
+    await t.test("artist activation is capped atomically under concurrent completion", async () => {
+      const before = (await sponsorshipsService.getAdminReport()).campaign;
+      const wallets = Array.from({ length: 21 }, () => wallet());
+      await Promise.all(wallets.map(w => welcome(w)));
+      await Promise.all(wallets.map(async w => {
+        await usersService.saveOnboardingStep(w,{ step: "intent",primaryIntent: "artist" });
+        await usersService.saveOnboardingStep(w,{ step: "artist_activation" });
+      }));
+      await databaseService.transaction(client => client.query(
+        "UPDATE artist_sponsorship_campaigns SET max_grants=$1 WHERE code='EARLYUSER'",
+        [before.activatedArtists + 20],
+      ));
+
+      const completions = await Promise.allSettled(wallets.map(w => usersService.completeOnboarding(w)));
+      assert.equal(completions.filter(result => result.status === "fulfilled").length,20);
+      assert.equal(completions.filter(result => result.status === "rejected").length,1);
+      const after = (await sponsorshipsService.getAdminReport()).campaign;
+      assert.equal(after.activatedArtists,before.activatedArtists + 20);
+      assert.equal(after.remainingGrants,0);
+      const waitingQuote = await sponsorshipsService.getMyActivation(wallets.find((_, index) => completions[index]?.status === "rejected")!);
+      assert.equal(waitingQuote.status,"payment_required");
+      const lateWallet = wallet();
+      await welcome(lateWallet);
+      assert.equal((await sponsorshipsService.getMyActivation(lateWallet)).status,"payment_required");
+      await usersService.saveOnboardingStep(lateWallet,{ step: "intent",primaryIntent: "artist" });
+      await assert.rejects(usersService.completeOnboarding(lateWallet),/activation/);
+      await databaseService.transaction(client => client.query(
+        "UPDATE artist_sponsorship_campaigns SET max_grants=20 WHERE code='EARLYUSER'",
+      ));
     });
   } finally {
     await new Promise<void>((resolve,reject) => server.close(error => error ? reject(error) : resolve()));

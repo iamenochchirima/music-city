@@ -16,17 +16,4 @@ entitlementsRouter.get(
   }),
 );
 
-entitlementsRouter.post(
-  "/grant",
-  requireSession,
-  asyncHandler(async (request, response) => {
-    response.status(201).json({
-      entitlement: await entitlementsService.grant(
-        request.session!.walletAddress,
-        request.body,
-      ),
-    });
-  }),
-);
-
 export { entitlementsRouter };

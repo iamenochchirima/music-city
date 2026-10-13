@@ -24,6 +24,7 @@ type CampaignRow = {
   discount_amount_minor: number;
   amount_due_minor: number;
   discount_percent: number;
+  max_grants: number;
   active: boolean;
 };
 
@@ -44,10 +45,15 @@ export async function captureArtistSponsorshipEligibility(
   profile: UserProfile,
 ) {
   const campaign = (await client.query<CampaignRow>(
-    "SELECT * FROM artist_sponsorship_campaigns WHERE code=$1 FOR SHARE",
+    "SELECT * FROM artist_sponsorship_campaigns WHERE code=$1 FOR UPDATE",
     [earlyUserSponsorshipTerms.code],
   )).rows[0];
   if (!campaign?.active) return false;
+  const grants = (await client.query<{ count: number }>(
+    "SELECT COUNT(*)::int AS count FROM artist_sponsorship_grants WHERE campaign_code=$1",
+    [campaign.code],
+  )).rows[0]!;
+  if (grants.count >= campaign.max_grants) return false;
 
   const id = randomUUID();
   const inserted = await client.query(
@@ -81,11 +87,23 @@ export async function redeemArtistSponsorship(
   )).rows[0];
   if (!eligibility) return false;
 
+  const campaign = (await client.query<CampaignRow>(
+    "SELECT * FROM artist_sponsorship_campaigns WHERE code=$1 FOR UPDATE",
+    [eligibility.campaign_code],
+  )).rows[0];
+  if (!campaign?.active) return false;
+
   const existing = await client.query(
     "SELECT id FROM artist_sponsorship_grants WHERE user_id=$1",
     [profile.id],
   );
   if (existing.rowCount) return false;
+
+  const capacity = (await client.query<{ count: number }>(
+    "SELECT COUNT(*)::int AS count FROM artist_sponsorship_grants WHERE campaign_code=$1",
+    [campaign.code],
+  )).rows[0]!;
+  if (capacity.count >= campaign.max_grants) return false;
 
   const inserted = await client.query(
     `INSERT INTO artist_sponsorship_grants
@@ -131,6 +149,9 @@ export const sponsorshipsService = {
         grant_due: number | null;
         activated_at: Date | string | null;
         payment_payload: { amount?: string; confirmedAt?: string; waived?: boolean } | null;
+        campaign_active: boolean | null;
+        campaign_max_grants: number | null;
+        campaign_grants: number;
       }>(
         `SELECT e.id AS eligibility_id,e.campaign_code AS eligibility_code,e.terms_revision AS eligibility_revision,
           e.currency AS eligibility_currency,e.original_amount_minor AS eligibility_original,
@@ -141,10 +162,13 @@ export const sponsorshipsService = {
           (SELECT p.payload FROM payments p WHERE p.wallet_address=u.wallet_address
             AND p.product_type='artist_onboarding_fee' AND p.payload->>'status'='confirmed'
             ORDER BY p.confirmed_at DESC,p.id DESC LIMIT 1) AS payment_payload,
+          c.active AS campaign_active,c.max_grants AS campaign_max_grants,
+          (SELECT COUNT(*)::int FROM artist_sponsorship_grants cg WHERE cg.campaign_code=c.code) AS campaign_grants,
           u.payload->>'artistAccess' AS legacy_artist_access
          FROM users u
          LEFT JOIN artist_sponsorship_eligibilities e ON e.user_id=u.id
          LEFT JOIN artist_sponsorship_grants g ON g.user_id=u.id
+         LEFT JOIN artist_sponsorship_campaigns c ON c.code=e.campaign_code
          WHERE u.wallet_address=$1`,
         [walletAddress],
       )).rows[0];
@@ -192,7 +216,12 @@ export const sponsorshipsService = {
           profileExists: true, artistAccess: true, activatedAt: null,
         };
       }
-      if (row?.eligibility_id) {
+      if (
+        row?.eligibility_id &&
+        row.campaign_active &&
+        row.campaign_max_grants !== null &&
+        row.campaign_grants < row.campaign_max_grants
+      ) {
         return {
           currency: "USD" as const,
           originalAmountMinor: Number(row.eligibility_original),
@@ -271,6 +300,8 @@ export const sponsorshipsService = {
           amountDueMinor: campaign.amount_due_minor,
           discountPercent: campaign.discount_percent,
           active: campaign.active,
+          maxGrants: campaign.max_grants,
+          remainingGrants: Math.max(campaign.max_grants - Number(counts.activated), 0),
           eligibleAccounts: Number(counts.eligible),
           activatedArtists: Number(counts.activated),
           pendingEligibility: Number(counts.eligible) - Number(counts.activated),

@@ -36,7 +36,7 @@ adminRouter.post(
 adminRouter.post(
   "/auth/login",
   asyncHandler(async (request, response) => {
-    const result = await adminService.login(request.body);
+    const result = await adminService.login(request.body, request.ip);
     const token = tokenService.issueAdminSession(result.session);
 
     response.json({

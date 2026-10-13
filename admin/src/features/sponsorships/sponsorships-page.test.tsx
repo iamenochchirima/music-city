@@ -10,7 +10,7 @@ vi.mock("@/lib/api/http-client",() => ({ httpClient: { get: mocks.get,put: mocks
 
 const campaign = {
   code: "EARLYUSER",termsRevision: "v1",currency: "USD",originalAmountMinor: 2000,discountAmountMinor: 2000,
-  amountDueMinor: 0,discountPercent: 100,active: true,eligibleAccounts: 2,activatedArtists: 1,pendingEligibility: 1,totalFeesWaivedMinor: 2000,
+  amountDueMinor: 0,discountPercent: 100,active: true,maxGrants: 20,remainingGrants: 19,eligibleAccounts: 2,activatedArtists: 1,pendingEligibility: 1,totalFeesWaivedMinor: 2000,
 };
 const report = { campaign,items: [{ id: "artist-id",walletAddress: "GTEST",displayName: "Early Artist",capturedAt: new Date().toISOString(),activatedAt: null,status: "eligible",inviterName: "Inviter" }],events: [] };
 
@@ -27,6 +27,8 @@ it("shows waived face value separately from revenue and keeps ordinary admins re
   render(<AdminSponsorshipsPage />);
   await screen.findByText("Early Artist");
   expect(screen.getByText(/Fees waived at face value: \$20.00/)).toBeTruthy();
+  expect(screen.getByText("19")).toBeTruthy();
+  expect(screen.getByText("20")).toBeTruthy();
   expect(screen.getByText(/not sales revenue or money paid out/)).toBeTruthy();
   expect(screen.queryByRole("button",{ name: "Pause new eligibility" })).toBeNull();
 });

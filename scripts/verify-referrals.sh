@@ -34,6 +34,10 @@ pnpm --filter @music-city/shared build
 pnpm --filter server exec tsx --test --test-concurrency=1 \
   src/modules/referrals/referrals.service.test.ts \
   src/modules/referrals/referrals.integration.test.ts \
+  src/modules/admin/admin-auth.integration.test.ts \
+  src/config/env.test.ts \
+  src/modules/entitlements/entitlements.router.test.ts \
+  src/modules/uploads/uploads.router.test.ts \
   src/modules/sponsorships/sponsorships.integration.test.ts \
   src/modules/users/users.service.test.ts \
   src/modules/payments/payments.service.test.ts \

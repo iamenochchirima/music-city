@@ -2,7 +2,7 @@ import { referralSchemaStatements, referralActivationSchemaStatements, referralC
 import { Pool, type PoolClient } from "pg";
 import { agreementSchemaStatements } from "../modules/agreements/agreement-schema.js";
 import { finalizationSchemaStatements, finalizationIntegrityStatements } from "../modules/agreements/finalization-schema.js";
-import { sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
+import { sponsorshipCapacityMigrationStatements, sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
 
 import { env } from "../config/env.js";
 
@@ -116,6 +116,13 @@ const pool = new Pool({
 });
 
 const baseSchemaStatements = [
+  `CREATE TABLE IF NOT EXISTS admin_auth_rate_limits (
+    bucket_key TEXT PRIMARY KEY,
+    window_started_at TIMESTAMPTZ NOT NULL,
+    attempt_count INTEGER NOT NULL CHECK(attempt_count >= 0),
+    blocked_until TIMESTAMPTZ
+  )`,
+  "CREATE INDEX IF NOT EXISTS admin_auth_rate_limits_window_idx ON admin_auth_rate_limits (window_started_at)",
   `CREATE TABLE IF NOT EXISTS admins (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -396,6 +403,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 
 const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
+  { name: "2026-10-11-early-user-sponsorship-capacity", statements: sponsorshipCapacityMigrationStatements },
   { name: "2026-10-08-registration-referrals", statements: referralSchemaStatements },
   { name: "2026-10-08-referral-paid-activation", statements: referralActivationSchemaStatements },
   { name: "2026-10-08-referral-campaign-controls", statements: referralCampaignControlStatements },
@@ -885,6 +893,7 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     name: "base-core",
     relations: [
       "admins",
+      "admin_auth_rate_limits",
       "app_settings",
       "users",
       "tracks",
@@ -907,6 +916,7 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     ],
     indexes: [
       "tracks_artist_id_idx",
+      "admin_auth_rate_limits_window_idx",
       "playback_sessions_track_id_idx",
       "royalty_ledger_status_idx",
       "ads_status_idx",
@@ -933,10 +943,11 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     statements: referralSchemaStatements,
   },
   {
-    name: "2026-10-09-early-user-sponsorship",
-    migrationName: "2026-10-09-early-user-sponsorship",
+    name: "2026-10-11-early-user-sponsorship-capacity",
+    migrationName: "2026-10-11-early-user-sponsorship-capacity",
     relations: ["artist_sponsorship_campaigns", "artist_sponsorship_eligibilities", "artist_sponsorship_grants", "artist_sponsorship_events"],
     indexes: ["artist_sponsorship_eligibilities_campaign_idx", "artist_sponsorship_events_created_idx"],
+    columns: ["artist_sponsorship_campaigns.max_grants"],
     statements: sponsorshipSchemaStatements,
   },
   {
@@ -2697,6 +2708,77 @@ export const databaseService = {
     );
 
     return Number(result.rows[0]?.count ?? "0");
+  },
+
+  async createFirstAdmin(
+    id: string,
+    email: string,
+    role: string,
+    payload: unknown,
+  ) {
+    return this.transaction(async (client) => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended('music-city-admin-bootstrap',0))");
+      const count = await client.query<{ count: string }>("SELECT COUNT(*)::text AS count FROM admins");
+      if (Number(count.rows[0]?.count ?? "0") > 0) return false;
+      await client.query(
+        `INSERT INTO admins (id,email,role,payload) VALUES ($1,$2,$3,$4::jsonb)`,
+        [id,email,role,JSON.stringify(payload)],
+      );
+      return true;
+    });
+  },
+
+  async consumeAdminAuthRateLimits(bucketKeys: string[], maxAttempts = 5, windowSeconds = 900) {
+    return this.transaction(async (client) => {
+      const keys = [...new Set(bucketKeys)].sort();
+      await client.query(
+        "DELETE FROM admin_auth_rate_limits WHERE window_started_at < NOW() - INTERVAL '1 day' AND (blocked_until IS NULL OR blocked_until <= NOW())",
+      );
+      for (const key of keys) {
+        await client.query(
+          `INSERT INTO admin_auth_rate_limits(bucket_key,window_started_at,attempt_count)
+           VALUES($1,NOW(),0) ON CONFLICT(bucket_key) DO NOTHING`,
+          [key],
+        );
+      }
+      const rows = (await client.query<{
+        bucket_key: string;
+        window_started_at: Date | string;
+        attempt_count: number;
+        blocked_until: Date | string | null;
+      }>(
+        `SELECT bucket_key,window_started_at,attempt_count,blocked_until
+         FROM admin_auth_rate_limits WHERE bucket_key=ANY($1::text[])
+         ORDER BY bucket_key FOR UPDATE`,
+        [keys],
+      )).rows;
+      const now = Date.now();
+      if (rows.some((row) => row.blocked_until && new Date(row.blocked_until).getTime() > now)) {
+        return false;
+      }
+      for (const row of rows) {
+        const expired = new Date(row.window_started_at).getTime() <= now - windowSeconds * 1000;
+        const attemptCount = expired ? 1 : row.attempt_count + 1;
+        const windowStartedAt = expired ? new Date(now) : row.window_started_at;
+        const blockedUntil = attemptCount >= maxAttempts
+          ? new Date(now + windowSeconds * 1000)
+          : null;
+        await client.query(
+          `UPDATE admin_auth_rate_limits
+           SET window_started_at=$2,attempt_count=$3,blocked_until=$4
+           WHERE bucket_key=$1`,
+          [row.bucket_key,windowStartedAt,attemptCount,blockedUntil],
+        );
+      }
+      return true;
+    });
+  },
+
+  async clearAdminAuthRateLimits(bucketKeys: string[]) {
+    await pool.query(
+      "DELETE FROM admin_auth_rate_limits WHERE bucket_key=ANY($1::text[])",
+      [[...new Set(bucketKeys)]],
+    );
   },
 
   async upsertAdmin(
