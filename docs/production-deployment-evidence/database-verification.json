@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-14T16:32:21.131Z",
+  "before": {
+    "users": 3,
+    "tracks": 1,
+    "releases": 0
+  },
+  "after": {
+    "users": 3,
+    "tracks": 1,
+    "releases": 0
+  },
+  "metadataMigration": {
+    "name": "2026-10-14-track-credits-and-identifiers",
+    "applied_at": "2026-10-14T16:09:15.304Z"
+  },
+  "backupTaken": true
+}

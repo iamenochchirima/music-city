@@ -1,0 +1,26 @@
+{
+  "verifiedAt": "2026-10-14T16:32:30.036Z",
+  "urls": {
+    "client": "https://music-city.vercel.app",
+    "admin": "https://music-city-admin.vercel.app",
+    "api": "https://server-production-d758.up.railway.app/api/v1"
+  },
+  "checks": [
+    "Live readiness verifies every required schema group and recorded migration",
+    "Client and admin production origins receive the correct CORS response",
+    "Public catalog endpoints work and release/recording mutations require authentication",
+    "A generated test wallet signs a real production authentication challenge without creating a profile or moving funds",
+    "Live frontend assets target Railway, include the five-step workspace, and exclude private build variables"
+  ],
+  "assets": [
+    {
+      "application": "client",
+      "path": "/assets/index-B-xaY-3e.js"
+    },
+    {
+      "application": "admin",
+      "path": "/assets/index-BxppNk4I.js"
+    }
+  ],
+  "schemaHealthy": true
+}

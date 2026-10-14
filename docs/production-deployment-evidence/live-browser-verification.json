@@ -1,0 +1,53 @@
+{
+  "verifiedAt": "2026-10-14T16:32:45.629Z",
+  "browser": "154.0.8037.97",
+  "captures": [
+    {
+      "file": "client-home.png",
+      "url": "https://music-city.vercel.app/",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "result": "passed"
+    },
+    {
+      "file": "release-basics-sign-in.png",
+      "url": "https://music-city.vercel.app/dashboard/releases/new",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "result": "passed"
+    },
+    {
+      "file": "client-auth.png",
+      "url": "https://music-city.vercel.app/auth",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "result": "passed"
+    },
+    {
+      "file": "admin-sign-in.png",
+      "url": "https://music-city-admin.vercel.app/",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "result": "passed"
+    },
+    {
+      "file": "client-home-mobile.png",
+      "url": "https://music-city.vercel.app/",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "apiErrors": []
+}

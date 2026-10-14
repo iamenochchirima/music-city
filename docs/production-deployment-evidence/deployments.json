@@ -1,0 +1,42 @@
+{
+  "publishedOn": "2026-10-14",
+  "applicationCommit": "a98d580ca4c45be8f1d238c23b663f8231d1874a",
+  "frontendCommit": "bbb69b2",
+  "repository": "https://github.com/iamenochchirima/music-city",
+  "api": {
+    "deploymentId": "e7660b22-0084-4a74-8345-68b30eacf1f7",
+    "url": "https://server-production-d758.up.railway.app/api/v1",
+    "status": "SUCCESS",
+    "preDeployCommand": "pnpm --filter server db:migrate",
+    "healthcheckPath": "/api/v1/health/ready"
+  },
+  "client": {
+    "id": "dpl_5iKWH4rKj7ZbLzr7zaJUM5J8RBVQ",
+    "url": "https://v0-music-city-i9y0km408-iamenochchirimas-projects.vercel.app",
+    "target": "production",
+    "productionUrl": "https://music-city.vercel.app",
+    "status": "READY"
+  },
+  "admin": {
+    "id": "dpl_CxFn8qykGjvr6jz9EnEaueu6KqLG",
+    "url": "https://music-city-admin-e0t0vxjkj-iamenochchirimas-projects.vercel.app",
+    "target": "production",
+    "productionUrl": "https://music-city-admin.vercel.app",
+    "status": "READY",
+    "apiBaseUrl": "https://server-production-d758.up.railway.app/api/v1/admin",
+    "firstAccountSetupRequired": true
+  },
+  "checks": {
+    "clientTestsPassed": 72,
+    "serverTestsPassed": 106,
+    "adminTestsPassed": 10,
+    "defaultOptInTestsSkipped": 6,
+    "metadataRevisionDatabaseCasesPassed": 10,
+    "agreementDatabaseCasesPassed": 20,
+    "schemaHealthy": true,
+    "migrationReceiptRecorded": true,
+    "originalRecordCountsPreserved": true,
+    "frontendPrivateEnvironmentExcluded": true,
+    "liveBrowserErrors": []
+  }
+}

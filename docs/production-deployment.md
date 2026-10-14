@@ -7,6 +7,7 @@ Music City runs its API on Railway and its client and admin applications on Verc
 | Client | https://music-city.vercel.app |
 | Admin | https://music-city-admin.vercel.app |
 | API | https://server-production-d758.up.railway.app/api/v1 |
+| Admin API | https://server-production-d758.up.railway.app/api/v1/admin |
 
 ## Database migrations
 
@@ -36,4 +37,4 @@ A private PostgreSQL backup was taken before migration execution. The existing d
 
 The API's missing admin bootstrap secret was replaced with a generated secret. Existing signing secrets, treasury settings, storage credentials, and the linked Postgres connection were preserved. Production client and admin API URLs point to the Railway service.
 
-Deployment IDs and live verification results are recorded after publication in the deployment evidence.
+Deployment IDs and live verification results are recorded in [deployment evidence](production-deployment-evidence/README.md). The admin authentication endpoint reports that the first administrator account still needs to be created. Its bootstrap token is configured in Railway as `ADMIN_BOOTSTRAP_TOKEN`.
