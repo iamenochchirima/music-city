@@ -1,21 +1,23 @@
-import type { ReleaseSummary } from "@music-city/shared";
+import type { ReleaseSummary, ReleaseDetail } from "@music-city/shared";
 
 import { databaseService } from "../../services/database.service.js";
 
+export type StoredRelease = ReleaseSummary & { liveVersion?: ReleaseDetail };
+
 export const releasesRepository = {
   async list() {
-    return databaseService.listPayloads<ReleaseSummary>("releases");
+    return databaseService.listPayloads<StoredRelease>("releases");
   },
 
   async listByArtist(artistId: string) {
-    return databaseService.listReleasesByArtist<ReleaseSummary>(artistId);
+    return databaseService.listReleasesByArtist<StoredRelease>(artistId);
   },
 
   async findById(releaseId: string) {
-    return databaseService.findPayloadById<ReleaseSummary>("releases", releaseId);
+    return databaseService.findPayloadById<StoredRelease>("releases", releaseId);
   },
 
-  async upsert(release: ReleaseSummary) {
+  async upsert(release: StoredRelease) {
     await databaseService.upsertRelease(
       release.id,
       release.artistId,

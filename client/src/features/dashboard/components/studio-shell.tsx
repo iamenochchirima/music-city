@@ -10,9 +10,9 @@ import {
   Library,
   PlusSquare,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { PageContainer } from "@/components/common/page-container";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const studioNavItems = [
@@ -49,83 +49,80 @@ const studioNavItems = [
   { href: "/account/agreements", label: "Royalty agreements", icon: Disc3 },
 ] as const;
 
-export const StudioShell = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
-  const location = useLocation();
-  const pathname = location.pathname;
-
+export const StudioShell = ({ children }: { children: ReactNode }) => {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+    pathname === href ||
+    (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+  const activeDestination =
+    studioNavItems.find((item) => isActive(item.href))?.href ?? "";
 
   return (
-    <section className="py-6 sm:py-10">
-      <PageContainer>
-        <div className="space-y-5">
-          <div className="grid gap-4 xl:grid-cols-[216px_minmax(0,1fr)]">
-            <aside className="xl:sticky xl:top-24 xl:self-start">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-2">
-                <div className="sr-only">Studio navigation</div>
-                <nav className="grid gap-0.5">
-                  {studioNavItems.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "rounded-lg px-2.5 py-2 transition",
-                          isActive(item.href)
-                            ? "bg-white/10 text-white"
-                            : "text-white/65 hover:bg-white/6 hover:text-white",
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={cn(
-                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
-                              isActive(item.href)
-                                ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-300"
-                                : "border-white/10 bg-white/[0.03] text-white/70",
-                            )}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <p className="text-sm font-medium">{item.label}</p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-            </aside>
-
-            <div className="min-w-0 space-y-4">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 xl:hidden">
-                {studioNavItems.map((item) => (
+    <section className="studio-workspace min-h-[calc(100vh-4rem)] bg-background py-6 sm:py-8">
+      <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8">
+          <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+            <p className="mb-4 px-3 text-sm font-semibold text-muted-foreground">
+              Artist Studio
+            </p>
+            <nav aria-label="Studio navigation" className="space-y-1">
+              {studioNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={isActive(item.href) ? "page" : undefined}
                     className={cn(
-                      "whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-medium transition",
+                      "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       isActive(item.href)
-                        ? "border-emerald-400/35 bg-emerald-400/12 text-emerald-200"
-                        : "border-white/10 bg-white/[0.03] text-white/65 hover:text-white",
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                   >
+                    <Icon
+                      aria-hidden="true"
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        isActive(item.href) && "text-primary",
+                      )}
+                    />
                     {item.label}
                   </Link>
+                );
+              })}
+            </nav>
+          </aside>
+          <div className="min-w-0 space-y-6">
+            <nav aria-label="Mobile Studio navigation" className="lg:hidden">
+              <label
+                htmlFor="studio-destination"
+                className="mb-2 block text-sm font-medium text-muted-foreground"
+              >
+                Artist Studio
+              </label>
+              <Select
+                id="studio-destination"
+                value={activeDestination}
+                onChange={(event) => navigate(event.target.value)}
+              >
+                {!activeDestination ? (
+                  <option value="" disabled>
+                    Choose a section
+                  </option>
+                ) : null}
+                {studioNavItems.map((item) => (
+                  <option key={item.href} value={item.href}>
+                    {item.label}
+                  </option>
                 ))}
-              </div>
-
-              {children}
-            </div>
+              </Select>
+            </nav>
+            {children}
           </div>
         </div>
-      </PageContainer>
+      </div>
     </section>
   );
 };

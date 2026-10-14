@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TrackSummary } from "@music-city/shared";
 
+import { StudioPageHeader } from "@/components/studio/page-header";
+import { EmptyState } from "@/components/studio/empty-state";
 import { Button } from "@/components/ui/button";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
@@ -13,6 +15,7 @@ import { DashboardTrackShelves } from "./dashboard-track-shelves";
 export const DashboardTracksOverview = () => {
   const { session } = useAuth();
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const loadTracks = async () => {
@@ -22,9 +25,14 @@ export const DashboardTracksOverview = () => {
     }
 
     setIsLoading(true);
+    setError("");
 
     try {
       setTracks(await tracksApi.listMyTracks(session.token));
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Unable to load tracks",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +58,7 @@ export const DashboardTracksOverview = () => {
 
   if (!session) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
+      <div className="rounded-xl border border-border bg-card p-5 text-muted-foreground">
         Connect your wallet before using the studio catalog.
       </div>
     );
@@ -58,7 +66,7 @@ export const DashboardTracksOverview = () => {
 
   if (session.onboardingStatus !== "complete") {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-300">
+      <div className="rounded-xl border border-border bg-card p-5 text-muted-foreground">
         Complete onboarding before managing tracks.
       </div>
     );
@@ -70,32 +78,45 @@ export const DashboardTracksOverview = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Your track catalog</h2>
-          <p className="mt-1 text-sm text-slate-400">Manage uploads, metadata, and releases.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            asChild
-            className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          >
-            <Link href="/dashboard/create">New track</Link>
+      <StudioPageHeader
+        title="Your tracks"
+        description="Manage recordings, metadata, and release placement."
+        actions={
+          <div className="flex flex-wrap gap-3">
+            <Button asChild>
+              <Link href="/dashboard/create?recording=1">New track</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/releases">Manage releases</Link>
+            </Button>
+          </div>
+        }
+      />
+      {error ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 text-sm text-destructive"
+        >
+          {error}
+          <Button variant="outline" onClick={() => void loadTracks()}>
+            Retry
           </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-          >
-            <Link href="/dashboard/releases">Manage releases</Link>
-          </Button>
         </div>
-      </div>
-
+      ) : null}
       {isLoading ? (
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400">
+        <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground">
           Loading your tracks...
         </div>
+      ) : !tracks.length && !error ? (
+        <EmptyState
+          title="No tracks yet"
+          description="Upload your first recording, then add it to a release."
+          action={
+            <Button asChild variant="outline">
+              <Link href="/dashboard/create?recording=1">Upload a track</Link>
+            </Button>
+          }
+        />
       ) : (
         <DashboardTrackShelves
           tracks={tracks}

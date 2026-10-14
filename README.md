@@ -2,11 +2,16 @@
 
 Music City is now organized as a small workspace:
 
-- `client`: Next.js frontend
+- `client`: React + Vite frontend
+- `admin`: React + Vite administrative frontend
 - `server`: Node.js + TypeScript + Express backend
 - `packages/shared`: shared types and schemas
 
 The active stack is Stellar-oriented. Old ICP/canister runtime code has been removed from the app path.
+
+The [Studio UI implementation plan](docs/studio-ui-implementation-plan.md) covers the shared client styling system and the upload, track management, release, and onboarding redesign. Preview the shared controls at `/dev/studio-components` with `pnpm dev:client`. Run `pnpm test:e2e:studio-ui` for onboarding browser verification against an isolated local database.
+
+The [release-first workspace](docs/release-flow-implementation.md) uses five steps for creation and editing, including uploads inside the release and saved revisions for published or scheduled releases. Run `pnpm test:e2e:release-flow` for its local API and browser checks.
 
 ## Getting started
 
@@ -126,3 +131,9 @@ Run `pnpm test:referrals` for focused registration, payment qualification, UI, a
 The active `EARLYUSER` campaign automatically covers the one-time USD $20 artist activation for eligible new accounts. Artist onboarding shows the $20 standard price, the 100% discount, and $0 due; completing registration activates artist tools without creating a payment. Eligibility and activation are separate from personal referral attribution. Admins can review the campaign at `/console/sponsorships`; super admins can pause or resume new eligibility with an audit reason. Pausing keeps existing eligibility, grants, and receipts intact.
 
 `ARTIST_ONBOARDING_FEE_PRICE` is the Stellar settlement-asset amount, not a USD amount. Leave it at `0` unless the operator has verified the matching USD $20 equivalent and set `ARTIST_ONBOARDING_FEE_PRICE_USD_EQUIVALENT=20`; this avoids treating $20 as 20 XLM. Without that explicit mapping, paid activation remains disabled. Run `pnpm test:early-user-discount` for isolated PostgreSQL, API, client, admin, and type checks. Run `pnpm exec playwright install chromium` once, then `pnpm test:e2e:early-user-discount` for the end-to-end browser path. See the [implementation checklist](docs/early-user-discount-implementation-plan.md) and [verification evidence](docs/early-user-discount-evidence/README.md). For rollback, pause new eligibility, keep existing grants and receipts, reconcile interrupted completions, and never recreate synthetic waiver payments.
+
+## Track credits and identifiers
+
+The release workspace includes per-song Track information. Standalone track upload includes an optional Credits & identifiers step for Composer, Author, Producer, Engineer, Publisher, existing ISRC, and record label. Each track retains its own metadata and supports later edits. A release can explicitly copy its record label to selected tracks through a preview, with a separate choice to replace existing labels.
+
+Run `pnpm test:track-credits` for isolated PostgreSQL metadata and agreement tests. Run `pnpm test:e2e:track-credits` for the Chrome demonstration, including actual local API uploads, mobile layout, and release navigation. See the [implementation checklist](docs/track-credits-implementation-plan.md) and [verification evidence](docs/track-credits-evidence/README.md). Deployed-data migration and temporary migration-code cleanup follow the rollout instructions there.

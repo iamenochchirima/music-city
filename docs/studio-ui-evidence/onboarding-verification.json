@@ -1,0 +1,508 @@
+{
+  "recordedAt": "2026-10-14T14:48:46.085Z",
+  "browser": "154.0.8037.97",
+  "storage": "isolated PostgreSQL and local media",
+  "checks": [
+    "artist page: persisted profile, optional fields, activation, reload, completion destination",
+    "listener page: persisted profile, optional fields, activation, reload, completion destination",
+    "both page: persisted profile, optional fields, activation, reload, completion destination",
+    "artist modal: persisted profile, optional fields, activation, reload, completion destination",
+    "listener modal: persisted profile, optional fields, activation, reload, completion destination",
+    "both modal: persisted profile, optional fields, activation, reload, completion destination",
+    "Artist invitation survives identity save and credits its inviter once",
+    "Development preview uses real shared controls across five widths"
+  ],
+  "captures": [
+    {
+      "file": "onboarding-artist-page-identity.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-identity-mobile.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist page identity mobile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-intent.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-activation.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page activation",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-artist-profile.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page artist profile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-visuals.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-page-ready.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding artist page ready",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-profile-load-error.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding profile load error",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-identity-error.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding identity error",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-identity.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding listener page identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-identity-mobile.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener page identity mobile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-intent.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding listener page intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-preferences.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding listener page preferences",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-visuals.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding listener page visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-page-ready.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding listener page ready",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-identity.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-identity-mobile.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both page identity mobile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-intent.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-activation.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page activation",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-preferences.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page preferences",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-artist-profile.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page artist profile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-visuals.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-page-ready.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "onboarding both page ready",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-identity.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-intent.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-activation.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal activation",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-artist-profile.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal artist profile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-visuals.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-reduced-height.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 360
+      },
+      "state": "onboarding artist reduced height",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-artist-modal-ready.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding artist modal ready",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-modal-identity.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener modal identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-modal-intent.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener modal intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-modal-preferences.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener modal preferences",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-modal-visuals.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener modal visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-reduced-height.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 360
+      },
+      "state": "onboarding listener reduced height",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-listener-modal-ready.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding listener modal ready",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-identity.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal identity",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-intent.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal intent",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-activation.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal activation",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-preferences.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal preferences",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-artist-profile.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal artist profile",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-visuals.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal visuals",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-reduced-height.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 360
+      },
+      "state": "onboarding both reduced height",
+      "result": "passed"
+    },
+    {
+      "file": "onboarding-both-modal-ready.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "onboarding both modal ready",
+      "result": "passed"
+    },
+    {
+      "file": "components-360.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "state": "components 360",
+      "result": "passed"
+    },
+    {
+      "file": "components-390.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "state": "components 390",
+      "result": "passed"
+    },
+    {
+      "file": "components-768.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "state": "components 768",
+      "result": "passed"
+    },
+    {
+      "file": "components-1024.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "state": "components 1024",
+      "result": "passed"
+    },
+    {
+      "file": "components-1440.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "components 1440",
+      "result": "passed"
+    }
+  ],
+  "pageErrors": []
+}

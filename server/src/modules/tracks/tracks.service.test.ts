@@ -130,7 +130,9 @@ test("createTrack persists recording-owned metadata only", async () => {
       artistName: "Artist",
       genre: "Pop",
       isExplicit: true,
-      credits: [{ role: "producer", name: "Producer" }],
+      credits: [{ role: "producer", name: " Producer " }],
+      recordLabel: " Track Label ",
+      isrc: "us-rc1-76-07839",
     });
 
     const savedTrack = persistedTrack as unknown as Record<string, unknown>;
@@ -138,7 +140,8 @@ test("createTrack persists recording-owned metadata only", async () => {
     assert.deepEqual(savedTrack["credits"], [
       { role: "producer", name: "Producer" },
     ]);
-    assert.equal("recordLabel" in savedTrack, false);
+    assert.equal(savedTrack["recordLabel"], "Track Label");
+    assert.equal(savedTrack["isrc"], "USRC17607839");
     assert.equal("country" in savedTrack, false);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
@@ -179,11 +182,12 @@ test("track metadata updates normalize identifiers and validate linked artist cr
     ),
     restore(
       tracksRepository,
-      "upsert",
-      (async (track) => {
+      "updateMetadata",
+      (async (_trackId, _artistId, patch) => {
+        const track = { ...existingTrack, ...patch };
         persistedTrack = track as unknown as Record<string, unknown>;
         return track;
-      }) as typeof tracksRepository.upsert,
+      }) as typeof tracksRepository.updateMetadata,
     ),
   ];
 
@@ -275,11 +279,12 @@ test("track title updates do not revalidate unrelated existing metadata", async 
     ),
     restore(
       tracksRepository,
-      "upsert",
-      (async (track) => {
+      "updateMetadata",
+      (async (_trackId, _artistId, patch) => {
+        const track = { ...existingTrack, ...patch };
         persistedTrack = track as unknown as Record<string, unknown>;
         return track;
-      }) as typeof tracksRepository.upsert,
+      }) as typeof tracksRepository.updateMetadata,
     ),
   ];
 
@@ -293,4 +298,43 @@ test("track title updates do not revalidate unrelated existing metadata", async 
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
+});
+
+test("both metadata writes reject nonexistent linked contributors before persisting", async () => {
+  let writes = 0;
+  const existing = { id: "owned", artistId: artistProfile.id };
+  const cleanup = [
+    restore(usersService, "requireArtistOnboardingAccess", async () => artistProfile),
+    restore(usersService, "getProfileById", async () => null),
+    restore(tracksRepository, "findById", async () => existing as never),
+    restore(tracksRepository, "upsert", async track => { writes++; return track; }),
+    restore(tracksRepository, "updateMetadata", async () => { writes++; return existing as never; }),
+  ];
+  try {
+    const credits = [{ role: "composer" as const, name: "Composer", artistId: "missing" }];
+    await assert.rejects(tracksService.createTrack(walletAddress, { title: "Song", genre: "Pop", isExplicit: false, credits }), /Linked credit profile/);
+    await assert.rejects(tracksService.updateTrackMetadata(walletAddress, "owned", { credits }), /Linked credit profile/);
+    assert.equal(writes, 0);
+  } finally { cleanup.reverse().forEach(fn => fn()); }
+});
+
+test("clearing optional metadata preserves publication and unrelated track values", async () => {
+  let existing = { id: "owned", artistId: artistProfile.id, status: "published", isrc: "USRC17607839", recordLabel: "Label", credits: [{ role: "producer", name: "Producer" }], playbackReady: true, masterStorageKey: "audio.wav" };
+  const cleanup = [
+    restore(usersService, "requireArtistOnboardingAccess", async () => artistProfile),
+    restore(tracksRepository, "findById", async () => existing as never),
+    restore(tracksRepository, "updateMetadata", async (_id, _owner, patch) => { existing = { ...existing, ...patch } as never; return existing as never; }),
+  ];
+  try {
+    await tracksService.updateTrackMetadata(walletAddress, "owned", { credits: [] });
+    assert.equal(existing.recordLabel, "Label");
+    assert.equal(existing.isrc, "USRC17607839");
+    const cleared = await tracksService.updateTrackMetadata(walletAddress, "owned", { recordLabel: " ", isrc: " " });
+    assert.equal(cleared.recordLabel, undefined);
+    assert.equal(cleared.isrc, undefined);
+    assert.deepEqual(cleared.credits, []);
+    assert.equal(cleared.status, "published");
+    assert.equal(cleared.playbackReady, true);
+    assert.equal(cleared.masterStorageKey, "audio.wav");
+  } finally { cleanup.reverse().forEach(fn => fn()); }
 });

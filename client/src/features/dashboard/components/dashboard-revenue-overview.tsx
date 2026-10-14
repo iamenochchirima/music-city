@@ -1,5 +1,7 @@
 "use client";
 
+import { StudioPageHeader } from "@/components/studio/page-header";
+
 import { useEffect, useMemo, useState } from "react";
 import type { PaymentRecord, SubscriptionRecord, TrackSummary } from "@music-city/shared";
 
@@ -153,13 +155,7 @@ export const DashboardRevenueOverview = () => {
 
   return (
     <div className="space-y-5">
-      <div className="border-b border-white/10 pb-5">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-          Revenue
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Sales</h2>
-        <p className="mt-1 text-sm text-slate-400">Confirmed purchases and subscriptions.</p>
-      </div>
+      <StudioPageHeader title="Sales" eyebrow="Revenue" description="Confirmed purchases and subscriptions." />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatTile

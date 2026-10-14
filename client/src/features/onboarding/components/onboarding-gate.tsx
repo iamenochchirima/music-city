@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-
+import { toast } from "sonner";
+import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -11,57 +13,80 @@ export const OnboardingGate = () => {
   const router = useRouter();
   const { session, logout, refreshSessionProfile } = useAuth();
   const [dismissed, setDismissed] = useState(false);
-
+  const [busy, setBusy] = useState(false);
+  const [openedWallet, setOpenedWallet] = useState<string | null>(() =>
+    session && session.onboardingStatus !== "complete"
+      ? session.walletAddress
+      : null,
+  );
   useEffect(() => {
     setDismissed(false);
+    setOpenedWallet(
+      session && session.onboardingStatus !== "complete"
+        ? session.walletAddress
+        : null,
+    );
   }, [session?.walletAddress]);
-
-  const shouldShow = useMemo(() => {
-    if (!session || session.onboardingStatus === "complete") {
-      return false;
-    }
-
-    return pathname !== "/onboarding" && !dismissed;
-  }, [dismissed, pathname, session]);
-
-  if (!shouldShow) {
+  if (
+    !session ||
+    pathname === "/onboarding" ||
+    dismissed ||
+    (session.onboardingStatus === "complete" &&
+      openedWallet !== session.walletAddress)
+  )
     return null;
-  }
-
+  const canDismiss =
+    session.onboardingStep !== "identity" &&
+    session.onboardingStep !== "intent";
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
-      <div
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl sm:p-8"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Music City onboarding"
-      >
-        <OnboardingForm
-          mode="modal"
-          onCompleted={(_, destination) => {
-            void refreshSessionProfile().then(() => router.push(destination));
-          }}
-        />
-
-        <div className="mt-5 flex justify-end gap-4">
-          {session?.onboardingStep !== "identity" && session?.onboardingStep !== "intent" ? (
-            <button
-              type="button"
-              className="text-xs text-slate-500 underline-offset-4 hover:text-white hover:underline"
-              onClick={() => setDismissed(true)}
-            >
-              Continue later
-            </button>
-          ) : null}
-          <button
+    <Dialog
+      title="Music City onboarding"
+      hideTitle
+      className="max-w-[720px]"
+      busy={busy || !canDismiss}
+      onClose={() => setDismissed(true)}
+    >
+      <OnboardingForm
+        key={session.walletAddress}
+        mode="modal"
+        onBusyChange={setBusy}
+        onCompleted={(_, destination) => {
+          setBusy(true);
+          void refreshSessionProfile()
+            .then(() => {
+              setDismissed(true);
+              router.push(destination);
+            })
+            .catch((error) =>
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Unable to refresh your profile",
+              ),
+            )
+            .finally(() => setBusy(false));
+        }}
+      />
+      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-border pt-4">
+        {canDismiss ? (
+          <Button
             type="button"
-            className="text-xs text-slate-500 underline-offset-4 hover:text-white hover:underline"
-            onClick={() => void logout()}
+            variant="ghost"
+            disabled={busy}
+            onClick={() => setDismissed(true)}
           >
-            Sign out
-          </button>
-        </div>
+            Continue later
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={busy}
+          onClick={() => void logout()}
+        >
+          Sign out
+        </Button>
       </div>
-    </div>
+    </Dialog>
   );
 };

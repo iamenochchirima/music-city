@@ -1,16 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ArtistSummary, PaymentIntentRecord } from "@music-city/shared";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
+import { StepNavigation } from "@/components/studio/step-navigation";
+import { ActionBar } from "@/components/studio/action-bar";
 import { Progress } from "@/components/ui/progress";
 import { SearchablePicker } from "@/components/ui/searchable-picker";
 import { musicGenres } from "@/features/music/data/metadata-options";
@@ -23,33 +26,50 @@ import { ApiClientError } from "@/lib/api/http-client";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { trackEvent } from "@/lib/analytics";
 
+import {
+  TrackMetadataEditor,
+  emptyTrackMetadata,
+  validateTrackMetadata,
+  creditRoleLabels,
+} from "./track-metadata-editor";
+import {
+  restoreTrackUploadDraft,
+  type StoredTrackDraft,
+} from "../lib/track-upload-draft";
+
+import { TrackUploadResult } from "./track-upload-result";
+
 interface TrackCreateFormProps {
   onCreated: () => void;
   onClose?: () => void;
 }
 
 const steps = [
-  { id: "basics", label: "Track details", description: "Name the recording and identify the artists." },
+  {
+    id: "basics",
+    label: "Track details",
+    description: "Name the recording and identify the artists.",
+  },
   { id: "media", label: "Audio", description: "Upload the master audio file." },
-  { id: "review", label: "Save", description: "Review the recording before saving it as a draft." },
+  {
+    id: "credits",
+    label: "Credits & identifiers",
+    description:
+      "Add optional credits, recording identifier, and record label.",
+  },
+  {
+    id: "review",
+    label: "Review and save",
+    description: "Review the recording before saving it as a draft.",
+  },
 ] as const;
 
 const isEmailLike = (value: string) => /\S+@\S+\.\S+/.test(value.trim());
 const MAX_AUDIO_SIZE_BYTES = 500 * 1024 * 1024;
-const TRACK_DRAFT_STORAGE_VERSION = 1;
-
-type StoredTrackDraft = {
-  version: number;
-  savedAt: number;
-  stepIndex: number;
-  title: string;
-  artistName: string;
-  genre: string;
-  isExplicit: boolean;
-  featuredArtists: string[];
-};
-
-export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) => {
+export const TrackCreateForm = ({
+  onCreated,
+  onClose,
+}: TrackCreateFormProps) => {
   const router = useRouter();
   const { session } = useAuth();
   const {
@@ -59,6 +79,13 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   } = useArtistOnboardingPayment();
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [metadata, setMetadata] = useState(emptyTrackMetadata);
+  const [basicErrors, setBasicErrors] = useState<Record<string, string>>({});
+  const [audioError, setAudioError] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [metadataErrors, setMetadataErrors] = useState<Record<string, string>>(
+    {},
+  );
   const [artistOptions, setArtistOptions] = useState<ArtistSummary[]>([]);
   const [title, setTitle] = useState("");
   const [artistName, setArtistName] = useState(session?.displayName ?? "");
@@ -68,6 +95,7 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   const [featuredArtists, setFeaturedArtists] = useState<string[]>([]);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [createdTrackId, setCreatedTrackId] = useState<string | null>(null);
+  const [createdPlaybackReady, setCreatedPlaybackReady] = useState(false);
   const [createdTrackTitle, setCreatedTrackTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
@@ -84,8 +112,9 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   );
   const [draftHydrated, setDraftHydrated] = useState(false);
 
-  const deferredFeaturedSearch = useDeferredValue(featuredSearch.trim().toLowerCase());
-  const progressValue = ((stepIndex + 1) / steps.length) * 100;
+  const deferredFeaturedSearch = useDeferredValue(
+    featuredSearch.trim().toLowerCase(),
+  );
 
   useEffect(() => {
     if (session?.displayName) {
@@ -106,24 +135,24 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
         return;
       }
 
-      const draft = JSON.parse(rawDraft) as Partial<StoredTrackDraft>;
-      const isCurrent =
-        draft.version === TRACK_DRAFT_STORAGE_VERSION &&
-        typeof draft.savedAt === "number" &&
-        Date.now() - draft.savedAt < 7 * 24 * 60 * 60 * 1000;
-
-      if (!isCurrent) {
+      const draft = restoreTrackUploadDraft(JSON.parse(rawDraft));
+      if (!draft) {
         window.localStorage.removeItem(draftStorageKey);
-        setDraftHydrated(true);
         return;
       }
-
-      setStepIndex(Math.min(Math.max(draft.stepIndex ?? 0, 0), steps.length - 1));
+      setStepIndex(steps.findIndex((step) => step.id === draft.stepId));
+      setMetadata({
+        credits: draft.credits,
+        isrc: draft.isrc,
+        recordLabel: draft.recordLabel,
+      });
+      // Persist the converted format immediately; retain the original expiration timestamp.
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(draft));
       setTitle(typeof draft.title === "string" ? draft.title : "");
       setArtistName(
         typeof draft.artistName === "string"
           ? draft.artistName
-          : session?.displayName ?? "",
+          : (session?.displayName ?? ""),
       );
       setGenre(typeof draft.genre === "string" ? draft.genre : "");
       setIsExplicit(draft.isExplicit === true);
@@ -142,14 +171,20 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   }, [draftStorageKey, session?.displayName]);
 
   useEffect(() => {
-    if (!draftStorageKey || !draftHydrated || typeof window === "undefined" || createdTrackId) {
+    if (
+      !draftStorageKey ||
+      !draftHydrated ||
+      typeof window === "undefined" ||
+      createdTrackId
+    ) {
       return;
     }
 
     const draft: StoredTrackDraft = {
-      version: TRACK_DRAFT_STORAGE_VERSION,
+      version: 2,
       savedAt: Date.now(),
-      stepIndex,
+      stepId: steps[stepIndex].id,
+      ...metadata,
       title,
       artistName,
       genre,
@@ -166,6 +201,7 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     featuredArtists,
     genre,
     isExplicit,
+    metadata,
     stepIndex,
     title,
   ]);
@@ -270,16 +306,21 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     toast.error("Choose an artist or enter a collaborator email.");
   };
 
+  const focusInvalidField = () =>
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+    );
   const canLeaveBasicsStep = () => {
-    if (stepIndex !== 0) {
-      return true;
-    }
-
-    if (!title.trim() || !artistName.trim() || !genre.trim()) {
-      toast.error("Add the track title, artist name, and genre first.");
+    const errors: Record<string, string> = {};
+    if (!title.trim()) errors.title = "Enter a track title.";
+    if (!artistName.trim()) errors.artistName = "Enter an artist name.";
+    if (!genre.trim()) errors.genre = "Choose a primary genre.";
+    setBasicErrors(errors);
+    if (Object.keys(errors).length) {
+      setStepIndex(0);
+      focusInvalidField();
       return false;
     }
-
     return true;
   };
 
@@ -292,6 +333,21 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
       return;
     }
 
+    if (nextStepIndex > 2) {
+      const { result, errors } = validateTrackMetadata(metadata);
+      setMetadataErrors(errors);
+      if (!result.success) {
+        setStepIndex(2);
+        focusInvalidField();
+        return;
+      }
+    }
+    if (nextStepIndex > 1 && !audioFile) {
+      setAudioError("Select your audio file before continuing.");
+      setStepIndex(1);
+      focusInvalidField();
+      return;
+    }
     setStepIndex(nextStepIndex);
   };
 
@@ -301,6 +357,11 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     }
 
     setStepIndex(0);
+    setMetadata(emptyTrackMetadata());
+    setMetadataErrors({});
+    setBasicErrors({});
+    setAudioError("");
+    setUploadError("");
     setTitle("");
     setArtistName(session?.displayName ?? "");
     setGenre("");
@@ -321,26 +382,34 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     }
 
     if (file.size > MAX_AUDIO_SIZE_BYTES) {
-      toast.error("Audio files must be 500 MB or smaller.");
+      setAudioError("Audio files must be 500 MB or smaller.");
+      setAudioFile(null);
       return;
     }
 
     if (file.type && !file.type.startsWith("audio/")) {
-      toast.error("Choose an audio file such as MP3, WAV, M4A, or FLAC.");
+      setAudioError("Choose an audio file such as MP3, WAV, M4A, or FLAC.");
+      setAudioFile(null);
       return;
     }
 
+    setAudioError("");
     setAudioFile(file);
   };
 
   const audioContentType = (file: File) => {
     if (file.type.startsWith("audio/")) return file.type;
     switch (file.name.split(".").pop()?.toLowerCase()) {
-      case "mp3": return "audio/mpeg";
-      case "wav": return "audio/wav";
-      case "m4a": return "audio/mp4";
-      case "flac": return "audio/flac";
-      default: return file.type || "application/octet-stream";
+      case "mp3":
+        return "audio/mpeg";
+      case "wav":
+        return "audio/wav";
+      case "m4a":
+        return "audio/mp4";
+      case "flac":
+        return "audio/flac";
+      default:
+        return file.type || "application/octet-stream";
     }
   };
 
@@ -357,13 +426,23 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
     }
 
     if (!audioFile) {
-      toast.error("Choose an audio file before saving the track.");
+      setAudioError("Choose an audio file before saving the track.");
+      setStepIndex(1);
+      focusInvalidField();
+      return;
+    }
+
+    const { result: metadataResult, errors } = validateTrackMetadata(metadata);
+    setMetadataErrors(errors);
+    if (!metadataResult.success) {
+      setStepIndex(2);
       return;
     }
 
     let createdTrackIdDuringUpload: string | null = null;
     let uploadSessionId: string | null = null;
     setIsSaving(true);
+    setUploadError("");
     setUploadProgress(0);
     setUploadStage("Saving track draft...");
 
@@ -372,6 +451,7 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
         title: title.trim(),
         artistName: artistName.trim(),
         featuredArtists,
+        ...metadataResult.data,
         genre,
         isExplicit,
       });
@@ -394,11 +474,18 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
         setUploadProgress,
       );
       setUploadStage("Finalizing audio...");
-      await uploadsApi.completeSession(session.token, uploadSession.id, {
-        uploadSessionId: uploadSession.id,
-        eTag,
-      });
+      const completed = await uploadsApi.completeSession(
+        session.token,
+        uploadSession.id,
+        {
+          uploadSessionId: uploadSession.id,
+          eTag,
+        },
+      );
 
+      if (!completed.track)
+        throw new Error("Audio completion did not return the saved recording.");
+      setCreatedPlaybackReady(completed.track.playbackReady === true);
       setUploadProgress(100);
       setUploadStage("Track saved");
       setCreatedTrackId(track.id);
@@ -410,18 +497,43 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
       trackEvent("upload_completed");
       toast.success("Track saved as a draft");
     } catch (error) {
+      if (
+        error instanceof ApiClientError &&
+        Object.keys(error.fieldErrors).length
+      ) {
+        const basic = Object.keys(error.fieldErrors).some((key) =>
+          ["title", "artistName", "genre", "featuredArtists"].includes(key),
+        );
+        if (basic) {
+          setBasicErrors(error.fieldErrors);
+          setStepIndex(0);
+        } else {
+          setMetadataErrors(error.fieldErrors);
+          setStepIndex(2);
+        }
+        focusInvalidField();
+      }
       if (uploadSessionId) {
-        await uploadsApi.cancelSession(session.token, uploadSessionId).catch(() => undefined);
+        await uploadsApi
+          .cancelSession(session.token, uploadSessionId)
+          .catch(() => undefined);
       }
 
       if (createdTrackIdDuringUpload) {
-        await tracksApi.deleteTrack(session.token, createdTrackIdDuringUpload).catch(() => undefined);
+        await tracksApi
+          .deleteTrack(session.token, createdTrackIdDuringUpload)
+          .catch(() => undefined);
       }
 
       if (error instanceof ApiClientError && error.status === 402) {
         try {
           setArtistFeeIntent(await prepareArtistFeePayment());
         } catch (paymentError) {
+          setUploadError(
+            paymentError instanceof Error
+              ? paymentError.message
+              : "Unable to prepare activation payment.",
+          );
           toast.error(
             paymentError instanceof Error
               ? paymentError.message
@@ -429,16 +541,15 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
           );
         }
       } else {
-        toast.error(error instanceof Error ? error.message : "Track upload failed");
+        setUploadError(
+          error instanceof Error ? error.message : "Track upload failed",
+        );
+        toast.error(
+          error instanceof Error ? error.message : "Track upload failed",
+        );
       }
     } finally {
       setIsSaving(false);
-      setTimeout(() => {
-        if (!createdTrackId) {
-          setUploadProgress(0);
-          setUploadStage(null);
-        }
-      }, 1200);
     }
   };
 
@@ -461,30 +572,12 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   if (createdTrackId) {
     return (
       <>
-        <div className="rounded-xl border border-emerald-400/25 bg-emerald-400/[0.06] p-5 sm:p-6">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
-            Track saved
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold text-white">
-            {createdTrackTitle} is ready for a release.
-          </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-            The recording is saved as a draft. A release is what listeners will see,
-            so add this track to a Single, EP, or album when you are ready.
-          </p>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button asChild className="bg-emerald-400 text-slate-950 hover:bg-emerald-300">
-              <Link href="/dashboard/releases">Add to a release</Link>
-            </Button>
-            <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10">
-              <Link href={`/dashboard/tracks/${createdTrackId}`}>Keep as draft</Link>
-            </Button>
-            <Button type="button" variant="ghost" className="text-slate-300 hover:bg-white/5 hover:text-white" onClick={resetForm}>
-              Upload another
-            </Button>
-          </div>
-        </div>
+        <TrackUploadResult
+          title={createdTrackTitle}
+          trackId={createdTrackId}
+          playbackReady={createdPlaybackReady}
+          onReset={resetForm}
+        />
         <ArtistPaymentReviewDialog
           intent={artistFeeIntent}
           isPaying={isPayingArtistFee}
@@ -498,13 +591,21 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
   return (
     <>
       <div
-        className="space-y-6 rounded-xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
+        className="w-full max-w-[720px] space-y-8 rounded-lg border border-border bg-card p-4 sm:p-6"
         onKeyDown={(event) => {
-          if (event.key !== "Enter" || stepIndex >= steps.length - 1 || event.shiftKey) {
+          if (
+            event.key !== "Enter" ||
+            stepIndex >= steps.length - 1 ||
+            event.shiftKey
+          ) {
             return;
           }
 
-          if ((event.target as HTMLElement).tagName === "TEXTAREA") {
+          if (
+            ["TEXTAREA", "BUTTON", "SELECT"].includes(
+              (event.target as HTMLElement).tagName,
+            )
+          ) {
             return;
           }
 
@@ -512,75 +613,84 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
           goToStep(stepIndex + 1);
         }}
       >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-                Upload a track
-              </p>
-              <h4 className="mt-1 text-xl font-semibold text-white">
-                {steps[stepIndex].label}
-              </h4>
-              <p className="mt-1 text-sm text-slate-400">{steps[stepIndex].description}</p>
-            </div>
-            <p className="text-xs text-slate-500">
-              Step {stepIndex + 1} of {steps.length}
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Upload a track
+            </p>
+            <h2 className="text-[28px] font-semibold leading-8 text-foreground">
+              {steps[stepIndex].label}
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {steps[stepIndex].description}
             </p>
           </div>
-
-          <Progress value={progressValue} className="h-2 bg-white/10 [&>div]:bg-emerald-400" />
-
-          <div className="grid gap-2 md:grid-cols-3">
-            {steps.map((step, index) => (
-              <button
-                key={step.id}
-                type="button"
-                className={`rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                  index === stepIndex
-                    ? "border-emerald-400/40 bg-emerald-400/10 text-white"
-                    : index < stepIndex
-                      ? "border-white/10 bg-white/[0.03] text-slate-300"
-                      : "border-white/10 bg-transparent text-slate-500"
-                }`}
-                onClick={() => goToStep(index)}
-              >
-                <span className="flex items-center gap-2">
-                  <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
-                      index <= stepIndex
-                        ? "bg-emerald-400 text-slate-950"
-                        : "bg-white/10 text-slate-400"
-                    }`}
-                  >
-                    {index < stepIndex ? <Check className="h-3 w-3" /> : index + 1}
-                  </span>
-                  {step.label}
-                </span>
-              </button>
-            ))}
-          </div>
+          <StepNavigation
+            steps={steps}
+            current={stepIndex}
+            onSelect={goToStep}
+            disabled={isSaving}
+          />
         </div>
 
         {stepIndex === 0 ? (
           <div className="space-y-5">
             <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="trackTitle">Track title</Label>
-                <Input id="trackTitle" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Your song title" required className="border-white/10 bg-slate-950/70 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="trackArtistName">Artist name</Label>
-                <Input id="trackArtistName" value={artistName} onChange={(event) => setArtistName(event.target.value)} placeholder="Your artist name" required className="border-white/10 bg-slate-950/70 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="trackGenre">Primary genre</Label>
-                <SearchablePicker id="trackGenre" value={genre} onValueChange={setGenre} options={musicGenres} placeholder="Select a genre" searchPlaceholder="Search genres" required />
-              </div>
-              <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-slate-950/45 p-3 text-sm text-slate-300">
-                <input type="checkbox" checked={isExplicit} onChange={(event) => setIsExplicit(event.target.checked)} className="mt-0.5 h-4 w-4 accent-emerald-400" />
+              <FormField
+                id="trackTitle"
+                error={basicErrors.title}
+                label="Track title"
+              >
+                <Input
+                  id="trackTitle"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Your song title"
+                  required
+                />
+              </FormField>
+              <FormField
+                id="trackArtistName"
+                error={basicErrors.artistName}
+                label="Artist name"
+              >
+                <Input
+                  id="trackArtistName"
+                  value={artistName}
+                  onChange={(event) => setArtistName(event.target.value)}
+                  placeholder="Your artist name"
+                  required
+                />
+              </FormField>
+              <FormField
+                id="trackGenre"
+                error={basicErrors.genre}
+                label="Primary genre"
+              >
+                <SearchablePicker
+                  id="trackGenre"
+                  value={genre}
+                  onValueChange={setGenre}
+                  options={musicGenres}
+                  placeholder="Select a genre"
+                  searchPlaceholder="Search genres"
+                  required
+                />
+              </FormField>
+              <label className="flex min-h-11 items-start gap-3 pt-1 text-sm text-muted-foreground md:pt-7">
+                <Checkbox
+                  checked={isExplicit}
+                  onChange={(event) => setIsExplicit(event.target.checked)}
+                  className="mt-0.5"
+                />
                 <span>
-                  <span className="block font-medium text-white">Explicit content</span>
-                  <span className="mt-1 block text-xs text-slate-500">Mark this recording if it contains explicit lyrics or themes.</span>
+                  <span className="block font-medium text-foreground">
+                    Explicit content
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Mark this recording if it contains explicit lyrics or
+                    themes.
+                  </span>
                 </span>
               </label>
             </div>
@@ -588,15 +698,25 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
             <div className="space-y-2">
               <div>
                 <Label htmlFor="featuredArtists">Featured artists</Label>
-                <p className="mt-1 text-xs text-slate-500">Optional. Add collaborators who should appear on the track.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Optional. Add collaborators who should appear on the track.
+                </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-slate-950/55 p-3">
+              <div className="space-y-3">
                 {featuredArtists.length > 0 ? (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {featuredArtists.map((entry) => (
-                      <span key={entry} className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-sm text-white">
+                      <span
+                        key={entry}
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-white/[0.05] px-2.5 py-1.5 text-sm text-foreground"
+                      >
                         {entry}
-                        <button type="button" className="text-slate-400 hover:text-white" onClick={() => removeFeaturedArtist(entry)} aria-label={`Remove ${entry}`}>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => removeFeaturedArtist(entry)}
+                          aria-label={`Remove ${entry}`}
+                        >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </span>
@@ -605,19 +725,55 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
                 ) : null}
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <div className="relative flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                    <Input id="featuredArtists" value={featuredSearch} onChange={(event) => setFeaturedSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitFeaturedSearch(); } }} placeholder="Search an artist or enter collaborator email" className="border-white/10 bg-[#0b1020] pl-10 text-white" />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="featuredArtists"
+                      value={featuredSearch}
+                      onChange={(event) =>
+                        setFeaturedSearch(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          submitFeaturedSearch();
+                        }
+                      }}
+                      placeholder="Search an artist or enter collaborator email"
+                      className="pl-10"
+                    />
                   </div>
-                  <Button type="button" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10" onClick={submitFeaturedSearch}>Add</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={submitFeaturedSearch}
+                  >
+                    Add
+                  </Button>
                 </div>
                 {featuredSearch ? (
-                  <div className="mt-2 rounded-lg border border-white/10 bg-[#0b1020]">
-                    {artistSuggestions.length > 0 ? artistSuggestions.slice(0, 5).map((artist) => (
-                      <button key={artist.id} type="button" className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.04]" onClick={() => addFeaturedArtist(artist.name)}>
-                        <span>{artist.name}</span>
-                        <span className="text-xs text-slate-500">{artist.walletAddress.slice(0, 6)}...{artist.walletAddress.slice(-4)}</span>
-                      </button>
-                    )) : <p className="px-3 py-2 text-xs text-slate-500">{isLoadingArtists ? "Loading artists..." : "No match. You can add an email instead."}</p>}
+                  <div className="mt-2 rounded-lg border border-border bg-popover">
+                    {artistSuggestions.length > 0 ? (
+                      artistSuggestions.slice(0, 5).map((artist) => (
+                        <button
+                          key={artist.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground hover:bg-accent"
+                          onClick={() => addFeaturedArtist(artist.name)}
+                        >
+                          <span>{artist.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {artist.walletAddress.slice(0, 6)}...
+                            {artist.walletAddress.slice(-4)}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">
+                        {isLoadingArtists
+                          ? "Loading artists..."
+                          : "No match. You can add an email instead."}
+                      </p>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -627,50 +783,177 @@ export const TrackCreateForm = ({ onCreated, onClose }: TrackCreateFormProps) =>
 
         {stepIndex === 1 ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-dashed border-white/15 bg-slate-950/45 p-5">
-              <Label htmlFor="trackFile">Master audio file</Label>
-              <p className="mt-1 text-sm text-slate-400">Upload the recording you want to place on a release.</p>
-              <Input id="trackFile" type="file" accept="audio/*,.mp3,.wav,.m4a,.flac" onChange={(event) => handleAudioFileChange(event.target.files?.[0])} className="mt-4 border-white/10 bg-slate-950/70 text-white file:text-white" />
-              <p className="mt-2 text-xs text-slate-500">MP3, WAV, M4A, or FLAC · up to 500 MB. Playback will be available after processing.</p>
-              {audioFile ? <p className="mt-3 text-sm text-emerald-200">Selected: {audioFile.name}</p> : null}
+            <div className="rounded-lg border border-dashed border-input p-5">
+              <p className="mt-1 text-sm text-muted-foreground">
+                Upload the recording you want to place on a release.
+              </p>
+              <FormField
+                id="trackFile"
+                label="Master audio file"
+                error={audioError}
+                className="mt-4"
+              >
+                <Input
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.m4a,.flac"
+                  onChange={(event) =>
+                    handleAudioFileChange(event.target.files?.[0])
+                  }
+                />
+              </FormField>
+              <p className="mt-2 text-xs text-muted-foreground">
+                MP3, WAV, M4A, or FLAC · up to 500 MB. Playback will be
+                available after processing.
+              </p>
+              {audioFile ? (
+                <p className="mt-3 break-words text-sm text-primary">
+                  Selected: {audioFile.name}
+                </p>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  After a reload, select your audio file again. Your text
+                  details are saved.
+                </p>
+              )}
             </div>
           </div>
         ) : null}
 
         {stepIndex === 2 ? (
+          <TrackMetadataEditor
+            value={metadata}
+            onChange={setMetadata}
+            artists={artistOptions}
+            errors={metadataErrors}
+            disabled={isSaving}
+          />
+        ) : null}
+
+        {stepIndex === 3 ? (
           <div className="space-y-4">
-            <div className="rounded-xl border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Draft recording</p>
-              <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                <div><p className="text-slate-500">Title</p><p className="mt-1 text-white">{title || "Not set"}</p></div>
-                <div><p className="text-slate-500">Artist</p><p className="mt-1 text-white">{artistName || "Not set"}</p></div>
-                <div><p className="text-slate-500">Genre</p><p className="mt-1 text-white">{genre || "Not set"}</p></div>
-                <div><p className="text-slate-500">Audio</p><p className="mt-1 text-white">{audioFile?.name || "Not selected"}</p></div>
+            <div className="border-b border-border pb-6">
+              <p className="text-lg font-semibold text-foreground">
+                Draft recording
+              </p>
+              <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 [&>div]:min-w-0 [&_p]:break-words">
+                <div>
+                  <p className="text-muted-foreground">Title</p>
+                  <p className="mt-1 text-foreground">{title || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Artist</p>
+                  <p className="mt-1 text-foreground">
+                    {artistName || "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Genre</p>
+                  <p className="mt-1 text-foreground">{genre || "Not set"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Audio</p>
+                  <p className="mt-1 text-foreground">
+                    {audioFile?.name || "Not selected"}
+                  </p>
+                </div>
               </div>
             </div>
-            <p className="text-sm leading-6 text-slate-400">Saving creates a draft recording only. Add it to a Single, EP, or album from the release workspace.</p>
+            <div className="space-y-2 text-sm text-foreground">
+              <p>ISRC: {metadata.isrc.trim() || "Not provided"}</p>
+              <p>
+                Record label: {metadata.recordLabel.trim() || "Not provided"}
+              </p>
+              {metadata.credits.length ? (
+                <ul className="mt-2 space-y-1 break-words">
+                  {metadata.credits.map((credit, index) => (
+                    <li key={index}>
+                      {creditRoleLabels[credit.role]}: {credit.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>Credits: Not provided</p>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3"
+                onClick={() => goToStep(2)}
+              >
+                Edit credits & identifiers
+              </Button>
+            </div>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Saving creates a draft recording only. Add it to a Single, EP, or
+              album from the release workspace.
+            </p>
           </div>
         ) : null}
 
         {isSaving ? (
-          <div className="space-y-2 rounded-xl border border-white/10 bg-slate-950/60 p-3">
-            <div className="flex items-center justify-between text-sm text-slate-300"><span>{uploadStage ?? "Saving..."}</span><span>{uploadProgress}%</span></div>
-            <Progress value={uploadProgress} className="h-2 bg-white/10 [&>div]:bg-emerald-400" />
-            <p className="text-xs text-slate-400">{audioFile?.name}</p>
+          <div
+            role="status"
+            className="space-y-2 rounded-lg border border-border bg-card p-3"
+          >
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{uploadStage ?? "Saving..."}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
+            <p className="break-words text-xs text-muted-foreground">
+              {audioFile?.name}
+            </p>
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        {uploadError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {uploadError}. Your details are still here. Try saving again.
+          </p>
+        ) : null}
+        <ActionBar>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10" onClick={() => setStepIndex((current) => Math.max(0, current - 1))} disabled={stepIndex === 0 || isSaving}><ChevronLeft className="mr-2 h-4 w-4" />Back</Button>
-            {onClose ? <Button type="button" variant="ghost" className="text-slate-300 hover:bg-white/5 hover:text-white" onClick={onClose} disabled={isSaving}>Cancel</Button> : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setStepIndex((current) => Math.max(0, current - 1))
+              }
+              disabled={stepIndex === 0 || isSaving}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            {onClose ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+            ) : null}
           </div>
           {stepIndex < steps.length - 1 ? (
-            <Button type="button" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" onClick={() => goToStep(stepIndex + 1)} disabled={isSaving}>Next<ChevronRight className="ml-2 h-4 w-4" /></Button>
+            <Button
+              type="button"
+              onClick={() => goToStep(stepIndex + 1)}
+              disabled={isSaving}
+            >
+              {stepIndex === 2 ? "Continue" : "Next"}
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           ) : (
-            <Button type="button" className="bg-emerald-400 text-slate-950 hover:bg-emerald-300" disabled={isSaving} onClick={() => void createTrack()}>{isSaving ? "Saving..." : "Save track draft"}</Button>
+            <Button
+              type="button"
+              disabled={isSaving}
+              onClick={() => void createTrack()}
+            >
+              {isSaving ? "Saving..." : "Save track draft"}
+            </Button>
           )}
-        </div>
+        </ActionBar>
       </div>
 
       <ArtistPaymentReviewDialog

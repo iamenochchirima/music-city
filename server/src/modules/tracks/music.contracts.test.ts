@@ -21,12 +21,12 @@ test("track creation keeps release metadata out of the upload contract", () => {
       title: "First Light",
       genre: "Electronic",
       country: "ZA",
-      recordLabel: "Old Label",
+      releasePlacement: "existing",
     }),
   );
 });
 
-test("track metadata accepts credits and normalizes ISRC formatting at the service boundary", () => {
+test("track metadata accepts credits and normalizes ISRC formatting before persistence", () => {
   const parsed = trackMetadataUpdateSchema.parse({
     isrc: "US-RC1-76-07839",
     credits: [
@@ -36,7 +36,7 @@ test("track metadata accepts credits and normalizes ISRC formatting at the servi
     isExplicit: true,
   });
 
-  assert.equal(parsed.isrc, "US-RC1-76-07839");
+  assert.equal(parsed.isrc, "USRC17607839");
   assert.equal(parsed.credits?.length, 2);
   assert.equal(parsed.isExplicit, true);
 });
@@ -50,7 +50,7 @@ test("track metadata rejects malformed ISRCs with a field-level issue", () => {
   }
 });
 
-test("record label belongs to the release contract", () => {
+test("release record label remains independent of track metadata", () => {
   const parsed = releaseCreateSchema.parse({
     title: "First Light EP",
     type: "ep",
@@ -79,4 +79,32 @@ test("upload contracts enforce media type and size guidance", () => {
 
   assert.equal(audioResult.success, false);
   assert.equal(oversizedCoverResult.success, false);
+});
+
+test("track metadata normalizes optional values and all requested credit roles", () => {
+  const credits = ["composer", "lyricist", "producer", "engineer", "publisher", "songwriter", "remixer"].map(role => ({ role, name: " Contributor " }));
+  const created = trackCreateSchema.parse({ title: "Song", genre: "Pop", credits, recordLabel: " Label ", isrc: "us-rc1-76-07839" });
+  const updated = trackMetadataUpdateSchema.parse({ credits, recordLabel: " Label ", isrc: "us-rc1-76-07839" });
+  assert.deepEqual(created.credits, updated.credits);
+  assert.equal(created.recordLabel, "Label");
+  assert.equal(updated.isrc, "USRC17607839");
+  assert.equal(created.credits?.[1]?.role, "lyricist");
+  assert.equal(created.credits?.[0]?.name, "Contributor");
+  assert.deepEqual(trackMetadataUpdateSchema.parse({ credits: [], isrc: "  ", recordLabel: "  " }), { credits: [], isrc: "", recordLabel: "" });
+  assert.deepEqual(trackMetadataUpdateSchema.parse({}), {});
+});
+
+test("credits reject incomplete, duplicate, overlong, and excessive entries", () => {
+  const invalid = [
+    [{ role: "composer", name: "   " }],
+    [{ role: "composer", name: "Name" }, { role: "composer", name: " name " }],
+    [{ role: "composer", name: "X".repeat(121) }],
+    Array.from({ length: 33 }, (_, i) => ({ role: "composer", name: String(i) })),
+  ];
+  for (const credits of invalid) {
+    assert.equal(trackCreateSchema.safeParse({ title: "Song", genre: "Pop", credits }).success, false);
+    assert.equal(trackMetadataUpdateSchema.safeParse({ credits }).success, false);
+  }
+  assert.equal(trackMetadataUpdateSchema.safeParse({ recordLabel: "X".repeat(121) }).success, false);
+  assert.equal(trackMetadataUpdateSchema.safeParse({ credits: [{ role: "composer", name: "Person" }, { role: "producer", name: "Person" }] }).success, true);
 });

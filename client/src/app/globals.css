@@ -23,6 +23,7 @@
     --border: 217 32% 17%;
     --input: 217 32% 17%;
     --ring: 152 76% 44%;
+    --warning: 43 96% 65%;
     --radius: 1rem;
   }
 
@@ -68,5 +69,29 @@
   100% {
     opacity: 0;
     transform: translate3d(3rem, -14rem, 0) scale(1.8);
+  }
+}
+
+/* Studio uses the shared semantic tokens without changing marketing backgrounds. */
+@layer base {
+  .studio-workspace, .studio-theme {
+    --background: 240 6% 7%;
+    --foreground: 240 5% 96%;
+    --card: 240 5% 10%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 5% 12%;
+    --popover-foreground: 240 5% 96%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 96%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 70%;
+    --accent: 240 4% 16%;
+    --accent-foreground: 240 5% 96%;
+    --border: 240 4% 24%;
+    --input: 240 4% 42%;
+    --destructive: 0 90% 72%;
+    --destructive-foreground: 240 6% 7%;
+    --primary-foreground: 240 6% 7%;
+    --radius: 0.75rem;
   }
 }

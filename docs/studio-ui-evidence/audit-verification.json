@@ -1,0 +1,354 @@
+{
+  "recordedAt": "2026-10-14T14:47:38.776Z",
+  "browser": "154.0.8037.97",
+  "checks": [
+    "32 contributors, long names, inline validation, upload failure, cleanup, progress, successful retry",
+    "12-track album with artwork, mobile ordering, real scheduling, and real publication",
+    "200% desktop zoom layout for track, release, and onboarding",
+    "Listener pages, published release page, analytics and revenue entry points remain usable",
+    "Computed text, control-boundary, action contrast, and visible focus ring"
+  ],
+  "contrast": [
+    {
+      "label": "Input text",
+      "ratio": 17.15925424605791,
+      "minimum": 4.5
+    },
+    {
+      "label": "Muted text",
+      "ratio": 8.649283906397862,
+      "minimum": 4.5
+    },
+    {
+      "label": "Input boundary",
+      "ratio": 3.364733207745347,
+      "minimum": 3
+    },
+    {
+      "label": "Primary action",
+      "ratio": 8.347908767486015,
+      "minimum": 4.5
+    }
+  ],
+  "captures": [
+    {
+      "file": "audit-upload-missing-details.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "validation error with focused title",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-missing-audio.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "audio selection required before continuing",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-32-360.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "32 populated contributor rows with long names",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-32-390.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "32 populated contributor rows with long names",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-32-768.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "32 populated contributor rows with long names",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-32-1024.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "32 populated contributor rows with long names",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-32-1440.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "32 populated contributor rows with long names",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-failed-save.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "failed upload preserves review and retry",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-progress.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "audio upload in progress with disabled actions",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-success.png",
+      "route": "/dashboard/create",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "saved recording with next actions",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-12-360.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "12 tracks with long titles and ordering controls",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-12-390.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "12 tracks with long titles and ordering controls",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-12-768.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "12 tracks with long titles and ordering controls",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-12-1024.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "12 tracks with long titles and ordering controls",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-12-1440.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "12 tracks with long titles and ordering controls",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-mobile-viewport-top.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "top of the long release workspace",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-mobile-viewport-bottom.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "ordering action and lower tracks in the long release workspace",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-scheduled.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "scheduled release with saved status and explicit timezone",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-published.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "published release after explicit confirmation",
+      "result": "passed"
+    },
+    {
+      "file": "audit-track-zoom-200.png",
+      "route": "/dashboard/tracks/trk_395c7c6e81b84e4d",
+      "viewport": {
+        "width": 720,
+        "height": 500
+      },
+      "deviceScale": 2,
+      "state": "200% desktop zoom layout: 720 CSS pixels at 2x device scale for a 1440-pixel display",
+      "result": "passed"
+    },
+    {
+      "file": "audit-release-zoom-200.png",
+      "route": "/dashboard/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 720,
+        "height": 500
+      },
+      "deviceScale": 2,
+      "state": "200% desktop zoom layout: 720 CSS pixels at 2x device scale for a 1440-pixel display",
+      "result": "passed"
+    },
+    {
+      "file": "audit-onboarding-zoom-200.png",
+      "route": "/onboarding",
+      "viewport": {
+        "width": 720,
+        "height": 500
+      },
+      "deviceScale": 2,
+      "state": "200% desktop zoom layout: 720 CSS pixels at 2x device scale for a 1440-pixel display",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--discover.png",
+      "route": "/discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--artists.png",
+      "route": "/artists",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--playlists.png",
+      "route": "/playlists",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--releases-rel_2b6c9bfc1989416f.png",
+      "route": "/releases/rel_2b6c9bfc1989416f",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--dashboard-analytics.png",
+      "route": "/dashboard/analytics",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-page--dashboard-revenue.png",
+      "route": "/dashboard/revenue",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "shared control and header regression on mobile",
+      "result": "passed"
+    },
+    {
+      "file": "audit-upload-processing-example.png",
+      "route": "/dev/studio-components",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "passive preview of the actual processing result component; behavior verified by the upload completion test",
+      "result": "passed"
+    }
+  ],
+  "pageErrors": []
+}

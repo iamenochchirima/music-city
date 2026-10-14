@@ -1,0 +1,272 @@
+{
+  "recordedAt": "2026-10-14T14:45:55.926Z",
+  "browser": "154.0.8037.97",
+  "storage": "isolated PostgreSQL and local media",
+  "metadataRoles": [
+    "composer",
+    "composer",
+    "lyricist",
+    "producer",
+    "engineer",
+    "publisher"
+  ],
+  "checks": [
+    "real signed test-wallet authentication",
+    "real artist activation",
+    "all requested metadata saved by browser upload",
+    "draft reload and audio reselection",
+    "optional metadata upload",
+    "label preview and explicit overwrite",
+    "independent track identifiers",
+    "metadata edit and reload",
+    "mobile overflow and keyboard focus",
+    "release draft preservation and return context",
+    "release section state and readiness focus",
+    "modal focus wrapping and restoration",
+    "release tracklist responsive layouts",
+    "track and release libraries"
+  ],
+  "captures": [
+    {
+      "file": "upload-metadata.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "upload metadata",
+      "result": "passed"
+    },
+    {
+      "file": "upload-metadata-mobile.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "upload metadata mobile",
+      "result": "passed"
+    },
+    {
+      "file": "upload-metadata-360.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "state": "upload metadata 360",
+      "result": "passed"
+    },
+    {
+      "file": "upload-metadata-768.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "state": "upload metadata 768",
+      "result": "passed"
+    },
+    {
+      "file": "upload-metadata-1024.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "state": "upload metadata 1024",
+      "result": "passed"
+    },
+    {
+      "file": "upload-metadata-1440.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "upload metadata 1440",
+      "result": "passed"
+    },
+    {
+      "file": "upload-review.png",
+      "route": "/dashboard/create?recording=1",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "upload review",
+      "result": "passed"
+    },
+    {
+      "file": "release-label-preview.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=artwork",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "release label preview",
+      "result": "passed"
+    },
+    {
+      "file": "release-label-preview-mobile.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=artwork",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "release label preview mobile",
+      "result": "passed"
+    },
+    {
+      "file": "release-details.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=artwork",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "release details",
+      "result": "passed"
+    },
+    {
+      "file": "release-review.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=review",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "release review",
+      "result": "passed"
+    },
+    {
+      "file": "release-artwork.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=artwork",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "release artwork",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-360.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=music",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "state": "release tracks 360",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-390.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=music",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "state": "release tracks 390",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-768.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=music",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "state": "release tracks 768",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-1024.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=music",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "state": "release tracks 1024",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-1440.png",
+      "route": "/dashboard/releases/rel_4aaf7ca7326a4c5e?step=music",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "release tracks 1440",
+      "result": "passed"
+    },
+    {
+      "file": "saved-track-metadata.png",
+      "route": "/dashboard/tracks/trk_55689aa9b11940c2",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "saved track metadata",
+      "result": "passed"
+    },
+    {
+      "file": "saved-track-metadata-mobile.png",
+      "route": "/dashboard/tracks/trk_55689aa9b11940c2",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "saved track metadata mobile",
+      "result": "passed"
+    },
+    {
+      "file": "track-library.png",
+      "route": "/dashboard/tracks",
+      "viewport": {
+        "width": 1360,
+        "height": 1000
+      },
+      "state": "track library",
+      "result": "passed"
+    },
+    {
+      "file": "track-library-mobile.png",
+      "route": "/dashboard/tracks",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "track library mobile",
+      "result": "passed"
+    },
+    {
+      "file": "release-library-mobile.png",
+      "route": "/dashboard/releases",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "release library mobile",
+      "result": "passed"
+    },
+    {
+      "file": "release-create-mobile.png",
+      "route": "/dashboard/releases/new",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "release create mobile",
+      "result": "passed"
+    },
+    {
+      "file": "release-tracks-empty-mobile.png",
+      "route": "/dashboard/releases/rel_3ad1532d38a143c5?step=music",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "release tracks empty mobile",
+      "result": "passed"
+    }
+  ],
+  "pageErrors": []
+}

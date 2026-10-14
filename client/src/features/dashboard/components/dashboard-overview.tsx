@@ -153,7 +153,7 @@ export const DashboardOverview = () => {
           </p>
         </div>
         <Button asChild className="bg-emerald-400 text-slate-950 hover:bg-emerald-300">
-          <Link href="/dashboard/create">New track</Link>
+          <Link href="/dashboard/create">New release</Link>
         </Button>
       </div>
 

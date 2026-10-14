@@ -1,4 +1,4 @@
-import type { TrackSummary } from "@music-city/shared";
+import type { TrackSummary, TrackMetadataUpdateInput } from "@music-city/shared";
 
 import { databaseService } from "../../services/database.service.js";
 
@@ -19,8 +19,16 @@ export const tracksRepository = {
     return databaseService.isTrackInPublicRelease(trackId);
   },
 
+  async findReleaseContext(trackId: string) {
+    return databaseService.getTrackReleaseContext(trackId);
+  },
+
   async findById(trackId: string) {
     return databaseService.findPayloadById<TrackSummary>("tracks", trackId);
+  },
+
+  async updateMetadata(trackId: string, artistId: string, patch: TrackMetadataUpdateInput & { updatedAt: string }) {
+    return databaseService.updateTrackMetadata(trackId, artistId, patch);
   },
 
   async upsert(track: TrackSummary) {

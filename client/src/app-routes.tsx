@@ -17,6 +17,7 @@ import { DashboardTracksOverview } from "@/features/dashboard/components/dashboa
 import { ArtistAnalyticsOverview } from "@/features/dashboard/components/artist-analytics-overview";
 import { DashboardReleasesOverview } from "@/features/dashboard/components/dashboard-releases-overview";
 import { DashboardRevenueOverview } from "@/features/dashboard/components/dashboard-revenue-overview";
+import { ReleaseCreateOverview } from "@/features/dashboard/components/release-create-overview";
 import { ReleaseManageOverview } from "@/features/dashboard/components/release-manage-overview";
 import { StudioShell } from "@/features/dashboard/components/studio-shell";
 import { TrackManageOverview } from "@/features/dashboard/components/track-manage-overview";
@@ -32,9 +33,11 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { OnboardingForm } from "@/features/onboarding/components/onboarding-form";
 import { PlatformSubscriptionOverview } from "@/features/subscriptions/components/platform-subscription-overview";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Routes, Route, useParams, useSearchParams } from "react-router-dom";
 import type { TrackSummary } from "@music-city/shared";
+
+const ComponentPreview = import.meta.env.DEV ? lazy(() => import("@/components/studio/component-preview")) : null;
 
 const PageSection = ({
   eyebrow,
@@ -255,6 +258,7 @@ const AccountPlaylistManagePage = () => {
 
 export const AppRoutes = () => (
   <Routes>
+    {ComponentPreview ? <Route path="/dev/studio-components" element={<Suspense fallback={<p role="status">Loading component preview…</p>}><ComponentPreview /></Suspense>} /> : null}
     <Route path="/" element={<LandingPage />} />
     <Route
       path="/account"
@@ -335,6 +339,7 @@ export const AppRoutes = () => (
     <Route path="/dashboard/tracks" element={<DashboardTracksPage />} />
     <Route path="/dashboard/releases" element={<DashboardReleasesPage />} />
     <Route path="/dashboard/revenue" element={<DashboardRevenuePage />} />
+    <Route path="/dashboard/releases/new" element={<StudioSection><ReleaseCreateOverview /></StudioSection>} />
     <Route
       path="/dashboard/releases/:releaseId"
       element={<DashboardReleasePage />}
@@ -393,13 +398,7 @@ export const AppRoutes = () => (
     <Route
       path="/onboarding"
       element={
-        <PageSection
-          eyebrow="Onboarding"
-          title="Set up your profile"
-          description="Choose how you want to appear on Music City so we can tailor your dashboard and public profile."
-        >
-          <OnboardingForm />
-        </PageSection>
+        <section className="studio-theme min-h-[calc(100dvh-4rem)] bg-background px-4 py-8 sm:px-6 sm:py-10"><div className="mx-auto max-w-[720px]"><OnboardingForm /></div></section>
       }
     />
     <Route path="/stream" element={<StreamPage />} />

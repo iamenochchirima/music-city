@@ -116,6 +116,19 @@ test("PostgreSQL finalization transaction lifecycle (network boundary mocked)", 
       assert.ok(entries.every(entry => entry.splitId === effective!.id));
       assert.equal(entries.find(entry => entry.recipientWalletAddress === owner.publicKey())?.grossAmount,"70.0000000");
       assert.equal(entries.find(entry => entry.recipientWalletAddress === contributor.publicKey())?.grossAmount,"30.0000000");
+      // Descriptive track credits must not mutate finalized consent or financial allocations.
+      await db.transaction(client => client.query("UPDATE tracks SET status='published', visibility='published', payload=payload || $2::jsonb WHERE id=$1", [v.proposal.trackId, JSON.stringify({ id: v.proposal.trackId, artistId: ownerId, title: "Published track", artistName: "Owner", genre: "Pop", runtime: "1:00", status: "published", visibility: "published", priceLabel: "Published", plays: 0, likes: 0, playbackReady: true })]));
+      const { tracksService } = await import("../tracks/tracks.service.js");
+      const { usersService } = await import("../users/users.service.js");
+      const access = usersService.requireArtistOnboardingAccess;
+      usersService.requireArtistOnboardingAccess = async () => ({ id: ownerId }) as never;
+      try {
+        await tracksService.updateTrackMetadata(owner.publicKey(), v.proposal.trackId, { credits: [{ role: "composer", name: "Updated Composer" }], recordLabel: "Updated Label", isrc: "USRC17607839" });
+      } finally { usersService.requireArtistOnboardingAccess = access; }
+      assert.deepEqual(await agreements.get(id,owner.publicKey()), detail);
+      assert.deepEqual(await finalizedSplitsRepository.effective(v.proposal.trackId), effective);
+      const ledgerSnapshot = (items: typeof entries) => items.map(item => JSON.parse(JSON.stringify(item))).sort((a, b) => a.id.localeCompare(b.id));
+      assert.deepEqual(ledgerSnapshot(await royaltiesService.ensureTrackPurchaseLedgerEntries(payment)), ledgerSnapshot(entries));
       await assert.rejects(db.transaction(client => client.query("UPDATE agreement_finalizations SET payload=jsonb_set(payload,'{ledger}','999') WHERE id=$1",[attempt.id])));
       await assert.rejects(db.transaction(client => client.query("DELETE FROM agreement_finalizations WHERE id=$1",[attempt.id])));
       await assert.rejects(db.transaction(client => client.query("UPDATE contributor_agreements SET effective_version=NULL WHERE id=$1",[id])));

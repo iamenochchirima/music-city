@@ -5,6 +5,7 @@ import type { ArtistAnalyticsSummary } from "@music-city/shared";
 import { Bookmark, Heart, Music2, Radio, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
+import { StudioPageHeader } from "@/components/studio/page-header";
 import { Button } from "@/components/ui/button";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
@@ -121,23 +122,7 @@ export const ArtistAnalyticsOverview = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300">
-            Artist analytics
-          </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">Audience</h2>
-          <p className="mt-1 text-sm text-slate-400">Streams, listeners, and growth.</p>
-        </div>
-        <Button
-          variant="outline"
-          className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-          disabled={isRefreshing}
-          onClick={() => void loadAnalytics(true)}
-        >
-          {isRefreshing ? "Refreshing..." : "Refresh"}
-        </Button>
-      </div>
+      <StudioPageHeader title="Audience" eyebrow="Artist analytics" description="Streams, listeners, and growth." actions={<Button variant="outline" disabled={isRefreshing} onClick={() => void loadAnalytics(true)}>{isRefreshing ? "Refreshing..." : "Refresh"}</Button>} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard

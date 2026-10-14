@@ -4,6 +4,8 @@ Status: implementation complete for the scoped release-first workflow. Source, t
 
 Baseline checkpoint: `bc182a0` — `Checkpoint onboarding and Studio UI work`
 
+Implemented update: [Track credits and identifiers implementation plan](docs/track-credits-implementation-plan.md) adds optional metadata capture during upload and a track-level record label. It supersedes this plan's upload metadata placement. The completed workflow described below is the historical baseline.
+
 ## Product decision
 
 Music City will separate the recording from the release that publishes it.

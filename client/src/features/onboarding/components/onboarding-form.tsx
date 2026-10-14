@@ -1,14 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MUSIC_GENRES, type ArtistActivationQuote, type ArtistSummary, type PrimaryIntent, type SaveOnboardingStepInput } from "@music-city/shared";
+import {
+  MUSIC_GENRES,
+  type ArtistActivationQuote,
+  type ArtistSummary,
+  type PrimaryIntent,
+  type SaveOnboardingStepInput,
+} from "@music-city/shared";
 
 import { ReferralCodeInput } from "@/features/referrals/referral-code-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
+import { SearchablePicker } from "@/components/ui/searchable-picker";
+import { ChoiceCard } from "@/components/ui/choice-card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ToggleChip } from "@/components/ui/toggle-chip";
+import { ActionBar } from "@/components/studio/action-bar";
+import { FlowProgress } from "@/components/studio/flow-progress";
+import { FormStepHeader } from "@/components/studio/form-step-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { usersApi } from "@/features/users/lib/users-api";
@@ -19,37 +32,217 @@ import { ArtistActivationSummary } from "@/features/sponsorships/artist-activati
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
+  onBusyChange?: (busy: boolean) => void;
   onCompleted?: (intent: PrimaryIntent, destination: string) => void;
 };
 
-type FlowStep = "identity" | "intent" | "artist_activation" | "personalize" | "artist_identity" | "visuals" | "complete";
+type FlowStep =
+  | "identity"
+  | "intent"
+  | "artist_activation"
+  | "personalize"
+  | "artist_identity"
+  | "visuals"
+  | "complete";
 type MusicGenre = (typeof MUSIC_GENRES)[number];
 
 const COUNTRY_OPTIONS = [
-  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
-  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
-  "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo (Democratic Republic of the)", "Congo (Republic of the)", "Costa Rica", "Côte d’Ivoire", "Croatia", "Cuba", "Cyprus", "Czechia",
-  "Denmark", "Djibouti", "Dominica", "Dominican Republic",
-  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
-  "Fiji", "Finland", "France",
-  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
-  "Haiti", "Honduras", "Hungary",
-  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
-  "Jamaica", "Japan", "Jordan",
-  "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
-  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
-  "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-  "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "Andorra",
+  "Angola",
+  "Antigua and Barbuda",
+  "Argentina",
+  "Armenia",
+  "Australia",
+  "Austria",
+  "Azerbaijan",
+  "Bahamas",
+  "Bahrain",
+  "Bangladesh",
+  "Barbados",
+  "Belarus",
+  "Belgium",
+  "Belize",
+  "Benin",
+  "Bhutan",
+  "Bolivia",
+  "Bosnia and Herzegovina",
+  "Botswana",
+  "Brazil",
+  "Brunei",
+  "Bulgaria",
+  "Burkina Faso",
+  "Burundi",
+  "Cabo Verde",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Central African Republic",
+  "Chad",
+  "Chile",
+  "China",
+  "Colombia",
+  "Comoros",
+  "Congo (Democratic Republic of the)",
+  "Congo (Republic of the)",
+  "Costa Rica",
+  "Côte d’Ivoire",
+  "Croatia",
+  "Cuba",
+  "Cyprus",
+  "Czechia",
+  "Denmark",
+  "Djibouti",
+  "Dominica",
+  "Dominican Republic",
+  "Ecuador",
+  "Egypt",
+  "El Salvador",
+  "Equatorial Guinea",
+  "Eritrea",
+  "Estonia",
+  "Eswatini",
+  "Ethiopia",
+  "Fiji",
+  "Finland",
+  "France",
+  "Gabon",
+  "Gambia",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "Grenada",
+  "Guatemala",
+  "Guinea",
+  "Guinea-Bissau",
+  "Guyana",
+  "Haiti",
+  "Honduras",
+  "Hungary",
+  "Iceland",
+  "India",
+  "Indonesia",
+  "Iran",
+  "Iraq",
+  "Ireland",
+  "Israel",
+  "Italy",
+  "Jamaica",
+  "Japan",
+  "Jordan",
+  "Kazakhstan",
+  "Kenya",
+  "Kiribati",
+  "Kuwait",
+  "Kyrgyzstan",
+  "Laos",
+  "Latvia",
+  "Lebanon",
+  "Lesotho",
+  "Liberia",
+  "Libya",
+  "Liechtenstein",
+  "Lithuania",
+  "Luxembourg",
+  "Madagascar",
+  "Malawi",
+  "Malaysia",
+  "Maldives",
+  "Mali",
+  "Malta",
+  "Marshall Islands",
+  "Mauritania",
+  "Mauritius",
+  "Mexico",
+  "Micronesia",
+  "Moldova",
+  "Monaco",
+  "Mongolia",
+  "Montenegro",
+  "Morocco",
+  "Mozambique",
+  "Myanmar",
+  "Namibia",
+  "Nauru",
+  "Nepal",
+  "Netherlands",
+  "New Zealand",
+  "Nicaragua",
+  "Niger",
+  "Nigeria",
+  "North Korea",
+  "North Macedonia",
+  "Norway",
   "Oman",
-  "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Pakistan",
+  "Palau",
+  "Palestine",
+  "Panama",
+  "Papua New Guinea",
+  "Paraguay",
+  "Peru",
+  "Philippines",
+  "Poland",
+  "Portugal",
   "Qatar",
-  "Romania", "Russia", "Rwanda",
-  "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
-  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Türkiye", "Turkmenistan", "Tuvalu",
-  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
-  "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+  "Romania",
+  "Russia",
+  "Rwanda",
+  "Saint Kitts and Nevis",
+  "Saint Lucia",
+  "Saint Vincent and the Grenadines",
+  "Samoa",
+  "San Marino",
+  "Sao Tome and Principe",
+  "Saudi Arabia",
+  "Senegal",
+  "Serbia",
+  "Seychelles",
+  "Sierra Leone",
+  "Singapore",
+  "Slovakia",
+  "Slovenia",
+  "Solomon Islands",
+  "Somalia",
+  "South Africa",
+  "South Korea",
+  "South Sudan",
+  "Spain",
+  "Sri Lanka",
+  "Sudan",
+  "Suriname",
+  "Sweden",
+  "Switzerland",
+  "Syria",
+  "Taiwan",
+  "Tajikistan",
+  "Tanzania",
+  "Thailand",
+  "Timor-Leste",
+  "Togo",
+  "Tonga",
+  "Trinidad and Tobago",
+  "Tunisia",
+  "Türkiye",
+  "Turkmenistan",
+  "Tuvalu",
+  "Uganda",
+  "Ukraine",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Uruguay",
+  "Uzbekistan",
+  "Vanuatu",
+  "Vatican City",
+  "Venezuela",
+  "Vietnam",
   "Yemen",
-  "Zambia", "Zimbabwe",
+  "Zambia",
+  "Zimbabwe",
 ] as const;
 
 const intentOptions: Array<{
@@ -60,17 +253,20 @@ const intentOptions: Array<{
   {
     value: "listener",
     label: "I’m here to listen",
-    description: "Discover artists, save tracks, and build your listening space.",
+    description:
+      "Discover artists, save tracks, and build your listening space.",
   },
   {
     value: "artist",
     label: "I’m an artist",
-    description: "Build your artist profile, release music, and review your activation offer.",
+    description:
+      "Build your artist profile, release music, and review your activation offer.",
   },
   {
     value: "both",
     label: "Both",
-    description: "Listen as a fan and keep an artist workspace ready when you need it.",
+    description:
+      "Listen as a fan and keep an artist workspace ready when you need it.",
   },
 ];
 
@@ -81,7 +277,8 @@ const isListenerIntent = (intent: PrimaryIntent) =>
   intent === "listener" || intent === "both";
 
 const isEmailDerivedDisplayName = (displayName: string, email?: string) =>
-  Boolean(email?.trim()) && displayName.trim().toLowerCase() === email!.trim().toLowerCase();
+  Boolean(email?.trim()) &&
+  displayName.trim().toLowerCase() === email!.trim().toLowerCase();
 
 const nextStepFor = (intent: PrimaryIntent): FlowStep => {
   return isArtistIntent(intent) ? "artist_activation" : "personalize";
@@ -108,13 +305,12 @@ const initialNotificationPreferences = {
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
-const prepareImageFile = (file: File, purpose: "profile_image" | "header_image") =>
+const prepareImageFile = (
+  file: File,
+  purpose: "profile_image" | "header_image",
+) =>
   new Promise<File>((resolve, reject) => {
-    if (![
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ].includes(file.type)) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       reject(new Error("Choose a JPG, PNG, or WebP image."));
       return;
     }
@@ -131,12 +327,10 @@ const prepareImageFile = (file: File, purpose: "profile_image" | "header_image")
 
       const targetRatio = purpose === "profile_image" ? 1 : 2.67;
       const sourceRatio = image.width / image.height;
-      const sourceWidth = sourceRatio > targetRatio
-        ? image.height * targetRatio
-        : image.width;
-      const sourceHeight = sourceRatio > targetRatio
-        ? image.height
-        : image.width / targetRatio;
+      const sourceWidth =
+        sourceRatio > targetRatio ? image.height * targetRatio : image.width;
+      const sourceHeight =
+        sourceRatio > targetRatio ? image.height : image.width / targetRatio;
       const sourceX = (image.width - sourceWidth) / 2;
       const sourceY = (image.height - sourceHeight) / 2;
       const canvas = document.createElement("canvas");
@@ -160,16 +354,22 @@ const prepareImageFile = (file: File, purpose: "profile_image" | "header_image")
         canvas.width,
         canvas.height,
       );
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          reject(new Error("Your browser could not prepare this image."));
-          return;
-        }
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Your browser could not prepare this image."));
+            return;
+          }
 
-        resolve(new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, {
-          type: "image/jpeg",
-        }));
-      }, "image/jpeg", 0.9);
+          resolve(
+            new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, {
+              type: "image/jpeg",
+            }),
+          );
+        },
+        "image/jpeg",
+        0.9,
+      );
     };
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
@@ -181,9 +381,16 @@ const prepareImageFile = (file: File, purpose: "profile_image" | "header_image")
 export const OnboardingForm = ({
   mode = "page",
   onCompleted,
+  onBusyChange,
 }: OnboardingFormProps) => {
   const router = useRouter();
   const { session, refreshSessionProfile } = useAuth();
+  const stepHeading = useRef<HTMLHeadingElement>(null);
+  const [isHydrating, setIsHydrating] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadRetry, setLoadRetry] = useState(0);
+  const [saveError, setSaveError] = useState("");
+  const [mediaErrors, setMediaErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<FlowStep>("identity");
   const [primaryIntent, setPrimaryIntent] = useState<PrimaryIntent>(
     session?.primaryIntent ?? "listener",
@@ -210,24 +417,38 @@ export const OnboardingForm = ({
     soundcloud: "",
     x: "",
   });
-  const [hasReleasedMusic, setHasReleasedMusic] = useState<boolean | undefined>();
+  const [hasReleasedMusic, setHasReleasedMusic] = useState<
+    boolean | undefined
+  >();
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
   const [artistLoadError, setArtistLoadError] = useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [headerImageFile, setHeaderImageFile] = useState<File | null>(null);
-  const [savedProfileImageUrl, setSavedProfileImageUrl] = useState<string | null>(null);
-  const [savedHeaderImageUrl, setSavedHeaderImageUrl] = useState<string | null>(null);
+  const [savedProfileImageUrl, setSavedProfileImageUrl] = useState<
+    string | null
+  >(null);
+  const [savedHeaderImageUrl, setSavedHeaderImageUrl] = useState<string | null>(
+    null,
+  );
   const [removeProfileImage, setRemoveProfileImage] = useState(false);
   const [removeHeaderImage, setRemoveHeaderImage] = useState(false);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
-  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(
+    null,
+  );
+  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(
+    null,
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [artistActivationQuote, setArtistActivationQuote] = useState<ArtistActivationQuote | null>(null);
-  const [artistActivationError, setArtistActivationError] = useState<string | null>(null);
-  const [isLoadingArtistActivation, setIsLoadingArtistActivation] = useState(false);
+  const [artistActivationQuote, setArtistActivationQuote] =
+    useState<ArtistActivationQuote | null>(null);
+  const [artistActivationError, setArtistActivationError] = useState<
+    string | null
+  >(null);
+  const [isLoadingArtistActivation, setIsLoadingArtistActivation] =
+    useState(false);
   const [artistActivationRetry, setArtistActivationRetry] = useState(0);
 
   useEffect(() => {
@@ -245,20 +466,27 @@ export const OnboardingForm = ({
     let cancelled = false;
     setIsLoadingArtistActivation(true);
     setArtistActivationError(null);
-    void sponsorshipsApi.getMyArtistActivation(session.token)
+    void sponsorshipsApi
+      .getMyArtistActivation(session.token)
       .then((quote) => {
         if (!cancelled) setArtistActivationQuote(quote);
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setArtistActivationQuote(null);
-          setArtistActivationError(error instanceof Error ? error.message : "Artist activation price could not be loaded.");
+          setArtistActivationError(
+            error instanceof Error
+              ? error.message
+              : "Artist activation price could not be loaded.",
+          );
         }
       })
       .finally(() => {
         if (!cancelled) setIsLoadingArtistActivation(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session?.token, primaryIntent, artistActivationRetry]);
 
   useEffect(() => {
@@ -267,6 +495,8 @@ export const OnboardingForm = ({
     }
 
     let cancelled = false;
+    setIsHydrating(true);
+    setLoadError("");
 
     void usersApi
       .getOnboardingState(session.token)
@@ -285,14 +515,15 @@ export const OnboardingForm = ({
         );
         setEmail(profile.email ?? "");
         setLocation(
-          COUNTRY_OPTIONS.includes(profile.location as (typeof COUNTRY_OPTIONS)[number])
+          COUNTRY_OPTIONS.includes(
+            profile.location as (typeof COUNTRY_OPTIONS)[number],
+          )
             ? profile.location
             : "",
         );
         setGenres(
-          profile.genres.filter(
-            (genre): genre is MusicGenre =>
-              MUSIC_GENRES.includes(genre as MusicGenre),
+          profile.genres.filter((genre): genre is MusicGenre =>
+            MUSIC_GENRES.includes(genre as MusicGenre),
           ),
         );
         setFavoriteArtistIds(profile.favoriteArtistIds);
@@ -315,21 +546,34 @@ export const OnboardingForm = ({
         if (state.onboardingStatus === "complete") {
           setStep("complete");
         } else if (
-          ["identity", "intent", "artist_activation", "personalize", "artist_identity", "visuals"].includes(
-            state.onboardingStep,
-          )
+          [
+            "identity",
+            "intent",
+            "artist_activation",
+            "personalize",
+            "artist_identity",
+            "visuals",
+          ].includes(state.onboardingStep)
         ) {
           setStep(state.onboardingStep as FlowStep);
         }
       })
-      .catch(() => {
-        // The session gate still provides a recoverable path if this read fails.
+      .catch((error: unknown) => {
+        if (!cancelled)
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load your saved profile.",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setIsHydrating(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [session?.token]);
+  }, [session?.token, loadRetry]);
 
   useEffect(() => {
     if (!session?.onboardingStep || session.onboardingStatus === "complete") {
@@ -337,7 +581,16 @@ export const OnboardingForm = ({
     }
 
     const savedStep = session.onboardingStep as FlowStep;
-    if (["identity", "intent", "artist_activation", "personalize", "artist_identity", "visuals"].includes(savedStep)) {
+    if (
+      [
+        "identity",
+        "intent",
+        "artist_activation",
+        "personalize",
+        "artist_identity",
+        "visuals",
+      ].includes(savedStep)
+    ) {
       setStep(savedStep);
     }
   }, [session?.onboardingStatus, session?.onboardingStep]);
@@ -361,7 +614,9 @@ export const OnboardingForm = ({
       .catch((error) => {
         if (!cancelled) {
           setArtistLoadError(
-            error instanceof Error ? error.message : "Unable to load artists right now.",
+            error instanceof Error
+              ? error.message
+              : "Unable to load artists right now.",
           );
         }
       })
@@ -416,7 +671,30 @@ export const OnboardingForm = ({
                 ? "Profile visuals"
                 : "Ready";
   const currentIndex = Math.max(labels.indexOf(currentLabel), 0);
-  const progress = Math.round((currentIndex / Math.max(labels.length - 1, 1)) * 100);
+  useEffect(() => {
+    onBusyChange?.(isSaving || isPreparingMedia);
+  }, [isSaving, isPreparingMedia, onBusyChange]);
+  useEffect(() => {
+    if (!isHydrating && !loadError) {
+      const heading = stepHeading.current;
+      const dialog = heading?.closest("dialog");
+      if (dialog) {
+        dialog.scrollTop = 0;
+        heading?.focus({ preventScroll: true });
+      } else {
+        heading?.focus();
+        heading?.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [step, isHydrating, loadError]);
+
+  const clearFieldError = (key: string) =>
+    setFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
 
   const uploadProfileMedia = async (
     token: string,
@@ -459,10 +737,16 @@ export const OnboardingForm = ({
     setStep("complete");
     if (isArtistIntent(primaryIntent)) {
       try {
-        setArtistActivationQuote(await sponsorshipsApi.getMyArtistActivation(session.token));
+        setArtistActivationQuote(
+          await sponsorshipsApi.getMyArtistActivation(session.token),
+        );
       } catch (error) {
         setArtistActivationQuote(null);
-        setArtistActivationError(error instanceof Error ? error.message : "Your activation receipt could not be loaded.");
+        setArtistActivationError(
+          error instanceof Error
+            ? error.message
+            : "Your activation receipt could not be loaded.",
+        );
       }
     }
   };
@@ -470,11 +754,15 @@ export const OnboardingForm = ({
   const submitCurrentStep = async (skipOptional = false) => {
     setIsSaving(true);
     setFieldErrors({});
+    setSaveError("");
 
     try {
       if (step === "identity") {
         if (!displayName.trim()) {
           setFieldErrors({ displayName: "Enter a display name to continue." });
+          requestAnimationFrame(() =>
+            document.getElementById("displayName")?.focus(),
+          );
           return;
         }
 
@@ -487,7 +775,9 @@ export const OnboardingForm = ({
         setStep("intent");
       } else if (step === "intent") {
         if (isArtistIntent(primaryIntent) && !artistActivationQuote) {
-          throw new Error("Load the artist activation price before continuing.");
+          throw new Error(
+            "Load the artist activation price before continuing.",
+          );
         }
         await saveStep({
           step: "intent",
@@ -496,7 +786,9 @@ export const OnboardingForm = ({
         setStep(nextStepFor(primaryIntent));
       } else if (step === "artist_activation") {
         if (!artistActivationQuote) {
-          throw new Error("Load the artist activation price before continuing.");
+          throw new Error(
+            "Load the artist activation price before continuing.",
+          );
         }
         await saveStep({ step: "artist_activation" });
         setStep(nextStepAfterArtistActivation(primaryIntent));
@@ -526,9 +818,17 @@ export const OnboardingForm = ({
         const [profileImageStorageKey, headerImageStorageKey] = skipOptional
           ? [undefined, undefined]
           : await Promise.all([
-              uploadProfileMedia(session.token, "profile_image", profileImageFile),
+              uploadProfileMedia(
+                session.token,
+                "profile_image",
+                profileImageFile,
+              ),
               isArtistIntent(primaryIntent)
-                ? uploadProfileMedia(session.token, "header_image", headerImageFile)
+                ? uploadProfileMedia(
+                    session.token,
+                    "header_image",
+                    headerImageFile,
+                  )
                 : Promise.resolve(undefined),
             ]);
 
@@ -542,15 +842,24 @@ export const OnboardingForm = ({
         await complete();
         trackEvent("signup_completed");
       } else {
-        const destination = primaryIntent === "artist" ? "/dashboard" : "/discover";
+        const destination =
+          primaryIntent === "artist" ? "/dashboard" : "/discover";
         onCompleted?.(primaryIntent, destination);
         if (!onCompleted) router.push(destination);
       }
     } catch (error) {
       if (error instanceof ApiClientError) {
         setFieldErrors(error.fieldErrors);
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        );
       }
-      toast.error(error instanceof Error ? error.message : "Unable to save onboarding");
+      setSaveError(
+        error instanceof Error ? error.message : "Unable to save onboarding",
+      );
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save onboarding",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -579,12 +888,12 @@ export const OnboardingForm = ({
       setStep(isArtistIntent(primaryIntent) ? "artist_activation" : "intent");
     } else if (step === "artist_identity") {
       setStep(
-        isListenerIntent(primaryIntent)
-          ? "personalize"
-          : "artist_activation",
+        isListenerIntent(primaryIntent) ? "personalize" : "artist_activation",
       );
     } else if (step === "visuals") {
-      setStep(isArtistIntent(primaryIntent) ? "artist_identity" : "personalize");
+      setStep(
+        isArtistIntent(primaryIntent) ? "artist_identity" : "personalize",
+      );
     }
   };
 
@@ -624,6 +933,7 @@ export const OnboardingForm = ({
     }
 
     setIsPreparingMedia(true);
+    setMediaErrors((current) => ({ ...current, [purpose]: "" }));
     void prepareImageFile(file, purpose)
       .then((prepared) => {
         if (purpose === "profile_image") {
@@ -635,527 +945,629 @@ export const OnboardingForm = ({
         }
       })
       .catch((error) => {
-        toast.error(error instanceof Error ? error.message : "Unable to prepare image");
+        setMediaErrors((current) => ({
+          ...current,
+          [purpose]:
+            error instanceof Error ? error.message : "Unable to prepare image",
+        }));
+        toast.error(
+          error instanceof Error ? error.message : "Unable to prepare image",
+        );
       })
       .finally(() => setIsPreparingMedia(false));
   };
+
+  if (!session?.token)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Connect your account to set up your profile.
+      </p>
+    );
+  if (isHydrating)
+    return (
+      <p role="status" className="py-8 text-sm text-muted-foreground">
+        Loading your saved profile…
+      </p>
+    );
+  if (loadError)
+    return (
+      <div role="alert" className="space-y-4 py-6">
+        <p className="text-sm text-destructive">{loadError}</p>
+        <Button
+          variant="outline"
+          onClick={() => setLoadRetry((value) => value + 1)}
+        >
+          Retry profile load
+        </Button>
+      </div>
+    );
 
   return (
     <form
       className={
         mode === "modal"
           ? "space-y-6"
-          : "max-w-2xl space-y-6 rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8"
+          : "studio-theme w-full max-w-[720px] space-y-6 rounded-lg border border-border bg-card p-4 sm:p-6"
       }
       onSubmit={handleSubmit}
+      noValidate
+      aria-busy={isSaving || isPreparingMedia}
     >
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-4 text-xs uppercase tracking-[0.24em] text-slate-500">
-          <span>{currentLabel}</span>
-          <span>{progress}% complete</span>
-        </div>
-        <div className="flex gap-2" aria-label={`Onboarding progress: ${currentLabel}`}>
-          {labels.map((label, index) => (
-            <div
-              key={label}
-              className={`h-1.5 flex-1 rounded-full ${
-                index <= currentIndex ? "bg-emerald-400" : "bg-white/10"
-              }`}
+      <FlowProgress
+        label={currentLabel}
+        current={currentIndex}
+        total={labels.length}
+      />
+      <fieldset disabled={isSaving || isPreparingMedia} className="min-w-0">
+        <legend className="sr-only">Profile setup</legend>
+        {step === "identity" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title="Welcome to Music City"
+              eyebrow="Profile basics"
             />
-          ))}
-        </div>
-      </div>
 
-      {step === "identity" ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Profile basics
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-white">
-              Welcome to Music City
-            </h1>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="displayName">
-                Display name <span className="text-emerald-300">(required)</span>
-              </Label>
-              <Input
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
                 id="displayName"
-                name="displayName"
-                autoComplete="nickname"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Your name here"
-                required
-                className="border-white/10 bg-slate-950/70 text-white"
-              />
-              {fieldErrors.displayName ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.displayName}</p> : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email <span className="text-slate-500">(optional)</span>
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="For release updates and account recovery"
-                className="border-white/10 bg-slate-950/70 text-white"
-              />
-              {fieldErrors.email ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.email}</p> : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">
-                Country <span className="text-slate-500">(optional)</span>
-              </Label>
-              <select
-                id="location"
-                name="location"
-                autoComplete="country-name"
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                className="h-10 w-full rounded-md border border-white/10 bg-slate-950/70 px-3 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30"
+                label="Display name"
+                error={fieldErrors.displayName}
+                className="sm:col-span-2"
               >
-                <option value="">Select your country</option>
-                {COUNTRY_OPTIONS.map((country) => (
-                  <option key={country} value={country}>
-                    {country}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.location ? <p role="alert" className="text-xs text-rose-200">{fieldErrors.location}</p> : null}
+                <Input
+                  name="displayName"
+                  autoComplete="nickname"
+                  value={displayName}
+                  onChange={(event) => {
+                    setDisplayName(event.target.value);
+                    clearFieldError("displayName");
+                  }}
+                  placeholder="Your name"
+                  required
+                />
+              </FormField>
+              <FormField
+                id="email"
+                label="Email"
+                hint="Optional. For updates and account recovery."
+                error={fieldErrors.email}
+              >
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    clearFieldError("email");
+                  }}
+                />
+              </FormField>
+              <FormField
+                id="location"
+                label="Country"
+                hint="Optional."
+                error={fieldErrors.location}
+              >
+                <SearchablePicker
+                  id="location"
+                  value={location}
+                  onValueChange={setLocation}
+                  options={COUNTRY_OPTIONS}
+                  placeholder="Select your country"
+                  searchPlaceholder="Search countries"
+                />
+              </FormField>
             </div>
+
+            {!profileId ? (
+              <div className="max-w-xl">
+                <ReferralCodeInput />
+              </div>
+            ) : null}
           </div>
+        ) : null}
 
-          {!profileId ? (
-            <div className="max-w-xl">
-              <ReferralCodeInput />
-            </div>
-          ) : null}
+        {step === "intent" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title="How will you use Music City?"
+              eyebrow="Your starting point"
+            />
 
-        </div>
-      ) : null}
-
-      {step === "intent" ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Your starting point
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-white">
-              How will you use Music City?
-            </h1>
-          </div>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium leading-none text-white">
-              Choose your starting point
-            </legend>
-            <div className="grid gap-3">
-              {intentOptions.map((option) => {
-                const selected = primaryIntent === option.value;
-
-                return (
-                  <label
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium leading-none text-foreground">
+                Choose your starting point
+              </legend>
+              <div className="grid gap-3">
+                {intentOptions.map((option) => (
+                  <ChoiceCard
                     key={option.value}
-                    className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition ${
-                      selected
-                        ? "border-emerald-300 bg-emerald-400/15 text-white"
-                        : "border-white/10 bg-slate-950/50 text-slate-300 hover:border-white/25"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="primaryIntent"
-                      value={option.value}
-                      checked={selected}
-                      onChange={() => setPrimaryIntent(option.value)}
-                      className="mt-1 size-4 accent-emerald-400"
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold">{option.label}</span>
-                      <span className="mt-1 block text-xs leading-5 text-slate-400">
-                        {option.description}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-        </div>
-      ) : null}
-
-      {step === "artist_activation" ? (
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-white">
-              {artistActivationQuote?.discountAmountMinor
-                ? "Your early-user discount is applied"
-                : artistActivationQuote?.status === "paid"
-                  ? "Artist activation confirmed"
-                  : artistActivationQuote?.status === "legacy_free"
-                    ? "Your artist access is active"
-                    : "Artist activation"}
-            </h1>
-          </div>
-
-          {isLoadingArtistActivation ? (
-            <p role="status" className="rounded-2xl border border-white/10 bg-slate-950/55 p-6 text-sm text-slate-400">
-              Loading your artist activation offer…
-            </p>
-          ) : artistActivationQuote ? (
-            <ArtistActivationSummary quote={artistActivationQuote} variant="step" />
-          ) : (
-            <div className="rounded-2xl border border-rose-300/20 bg-rose-400/[0.06] p-5 text-sm text-rose-100">
-              <p>{artistActivationError ?? "Artist activation price could not be loaded."}</p>
-              <button type="button" className="mt-3 underline underline-offset-4" onClick={() => setArtistActivationRetry((value) => value + 1)}>
-                Try again
-              </button>
-            </div>
-          )}
-        </div>
-      ) : null}
-
-      {step === "personalize" ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Personalize your listening
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">
-              Help us find your sound.
-            </h2>
-            <p className="text-sm leading-7 text-slate-300">
-              Choose a few interests now. You can change them any time.
-            </p>
-          </div>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-white">Favorite genres</legend>
-            <div className="flex flex-wrap gap-2">
-              {MUSIC_GENRES.map((genre) => {
-                const selected = genres.includes(genre);
-                return (
-                  <button
-                    key={genre}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => toggleGenre(genre)}
-                    className={`rounded-full border px-3 py-2 text-sm transition ${
-                      selected
-                        ? "border-emerald-300 bg-emerald-400/15 text-emerald-100"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
-                    }`}
-                  >
-                    {genre}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-white">Artists to follow</legend>
-            {isLoadingArtists ? (
-              <p className="text-sm text-slate-400">Loading artists...</p>
-            ) : artistLoadError ? (
-              <p className="text-sm text-rose-200">{artistLoadError}</p>
-            ) : artists.length === 0 ? (
-              <p className="text-sm text-slate-400">
-                You can skip this and discover artists from your listening space.
-              </p>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {artists.slice(0, 10).map((artist) => {
-                  const selected = favoriteArtistIds.includes(artist.id);
-                  return (
-                    <label
-                      key={artist.id}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${
-                        selected
-                          ? "border-emerald-300 bg-emerald-400/10"
-                          : "border-white/10 bg-slate-950/40 hover:border-white/25"
-                      }`}
+                    name="primaryIntent"
+                    value={option.value}
+                    checked={primaryIntent === option.value}
+                    onChange={() => setPrimaryIntent(option.value)}
+                    label={option.label}
+                    description={option.description}
+                  />
+                ))}
+              </div>
+            </fieldset>
+            {isArtistIntent(primaryIntent) &&
+            (isLoadingArtistActivation || artistActivationError) ? (
+              <div className="space-y-3">
+                {isLoadingArtistActivation ? (
+                  <p role="status" className="text-sm text-muted-foreground">
+                    Loading your activation offer…
+                  </p>
+                ) : (
+                  <>
+                    <p role="alert" className="text-sm text-destructive">
+                      {artistActivationError}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        setArtistActivationRetry((value) => value + 1)
+                      }
                     >
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() => toggleFavoriteArtist(artist.id)}
-                        className="size-4 accent-emerald-400"
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-white">
-                          {artist.name}
-                        </span>
-                        <span className="block truncate text-xs text-slate-400">
-                          {artist.city}
-                        </span>
-                      </span>
-                    </label>
+                      Try again
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {step === "artist_activation" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title={
+                artistActivationQuote?.discountAmountMinor
+                  ? "Your early-user discount is applied"
+                  : artistActivationQuote?.status === "paid"
+                    ? "Artist activation confirmed"
+                    : artistActivationQuote?.status === "legacy_free"
+                      ? "Your artist access is active"
+                      : "Artist activation"
+              }
+            />
+
+            {isLoadingArtistActivation ? (
+              <p
+                role="status"
+                className="rounded-md border border-border bg-background p-6 text-sm text-muted-foreground"
+              >
+                Loading your artist activation offer…
+              </p>
+            ) : artistActivationQuote ? (
+              <ArtistActivationSummary
+                quote={artistActivationQuote}
+                variant="step"
+              />
+            ) : (
+              <div role="alert" className="space-y-3 text-sm text-destructive">
+                <p>
+                  {artistActivationError ??
+                    "Artist activation price could not be loaded."}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setArtistActivationRetry((value) => value + 1)}
+                >
+                  Try again
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {step === "personalize" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title="Help us find your sound."
+              eyebrow="Personalize"
+              description="Choose a few interests now. You can change them any time."
+            />
+
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">
+                Favorite genres
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                Choose up to five. {genres.length} selected.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {MUSIC_GENRES.map((genre) => {
+                  const selected = genres.includes(genre);
+                  return (
+                    <ToggleChip
+                      key={genre}
+                      selected={selected}
+                      disabled={!selected && genres.length >= 5}
+                      onClick={() => toggleGenre(genre)}
+                    >
+                      {genre}
+                    </ToggleChip>
                   );
                 })}
               </div>
-            )}
-          </fieldset>
+            </fieldset>
 
-          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/50 p-4 text-sm text-slate-300">
-            <input
-              type="checkbox"
-              checked={interestedInLocalMusic}
-              onChange={(event) => setInterestedInLocalMusic(event.target.checked)}
-              className="size-4 accent-emerald-400"
-            />
-            Show me more artists and releases from my area.
-          </label>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">
+                Artists to follow
+              </legend>
+              {isLoadingArtists ? (
+                <p className="text-sm text-muted-foreground">
+                  Loading artists...
+                </p>
+              ) : artistLoadError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {artistLoadError}
+                </p>
+              ) : artists.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  You can skip this and discover artists from your listening
+                  space.
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {artists.slice(0, 10).map((artist) => {
+                    const selected = favoriteArtistIds.includes(artist.id);
+                    return (
+                      <label
+                        key={artist.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 transition ${
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-background hover:border-input"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selected}
+                          disabled={!selected && favoriteArtistIds.length >= 5}
+                          onChange={() => toggleFavoriteArtist(artist.id)}
+                          className="h-4 w-4 accent-primary"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {artist.name}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {artist.city}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </fieldset>
 
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-white">Notifications</legend>
-            {(
-              [
-                ["releaseNotifications", "New releases from artists I follow"],
-                ["artistUpdates", "Updates from artists I follow"],
-                ["productUpdates", "Helpful Music City product updates"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-3 text-sm text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={notificationPreferences[key]}
-                  onChange={(event) =>
-                    setNotificationPreferences((current) => ({
-                      ...current,
-                      [key]: event.target.checked,
-                    }))
-                  }
-                  className="size-4 accent-emerald-400"
-                />
-                {label}
-              </label>
-            ))}
-          </fieldset>
-        </div>
-      ) : null}
+            <label className="flex items-center gap-3 rounded-md border border-border bg-background p-4 text-sm text-muted-foreground">
+              <Checkbox
+                checked={interestedInLocalMusic}
+                onChange={(event) =>
+                  setInterestedInLocalMusic(event.target.checked)
+                }
+                className="h-4 w-4 accent-primary"
+              />
+              Show me more artists and releases from my area.
+            </label>
 
-      {step === "artist_identity" ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Artist identity
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">
-              Artist profile
-            </h2>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bio">Short biography</Label>
-            <Textarea
-              id="bio"
-              value={bio}
-              onChange={(event) => setBio(event.target.value)}
-              placeholder="Tell listeners what makes your sound yours."
-              className="min-h-28 border-white/10 bg-slate-950/70 text-white"
-            />
-          </div>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-white">Primary genres</legend>
-            <div className="flex flex-wrap gap-2">
-              {MUSIC_GENRES.map((genre) => {
-                const selected = genres.includes(genre);
-                return (
-                  <button
-                    key={genre}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => toggleGenre(genre)}
-                    className={`rounded-full border px-3 py-2 text-sm transition ${
-                      selected
-                        ? "border-emerald-300 bg-emerald-400/15 text-emerald-100"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25"
-                    }`}
-                  >
-                    {genre}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-medium text-white">
-              Have you released music before?
-            </legend>
-            <div className="flex gap-4">
-              {[
-                [true, "Yes"],
-                [false, "Not yet"],
-              ].map(([value, label]) => (
-                <label key={String(value)} className="flex items-center gap-2 text-sm text-slate-300">
-                  <input
-                    type="radio"
-                    name="hasReleasedMusic"
-                    checked={hasReleasedMusic === value}
-                    onChange={() => setHasReleasedMusic(value as boolean)}
-                    className="size-4 accent-emerald-400"
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">
+                Notifications
+              </legend>
+              {(
+                [
+                  [
+                    "releaseNotifications",
+                    "New releases from artists I follow",
+                  ],
+                  ["artistUpdates", "Updates from artists I follow"],
+                  ["productUpdates", "Helpful Music City product updates"],
+                ] as const
+              ).map(([key, label]) => (
+                <label
+                  key={key}
+                  className="flex min-h-11 items-center gap-3 text-sm text-foreground"
+                >
+                  <Checkbox
+                    checked={notificationPreferences[key]}
+                    onChange={(event) =>
+                      setNotificationPreferences((current) => ({
+                        ...current,
+                        [key]: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 accent-primary"
                   />
                   {label}
                 </label>
               ))}
-            </div>
-          </fieldset>
+            </fieldset>
+          </div>
+        ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(
-              [
-                ["website", "Website"],
-                ["instagram", "Instagram"],
-                ["youtube", "YouTube"],
-                ["soundcloud", "SoundCloud"],
-                ["x", "X"],
-              ] as const
-            ).map(([key, label]) => (
-              <div key={key} className="space-y-2">
-                <Label htmlFor={key}>{label} <span className="text-slate-500">(optional)</span></Label>
-                <Input
-                  id={key}
-                  type="url"
-                  value={socialLinks[key]}
-                  onChange={(event) =>
-                    setSocialLinks((current) => ({
-                      ...current,
-                      [key]: event.target.value,
-                    }))
-                  }
-                  placeholder={`https://${key === "x" ? "x.com" : `${key}.com`}/...`}
-                  className="border-white/10 bg-slate-950/70 text-white"
-                />
-                {fieldErrors[key] ? <p role="alert" className="text-xs text-rose-200">{fieldErrors[key]}</p> : null}
+        {step === "artist_identity" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title="Artist profile"
+              eyebrow="Artist identity"
+            />
+
+            <FormField
+              id="bio"
+              label="Short biography"
+              hint="Optional. Tell listeners about your sound."
+              error={fieldErrors.bio}
+            >
+              <Textarea
+                value={bio}
+                onChange={(event) => setBio(event.target.value)}
+                className="min-h-28"
+              />
+            </FormField>
+
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">
+                Primary genres
+              </legend>
+              <p className="text-xs text-muted-foreground">
+                Choose up to five. {genres.length} selected.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {MUSIC_GENRES.map((genre) => {
+                  const selected = genres.includes(genre);
+                  return (
+                    <ToggleChip
+                      key={genre}
+                      selected={selected}
+                      disabled={!selected && genres.length >= 5}
+                      onClick={() => toggleGenre(genre)}
+                    >
+                      {genre}
+                    </ToggleChip>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+            </fieldset>
 
-      {step === "visuals" ? (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">
-              Profile visuals
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-white">
-              Make your profile yours.
-            </h2>
-            <p className="text-sm leading-7 text-slate-300">
-              Images are optional. Use JPG, PNG, or WebP up to 10MB.
-            </p>
-          </div>
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-foreground">
+                Have you released music before?
+              </legend>
+              <div className="flex gap-4">
+                {[
+                  [true, "Yes"],
+                  [false, "Not yet"],
+                ].map(([value, label]) => (
+                  <label
+                    key={String(value)}
+                    className="flex min-h-11 items-center gap-2 text-sm text-foreground"
+                  >
+                    <input
+                      type="radio"
+                      name="hasReleasedMusic"
+                      checked={hasReleasedMusic === value}
+                      onChange={() => setHasReleasedMusic(value as boolean)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-          <div className="grid gap-4 sm:grid-cols-[0.65fr_1fr]">
-            <div className="space-y-2">
-              <Label htmlFor="profileImage">Profile image <span className="text-slate-500">(optional)</span></Label>
-              <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/15 bg-slate-950/60 p-4 text-center text-sm text-slate-300 hover:border-emerald-300/50">
-                {profileImagePreview ? (
-                  <img src={profileImagePreview} alt="Profile preview" className="size-24 rounded-full object-cover" />
-                ) : (
-                  <span className="size-24 rounded-full bg-gradient-to-br from-emerald-300/30 to-slate-900" />
-                )}
-                <span>{profileImageFile?.name ?? "Choose profile image"}</span>
-                <Input
-                  id="profileImage"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="sr-only"
-                  onChange={(event) => handleImageChange(event, "profile_image")}
-                />
-              </label>
-              {profileImagePreview ? (
-                <button
-                  type="button"
-                  className="text-left text-xs text-slate-500 underline-offset-4 hover:text-white hover:underline"
-                  onClick={() => {
-                    setProfileImageFile(null);
-                    setSavedProfileImageUrl(null);
-                    setRemoveProfileImage(true);
-                  }}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(
+                [
+                  ["website", "Website"],
+                  ["instagram", "Instagram"],
+                  ["youtube", "YouTube"],
+                  ["soundcloud", "SoundCloud"],
+                  ["x", "X"],
+                ] as const
+              ).map(([key, label]) => (
+                <FormField
+                  key={key}
+                  id={key}
+                  label={label}
+                  hint="Optional."
+                  error={fieldErrors[key] ?? fieldErrors[`socialLinks.${key}`]}
                 >
-                  Remove image
-                </button>
-              ) : null}
-            </div>
-
-            {isArtistIntent(primaryIntent) ? (
-              <div className="space-y-2">
-                <Label htmlFor="headerImage">Header image <span className="text-slate-500">(optional)</span></Label>
-                <label className="flex min-h-40 cursor-pointer flex-col justify-end overflow-hidden rounded-2xl border border-dashed border-white/15 bg-slate-950/60 text-sm text-slate-300 hover:border-emerald-300/50">
-                  {headerImagePreview ? (
-                    <img src={headerImagePreview} alt="Header preview" className="h-40 w-full object-cover" />
-                  ) : (
-                    <div className="flex h-40 items-end bg-gradient-to-br from-emerald-300/20 via-slate-900 to-slate-950 p-4">
-                      Choose header image
-                    </div>
-                  )}
-                  {headerImageFile ? <span className="border-t border-white/10 px-4 py-2">{headerImageFile.name}</span> : null}
                   <Input
-                    id="headerImage"
+                    type="url"
+                    value={socialLinks[key]}
+                    onChange={(event) =>
+                      setSocialLinks((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
+                    placeholder={`https://${key === "x" ? "x.com" : `${key}.com`}/...`}
+                  />
+                </FormField>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {step === "visuals" ? (
+          <div className="space-y-6">
+            <FormStepHeader
+              ref={stepHeading}
+              title="Make your profile yours."
+              eyebrow="Profile visuals"
+              description="Images are optional. Use JPG, PNG, or WebP up to 10MB."
+            />
+
+            <div className="grid items-start gap-6 sm:grid-cols-2">
+              <div className="space-y-4">
+                {profileImagePreview ? (
+                  <img
+                    src={profileImagePreview}
+                    alt="Profile preview"
+                    className="h-24 w-24 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground">
+                    Photo
+                  </div>
+                )}
+                <FormField
+                  id="profileImage"
+                  label="Profile image"
+                  hint="Optional. JPG, PNG, or WebP, up to 10 MB."
+                  error={
+                    mediaErrors.profile_image ??
+                    fieldErrors.profileImageStorageKey
+                  }
+                >
+                  <Input
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
-                    className="sr-only"
-                    onChange={(event) => handleImageChange(event, "header_image")}
+                    onChange={(event) =>
+                      handleImageChange(event, "profile_image")
+                    }
                   />
-                </label>
-                {headerImagePreview ? (
-                  <button
+                </FormField>
+                {profileImageFile ? (
+                  <p className="break-words text-xs text-muted-foreground">
+                    {profileImageFile.name}
+                  </p>
+                ) : null}
+                {profileImagePreview ? (
+                  <Button
                     type="button"
-                    className="text-left text-xs text-slate-500 underline-offset-4 hover:text-white hover:underline"
+                    variant="ghost"
                     onClick={() => {
-                      setHeaderImageFile(null);
-                      setSavedHeaderImageUrl(null);
-                      setRemoveHeaderImage(true);
+                      setProfileImageFile(null);
+                      setSavedProfileImageUrl(null);
+                      setRemoveProfileImage(true);
                     }}
                   >
-                    Remove image
-                  </button>
+                    Remove profile image
+                  </Button>
                 ) : null}
+              </div>
+              {isArtistIntent(primaryIntent) ? (
+                <div className="space-y-4">
+                  {headerImagePreview ? (
+                    <img
+                      src={headerImagePreview}
+                      alt="Header preview"
+                      className="aspect-[8/3] w-full rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="flex aspect-[8/3] w-full items-center justify-center rounded-md bg-muted text-sm text-muted-foreground">
+                      Header artwork
+                    </div>
+                  )}
+                  <FormField
+                    id="headerImage"
+                    label="Header image"
+                    hint="Optional. JPG, PNG, or WebP, up to 10 MB."
+                    error={
+                      mediaErrors.header_image ??
+                      fieldErrors.headerImageStorageKey
+                    }
+                  >
+                    <Input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) =>
+                        handleImageChange(event, "header_image")
+                      }
+                    />
+                  </FormField>
+                  {headerImageFile ? (
+                    <p className="break-words text-xs text-muted-foreground">
+                      {headerImageFile.name}
+                    </p>
+                  ) : null}
+                  {headerImagePreview ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setHeaderImageFile(null);
+                        setSavedHeaderImageUrl(null);
+                        setRemoveHeaderImage(true);
+                      }}
+                    >
+                      Remove header image
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {step === "complete" ? (
+          <div className="space-y-5 py-8 text-center">
+            <p className="text-sm font-medium text-primary">You’re ready</p>
+            <h2
+              ref={stepHeading}
+              tabIndex={-1}
+              className="text-[28px] font-semibold leading-8 text-foreground focus:outline-none"
+            >
+              {primaryIntent === "listener"
+                ? "Your listening space is ready."
+                : "Your artist workspace is ready."}
+            </h2>
+            <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
+              {primaryIntent === "listener"
+                ? "Start with a fresh release, follow an artist, or build your first playlist."
+                : "Your profile is ready. Continue into the studio whenever you want to release music."}
+            </p>
+            {primaryIntent !== "listener" && artistActivationQuote ? (
+              <div className="mx-auto max-w-md text-left">
+                <ArtistActivationSummary quote={artistActivationQuote} />
               </div>
             ) : null}
           </div>
-        </div>
+        ) : null}
+      </fieldset>
+      {saveError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {saveError}. Your entries are still here. Try again.
+        </p>
       ) : null}
-
-      {step === "complete" ? (
-        <div className="space-y-5 py-8 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-400">You’re ready</p>
-          <h2 className="text-3xl font-semibold tracking-tight text-white">
-            {primaryIntent === "listener" ? "Your listening space is ready." : "Your artist workspace is ready."}
-          </h2>
-          <p className="mx-auto max-w-md text-sm leading-7 text-slate-300">
-            {primaryIntent === "listener"
-              ? "Start with a fresh release, follow an artist, or build your first playlist."
-              : "Your profile is ready. Continue into the studio whenever you want to release music."}
-          </p>
-          {primaryIntent !== "listener" && artistActivationQuote ? (
-            <div className="mx-auto max-w-md text-left"><ArtistActivationSummary quote={artistActivationQuote} /></div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <ActionBar>
         {step !== "identity" && step !== "complete" ? (
-          <Button type="button" variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10" onClick={handleBack} disabled={isSaving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            disabled={isSaving}
+          >
             Back
           </Button>
-        ) : <span />}
+        ) : (
+          <span />
+        )}
 
         <div className="flex flex-wrap items-center justify-end gap-3">
-          {step === "personalize" || step === "artist_identity" || step === "visuals" ? (
-            <Button type="button" variant="ghost" className="text-slate-400 hover:bg-white/5 hover:text-white" onClick={() => void skipCurrentStep()} disabled={isSaving}>
+          {step === "personalize" ||
+          step === "artist_identity" ||
+          step === "visuals" ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void skipCurrentStep()}
+              disabled={isSaving}
+            >
               Skip for now
             </Button>
           ) : null}
@@ -1166,24 +1578,18 @@ export const OnboardingForm = ({
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    onClick={() => navigateAfterCompletion("/onboarding")}
-                  >
-                    Complete artist profile
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
                     onClick={() => navigateAfterCompletion("/dashboard/create")}
                   >
-                    Upload your first track
+                    Create your first release
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    onClick={() => navigateAfterCompletion(profileId ? `/artists/${profileId}` : "/artists")}
+                    onClick={() =>
+                      navigateAfterCompletion(
+                        profileId ? `/artists/${profileId}` : "/artists",
+                      )
+                    }
                   >
                     Preview public profile
                   </Button>
@@ -1191,7 +1597,6 @@ export const OnboardingForm = ({
               ) : null}
               <Button
                 type="button"
-                className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
                 onClick={() => navigateAfterCompletion("/discover")}
               >
                 Explore music
@@ -1200,11 +1605,11 @@ export const OnboardingForm = ({
           ) : (
             <Button
               type="submit"
-              className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
               disabled={
                 isSaving ||
                 isPreparingMedia ||
-                (step === "artist_activation" &&
+                ((step === "artist_activation" ||
+                  (step === "intent" && isArtistIntent(primaryIntent))) &&
                   (isLoadingArtistActivation || !artistActivationQuote))
               }
             >
@@ -1222,7 +1627,7 @@ export const OnboardingForm = ({
             </Button>
           )}
         </div>
-      </div>
+      </ActionBar>
     </form>
   );
 };

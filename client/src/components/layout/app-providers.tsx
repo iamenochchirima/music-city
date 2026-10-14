@@ -7,6 +7,7 @@ import {
 } from "@dynamic-labs/sdk-react-core";
 import { DynamicWaasStellarConnectors } from "@dynamic-labs/stellar";
 
+import { StellarCheckoutProvider } from "@/features/payments/hooks/use-stellar-checkout";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import {
   AuthProvider,
@@ -60,10 +61,12 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
             }}
           >
             <AuthProvider>
-              <GlobalPlaybackProvider>
-                {children}
-                <OnboardingGate />
-              </GlobalPlaybackProvider>
+              <StellarCheckoutProvider>
+                <GlobalPlaybackProvider>
+                  {children}
+                  <OnboardingGate />
+                </GlobalPlaybackProvider>
+              </StellarCheckoutProvider>
             </AuthProvider>
             <DynamicMultiWalletPromptsWidget />
           </DynamicContextProvider>

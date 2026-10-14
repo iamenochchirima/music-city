@@ -10,6 +10,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.mjs",
+    "db:migrate": "node dist/scripts/migrate-production.js",
     "db:bootstrap": "tsx src/scripts/bootstrap-postgres.ts",
     "db:doctor": "tsx src/scripts/db-doctor.ts",
     "db:repair": "tsx src/scripts/db-repair.ts",

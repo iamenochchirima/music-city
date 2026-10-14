@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import {
   trackMonetizationUpdateSchema,
   trackMetadataUpdateSchema,
@@ -8,6 +9,7 @@ import {
   type TrackMetadataUpdateInput,
 } from "@music-city/shared";
 
+import { databaseService } from "../../services/database.service.js";
 import { createId } from "../../services/id.service.js";
 import { muxService } from "../../services/mux.service.js";
 import { storageService } from "../../services/storage.service.js";
@@ -63,6 +65,13 @@ const hydrateTrackForView = (track: TrackSummary, isPublic: boolean): TrackSumma
     priceLabel: isPublic ? "Published" : "Unpublished",
   }) as TrackSummary;
 
+const validateCreditProfiles = async (credits: TrackSummary["credits"]) => {
+  for (const artistId of new Set((credits ?? []).flatMap(credit => credit.artistId ? [credit.artistId] : []))) {
+    const artist = await usersService.getProfileById(artistId);
+    if (!artist || !["artist", "both"].includes(artist.primaryIntent)) throw new ZodError([{ code: "custom", path: ["credits", (credits ?? []).findIndex(credit => credit.artistId === artistId), "artistId"], message: "Linked credit profile must belong to an artist" }]);
+  }
+};
+
 export const tracksService = {
   async isTrackPublic(trackId: string) {
     return tracksRepository.isTrackInPublicRelease(trackId);
@@ -70,7 +79,8 @@ export const tracksService = {
 
   async listTracks() {
     const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds());
-    const tracks = await tracksRepository.list();
+    const snapshots = new Map((await databaseService.listLiveTrackSnapshots()).map(track => [track.id,track]));
+    const tracks = (await tracksRepository.list()).map(track => snapshots.get(track.id) ?? track);
     return tracks
       .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
       .map((track) => hydrateTrackForView(track, true));
@@ -89,7 +99,8 @@ export const tracksService = {
   },
 
   async listPublicTracksByArtist(artistId: string) {
-    const tracks = await tracksRepository.listByArtist(artistId);
+    const snapshots=new Map((await databaseService.listLiveTrackSnapshots()).map(track => [track.id,track]));
+    const tracks = (await tracksRepository.listByArtist(artistId)).map(track => snapshots.get(track.id) ?? track);
     const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds(artistId));
 
     return tracks
@@ -98,7 +109,7 @@ export const tracksService = {
   },
 
   async getTrack(trackId: string) {
-    const track = await tracksRepository.findById(trackId);
+    const track = (await databaseService.listLiveTrackSnapshots()).find(track => track.id === trackId) ?? await tracksRepository.findById(trackId);
     if (!track) {
       return null;
     }
@@ -111,7 +122,7 @@ export const tracksService = {
   },
 
   async getTrackForPlayback(trackId: string) {
-    const track = await tracksRepository.findById(trackId);
+    const track = (await databaseService.listLiveTrackSnapshots()).find(track => track.id === trackId) ?? await tracksRepository.findById(trackId);
     if (!track) {
       return null;
     }
@@ -149,7 +160,7 @@ export const tracksService = {
     }
 
     return hydrateTrackForView(
-      track,
+      { ...track, ...await tracksRepository.findReleaseContext(track.id) },
       await tracksRepository.isTrackInPublicRelease(track.id),
     );
   },
@@ -220,6 +231,7 @@ export const tracksService = {
 
     const timestamp = new Date().toISOString();
     const parsed = trackCreateSchema.parse(input);
+    await validateCreditProfiles(parsed.credits);
     const purchaseEnabled = parsed.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
       ? normalizePositiveAmount(
@@ -246,7 +258,8 @@ export const tracksService = {
       artistName: parsed.artistName?.trim() || profile.displayName,
       releaseArtistName: parsed.artistName?.trim() || profile.displayName,
       featuredArtists: parsed.featuredArtists ?? [],
-      isrc: parsed.isrc?.trim() || undefined,
+      isrc: parsed.isrc || undefined,
+      recordLabel: parsed.recordLabel || undefined,
       credits: parsed.credits ?? [],
       isExplicit: parsed.isExplicit,
       genre: parsed.genre,
@@ -288,42 +301,15 @@ export const tracksService = {
 
     const parsed = trackMetadataUpdateSchema.parse(input);
 
-    const linkedArtistIds = [
-      ...new Set(
-        (parsed.credits ?? [])
-          .map((credit) => credit.artistId)
-          .filter((artistId): artistId is string => Boolean(artistId)),
-      ),
-    ];
+    await validateCreditProfiles(parsed.credits);
 
-    for (const artistId of linkedArtistIds) {
-      const artist = await usersService.getProfileById(artistId);
-
-      if (!artist || !["artist", "both"].includes(artist.primaryIntent)) {
-        throw new Error("Linked credit profile must belong to an artist");
-      }
-    }
-
-    return tracksRepository.upsert({
-      ...existing,
-      title: parsed.title !== undefined ? parsed.title : existing.title,
-      featuredArtists:
-        parsed.featuredArtists !== undefined
-          ? parsed.featuredArtists
-          : existing.featuredArtists,
-      credits: parsed.credits !== undefined ? parsed.credits : existing.credits,
-      isrc:
-        parsed.isrc !== undefined
-          ? parsed.isrc.replaceAll("-", "").toUpperCase() || undefined
-          : existing.isrc,
-      isExplicit:
-        parsed.isExplicit !== undefined ? parsed.isExplicit : existing.isExplicit,
-      description:
-        parsed.description !== undefined
-          ? parsed.description.trim() || undefined
-          : existing.description,
-      updatedAt: new Date().toISOString(),
-    });
+    const patch: TrackMetadataUpdateInput & { updatedAt: string } = { ...parsed, updatedAt: new Date().toISOString() };
+    if (parsed.isrc !== undefined) patch.isrc = parsed.isrc || undefined;
+    if (parsed.recordLabel !== undefined) patch.recordLabel = parsed.recordLabel || undefined;
+    if (parsed.description !== undefined) patch.description = parsed.description.trim() || undefined;
+    const updated = await tracksRepository.updateMetadata(trackId, profile.id, patch);
+    if (!updated) throw new Error("Track not found");
+    return updated;
   },
 
   async updateTrackMonetization(

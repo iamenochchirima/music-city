@@ -1,5 +1,7 @@
 import type {
   ReleaseCreateInput,
+  ReleaseTrackMetadataInput,
+  TrackSummary,
   ReleaseDetail,
   ReleaseSummary,
   ReleaseTrackAssignInput,
@@ -10,6 +12,15 @@ import type {
 import { httpClient } from "@/lib/api/http-client";
 
 export const releasesApi = {
+  async beginRevision(token: string, releaseId: string) {
+    const response = await httpClient.post<{release: ReleaseDetail}>(`/releases/${releaseId}/revision`,{},token);
+    return response.release;
+  },
+  async applyTrackMetadata(token: string, releaseId: string, input: ReleaseTrackMetadataInput) {
+    const response = await httpClient.post<{ tracks: TrackSummary[] }>(`/releases/${releaseId}/track-metadata`, input, token);
+    return response.tracks;
+  },
+
   async listReleases() {
     const response = await httpClient.get<{ items: ReleaseSummary[] }>("/releases");
     return response.items;

@@ -52,6 +52,20 @@ releasesRouter.get(
 );
 
 releasesRouter.post(
+  "/:releaseId/track-metadata",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    try {
+      const tracks = await releasesService.applyTrackMetadata(request.session!.walletAddress, String(request.params.releaseId), request.body);
+      response.json({ tracks });
+    } catch (error) {
+      if (error instanceof ZodError) throw error;
+      throw new HttpError(400, error instanceof Error ? error.message : "Track label update failed");
+    }
+  }),
+);
+
+releasesRouter.post(
   "/",
   requireSession,
   asyncHandler(async (request, response) => {
@@ -74,6 +88,11 @@ releasesRouter.post(
     }
   }),
 );
+
+releasesRouter.post("/:releaseId/revision", requireSession, asyncHandler(async (request,response) => {
+  try { response.json({ release: await releasesService.beginRevision(request.session!.walletAddress,String(request.params.releaseId)) }); }
+  catch(error) { throw new HttpError(400,error instanceof Error ? error.message : "Unable to start revision"); }
+}));
 
 releasesRouter.put(
   "/:releaseId",

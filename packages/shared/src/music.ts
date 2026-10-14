@@ -45,13 +45,30 @@ export type TrackCreditRole = z.infer<typeof trackCreditRoleSchema>;
 
 export const trackCreditSchema = z.object({
   role: trackCreditRoleSchema,
-  name: z.string().min(1).max(120),
-  artistId: z.string().min(1).optional(),
+  name: z.string().trim().min(1, "Enter a contributor name").max(120),
+  artistId: z.string().trim().min(1).optional(),
 });
 export type TrackCredit = z.infer<typeof trackCreditSchema>;
 
-const isValidIsrc = (value: string) =>
-  /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(value.replaceAll("-", "").toUpperCase());
+export const trackCreditsSchema = z.array(trackCreditSchema).max(32).superRefine((credits, context) => {
+  const seen = new Set<string>();
+  credits.forEach((credit, index) => {
+    const key = JSON.stringify([credit.role, credit.name.toLowerCase(), credit.artistId ?? ""]);
+    if (seen.has(key)) context.addIssue({ code: "custom", path: [index, "name"], message: "This contributor already has this credit" });
+    seen.add(key);
+  });
+});
+
+export const trackIsrcSchema = z.string().trim().transform(value => value.replaceAll("-", "").toUpperCase())
+  .refine(value => value === "" || /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(value), "Enter a valid 12-character ISRC or leave this blank");
+export const trackRecordLabelSchema = z.string().trim().max(120);
+const trackMetadataFields = {
+  credits: trackCreditsSchema.optional(),
+  isrc: trackIsrcSchema.optional(),
+  recordLabel: trackRecordLabelSchema.optional(),
+};
+export const trackCreditsAndIdentifiersSchema = z.object(trackMetadataFields).strict();
+export type TrackCreditsAndIdentifiers = z.infer<typeof trackCreditsAndIdentifiersSchema>;
 
 export const playlistVisibilitySchema = z.enum(["private", "public"]);
 export type PlaylistVisibility = z.infer<typeof playlistVisibilitySchema>;
@@ -81,6 +98,7 @@ export interface TrackSummary {
   featuredArtists?: string[];
   credits?: TrackCredit[];
   isrc?: string;
+  recordLabel?: string;
   isExplicit?: boolean;
   genre: string;
   runtime: string;
@@ -116,6 +134,19 @@ export interface TrackSummary {
   updatedAt?: string;
 }
 
+export const releaseTrackMetadataSchema = z.object({
+  recordLabel: trackRecordLabelSchema.refine(value => value.length > 0, "Enter a record label"),
+  trackIds: z.array(z.string().min(1)).min(1).max(100),
+  expectedLabels: z.record(z.string().max(120)),
+  overwrite: z.boolean().default(false),
+}).strict().superRefine((value, context) => {
+  if (new Set(value.trackIds).size !== value.trackIds.length)
+    context.addIssue({ code: "custom", path: ["trackIds"], message: "Select each track once" });
+  if (value.trackIds.some(id => !Object.hasOwn(value.expectedLabels, id)) || Object.keys(value.expectedLabels).some(id => !value.trackIds.includes(id)))
+    context.addIssue({ code: "custom", path: ["expectedLabels"], message: "Provide the current label for each selected track" });
+});
+export type ReleaseTrackMetadataInput = z.infer<typeof releaseTrackMetadataSchema>;
+
 export const releaseTrackSchema = z.object({
   trackId: z.string().min(1),
   trackNumber: z.number().int().min(1),
@@ -125,6 +156,7 @@ export const releaseTrackSchema = z.object({
 export type ReleaseTrack = z.infer<typeof releaseTrackSchema>;
 
 export const releaseSummarySchema = z.object({
+  hasRevision: z.boolean().optional(),
   id: z.string().min(1),
   artistId: z.string().min(1),
   artistName: z.string().min(1).max(120),
@@ -234,8 +266,7 @@ export const trackCreateSchema = z.object({
   title: z.string().min(1).max(160),
   artistName: z.string().min(1).max(120).optional(),
   featuredArtists: z.array(z.string().min(1).max(120)).max(8).optional(),
-  isrc: z.string().max(32).optional(),
-  credits: z.array(trackCreditSchema).max(32).optional(),
+  ...trackMetadataFields,
   genre: z.string().min(1).max(80),
   description: z.string().max(1000).optional(),
   priceLabel: z.string().max(80).optional(),
@@ -247,14 +278,6 @@ export const trackCreateSchema = z.object({
 })
   .strict()
   .superRefine((value, context) => {
-    if (value.isrc && !isValidIsrc(value.isrc)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["isrc"],
-        message: "Enter a valid 12-character ISRC or leave this blank",
-      });
-    }
-
     const issue = requireIssuerForNonNativeAsset({
       assetCode: value.purchaseAssetCode,
       assetIssuer: value.purchaseAssetIssuer,
@@ -274,25 +297,11 @@ export const trackMetadataUpdateSchema = z
   .object({
     title: z.string().trim().min(1).max(160).optional(),
     featuredArtists: z.array(z.string().min(1).max(120)).max(8).optional(),
-    credits: z.array(trackCreditSchema).max(32).optional(),
-    isrc: z.string().max(32).optional(),
+    ...trackMetadataFields,
     isExplicit: z.boolean().optional(),
     description: z.string().max(1000).optional(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (!value.isrc) {
-      return;
-    }
-
-    if (!isValidIsrc(value.isrc)) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["isrc"],
-        message: "Enter a valid 12-character ISRC or leave this blank",
-      });
-    }
-  });
+  .strict();
 export type TrackMetadataUpdateInput = z.infer<
   typeof trackMetadataUpdateSchema
 >;

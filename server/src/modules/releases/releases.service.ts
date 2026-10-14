@@ -1,5 +1,6 @@
 import {
   releaseCreateSchema,
+  releaseTrackMetadataSchema,
   releaseTrackAssignSchema,
   releaseTrackReorderSchema,
   releaseUpdateSchema,
@@ -8,11 +9,13 @@ import {
   type TrackSummary,
 } from "@music-city/shared";
 
+import { liveRecording } from "./live-recording.js";
+import { databaseService } from "../../services/database.service.js";
 import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { usersService } from "../users/users.service.js";
-import { releasesRepository } from "./releases.repository.js";
+import { releasesRepository, type StoredRelease } from "./releases.repository.js";
 
 const hydrateReleaseUrls = <T extends { coverStorageKey?: string; coverImageUrl?: string }>(
   release: T,
@@ -48,9 +51,14 @@ const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: 
 };
 
 const toReleaseDetail = async (
-  release: ReleaseSummary,
+  release: StoredRelease,
   includePrivateTracks: boolean,
 ): Promise<ReleaseDetail> => {
+  if (!includePrivateTracks && release.liveVersion) {
+    const live = release.liveVersion;
+    return { ...hydrateReleaseUrls(live), hasRevision: undefined, tracks: await Promise.all(live.tracks.filter(item => live.status === "published" && item.track.playbackReady).map(async item => {const current=await tracksRepository.findById(item.trackId);return {...item,track:hydrateTrackUrls(current ? liveRecording(current,item.track) : item.track)};})) };
+  }
+  const { liveVersion, ...visibleRelease } = release;
   const isPublicRelease = release.status === "published";
   const assignments = [...(await releasesRepository.listTracks(release.id))].sort(
     (left, right) =>
@@ -82,7 +90,8 @@ const toReleaseDetail = async (
   );
 
   return {
-    ...hydrateReleaseUrls(release),
+    ...hydrateReleaseUrls(visibleRelease),
+    hasRevision: !!liveVersion,
     tracks: tracks.filter(
       (
         item,
@@ -100,7 +109,7 @@ const toReleaseDetail = async (
   };
 };
 
-const syncReleaseTrackCount = async (release: ReleaseSummary) => {
+const syncReleaseTrackCount = async (release: StoredRelease) => {
   const assignments = await releasesRepository.listTracks(release.id);
 
   return releasesRepository.upsert({
@@ -281,35 +290,45 @@ const resolvePublishedReleaseDate = (
   return new Date().toISOString();
 };
 
-const resolvePublicReleaseState = async (release: ReleaseSummary) => {
-  if (release.status !== "scheduled") {
-    return release;
+const requireEditable = (release: StoredRelease) => {
+  if (["published", "scheduled"].includes(release.status) && !release.liveVersion) throw new Error("Start a revision before editing a scheduled or published release");
+};
+const publicSummary = (release: StoredRelease) => {
+  const { tracks: _tracks, ...live } = release.liveVersion ?? { ...release, tracks: [] };
+  const { liveVersion: _version, hasRevision: _revision, ...summary } = live as StoredRelease;
+  return hydrateReleaseUrls(summary);
+};
+const resolvePublicReleaseState = async (release: StoredRelease): Promise<StoredRelease> => {
+  const live = release.liveVersion ?? release;
+  if (live.status !== "scheduled" || !releaseDateHasArrived(live.releaseDate)) return release;
+  if (release.liveVersion) {
+    const published = { ...release.liveVersion, status: "published" as const, publishedAt: release.liveVersion.publishedAt ?? new Date().toISOString() };
+    return releasesRepository.upsert({ ...release, status: "published", liveVersion: published });
   }
-
-  if (!releaseDateHasArrived(release.releaseDate)) {
-    return release;
-  }
-
   const assignments = await releasesRepository.listTracks(release.id);
   const tracks = await validateReleaseTracksForPublishing(release, assignments);
   await publishReleaseTracks(tracks);
-
-  return releasesRepository.upsert({
-    ...release,
-    status: "published",
-    publishedAt: release.publishedAt ?? new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  return releasesRepository.upsert({ ...release, status: "published", publishedAt: release.publishedAt ?? new Date().toISOString(), updatedAt: new Date().toISOString() });
 };
 
 export const releasesService = {
+  async applyTrackMetadata(walletAddress: string, releaseId: string, input: unknown) {
+    const parsed = releaseTrackMetadataSchema.parse(input);
+    const profile = await usersService.requireArtistOnboardingAccess(walletAddress, "Create a profile before managing tracks");
+    if (!profile) throw new Error("Release not found");
+    const release = await releasesRepository.findById(releaseId);
+    if (!release || release.artistId !== profile.id) throw new Error("Release not found");
+    requireEditable(release);
+    return databaseService.applyReleaseTrackMetadata(profile.id, releaseId, parsed);
+  },
+
   async listReleases() {
     const releases = await Promise.all(
       (await releasesRepository.list()).map((release) => resolvePublicReleaseState(release)),
     );
     return releases
       .filter((release) => release.status === "published" || release.status === "scheduled")
-      .map((release) => hydrateReleaseUrls(release));
+      .map(publicSummary);
   },
 
   async listPublicReleasesByArtist(artistId: string) {
@@ -320,13 +339,13 @@ export const releasesService = {
     );
     return releases
       .filter((release) => release.status === "published" || release.status === "scheduled")
-      .map((release) => hydrateReleaseUrls(release));
+      .map(publicSummary);
   },
 
   async listMyReleases(walletAddress: string) {
     const profile = await ensureOwnerProfile(walletAddress);
     return (await releasesRepository.listByArtist(profile.id)).map((release) =>
-      hydrateReleaseUrls(release),
+      ({ ...release, coverImageUrl: hydrateReleaseUrls(release).coverImageUrl, liveVersion: undefined, hasRevision: !!release.liveVersion }),
     );
   },
 
@@ -354,12 +373,12 @@ export const releasesService = {
       return null;
     }
 
-    return toReleaseDetail(release, true);
+    return toReleaseDetail(await resolvePublicReleaseState(release), true);
   },
 
   async getReleaseForUpload(releaseId: string) {
     const release = await releasesRepository.findById(releaseId);
-    return release ? hydrateReleaseUrls(release) : null;
+    return release ? { ...publicSummary(release), ...release, liveVersion: undefined, hasRevision: !!release.liveVersion } : null;
   },
 
   async userOwnsRelease(walletAddress: string, releaseId: string) {
@@ -367,6 +386,18 @@ export const releasesService = {
     const release = await releasesRepository.findById(releaseId);
 
     return Boolean(profile && release && release.artistId === profile.id);
+  },
+
+  async beginRevision(walletAddress: string, releaseId: string) {
+    const profile = await ensureOwnerProfile(walletAddress);
+    let release = await releasesRepository.findById(releaseId);
+    if (!release || release.artistId !== profile.id) throw new Error("Release not found");
+    release = await resolvePublicReleaseState(release);
+    if (release.liveVersion) return toReleaseDetail(release,true);
+    if (!["scheduled","published"].includes(release.status)) throw new Error("Only scheduled or published releases need a revision");
+    const liveVersion = await toReleaseDetail(release,true);
+    const updated = await databaseService.beginReleaseRevision(release.id,profile.id,liveVersion);
+    return toReleaseDetail(updated,true);
   },
 
   async createRelease(walletAddress: string, input: unknown) {
@@ -403,6 +434,7 @@ export const releasesService = {
     }
 
     const parsed = releaseUpdateSchema.parse(input);
+    if (!(parsed.status === "draft" && Object.keys(parsed).length === 1 && !existing.liveVersion)) requireEditable(existing);
     const nextStatus = parsed.status ?? existing.status;
     const assignments = await releasesRepository.listTracks(releaseId);
     const releaseForValidation: ReleaseSummary = {
@@ -427,11 +459,11 @@ export const releasesService = {
 
     let tracksReadyForPublishing: TrackSummary[] | null = null;
 
-    if (nextStatus === "published") {
+    if (parsed.status && nextStatus === "published") {
       tracksReadyForPublishing = await validateReleaseTracksForPublishing(releaseForValidation, assignments);
     }
 
-    if (nextStatus === "scheduled") {
+    if (parsed.status && nextStatus === "scheduled") {
       await validateReleaseTracksForPublishing(releaseForValidation, assignments);
 
       if (!parsed.releaseDate) {
@@ -443,7 +475,7 @@ export const releasesService = {
       }
     }
 
-    const updated = await releasesRepository.upsert({
+    const next: StoredRelease = {
       ...existing,
       title: parsed.title?.trim() || existing.title,
       artistName: parsed.artistName?.trim() || existing.artistName,
@@ -462,7 +494,7 @@ export const releasesService = {
           ? parsed.coverStorageKey.trim() || undefined
           : existing.coverStorageKey,
       releaseDate:
-        nextStatus === "published"
+        parsed.status === "published"
           ? resolvePublishedReleaseDate(existing, parsed.releaseDate)
           : parsed.releaseDate !== undefined
             ? parsed.releaseDate
@@ -475,7 +507,15 @@ export const releasesService = {
             ? undefined
             : existing.publishedAt,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    if (existing.liveVersion && parsed.status) {
+      if (!["published","scheduled"].includes(parsed.status)) throw new Error("Save the revision without changing its publication status, or apply it to the live release");
+      const { liveVersion: _live, hasRevision: _revision, ...committed } = next;
+      const updated = await databaseService.commitReleaseRevision(profile.id, existing.updatedAt, committed, assignments);
+      return toReleaseDetail(updated,true);
+    }
+    const updated = await releasesRepository.upsert(next);
+    if (existing.liveVersion || !parsed.status) return toReleaseDetail(updated,true);
 
     if (nextStatus === "published" && tracksReadyForPublishing) {
       await publishReleaseTracks(tracksReadyForPublishing);
@@ -500,6 +540,8 @@ export const releasesService = {
       throw new Error("Release not found");
     }
 
+    requireEditable(release);
+
     const parsed = releaseTrackAssignSchema.parse(input);
     const track = await tracksRepository.findById(parsed.trackId);
 
@@ -520,7 +562,7 @@ export const releasesService = {
 
       const assignments = await releasesRepository.listTracks(artistRelease.id);
 
-      if (assignments.some((assignment) => assignment.track_id === track.id)) {
+      if (assignments.some((assignment) => assignment.track_id === track.id) || artistRelease.liveVersion?.tracks.some(item => item.trackId === track.id)) {
         throw new Error("This track is already assigned to another release");
       }
     }
@@ -528,7 +570,7 @@ export const releasesService = {
     const trackNumber =
       parsed.trackNumber ??
       alreadyInRelease?.track_number ??
-      existingAssignments.length + 1;
+      Math.max(0, ...existingAssignments.map(item => item.track_number)) + 1;
 
     if (release.type === "single") {
       const otherTracks = existingAssignments.filter(
@@ -568,8 +610,8 @@ export const releasesService = {
       discNumber: parsed.discNumber,
       isFocusTrack: parsed.isFocusTrack,
     });
-    if (release.status === "published") {
-      await publishReleaseTracks([track]);
+    if (release.liveVersion?.tracks.some(item => item.trackId === track.id)) {
+      // Existing live audio retains its visibility until the revision is applied.
     } else {
       await unpublishReleaseTracks([track]);
     }
@@ -585,6 +627,8 @@ export const releasesService = {
     if (!release || release.artistId !== profile.id) {
       throw new Error("Release not found");
     }
+
+    requireEditable(release);
 
     const parsed = releaseTrackReorderSchema.parse(input);
     const existingTrackIds = new Set(
@@ -638,9 +682,11 @@ export const releasesService = {
       throw new Error("Release track not found");
     }
 
+    requireEditable(release);
+
     await releasesRepository.removeTrack(releaseId, trackId);
     await syncTrackReleaseFields(track, null);
-    await unpublishReleaseTracks([track]);
+    if (!release.liveVersion?.tracks.some(item => item.trackId === track.id)) await unpublishReleaseTracks([track]);
     const syncedRelease = await syncReleaseTrackCount(release);
 
     return toReleaseDetail(syncedRelease, true);
@@ -654,7 +700,7 @@ export const releasesService = {
       throw new Error("Release not found");
     }
 
-    const assignments = await releasesRepository.listTracks(releaseId);
+    const assignments = [...await releasesRepository.listTracks(releaseId), ...(release.liveVersion?.tracks.map(item => ({track_id:item.trackId})) ?? [])];
 
     for (const assignment of assignments) {
       const track = await tracksRepository.findById(assignment.track_id);
@@ -677,6 +723,7 @@ export const releasesService = {
       throw new Error("Release not found");
     }
 
+    requireEditable(existing);
     const updated = await releasesRepository.upsert({
       ...existing,
       coverStorageKey: payload.coverStorageKey,

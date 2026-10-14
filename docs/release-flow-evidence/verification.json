@@ -1,0 +1,155 @@
+{
+  "recordedAt": "2026-10-14T14:49:42.704Z",
+  "browser": "154.0.8037.97",
+  "checks": [
+    "Five-step Single flow uploads, attaches, saves credits and artwork, and publishes through the real API",
+    "Saved published revisions preserve the public release and recording metadata until explicit application",
+    "Single-to-EP prompt, completed-audio attachment retry, save and exit, resume, and five responsive widths"
+  ],
+  "captures": [
+    {
+      "file": "01-basics.png",
+      "route": "/dashboard/releases/new",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Release basics before draft creation",
+      "result": "passed"
+    },
+    {
+      "file": "02-music.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Audio uploaded and automatically attached",
+      "result": "passed"
+    },
+    {
+      "file": "03-information.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Per-song title, credits, ISRC, and label",
+      "result": "passed"
+    },
+    {
+      "file": "04-artwork.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Artwork and release description",
+      "result": "passed"
+    },
+    {
+      "file": "05-review.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Single ready for publication",
+      "result": "passed"
+    },
+    {
+      "file": "06-type-change.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Single prompts for EP before a second recording",
+      "result": "passed"
+    },
+    {
+      "file": "07-upload-retry.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Attachment failure retains completed audio for retry",
+      "result": "passed"
+    },
+    {
+      "file": "08-music-360.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Saved two-song revision after resume",
+      "result": "passed"
+    },
+    {
+      "file": "08-music-390.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Saved two-song revision after resume",
+      "result": "passed"
+    },
+    {
+      "file": "08-music-768.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Saved two-song revision after resume",
+      "result": "passed"
+    },
+    {
+      "file": "08-music-1024.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Saved two-song revision after resume",
+      "result": "passed"
+    },
+    {
+      "file": "08-music-1440.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Saved two-song revision after resume",
+      "result": "passed"
+    },
+    {
+      "file": "09-revision-review.png",
+      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Apply revision while the old Single remains public",
+      "result": "passed"
+    }
+  ],
+  "pageErrors": []
+}

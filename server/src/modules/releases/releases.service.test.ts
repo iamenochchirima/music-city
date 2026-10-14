@@ -332,3 +332,28 @@ test("release tracklists allow only one focus track and unique positions", async
     cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
   }
 });
+
+test("published and scheduled tracklists require an explicit revision",async () => {
+  for (const status of ["published","scheduled"] as const) {
+    const current={...release("single"),status};
+    const cleanup=[restore(usersService,"getProfile",async () => artistProfile),restore(releasesRepository,"findById",async () => current),restore(tracksRepository,"findById",async () => track("trk-1"))];
+    try {
+      await assert.rejects(releasesService.addTrackToRelease(walletAddress,current.id,{trackId:"trk-1"}),/Start a revision/);
+      await assert.rejects(releasesService.updateRelease(walletAddress,current.id,{title:"Changed"}),/Start a revision/);
+      await assert.rejects(releasesService.removeTrackFromRelease(walletAddress,current.id,"trk-1"),/Start a revision/);
+    } finally {cleanup.reverse().forEach(fn => fn());}
+  }
+});
+
+test("scheduled revision edits stay private while the original schedule and artwork are served",async () => {
+  const live={...release("single"),status:"scheduled" as const,releaseDate:"2030-12-01T13:00:00Z",trackCount:1,tracks:[{trackId:"trk-1",trackNumber:1,discNumber:1,isFocusTrack:false,track:track("trk-1")}]};
+  const current={...live,title:"Unfinished revision",type:"ep" as const,tracks:undefined,liveVersion:live};
+  const cleanup=[restore(usersService,"getProfile",async () => artistProfile),restore(releasesRepository,"findById",async () => current),restore(releasesRepository,"listTracks",async () => []),restore(releasesRepository,"upsert",async release => release)];
+  try {
+    const updated=await releasesService.updateRelease(walletAddress,current.id,{title:"Saved revision"});
+    assert.equal(updated.title,"Saved revision");assert.equal(updated.hasRevision,true);
+    const visible=await releasesService.getRelease(current.id);
+    assert.equal(visible?.title,live.title);assert.equal(visible?.type,"single");assert.equal(visible?.releaseDate,live.releaseDate);assert.deepEqual(visible?.tracks,[]);
+    assert.ok(!Object.hasOwn(visible!,"liveVersion"));
+  } finally {cleanup.reverse().forEach(fn => fn());}
+});
