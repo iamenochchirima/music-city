@@ -866,6 +866,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   if (release.tracks.some((item) => !item.track.playbackReady)) {
     readinessIssues.push({
       label: "Wait for every track to finish audio processing",
+      kind: "audio",
       targetId: "release-tracklist",
     });
   }
@@ -1182,16 +1183,34 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       ) : null}
       {section === "review" ? (
         <>
-          {release.tracks.some((item) => !item.track.playbackReady) ? (
-            <Button
-              variant="outline"
-              disabled={isSaving}
-              onClick={() => void refreshAudio()}
-            >
-              Refresh audio status
-            </Button>
-          ) : null}
           <ReleaseReview
+            token={session.token}
+            onAudioUpdated={(updated) => {
+              const merge = (current: ReleaseDetail | null) =>
+                current ? {
+                  ...current,
+                  tracks: current.tracks.map((item) => {
+                    const audio = updated.find((track) => track.id === item.trackId);
+                    if (!audio) return item;
+                    const fields = [
+                      "status", "runtime", "playbackReady", "muxAssetStatus",
+                      "muxAssetId", "muxPlaybackId", "playbackUrl", "streamMediaUrl",
+                      "streamManifestUrl", "masterStorageKey", "streamManifestKey", "archiveStatus",
+                    ] as const;
+                    return {
+                      ...item,
+                      track: {
+                        ...item.track,
+                        ...Object.fromEntries(fields
+                          .filter((key) => key in audio)
+                          .map((key) => [key, audio[key]])),
+                      },
+                    };
+                  }),
+                } : current;
+              setRelease(merge);
+              setSavedRelease(merge);
+            }}
             release={release}
             issues={readinessIssues}
             mode={launchMode}

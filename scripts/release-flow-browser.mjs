@@ -140,13 +140,11 @@ try {
       .getByRole("button", { name: "Upload a new track", exact: true })
       .click();
     await page.getByLabel("Track title", { exact: true }).fill(title);
-    await page
-      .getByLabel("Audio file", { exact: true })
-      .setInputFiles({
-        name: "recording.wav",
-        mimeType: "audio/wav",
-        buffer: wav,
-      });
+    await page.getByLabel("Audio file", { exact: true }).setInputFiles({
+      name: "recording.wav",
+      mimeType: "audio/wav",
+      buffer: wav,
+    });
     await page
       .getByRole("button", { name: "Upload & add recording", exact: true })
       .click();
@@ -204,10 +202,68 @@ try {
   await page
     .getByRole("button", { name: "Save & continue", exact: true })
     .click();
+  let showPending = true;
+  let finishProcessing;
+  const processingGate = new Promise((resolve) => {
+    finishProcessing = resolve;
+  });
+  await page.route(`**/api/v1/releases/${releaseId}/manage`, async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    if (showPending) {
+      showPending = false;
+      data.release.tracks[0].track.playbackReady = false;
+      data.release.tracks[0].track.status = "processing";
+    }
+    await route.fulfill({ response, json: data });
+  });
+  await page.route("**/api/v1/tracks/*/sync-media", async (route) => {
+    await processingGate;
+    await route.continue();
+  });
+  await page.goto(`${client}/dashboard/releases/${releaseId}?step=review`);
   await page
-    .getByLabel("Release plan", { exact: true })
-    .selectOption("published");
-  await capture("05-review", "Single ready for publication");
+    .getByRole("heading", { name: "Waiting for audio", exact: true })
+    .waitFor();
+  await page.getByRole("radio", { name: "Publish now", exact: true }).check();
+  assert.equal(await page.getByRole("radio").count(), 3);
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Waiting for audio...", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await capture(
+    "05-processing",
+    "Visible processing status and open publication choices",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await overflow("Mobile processing review");
+  await capture(
+    "05-processing-mobile",
+    "Mobile processing status and three publication choices",
+  );
+  finishProcessing();
+  await page
+    .getByRole("heading", { name: "Ready to publish", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Release now", exact: true })
+      .isEnabled(),
+    true,
+  );
+  await page.unroute(`**/api/v1/releases/${releaseId}/manage`);
+  await page.unroute("**/api/v1/tracks/*/sync-media");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await capture(
+    "05-review",
+    "Single ready for publication with visible plan choices",
+  );
+  checks.push(
+    "Visible audio waiting state blocks publication and automatically becomes ready; all publication choices remain exposed on desktop and mobile",
+  );
   await page.getByRole("button", { name: "Release now", exact: true }).click();
   await page
     .getByRole("button", { name: "Start revision", exact: true })

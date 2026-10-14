@@ -339,7 +339,7 @@ try {
   await page
     .getByRole("heading", { name: "Ready to publish", exact: true })
     .waitFor();
-  await page.getByLabel("Release plan").selectOption("scheduled");
+  await page.getByRole("radio", {name:"Schedule release",exact:true}).check();
   await page.getByLabel("Scheduled release time").fill("2030-12-01T13:00");
   await page
     .getByRole("button", { name: "Schedule release", exact: true })
@@ -355,7 +355,7 @@ try {
   );
   await page.getByRole("button", { name: "Start revision", exact: true }).click();
   await page.getByRole("button",{name:"Review & publish",exact:true}).click();
-  await page.getByLabel("Release plan").selectOption("published");
+  await page.getByRole("radio", {name:"Publish now",exact:true}).check();
   await page.getByRole("button", { name: "Apply release update", exact: true }).click();
   await page.getByText("Release published.", { exact: true }).waitFor();
   assert.equal(

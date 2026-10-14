@@ -1,7 +1,8 @@
 {
-  "recordedAt": "2026-10-14T14:49:42.704Z",
+  "recordedAt": "2026-10-14T18:45:37.319Z",
   "browser": "154.0.8037.97",
   "checks": [
+    "Visible audio waiting state blocks publication and automatically becomes ready; all publication choices remain exposed on desktop and mobile",
     "Five-step Single flow uploads, attaches, saves credits and artwork, and publishes through the real API",
     "Saved published revisions preserve the public release and recording metadata until explicit application",
     "Single-to-EP prompt, completed-audio attachment retry, save and exit, resume, and five responsive widths"
@@ -20,7 +21,7 @@
     },
     {
       "file": "02-music.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
@@ -31,7 +32,7 @@
     },
     {
       "file": "03-information.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
@@ -42,7 +43,7 @@
     },
     {
       "file": "04-artwork.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
@@ -52,19 +53,41 @@
       "result": "passed"
     },
     {
-      "file": "05-review.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "file": "05-processing.png",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Single ready for publication",
+      "state": "Visible processing status and open publication choices",
+      "result": "passed"
+    },
+    {
+      "file": "05-processing-mobile.png",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "Mobile processing status and three publication choices",
+      "result": "passed"
+    },
+    {
+      "file": "05-review.png",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Single ready for publication with visible plan choices",
       "result": "passed"
     },
     {
       "file": "06-type-change.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
@@ -75,7 +98,7 @@
     },
     {
       "file": "07-upload-retry.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 1000
@@ -86,7 +109,7 @@
     },
     {
       "file": "08-music-360.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 360,
         "height": 900
@@ -97,7 +120,7 @@
     },
     {
       "file": "08-music-390.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 390,
         "height": 900
@@ -108,7 +131,7 @@
     },
     {
       "file": "08-music-768.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 768,
         "height": 900
@@ -119,7 +142,7 @@
     },
     {
       "file": "08-music-1024.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1024,
         "height": 900
@@ -130,7 +153,7 @@
     },
     {
       "file": "08-music-1440.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 900
@@ -141,7 +164,7 @@
     },
     {
       "file": "09-revision-review.png",
-      "route": "/dashboard/releases/rel_ce5a60b72c724d1c",
+      "route": "/dashboard/releases/rel_3247bcdebe604a41",
       "viewport": {
         "width": 1440,
         "height": 900

@@ -56,7 +56,7 @@ it("opens the section and focuses the control for an unresolved publication requ
 it("keeps a selected schedule across section changes without changing publication on a details save", async () => {
   const user = userEvent.setup(); await open();
   await user.click(screen.getByRole("button", { name: "Review & publish" }));
-  await user.selectOptions(screen.getByLabelText("Release plan"), "scheduled");
+  await user.click(screen.getByRole("radio", {name:"Schedule release"}));
   await user.type(screen.getByLabelText("Scheduled release time"), "2030-12-01T13:00");
   await user.click(screen.getByRole("button", { name: "Release basics" }));
   await user.type(screen.getByLabelText("Title"), " updated");
@@ -64,7 +64,7 @@ it("keeps a selected schedule across section changes without changing publicatio
   await waitFor(() => expect(mocks.update).toHaveBeenCalledOnce());
   expect(mocks.update.mock.calls[0][2]).not.toHaveProperty("status");
   await user.click(screen.getByRole("button", { name: "Review & publish" }));
-  expect((screen.getByLabelText("Release plan") as HTMLSelectElement).value).toBe("scheduled");
+  expect((screen.getByRole("radio", {name:"Schedule release"}) as HTMLInputElement).checked).toBe(true);
   expect((screen.getByLabelText("Scheduled release time") as HTMLInputElement).value).toBe("2030-12-01T13:00");
 });
 it("saves current details and track order before publication", async () => {
@@ -73,7 +73,7 @@ it("saves current details and track order before publication", async () => {
   await user.click(screen.getByRole("button", { name: "Add music" }));
   await user.click(screen.getByLabelText("Set One as focus track"));
   await user.click(screen.getByRole("button", { name: "Review & publish" }));
-  await user.selectOptions(screen.getByLabelText("Release plan"), "published");
+  await user.click(screen.getByRole("radio", {name:"Publish now"}));
   await user.click(screen.getByRole("button", { name: "Release now" }));
   await waitFor(() => expect(mocks.update).toHaveBeenCalledOnce());
   expect(mocks.reorder).toHaveBeenCalledWith("token", "release", { items: [{ trackId: "one", trackNumber: 1, discNumber: 1, isFocusTrack: true }] });
@@ -94,7 +94,7 @@ it("retains form values and stays in the workspace if saving before upload fails
 it("keeps scheduling errors in Review beside the date without discarding its value", async () => {
   const user = userEvent.setup(); await open();
   await user.click(screen.getByRole("button", { name: "Review & publish" }));
-  await user.selectOptions(screen.getByLabelText("Release plan"), "scheduled");
+  await user.click(screen.getByRole("radio", {name:"Schedule release"}));
   await user.type(screen.getByLabelText("Scheduled release time"), "2030-12-01T13:00");
   mocks.update.mockRejectedValueOnce(new ApiClientError("Schedule rejected", 400, undefined, { releaseDate: "Choose another release time." }));
   await user.click(screen.getByRole("button", { name: "Schedule release" }));
