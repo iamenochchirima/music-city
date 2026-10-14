@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-14T20:57:02.956Z",
+  "counts": {
+    "users": 6,
+    "tracks": 3,
+    "releases": 2
+  },
+  "migration": [
+    {
+      "name": "2026-10-14-background-publication"
+    }
+  ],
+  "verificationAccountsRetiredToListener": 2,
+  "auditRecordsPreserved": true,
+  "beforeCounts": {
+    "users": 4,
+    "tracks": 3,
+    "releases": 2
+  },
+  "backupTaken": true
+}

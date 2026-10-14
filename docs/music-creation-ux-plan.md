@@ -1,8 +1,8 @@
 # Music creation UX implementation plan
 
-Status: Implemented locally. Worker deployment and live verification in progress. Updated 14 October 2026. This is a separate product improvement, outside the SOW 2 milestone tracker.
+Status: Implemented, deployed, and functionally verified. Updated 14 October 2026. This is a separate product improvement, outside the SOW 2 milestone tracker.
 
-The current implementation uses five steps, repeated song and release fields, manual save and refresh controls, and publication blocked by audio processing. This plan replaces those behaviors with a simpler creation journey and backend-owned publication. The new flow and backend publication workflow are implemented and locally verified. The current live deployment still needs the API, worker, migrations, and frontend update.
+The current implementation uses five steps, repeated song and release fields, manual save and refresh controls, and publication blocked by audio processing. This plan replaces those behaviors with a simpler creation journey and backend-owned publication. The new flow and backend publication workflow are running live. Local browser, database, and actual S3/Mux verification passed.
 
 ## Combined scope
 
@@ -17,7 +17,7 @@ The current implementation uses five steps, repeated song and release fields, ma
 - [x] Move processing coordination, readiness reconciliation, schedules, and publication into a durable backend worker.
 - [x] Remove manual audio refresh and browser-driven media synchronization. Display backend status automatically.
 - [x] Handle processing failure, replacement audio, cancellation, edits to queued releases, missed schedules, and live revisions without publishing stale or broken versions.
-- [ ] Test Single, collection, and resumed-draft journeys, including real processing, failures, worker restart, and deployment.
+- [x] Test Single, collection, and resumed-draft journeys, including real processing, failures, worker restart, and deployment.
 
 
 ## Implementation order
@@ -85,11 +85,11 @@ WebSockets are not required for this milestone. Server-sent events can replace s
 - [x] UX-03. Add multi-file uploads, immediate artwork upload, durable partial drafts, and truthful save status.
 - [x] UX-04. Add publication-request and durable-job migrations, cancellation rules, version pinning, and API schemas.
 - [x] UX-05. Persist and deduplicate verified webhook events with correct upload and asset identity matching.
-- [ ] UX-06. Deploy the worker with leases, recovery, bounded retries, status reconciliation, and schedule execution.
+- [x] UX-06. Deploy the worker with leases, recovery, bounded retries, status reconciliation, and schedule execution.
 - [x] UX-07. Accept processing publication requests and atomically publish ready versions without duplicate outcomes.
 - [x] UX-08. Implement failure, replacement, cancellation, missed-schedule, and live-revision behavior.
 - [x] UX-09. Remove manual audio refresh and browser-side synchronization. Add read-only automatic status display.
-- [ ] UX-10. Verify the complete journey locally and on the deployed client, API, worker, database, and Mux environment.
+- [x] UX-10. Verify the complete journey locally and on the deployed client, API, worker, database, and Mux environment.
 
 ## Acceptance and failure tests
 
@@ -119,4 +119,6 @@ Measure the Single, three-song collection, and resume-and-edit tasks with real u
 - Three-file upload selected EP without interruption. Shared label and an individual exception survived draft reopening at five viewport widths. Eleven browser captures recorded no page errors.
 - PostgreSQL tests passed queued publication, cancellation, changed targets, failed collections, missed schedules, restart leases, duplicate events, replacement generations, revision preservation, and uncertain asset creation without a duplicate provider request.
 - Current evidence: [browser verification](music-creation-ux-evidence/verification.json).
-- Worker deployment and actual S3/Mux production verification remain open under UX-06 and UX-10. Real-user task timing remains a follow-up measurement.
+- UX-06 and UX-10 completed. The Railway worker, background-publication migration, and frontend are deployed. Actual S3 upload, worker-owned Mux asset creation, processing, and automatic publication passed.
+- [Live verification](music-creation-ux-evidence/live-verification.json) records the provider-backed result. [Webhook verification](music-creation-ux-evidence/webhook-verification.json) records acceptance of a correctly signed event and rejection of an invalid signature. Actual Mux dashboard delivery configuration remains unverified; the deployed worker reconciles provider status independently.
+- Real-user task timing remains a follow-up usability measurement. Functional completion does not claim that measurement.

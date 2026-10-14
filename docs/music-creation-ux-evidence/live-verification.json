@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-10-14T20:55:07.186Z",
+  "checks": [
+    "Live S3 upload completion queues Mux asset creation and returns processing immediately",
+    "Live publication request accepted with actual provider processing",
+    "Actual Railway worker creates the Mux asset, confirms ready playback, and publishes without a browser",
+    "Live frontend serves the four-step flow and excludes private build variables"
+  ],
+  "publicationInitially": "processing",
+  "finalState": "published",
+  "realS3AndMux": true,
+  "assets": [
+    "/assets/index-Cv_VO_Cu.js"
+  ],
+  "testReleaseRemoved": true
+}

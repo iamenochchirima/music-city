@@ -38,3 +38,13 @@ A private PostgreSQL backup was taken before migration execution. The existing d
 The API's missing admin bootstrap secret was replaced with a generated secret. Existing signing secrets, treasury settings, storage credentials, and the linked Postgres connection were preserved. Production client and admin API URLs point to the Railway service.
 
 Deployment IDs and live verification results are recorded in [deployment evidence](production-deployment-evidence/README.md). The admin authentication endpoint reports that the first administrator account still needs to be created. Its bootstrap token is configured in Railway as `ADMIN_BOOTSTRAP_TOKEN`.
+
+## Music creation worker rollout
+
+The `media-worker` Railway service runs `pnpm --filter server worker` from the same repository. Both API and worker run `db:migrate` before starting. The migration `2026-10-14-background-publication` adds durable publication requests and leased media jobs. Existing releases, recordings, and financial records are preserved.
+
+Worker variables reference the corresponding `server` variables through Railway. Infrastructure definitions leave variables unmanaged, so CLI-managed references and secrets remain intact. The worker has no public domain. It handles asset creation, signed-event jobs, provider status reconciliation, schedules, and atomic publication.
+
+Local development starts it with `pnpm dev:worker`; `scripts/run_local_stack.sh` now includes its terminal tab. Restarting the worker resumes leased jobs. Failure outcomes remain visible in Studio, and uncertain asset creation is reconciled without a second blind creation request.
+
+See [creation verification](music-creation-ux-evidence/README.md) for local and actual S3/Mux evidence.
