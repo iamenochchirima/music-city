@@ -1,78 +1,42 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  releaseCreateSchema,
-  type ReleaseCreateInput,
-} from "@music-city/shared";
 import { useAuth } from "@/hooks/use-auth";
 import { releasesApi } from "@/features/music/lib/releases-api";
-import { ApiClientError } from "@/lib/api/http-client";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { Button } from "@/components/ui/button";
-import { ActionBar } from "@/components/studio/action-bar";
+import { Input } from "@/components/ui/input";
 import { StepNavigation } from "@/components/studio/step-navigation";
 import { FormStepHeader } from "@/components/studio/form-step-header";
-import { ReleaseBasicsFields } from "./release-basics-fields";
 import { releaseSteps } from "../lib/release-steps";
 export function ReleaseCreateOverview() {
   const { session } = useAuth();
   const navigate = useNavigate();
-  const [value, setValue] = useState<ReleaseCreateInput>({
-    title: "",
-    artistName: session?.displayName ?? "",
-    type: "single",
-    genre: "",
-  });
-  useEffect(() => {
-    if (session?.displayName)
-      setValue((current) => ({
-        ...current,
-        artistName: current.artistName || session.displayName,
-      }));
-  }, [session?.displayName]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const create = async () => {
-    if (!session?.token) return;
-    const parsed = releaseCreateSchema.safeParse({
-      ...value,
-      title: value.title.trim(),
-      artistName: value.artistName?.trim(),
-      genre: value.genre.trim(),
-    });
-    if (!parsed.success) {
-      setErrors(
-        Object.fromEntries(
-          parsed.error.issues.map((issue) => [
-            issue.path.join("."),
-            issue.message,
-          ]),
-        ),
-      );
-      requestAnimationFrame(() =>
-        document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
-      );
-      return;
-    }
+  async function start(files: File[] = []) {
+    if (!session?.token || busy) return;
     setBusy(true);
-    setErrors({});
     setError("");
     try {
-      const release = await releasesApi.createRelease(
-        session.token,
-        parsed.data,
-      );
+      const release = await releasesApi.createRelease(session.token, {
+        title: "",
+        genre: "",
+        type: "single",
+        artistName: session.displayName,
+      });
       navigate(`/dashboard/releases/${release.id}?step=music`, {
         replace: true,
+        state: { files },
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to create release");
-      if (e instanceof ApiClientError) setErrors(e.fieldErrors);
-    } finally {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Couldn't start your release. Try again.",
+      );
       setBusy(false);
     }
-  };
+  }
   if (!session) return <p>Connect your account to create a release.</p>;
   if (!["artist", "both"].includes(session.primaryIntent))
     return <ArtistAccessGate action="create a release" />;
@@ -80,54 +44,48 @@ export function ReleaseCreateOverview() {
     <div className="max-w-[720px] space-y-6">
       <FormStepHeader
         eyebrow="Create a release"
-        title="Release basics"
-        description="Start a Single, EP, or Album. Your draft is saved when you continue."
+        title="Add your music"
+        description="Start with your songs. You can add the details while audio processes."
       />
       <StepNavigation
         steps={releaseSteps}
         completed={[]}
         current={0}
-        onSelect={(index) => {
-          if (index > 0) void create();
-        }}
-        disabled={busy}
+        onSelect={() => {}}
+        disabled
         label="Release progress"
       />
-      <form
-        className="space-y-6 rounded-lg border border-border bg-card p-4 sm:p-6"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void create();
-        }}
-      >
-        <fieldset disabled={busy}>
-          <ReleaseBasicsFields
-            value={value}
-            onChange={(patch) =>
-              setValue((current) => ({ ...current, ...patch }))
-            }
-            errors={errors}
-          />
-        </fieldset>
-        {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}. Your details are still here. Try again.
-          </p>
-        ) : null}
-        <ActionBar>
-          <Button
-            type="button"
-            variant="outline"
+      <section className="space-y-5 rounded-lg border border-border bg-card p-6">
+        <label className="block space-y-3 rounded-lg border border-dashed border-input p-6 text-center">
+          <span className="block text-lg font-semibold">
+            Choose audio files
+          </span>
+          <span className="block text-sm text-muted-foreground">
+            MP3, WAV, FLAC, AAC, OGG, or M4A · up to 500 MB each
+          </span>
+          <Input
+            aria-label="Audio files"
+            type="file"
+            multiple
+            accept="audio/*,.flac,.m4a"
             disabled={busy}
-            onClick={() => navigate("/dashboard/releases")}
-          >
-            Cancel
-          </Button>
-          <Button disabled={busy} type="submit">
-            {busy ? "Creating draft..." : "Save draft & continue"}
-          </Button>
-        </ActionBar>
-      </form>
+            className="h-auto py-2"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) void start(files);
+            }}
+          />
+        </label>
+        <Button variant="outline" disabled={busy} onClick={() => void start()}>
+          Choose from library
+        </Button>
+        {busy && <p role="status">Starting your release...</p>}
+        {error && (
+          <p role="alert" className="text-destructive">
+            {error}
+          </p>
+        )}
+      </section>
     </div>
   );
 }

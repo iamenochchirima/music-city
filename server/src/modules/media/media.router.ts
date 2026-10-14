@@ -1,3 +1,4 @@
+import { mediaWorker } from "../publication/media-worker.js";
 import { Router } from "express";
 
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -24,12 +25,11 @@ mediaRouter.post(
     }
 
     const event = await mediaService.unwrapMuxWebhook(request.rawBody, headers);
-    const track = await mediaService.handleMuxWebhook(event);
+    await mediaWorker.receive(event);
 
     response.json({
       received: true,
       eventType: event.type,
-      track,
     });
   }),
 );

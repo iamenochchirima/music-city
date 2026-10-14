@@ -61,6 +61,15 @@ export const muxService = {
     });
   },
 
+  async findAssetByPassthrough(passthrough: string) {
+    let inspected=0;
+    for await (const asset of requireClient().video.assets.list({limit:100})) {
+      if(asset.passthrough===passthrough)return asset;
+      if(++inspected>=1000)break;
+    }
+    return null;
+  },
+
   async getUpload(uploadId: string) {
     return requireClient().video.uploads.retrieve(uploadId);
   },

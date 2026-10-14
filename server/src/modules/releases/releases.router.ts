@@ -1,3 +1,4 @@
+import { publicationService } from "../publication/publication.service.js";
 import { Router } from "express";
 import { ZodError } from "zod";
 
@@ -20,7 +21,9 @@ releasesRouter.get(
   requireSession,
   asyncHandler(async (request, response) => {
     response.json({
-      items: await releasesService.listMyReleases(request.session!.walletAddress),
+      items: await releasesService.listMyReleases(
+        request.session!.walletAddress,
+      ),
     });
   }),
 );
@@ -42,11 +45,50 @@ releasesRouter.get(
   }),
 );
 
+releasesRouter.post(
+  "/:releaseId/publication",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    const publication = await publicationService.request(
+      request.session!.walletAddress,
+      String(request.params.releaseId),
+      request.body,
+    );
+    response
+      .status(publication.state === "published" ? 200 : 202)
+      .json({
+        publication,
+        release: await releasesService.getManageRelease(
+          request.session!.walletAddress,
+          String(request.params.releaseId),
+        ),
+      });
+  }),
+);
+releasesRouter.delete(
+  "/:releaseId/publication",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    await publicationService.cancel(
+      request.session!.walletAddress,
+      String(request.params.releaseId),
+    );
+    response.json({
+      release: await releasesService.getManageRelease(
+        request.session!.walletAddress,
+        String(request.params.releaseId),
+      ),
+    });
+  }),
+);
+
 releasesRouter.get(
   "/:releaseId",
   asyncHandler(async (request, response) => {
     response.json({
-      release: await releasesService.getRelease(String(request.params.releaseId)),
+      release: await releasesService.getRelease(
+        String(request.params.releaseId),
+      ),
     });
   }),
 );
@@ -56,11 +98,18 @@ releasesRouter.post(
   requireSession,
   asyncHandler(async (request, response) => {
     try {
-      const tracks = await releasesService.applyTrackMetadata(request.session!.walletAddress, String(request.params.releaseId), request.body);
+      const tracks = await releasesService.applyTrackMetadata(
+        request.session!.walletAddress,
+        String(request.params.releaseId),
+        request.body,
+      );
       response.json({ tracks });
     } catch (error) {
       if (error instanceof ZodError) throw error;
-      throw new HttpError(400, error instanceof Error ? error.message : "Track label update failed");
+      throw new HttpError(
+        400,
+        error instanceof Error ? error.message : "Track label update failed",
+      );
     }
   }),
 );
@@ -89,10 +138,25 @@ releasesRouter.post(
   }),
 );
 
-releasesRouter.post("/:releaseId/revision", requireSession, asyncHandler(async (request,response) => {
-  try { response.json({ release: await releasesService.beginRevision(request.session!.walletAddress,String(request.params.releaseId)) }); }
-  catch(error) { throw new HttpError(400,error instanceof Error ? error.message : "Unable to start revision"); }
-}));
+releasesRouter.post(
+  "/:releaseId/revision",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    try {
+      response.json({
+        release: await releasesService.beginRevision(
+          request.session!.walletAddress,
+          String(request.params.releaseId),
+        ),
+      });
+    } catch (error) {
+      throw new HttpError(
+        400,
+        error instanceof Error ? error.message : "Unable to start revision",
+      );
+    }
+  }),
+);
 
 releasesRouter.put(
   "/:releaseId",
@@ -212,7 +276,9 @@ releasesRouter.delete(
 
       throw new HttpError(
         400,
-        error instanceof Error ? error.message : "Remove track from release failed",
+        error instanceof Error
+          ? error.message
+          : "Remove track from release failed",
       );
     }
   }),

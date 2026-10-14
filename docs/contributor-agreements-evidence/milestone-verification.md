@@ -1,6 +1,6 @@
-# Contributor agreement milestone verification
+# Historical contributor agreement verification
 
-Status: **In progress — real Freighter browser signing remains open.** This record covers the agreement/finalization milestone, not all of SOW Deliverable 2.
+This is a historical test and demonstration record, not a working milestone plan. The [SOW 2 tracker](../sow-2-tracker.md) records current status and acceptance requirements. The current client uses Dynamic Stellar wallets. References below to direct Freighter describe the implementation tested at that time and do not establish verification of the current browser path.
 
 ## Requirement evidence
 
@@ -54,7 +54,7 @@ On 2026-10-05, the Codex In-app Browser reported `window.freighter` and `window.
 - `pnpm --filter server agreements:demo:testnet`: live run and subsequent same-state resumption both pass. Resumption returns the original confirmed transaction, creates no new versions and does not republish.
 - `git diff --check`: passes. Source/config search finds none of the replaced set/freeze bindings, old upsert/publish/verify methods or obsolete registry chain/network variables.
 
-See [repeatable setup](README.md), [public network evidence](stellar-testnet.json) and the [implementation plan](../contributor-agreements-implementation-plan.md). Production deployment, broad hardening, settlement and direct fan support remain separate work. No milestone completion is claimed until the open creator browser-signing gate is verified.
+See [repeatable setup](README.md), [public network evidence](stellar-testnet.json) and the [SOW 2 tracker](../sow-2-tracker.md). Production deployment, broad hardening, settlement and direct fan support remain separate work. No milestone completion is claimed until the open creator browser-signing gate is verified.
 
 ## Dynamic SDK failure diagnosis, 2 October 2026
 
@@ -64,9 +64,9 @@ A real browser login attempt failed before authentication: Dynamic's SDK logs `F
 
 The browser showed the SDK initialization error and an actionable message; a screenshot is retained as historical evidence at [creator-provider-unavailable.png](creator-provider-unavailable.png). This is no longer the creator authentication flow.
 
-## Creator wallet path
+## Historical creator wallet path
 
-Creator login now requests a server-signed Stellar challenge and has Freighter sign it. The server verifies the exact challenge and wallet signature, then consumes its database record atomically so it cannot be replayed. Agreement responses, wallet transfers, and trustline transactions sign directly through Freighter after checking the configured network and expected wallet address. Dynamic SDK dependencies and login endpoints were removed from the client path.
+The implementation tested then requested a server-signed Stellar challenge and has Freighter sign it. The server verifies the exact challenge and wallet signature, then consumes its database record atomically so it cannot be replayed. Agreement responses, wallet transfers, and trustline transactions sign directly through Freighter after checking the configured network and expected wallet address. Dynamic SDK dependencies and login endpoints were removed from the client path.
 
 The client bounds the wallet sign-in wait to 30 seconds. If Freighter does not respond, the page shows the recovery message and requires a reload before another attempt. The sign-in flow passes an abort signal through wallet calls and checks it before challenge verification, so a late wallet response cannot complete sign-in after the timeout.
 

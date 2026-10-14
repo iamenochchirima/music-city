@@ -5,9 +5,10 @@ task_root="$(mktemp -d /tmp/music-city-track-credits.XXXXXX)"
 container_name="music-city-track-credits-$BASHPID"
 server_pid=""
 client_pid=""
+worker_pid=""
 cleanup() {
-  for pid in "$server_pid" "$client_pid"; do if [[ -n "$pid" ]]; then kill "$pid" 2>/dev/null || true; fi; done
-  for pid in "$server_pid" "$client_pid"; do if [[ -n "$pid" ]]; then wait "$pid" 2>/dev/null || true; fi; done
+  for pid in "$server_pid" "$client_pid" "$worker_pid"; do if [[ -n "$pid" ]]; then kill "$pid" 2>/dev/null || true; fi; done
+  for pid in "$server_pid" "$client_pid" "$worker_pid"; do if [[ -n "$pid" ]]; then wait "$pid" 2>/dev/null || true; fi; done
   docker rm -f "$container_name" >/dev/null 2>&1 || true
   rm -rf "$task_root"
 }
@@ -28,6 +29,7 @@ for _ in $(seq 1 80); do
   sleep 0.25
 done
 TRACK_METADATA_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/tracks/track-metadata.integration.test.ts
+MEDIA_WORKER_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/publication/publication.integration.test.ts
 AGREEMENTS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test --test-concurrency=1 src/modules/agreements/agreements.integration.test.ts src/modules/agreements/finalization.integration.test.ts
 if [[ "${1:-}" != "--browser" && "${1:-}" != "--studio" && "${1:-}" != "--audit" && "${1:-}" != "--release" ]]; then exit 0; fi
 
@@ -49,6 +51,9 @@ read -r signing_key < "$task_root/signing-key"
 mkdir -p "$task_root/runtime/server"
 (cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" PORT="$api_port" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" STORAGE_PROVIDER=local MEDIA_PROVIDER=local REFERRALS_ENABLED=true ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/main.ts" > "$task_root/server.log" 2>&1) &
 server_pid=$!
+(cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" STORAGE_PROVIDER=local MEDIA_PROVIDER=local ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/worker.ts" > "$task_root/worker.log" 2>&1) &
+worker_pid=$!
+
 (cd "$repo/client" && env VITE_API_BASE_URL="http://127.0.0.1:$api_port/api/v1" VITE_APP_BASE_URL="http://127.0.0.1:$client_port" VITE_DYNAMIC_ENVIRONMENT_ID=dynamic-environment-id-required ./node_modules/.bin/vite --host 127.0.0.1 --port "$client_port" --strictPort > "$task_root/client.log" 2>&1) &
 client_pid=$!
 ready=false
@@ -70,6 +75,6 @@ if [[ "${1:-}" == "--audit" ]]; then
 fi
 if [[ "${1:-}" == "--release" ]]; then
   verification_script="$repo/scripts/release-flow-browser.mjs"
-  evidence_dir="$repo/docs/release-flow-evidence"
+  evidence_dir="$repo/docs/music-creation-ux-evidence"
 fi
-TEST_API_URL="http://127.0.0.1:$api_port/api/v1" TEST_CLIENT_URL="http://127.0.0.1:$client_port" TEST_EVIDENCE_DIR="$evidence_dir" node "$verification_script"
+TEST_DATABASE_URL="$database_url" TEST_API_URL="http://127.0.0.1:$api_port/api/v1" TEST_CLIENT_URL="http://127.0.0.1:$client_port" TEST_EVIDENCE_DIR="$evidence_dir" node "$verification_script"

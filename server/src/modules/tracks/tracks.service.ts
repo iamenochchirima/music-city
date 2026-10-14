@@ -14,7 +14,10 @@ import { createId } from "../../services/id.service.js";
 import { muxService } from "../../services/mux.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { env } from "../../config/env.js";
-import { normalizePositiveAmount, normalizeStellarAsset } from "../../utils/commerce.js";
+import {
+  normalizePositiveAmount,
+  normalizeStellarAsset,
+} from "../../utils/commerce.js";
 import { usersService } from "../users/users.service.js";
 import { tracksRepository } from "./tracks.repository.js";
 
@@ -30,7 +33,9 @@ const formatRuntime = (seconds?: number) => {
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 };
 
-const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: string }>(
+const hydrateTrackUrls = <
+  T extends { coverStorageKey?: string; coverImageUrl?: string },
+>(
   track: T,
 ) => {
   const nextTrack = {
@@ -58,7 +63,10 @@ const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: 
   return nextTrack;
 };
 
-const hydrateTrackForView = (track: TrackSummary, isPublic: boolean): TrackSummary =>
+const hydrateTrackForView = (
+  track: TrackSummary,
+  isPublic: boolean,
+): TrackSummary =>
   hydrateTrackUrls({
     ...track,
     visibility: isPublic ? ("published" as const) : ("unpublished" as const),
@@ -66,9 +74,24 @@ const hydrateTrackForView = (track: TrackSummary, isPublic: boolean): TrackSumma
   }) as TrackSummary;
 
 const validateCreditProfiles = async (credits: TrackSummary["credits"]) => {
-  for (const artistId of new Set((credits ?? []).flatMap(credit => credit.artistId ? [credit.artistId] : []))) {
+  for (const artistId of new Set(
+    (credits ?? []).flatMap((credit) =>
+      credit.artistId ? [credit.artistId] : [],
+    ),
+  )) {
     const artist = await usersService.getProfileById(artistId);
-    if (!artist || !["artist", "both"].includes(artist.primaryIntent)) throw new ZodError([{ code: "custom", path: ["credits", (credits ?? []).findIndex(credit => credit.artistId === artistId), "artistId"], message: "Linked credit profile must belong to an artist" }]);
+    if (!artist || !["artist", "both"].includes(artist.primaryIntent))
+      throw new ZodError([
+        {
+          code: "custom",
+          path: [
+            "credits",
+            (credits ?? []).findIndex((credit) => credit.artistId === artistId),
+            "artistId",
+          ],
+          message: "Linked credit profile must belong to an artist",
+        },
+      ]);
   }
 };
 
@@ -79,8 +102,15 @@ export const tracksService = {
 
   async listTracks() {
     const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds());
-    const snapshots = new Map((await databaseService.listLiveTrackSnapshots()).map(track => [track.id,track]));
-    const tracks = (await tracksRepository.list()).map(track => snapshots.get(track.id) ?? track);
+    const snapshots = new Map(
+      (await databaseService.listLiveTrackSnapshots()).map((track) => [
+        track.id,
+        track,
+      ]),
+    );
+    const tracks = (await tracksRepository.list()).map(
+      (track) => snapshots.get(track.id) ?? track,
+    );
     return tracks
       .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
       .map((track) => hydrateTrackForView(track, true));
@@ -94,14 +124,27 @@ export const tracksService = {
     }
 
     const tracks = await tracksRepository.listByArtist(profile.id);
-    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds(profile.id));
-    return tracks.map((track) => hydrateTrackForView(track, publicTrackIds.has(track.id)));
+    const publicTrackIds = new Set(
+      await tracksRepository.listPublicTrackIds(profile.id),
+    );
+    return tracks.map((track) =>
+      hydrateTrackForView(track, publicTrackIds.has(track.id)),
+    );
   },
 
   async listPublicTracksByArtist(artistId: string) {
-    const snapshots=new Map((await databaseService.listLiveTrackSnapshots()).map(track => [track.id,track]));
-    const tracks = (await tracksRepository.listByArtist(artistId)).map(track => snapshots.get(track.id) ?? track);
-    const publicTrackIds = new Set(await tracksRepository.listPublicTrackIds(artistId));
+    const snapshots = new Map(
+      (await databaseService.listLiveTrackSnapshots()).map((track) => [
+        track.id,
+        track,
+      ]),
+    );
+    const tracks = (await tracksRepository.listByArtist(artistId)).map(
+      (track) => snapshots.get(track.id) ?? track,
+    );
+    const publicTrackIds = new Set(
+      await tracksRepository.listPublicTrackIds(artistId),
+    );
 
     return tracks
       .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
@@ -109,12 +152,18 @@ export const tracksService = {
   },
 
   async getTrack(trackId: string) {
-    const track = (await databaseService.listLiveTrackSnapshots()).find(track => track.id === trackId) ?? await tracksRepository.findById(trackId);
+    const track =
+      (await databaseService.listLiveTrackSnapshots()).find(
+        (track) => track.id === trackId,
+      ) ?? (await tracksRepository.findById(trackId));
     if (!track) {
       return null;
     }
 
-    if (!track.playbackReady || !(await tracksRepository.isTrackInPublicRelease(track.id))) {
+    if (
+      !track.playbackReady ||
+      !(await tracksRepository.isTrackInPublicRelease(track.id))
+    ) {
       return null;
     }
 
@@ -122,7 +171,10 @@ export const tracksService = {
   },
 
   async getTrackForPlayback(trackId: string) {
-    const track = (await databaseService.listLiveTrackSnapshots()).find(track => track.id === trackId) ?? await tracksRepository.findById(trackId);
+    const track =
+      (await databaseService.listLiveTrackSnapshots()).find(
+        (track) => track.id === trackId,
+      ) ?? (await tracksRepository.findById(trackId));
     if (!track) {
       return null;
     }
@@ -160,7 +212,7 @@ export const tracksService = {
     }
 
     return hydrateTrackForView(
-      { ...track, ...await tracksRepository.findReleaseContext(track.id) },
+      { ...track, ...(await tracksRepository.findReleaseContext(track.id)) },
       await tracksRepository.isTrackInPublicRelease(track.id),
     );
   },
@@ -192,16 +244,19 @@ export const tracksService = {
         }
       });
     } else if (track.muxUploadId) {
-      await muxService.cancelUpload(track.muxUploadId).catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
+      await muxService
+        .cancelUpload(track.muxUploadId)
+        .catch((error: unknown) => {
+          const message =
+            error instanceof Error ? error.message : String(error);
 
-        if (
-          !message.toLowerCase().includes("404") &&
-          !message.toLowerCase().includes("not found")
-        ) {
-          throw error;
-        }
-      });
+          if (
+            !message.toLowerCase().includes("404") &&
+            !message.toLowerCase().includes("not found")
+          ) {
+            throw error;
+          }
+        });
     }
 
     if (track.coverStorageKey) {
@@ -242,11 +297,9 @@ export const tracksService = {
     const purchaseAsset = purchaseEnabled
       ? normalizeStellarAsset(
           {
-            code:
-              parsed.purchaseAssetCode ?? env.STELLAR_SETTLEMENT_ASSET_CODE,
+            code: parsed.purchaseAssetCode ?? env.STELLAR_SETTLEMENT_ASSET_CODE,
             issuer:
-              parsed.purchaseAssetIssuer ??
-              env.STELLAR_SETTLEMENT_ASSET_ISSUER,
+              parsed.purchaseAssetIssuer ?? env.STELLAR_SETTLEMENT_ASSET_ISSUER,
           },
           "Track purchase",
         )
@@ -303,11 +356,20 @@ export const tracksService = {
 
     await validateCreditProfiles(parsed.credits);
 
-    const patch: TrackMetadataUpdateInput & { updatedAt: string } = { ...parsed, updatedAt: new Date().toISOString() };
+    const patch: TrackMetadataUpdateInput & { updatedAt: string } = {
+      ...parsed,
+      updatedAt: new Date().toISOString(),
+    };
     if (parsed.isrc !== undefined) patch.isrc = parsed.isrc || undefined;
-    if (parsed.recordLabel !== undefined) patch.recordLabel = parsed.recordLabel || undefined;
-    if (parsed.description !== undefined) patch.description = parsed.description.trim() || undefined;
-    const updated = await tracksRepository.updateMetadata(trackId, profile.id, patch);
+    if (parsed.recordLabel !== undefined)
+      patch.recordLabel = parsed.recordLabel || undefined;
+    if (parsed.description !== undefined)
+      patch.description = parsed.description.trim() || undefined;
+    const updated = await tracksRepository.updateMetadata(
+      trackId,
+      profile.id,
+      patch,
+    );
     if (!updated) throw new Error("Track not found");
     return updated;
   },
@@ -329,7 +391,8 @@ export const tracksService = {
 
     const parsed = trackMonetizationUpdateSchema.parse(input);
 
-    const purchaseEnabled = parsed.purchaseEnabled ?? existing.purchaseEnabled ?? false;
+    const purchaseEnabled =
+      parsed.purchaseEnabled ?? existing.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
       ? normalizePositiveAmount(
           parsed.purchasePrice ||
@@ -338,22 +401,21 @@ export const tracksService = {
           "Track purchase price",
         )
       : existing.purchasePrice;
-    const purchaseAsset =
-      purchaseEnabled
-        ? normalizeStellarAsset(
-            {
-              code:
-                parsed.purchaseAssetCode ||
-                existing.purchaseAssetCode ||
-                env.STELLAR_SETTLEMENT_ASSET_CODE,
-              issuer:
-                parsed.purchaseAssetIssuer ||
-                existing.purchaseAssetIssuer ||
-                env.STELLAR_SETTLEMENT_ASSET_ISSUER,
-            },
-            "Track purchase",
-          )
-        : undefined;
+    const purchaseAsset = purchaseEnabled
+      ? normalizeStellarAsset(
+          {
+            code:
+              parsed.purchaseAssetCode ||
+              existing.purchaseAssetCode ||
+              env.STELLAR_SETTLEMENT_ASSET_CODE,
+            issuer:
+              parsed.purchaseAssetIssuer ||
+              existing.purchaseAssetIssuer ||
+              env.STELLAR_SETTLEMENT_ASSET_ISSUER,
+          },
+          "Track purchase",
+        )
+      : undefined;
     const isPublic = await tracksRepository.isTrackInPublicRelease(existing.id);
 
     return tracksRepository.upsert({
@@ -361,8 +423,7 @@ export const tracksService = {
       visibility: isPublic ? "published" : "unpublished",
       purchaseEnabled,
       purchasePrice,
-      purchaseAssetCode:
-        purchaseAsset?.code ?? existing.purchaseAssetCode,
+      purchaseAssetCode: purchaseAsset?.code ?? existing.purchaseAssetCode,
       purchaseAssetIssuer:
         purchaseAsset?.issuer ?? existing.purchaseAssetIssuer,
       priceLabel: isPublic ? "Published" : "Unpublished",
@@ -370,96 +431,89 @@ export const tracksService = {
     });
   },
 
-  async syncMuxTrack(trackId: string) {
-    const existing = await tracksRepository.findById(trackId);
-
-    if (!existing) {
-      throw new Error("Track not found");
-    }
-
-    if (existing.mediaProvider !== "mux") {
-      return existing;
-    }
-
-    if (existing.muxAssetId) {
-      const asset = await muxService.getAsset(existing.muxAssetId);
-
-      if (asset.status === "ready") {
-        return this.markPlaybackReady(trackId, {
-          runtime: formatRuntime(asset.duration),
-          muxAssetId: asset.id,
-          muxPlaybackId: asset.playback_ids?.[0]?.id,
+  async syncMediaFromWorker(trackId: string) {
+    const current = await tracksRepository.findById(trackId);
+    if (!current || current.mediaProvider !== "mux") return current;
+    const generation =
+      current.muxUploadId || current.masterStorageKey || current.muxAssetId;
+    let assetId = current.muxAssetId;
+    if (!assetId && current.muxUploadId) {
+      const upload = await muxService.getUpload(current.muxUploadId);
+      if (["errored", "cancelled", "timed_out"].includes(upload.status)) {
+        return this.applyMediaPatch(trackId, generation, {
+          status: "failed",
+          muxAssetStatus: "errored",
+          playbackReady: false,
+          runtime: "Audio upload failed",
         });
       }
-
-      if (asset.status === "errored") {
-        return this.markFailed(trackId, "Mux asset processing failed");
-      }
-
-      return this.markMuxAssetCreated(trackId, {
-        muxAssetId: asset.id,
-        muxUploadId: existing.muxUploadId,
+      assetId = upload.asset_id;
+    }
+    if (!assetId) return current;
+    const asset = await muxService.getAsset(assetId);
+    const patch: Partial<TrackSummary> = {
+      muxAssetId: asset.id,
+      muxAssetStatus:
+        asset.status === "preparing" ? "asset_created" : asset.status,
+    };
+    if (asset.status === "ready" && asset.playback_ids?.[0]?.id)
+      Object.assign(patch, {
+        status: "published",
+        playbackReady: true,
+        muxPlaybackId: asset.playback_ids[0].id,
+        runtime: `${Math.floor((asset.duration ?? 0) / 60)}:${String(Math.round((asset.duration ?? 0) % 60)).padStart(2, "0")}`,
       });
-    }
-
-    if (!existing.muxUploadId) {
-      return existing;
-    }
-
-    const upload = await muxService.getUpload(existing.muxUploadId);
-
-    if (upload.status === "asset_created" && upload.asset_id) {
-      const updated = await this.markMuxAssetCreated(trackId, {
-        muxAssetId: upload.asset_id,
-        muxUploadId: upload.id,
+    else if (asset.status === "errored")
+      Object.assign(patch, {
+        status: "failed",
+        playbackReady: false,
+        runtime: "Audio processing failed",
       });
-
-      if (!updated.muxAssetId) {
-        return updated;
-      }
-
-      const asset = await muxService.getAsset(updated.muxAssetId);
-
-      if (asset.status === "ready") {
-        return this.markPlaybackReady(trackId, {
-          runtime: formatRuntime(asset.duration),
-          muxAssetId: asset.id,
-          muxPlaybackId: asset.playback_ids?.[0]?.id,
-        });
-      }
-
-      if (asset.status === "errored") {
-        return this.markFailed(trackId, "Mux asset processing failed");
-      }
-
-      return updated;
-    }
-
-    if (upload.status === "errored") {
-      return this.markFailed(
-        trackId,
-        upload.error?.message ?? upload.error?.type ?? "Mux upload failed",
-      );
-    }
-
-    if (upload.status === "cancelled") {
-      return this.markFailed(trackId, "Mux upload cancelled");
-    }
-
-    if (upload.status === "timed_out") {
-      return this.markFailed(trackId, "Mux upload timed out");
-    }
-
-    return existing;
+    return this.applyMediaPatch(trackId, generation, patch);
   },
 
-  async attachMaster(trackId: string, payload: {
-    masterStorageKey: string;
-    sourceFileName: string;
-    sourceContentType: string;
-    sourceSizeBytes: number;
-    storageProvider: "local" | "s3";
-  }) {
+  async applyMediaPatch(
+    trackId: string,
+    generation: string | undefined,
+    patch: Partial<TrackSummary>,
+  ) {
+    return databaseService.transaction(async (client) => {
+      const current = (
+        await client.query<{ payload: TrackSummary }>(
+          "SELECT payload FROM tracks WHERE id=$1 FOR UPDATE",
+          [trackId],
+        )
+      ).rows[0]?.payload;
+      if (
+        !current ||
+        (current.muxUploadId ||
+          current.masterStorageKey ||
+          current.muxAssetId) !== generation
+      )
+        return current;
+      const next = {
+        ...current,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      };
+      await client.query(
+        "UPDATE tracks SET status=$2,payload=$3::jsonb WHERE id=$1",
+        [trackId, next.status, JSON.stringify(next)],
+      );
+      return next;
+    });
+  },
+
+  async attachMaster(
+    trackId: string,
+    payload: {
+      masterStorageKey: string;
+      sourceFileName: string;
+      sourceContentType: string;
+      sourceSizeBytes: number;
+      storageProvider: "local" | "s3";
+    },
+  ) {
     const existing = await tracksRepository.findById(trackId);
 
     if (!existing) {
@@ -471,6 +525,10 @@ export const tracksService = {
       status: "uploaded",
       runtime: "Uploaded",
       mediaProvider: "local",
+      muxUploadId: undefined,
+      muxAssetId: undefined,
+      muxPlaybackId: undefined,
+      muxAssetStatus: undefined,
       mediaStorageProvider: payload.storageProvider,
       masterStorageKey: payload.masterStorageKey,
       streamManifestKey: `virtual/${trackId}/master.m3u8`,
@@ -497,12 +555,15 @@ export const tracksService = {
     });
   },
 
-  async attachMuxUpload(trackId: string, payload: {
-    muxUploadId: string;
-    sourceFileName: string;
-    sourceContentType: string;
-    sourceSizeBytes: number;
-  }) {
+  async attachMuxUpload(
+    trackId: string,
+    payload: {
+      muxUploadId: string;
+      sourceFileName: string;
+      sourceContentType: string;
+      sourceSizeBytes: number;
+    },
+  ) {
     const existing = await tracksRepository.findById(trackId);
 
     if (!existing) {
@@ -515,6 +576,8 @@ export const tracksService = {
       runtime: "Uploading to Mux",
       mediaProvider: "mux",
       muxUploadId: payload.muxUploadId,
+      muxAssetId: undefined,
+      muxPlaybackId: undefined,
       muxAssetStatus: "waiting",
       sourceFileName: payload.sourceFileName,
       sourceContentType: payload.sourceContentType,
@@ -539,13 +602,16 @@ export const tracksService = {
     });
   },
 
-  async markPlaybackReady(trackId: string, payload: {
-    runtime: string;
-    streamManifestUrl?: string;
-    streamMediaUrl?: string;
-    muxAssetId?: string;
-    muxPlaybackId?: string;
-  }) {
+  async markPlaybackReady(
+    trackId: string,
+    payload: {
+      runtime: string;
+      streamManifestUrl?: string;
+      streamMediaUrl?: string;
+      muxAssetId?: string;
+      muxPlaybackId?: string;
+    },
+  ) {
     const existing = await tracksRepository.findById(trackId);
 
     if (!existing) {
@@ -558,8 +624,11 @@ export const tracksService = {
       runtime: payload.runtime,
       playbackReady: true,
       playbackUrl:
-        payload.streamMediaUrl ?? existing.playbackUrl ?? existing.streamMediaUrl,
-      streamManifestUrl: payload.streamManifestUrl ?? existing.streamManifestUrl,
+        payload.streamMediaUrl ??
+        existing.playbackUrl ??
+        existing.streamMediaUrl,
+      streamManifestUrl:
+        payload.streamManifestUrl ?? existing.streamManifestUrl,
       streamMediaUrl: payload.streamMediaUrl ?? existing.streamMediaUrl,
       muxAssetId: payload.muxAssetId ?? existing.muxAssetId,
       muxPlaybackId: payload.muxPlaybackId ?? existing.muxPlaybackId,
@@ -568,10 +637,13 @@ export const tracksService = {
     });
   },
 
-  async markMuxAssetCreated(trackId: string, payload: {
-    muxUploadId?: string;
-    muxAssetId: string;
-  }) {
+  async markMuxAssetCreated(
+    trackId: string,
+    payload: {
+      muxUploadId?: string;
+      muxAssetId: string;
+    },
+  ) {
     const existing = await tracksRepository.findById(trackId);
 
     if (!existing) {
@@ -601,7 +673,8 @@ export const tracksService = {
       ...existing,
       status: "failed",
       runtime,
-      muxAssetStatus: existing.mediaProvider === "mux" ? "errored" : existing.muxAssetStatus,
+      muxAssetStatus:
+        existing.mediaProvider === "mux" ? "errored" : existing.muxAssetStatus,
       playbackReady: false,
       updatedAt: new Date().toISOString(),
     });

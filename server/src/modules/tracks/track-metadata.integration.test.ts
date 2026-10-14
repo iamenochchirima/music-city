@@ -128,7 +128,7 @@ test("PostgreSQL track metadata batches and one-time migration", { skip: !url },
       const original: ReleaseDetail={id:rid,artistId:owner,artistName:"Artist",title:"Live Single",type:"single",status:"published",genre:"Pop",trackCount:1,updatedAt:new Date().toISOString(),tracks:[{trackId:first,trackNumber:1,discNumber:1,isFocusTrack:false,track:fixture(first)}]};
       for (const id of [first,second]) {const track=fixture(id);await db.upsertTrack(id,owner,track.status,track.visibility ?? "published",null,track);}
       await db.upsertRelease(rid,owner,"single","published",null,original);
-      await db.assignTrackToRelease(rid,first,1,1,false);
+      await db.transaction(c=>c.query("INSERT INTO release_tracks(release_id,track_id,track_number,disc_number,is_focus_track) VALUES($1,$2,1,1,false)",[rid,first]));
       await assert.rejects(db.beginReleaseRevision(rid,other,original),/not found/);
       const revision=await db.beginReleaseRevision(rid,owner,original);
       assert.equal((await db.beginReleaseRevision(rid,owner,original)).liveVersion.title,"Live Single");

@@ -1,3 +1,4 @@
+import { publicationSchemaStatements } from "../modules/publication/publication-schema.js";
 import type { ReleaseDetail, ReleaseSummary, TrackSummary, TrackMetadataUpdateInput, ReleaseTrackMetadataInput } from "@music-city/shared";
 import { referralSchemaStatements, referralActivationSchemaStatements, referralCampaignControlStatements } from "../modules/referrals/referral-schema.js";
 import { Pool, type PoolClient } from "pg";
@@ -404,6 +405,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
   { name: "2026-10-11-early-user-sponsorship-capacity", statements: sponsorshipCapacityMigrationStatements },
   { name: "2026-10-08-registration-referrals", statements: referralSchemaStatements },
@@ -927,6 +929,13 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
     statements: baseSchemaStatements,
   },
   {
+    name: "2026-10-14-background-publication",
+    migrationName: "2026-10-14-background-publication",
+    relations: ["publication_requests", "media_jobs"],
+    indexes: ["publication_requests_active_idx", "publication_requests_due_idx", "media_jobs_due_idx"],
+    statements: publicationSchemaStatements,
+  },
+  {
     name: "2026-10-09-onboarding-artist-activation-step",
     migrationName: "2026-10-09-onboarding-artist-activation-step",
     relations: [],
@@ -1361,7 +1370,11 @@ export const databaseService = {
     releaseDate: string | null,
     payload: unknown,
   ) {
-    await pool.query(
+    await this.transaction(async client => {
+      const current = await client.query<{payload: ReleaseSummary & {liveVersion?: ReleaseDetail}}>("SELECT payload FROM releases WHERE id=$1 FOR UPDATE",[id]);
+      if (current.rows[0] && current.rows[0].payload.status === "published" && !current.rows[0].payload.liveVersion && !["archived","draft"].includes((payload as ReleaseSummary).status)) throw new Error("Start a revision before editing a live release");
+      await client.query("UPDATE publication_requests SET state='cancelled',updated_at=NOW() WHERE release_id=$1 AND state IN ('processing','scheduled')",[id]);
+      await client.query(
       `INSERT INTO releases (id, artist_id, type, status, release_date, payload)
        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
        ON CONFLICT (id) DO UPDATE SET
@@ -1372,6 +1385,7 @@ export const databaseService = {
          payload = EXCLUDED.payload`,
       [id, artistId, type, status, releaseDate, JSON.stringify(payload)],
     );
+    });
   },
 
   async listReleasesByArtist<T>(artistId: string) {
@@ -1391,12 +1405,17 @@ export const databaseService = {
 
   async updateTrackMetadata(id: string, artistId: string, patch: TrackMetadataUpdateInput & { updatedAt: string }) {
     const clear = Object.entries(patch).filter(([, value]) => value === undefined).map(([field]) => field);
-    const result = await pool.query<{ payload: TrackSummary }>(
+    return this.transaction(async client => {
+    const releases = await client.query<{id:string;payload: ReleaseSummary & {liveVersion?:ReleaseDetail}}>("SELECT r.id,r.payload FROM releases r JOIN release_tracks rt ON rt.release_id=r.id WHERE rt.track_id=$1 ORDER BY r.id FOR UPDATE OF r",[id]);
+    if (releases.rows.some(r => ["published","scheduled"].includes(r.payload.status) && !r.payload.liveVersion)) throw new Error("Start a release revision before editing this recording");
+    await client.query("UPDATE publication_requests SET state='cancelled',updated_at=NOW() WHERE release_id=ANY($1::text[]) AND state IN ('processing','scheduled')",[releases.rows.map(r => r.id)]);
+    const result = await client.query<{ payload: TrackSummary }>(
       `UPDATE tracks SET payload = (payload - $3::text[]) || $4::jsonb
        WHERE id=$1 AND artist_id=$2 RETURNING payload`,
       [id, artistId, clear, JSON.stringify(patch)],
     );
     return result.rows[0]?.payload ?? null;
+    });
   },
 
   async getTrackReleaseContext(trackId: string) {
@@ -1438,7 +1457,11 @@ export const databaseService = {
     discNumber: number,
     isFocusTrack: boolean,
   ) {
-    await pool.query(
+    await this.transaction(async client => {
+      const row = (await client.query<{payload: ReleaseSummary & {liveVersion?: ReleaseDetail}}>("SELECT payload FROM releases WHERE id=$1 FOR UPDATE",[releaseId])).rows[0];
+      if (!row || (["published","scheduled"].includes(row.payload.status) && !row.payload.liveVersion)) throw new Error("Start a revision before changing a live release");
+      await client.query("UPDATE publication_requests SET state='cancelled',updated_at=NOW() WHERE release_id=$1 AND state IN ('processing','scheduled')",[releaseId]);
+      await client.query(
       `INSERT INTO release_tracks (
          release_id,
          track_id,
@@ -1454,13 +1477,19 @@ export const databaseService = {
          is_focus_track = EXCLUDED.is_focus_track`,
       [releaseId, trackId, trackNumber, discNumber, isFocusTrack],
     );
+    });
   },
 
   async removeTrackFromRelease(releaseId: string, trackId: string) {
-    await pool.query(
+    await this.transaction(async client => {
+      const row = (await client.query<{payload: ReleaseSummary & {liveVersion?: ReleaseDetail}}>("SELECT payload FROM releases WHERE id=$1 FOR UPDATE",[releaseId])).rows[0];
+      if (!row || (["published","scheduled"].includes(row.payload.status) && !row.payload.liveVersion)) throw new Error("Start a revision before changing a live release");
+      await client.query("UPDATE publication_requests SET state='cancelled',updated_at=NOW() WHERE release_id=$1 AND state IN ('processing','scheduled')",[releaseId]);
+      await client.query(
       `DELETE FROM release_tracks WHERE release_id = $1 AND track_id = $2`,
       [releaseId, trackId],
     );
+    });
   },
 
   async listReleaseTracks(releaseId: string) {

@@ -50,15 +50,6 @@ export const tracksApi = {
     return response.track;
   },
 
-  async syncTrackMedia(token: string, trackId: string) {
-    const response = await httpClient.post<{ track: TrackSummary }>(
-      `/tracks/${trackId}/sync-media`,
-      {},
-      token,
-    );
-
-    return response.track;
-  },
 
   async deleteTrack(token: string, trackId: string) {
     await httpClient.delete(`/tracks/${trackId}`, token);

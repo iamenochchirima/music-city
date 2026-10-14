@@ -1,3 +1,4 @@
+import { validatePublication, publicationService } from "../publication/publication.service.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ReleaseSummary } from "@music-city/shared";
@@ -119,9 +120,7 @@ const runUpdate = async (
   ];
 
   try {
-    await releasesService.updateRelease(walletAddress, currentRelease.id, {
-      status: "published",
-    });
+    validatePublication(currentRelease,assignments,Object.values(tracks));
   } finally {
     cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
   }
@@ -135,7 +134,7 @@ test("publishing a release requires artwork and a valid track count", async () =
 
   await assert.rejects(
     () => runUpdate(noArtworkRelease, [], {}),
-    /Upload release artwork before publishing/,
+    /Add release artwork before publishing/,
   );
 
   await assert.rejects(
@@ -145,7 +144,7 @@ test("publishing a release requires artwork and a valid track count", async () =
         [{ release_id: "rel-1", track_id: "trk-1", track_number: 1, disc_number: 1, is_focus_track: false }],
         { "trk-1": track("trk-1") },
       ),
-    /Upload release artwork before publishing/,
+    /Add release artwork before publishing/,
   );
 });
 
@@ -193,7 +192,7 @@ test("album publishing rejects fewer than seven tracks", async () => {
         ],
         { "trk-1": track("trk-1") },
       ),
-    /Albums must contain at least 7 tracks/,
+    /Choose a release format/,
   );
 });
 
@@ -205,53 +204,21 @@ test("publishing a single rejects an empty tracklist even with artwork", async (
 
   await assert.rejects(
     () => runUpdate(currentRelease, [], {}),
-    /Add at least one track before releasing this project/,
+    /Choose a release format/,
   );
 });
 
-test("publishing a release is the only operation that publishes its tracks", async () => {
-  const currentRelease = {
-    ...release("single"),
-    coverStorageKey: "covers/rel-1.jpg",
-  };
-  const assignments = [
-    {
-      release_id: "rel-1",
-      track_id: "trk-1",
-      track_number: 1,
-      disc_number: 1,
-      is_focus_track: true,
-    },
+test("publication delegates to the durable request service",async()=>{
+  let requested=false;
+  const current=release("single");
+  const cleanup=[
+    restore(usersService,"getProfile",async()=>artistProfile),
+    restore(releasesRepository,"findById",async()=>current),
+    restore(publicationService,"request",async()=>{requested=true;return {id:"request",state:"processing",mode:"published",releaseAt:null,error:null};}),
+    restore(releasesService,"getManageRelease",async()=>({...current,publication:undefined,tracks:[]})),
   ];
-  const publishedTracks: string[] = [];
-  const cleanup = [
-    restore(usersService, "getProfile", async () => artistProfile),
-    restore(releasesRepository, "findById", async () => currentRelease),
-    restore(releasesRepository, "listTracks", async () => assignments),
-    restore(releasesRepository, "upsert", (async (nextRelease) => nextRelease) as typeof releasesRepository.upsert),
-    restore(tracksRepository, "findById", async () => track("trk-1")),
-    restore(
-      tracksRepository,
-      "upsert",
-      (async (nextTrack) => {
-        if (nextTrack.visibility === "published") {
-          publishedTracks.push(nextTrack.id);
-        }
-        return nextTrack;
-      }) as typeof tracksRepository.upsert,
-    ),
-  ];
-
-  try {
-    const updated = await releasesService.updateRelease(walletAddress, "rel-1", {
-      status: "published",
-    });
-
-    assert.deepEqual(publishedTracks, ["trk-1"]);
-    assert.equal(updated.tracks[0]?.track.visibility, "published");
-  } finally {
-    cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
-  }
+  try {await releasesService.updateRelease(walletAddress,current.id,{status:"published"});assert.equal(requested,true);assert.equal(current.status,"draft");}
+  finally{cleanup.reverse().forEach(fn=>fn());}
 });
 
 test("unpublishing a release removes public track visibility", async () => {

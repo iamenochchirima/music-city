@@ -40,23 +40,6 @@ export function ReleaseDetailsEditor({
           />
         </FormField>
       </FormSection>
-      <FormSection
-        title="Release label"
-        description="Optional. The release label and individual track labels remain independent."
-      >
-        <FormField
-          id="release-record-label"
-          label="Record label"
-          error={errors.recordLabel}
-        >
-          <Input
-            value={release.recordLabel ?? ""}
-            onChange={(event) => onChange({ recordLabel: event.target.value })}
-            placeholder="Independent or label name"
-          />
-        </FormField>
-        {children}
-      </FormSection>
     </fieldset>
   );
 }

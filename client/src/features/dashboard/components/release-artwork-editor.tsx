@@ -75,18 +75,29 @@ export function ReleaseArtworkEditor({
           </div>
         </div>
       </FormSection>
-      <ActionBar>
-        <p className="text-sm text-muted-foreground">
-          {file
-            ? "Artwork not yet saved"
-            : image
-              ? "Artwork saved"
-              : "Artwork required to publish"}
-        </p>
-        <Button disabled={busy || !file} onClick={onUpload}>
-          {busy ? "Uploading cover..." : "Upload cover"}
-        </Button>
-      </ActionBar>
+      <p role="status" className="text-sm text-muted-foreground">
+        {busy && file
+          ? "Uploading artwork..."
+          : image && !file
+            ? "Artwork saved"
+            : file
+              ? "Preparing artwork..."
+              : "Add artwork"}
+      </p>
+      {error && (
+        <ActionBar>
+          <p className="text-sm text-muted-foreground">
+            {file
+              ? "Artwork not yet saved"
+              : image
+                ? "Artwork saved"
+                : "Artwork required to publish"}
+          </p>
+          <Button disabled={busy || !file} onClick={onUpload}>
+            {busy ? "Uploading cover..." : "Retry artwork upload"}
+          </Button>
+        </ActionBar>
+      )}
     </div>
   );
 }

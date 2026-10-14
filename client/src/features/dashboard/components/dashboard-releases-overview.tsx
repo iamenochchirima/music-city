@@ -136,7 +136,7 @@ export const DashboardReleasesOverview = () => {
                 </Button>
               }
             >
-              <div className="flex flex-wrap gap-2"><StatusBadge status={release.status} />{release.hasRevision ? <StatusBadge status="Saved revision" /> : null}</div>
+              <div className="flex flex-wrap gap-2"><StatusBadge status={release.publication?.state==="failed"?"Needs attention":release.publication?.state==="processing"||release.publication?.state==="scheduled"?release.publication.state:release.status} />{release.hasRevision ? <StatusBadge status="Saved revision" /> : null}</div>
             </LibraryRow>
           ))}
         </ul>

@@ -19,7 +19,8 @@
     "test:e2e:track-credits": "bash scripts/verify-track-credits.sh --browser",
     "test:e2e:studio-ui": "bash scripts/verify-track-credits.sh --studio",
     "test:e2e:release-flow": "bash scripts/verify-track-credits.sh --release",
-    "test:e2e:studio-audit": "bash scripts/verify-track-credits.sh --audit"
+    "test:e2e:studio-audit": "bash scripts/verify-track-credits.sh --audit",
+    "dev:worker": "pnpm --filter server dev:worker"
   },
   "devDependencies": {
     "playwright": "1.64.0",

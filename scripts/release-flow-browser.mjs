@@ -122,264 +122,188 @@ wav.writeUInt16LE(16, 34);
 wav.write("data", 36);
 wav.writeUInt32LE(16000, 40);
 
-try {
-  await page.goto(`${client}/dashboard/releases/new`);
-  await page.getByLabel("Title", { exact: true }).fill("Community single");
+const { Pool } = require("pg");
+const pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+async function checkRelease(id, predicate) {
+  for (let i = 0; i < 80; i++) {
+    const r = (await request(`/releases/${id}/manage`)).release;
+    if (predicate(r)) return r;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error("Timed out waiting for release state");
+}
+const cover = {
+  name: "cover.png",
+  mimeType: "image/png",
+  buffer: Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==",
+    "base64",
+  ),
+};
+async function details() {
+  await page
+    .getByRole("button", { name: "Release details", exact: true })
+    .click();
   await page.getByLabel("Genre", { exact: true }).click();
   await page.getByRole("option", { name: "Afrobeats", exact: true }).click();
-  await capture("01-basics", "Release basics before draft creation");
+  await page.getByLabel("Artwork file").setInputFiles(cover);
+  await page.getByText("Artwork saved", { exact: true }).waitFor();
+}
+try {
+  await page.goto(`${client}/dashboard/releases/new`);
+  assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+  await capture("01-add-music", "Music-first release creation");
   await page
-    .getByRole("button", { name: "Save draft & continue", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Upload a new track", exact: true })
-    .waitFor();
-  const releaseId = new URL(page.url()).pathname.split("/").at(-1);
-  const addAudio = async (title) => {
-    await page
-      .getByRole("button", { name: "Upload a new track", exact: true })
-      .click();
-    await page.getByLabel("Track title", { exact: true }).fill(title);
-    await page.getByLabel("Audio file", { exact: true }).setInputFiles({
-      name: "recording.wav",
+    .getByLabel("Audio files", { exact: true })
+    .setInputFiles({
+      name: "Community single.wav",
       mimeType: "audio/wav",
       buffer: wav,
     });
-    await page
-      .getByRole("button", { name: "Upload & add recording", exact: true })
-      .click();
-    await page
-      .getByRole("button", { name: "Upload & add recording", exact: true })
-      .waitFor({ state: "hidden" });
-    await page.getByText(title, { exact: true }).first().waitFor();
-  };
-  await addAudio("Local song");
+  await page.getByRole("heading", { name: "Tracklist", exact: true }).waitFor();
+  const id = new URL(page.url()).pathname.split("/").at(-1);
+  let release = await checkRelease(id, (r) => r.tracks.length === 1);
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel("Track title", { exact: true }).waitFor();
   assert.equal(
-    (await request(`/releases/${releaseId}/manage`)).release.tracks.length,
-    1,
+    await page.getByLabel("Track title", { exact: true }).inputValue(),
+    "Community single",
   );
-  await capture("02-music", "Audio uploaded and automatically attached");
-  await page
-    .getByRole("button", { name: "Save & continue", exact: true })
-    .click();
-  await page
-    .getByLabel("Track title", { exact: true })
-    .fill("Local song with credits");
   await page
     .getByRole("button", { name: "Add contributor", exact: true })
     .click();
-  await page
-    .getByLabel("Contributor name 1", { exact: true })
-    .fill("Community Composer");
-  await page.getByLabel("Existing ISRC", { exact: true }).fill("ZAABC2600001");
+  await page.getByLabel("Contributor name 1").fill("Community Composer");
+  await page.getByLabel("Existing ISRC").fill("ZAABC2600001");
   await page
     .getByLabel("Record label", { exact: true })
-    .fill("Independent local label");
-  await capture("03-information", "Per-song title, credits, ISRC, and label");
-  await page
-    .getByRole("button", { name: "Save & continue", exact: true })
-    .click();
-  const image = Buffer.from(
-    await page.evaluate(() => {
-      const c = document.createElement("canvas");
-      c.width = c.height = 64;
-      const x = c.getContext("2d");
-      x.fillStyle = "#159d68";
-      x.fillRect(0, 0, 64, 64);
-      return c.toDataURL("image/png").split(",")[1];
-    }),
-    "base64",
+    .fill("Independent label");
+  await capture("02-song-details", "Song metadata collected once");
+  await details();
+  assert.equal(await page.getByLabel("Title", { exact: true }).count(), 0);
+  await capture(
+    "03-release-details",
+    "Single reuses title and artwork uploads on selection",
   );
-  await page
-    .getByLabel("Description", { exact: true })
-    .fill("A release from our local community.");
-  await page
-    .getByLabel("Artwork file", { exact: true })
-    .setInputFiles({ name: "cover.png", mimeType: "image/png", buffer: image });
-  await page.getByRole("button", { name: "Upload cover", exact: true }).click();
-  await page.getByText("Release cover updated.", { exact: true }).waitFor();
-  await capture("04-artwork", "Artwork and release description");
-  await page
-    .getByRole("button", { name: "Save & continue", exact: true })
-    .click();
-  let showPending = true;
-  let finishProcessing;
-  const processingGate = new Promise((resolve) => {
-    finishProcessing = resolve;
-  });
-  await page.route(`**/api/v1/releases/${releaseId}/manage`, async (route) => {
-    const response = await route.fetch();
-    const data = await response.json();
-    if (showPending) {
-      showPending = false;
-      data.release.tracks[0].track.playbackReady = false;
-      data.release.tracks[0].track.status = "processing";
-    }
-    await route.fulfill({ response, json: data });
-  });
-  await page.route("**/api/v1/tracks/*/sync-media", async (route) => {
-    await processingGate;
-    await route.continue();
-  });
-  await page.goto(`${client}/dashboard/releases/${releaseId}?step=review`);
-  await page
-    .getByRole("heading", { name: "Waiting for audio", exact: true })
-    .waitFor();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("radio", { name: "Publish now", exact: true }).check();
-  assert.equal(await page.getByRole("radio").count(), 3);
+  await capture("04-review", "Compact review and open publication choices");
+  release = await checkRelease(
+    id,
+    (r) => r.tracks[0].track.isrc === "ZAABC2600001",
+  );
+  const trackId = release.tracks[0].trackId;
+  await pool.query(
+    'UPDATE tracks SET payload=payload || \'{"playbackReady":false,"status":"processing"}\'::jsonb WHERE id=$1',
+    [trackId],
+  );
+  await page.reload();
+  await page.getByRole("radio", { name: "Publish now", exact: true }).check();
   assert.equal(
     await page
-      .getByRole("button", { name: "Waiting for audio...", exact: true })
-      .isDisabled(),
-    true,
-  );
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await capture(
-    "05-processing",
-    "Visible processing status and open publication choices",
-  );
-  await page.setViewportSize({ width: 390, height: 844 });
-  await overflow("Mobile processing review");
-  await capture(
-    "05-processing-mobile",
-    "Mobile processing status and three publication choices",
-  );
-  finishProcessing();
-  await page
-    .getByRole("heading", { name: "Ready to publish", exact: true })
-    .waitFor();
-  assert.equal(
-    await page
-      .getByRole("button", { name: "Release now", exact: true })
+      .getByRole("button", { name: "Publish", exact: true })
       .isEnabled(),
     true,
   );
-  await page.unroute(`**/api/v1/releases/${releaseId}/manage`);
-  await page.unroute("**/api/v1/tracks/*/sync-media");
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await page
+    .getByText("Processing · publishes automatically", { exact: true })
+    .waitFor();
+  assert.equal((await request(`/releases/${id}`)).release, null);
   await capture(
-    "05-review",
-    "Single ready for publication with visible plan choices",
+    "05-processing",
+    "Durable publication accepted before readiness",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await overflow("Processing mobile");
+  await capture(
+    "05-processing-mobile",
+    "Mobile processing and accepted publication",
+  );
+  await page.close();
+  await pool.query(
+    'UPDATE tracks SET payload=payload || \'{"playbackReady":true,"status":"published"}\'::jsonb WHERE id=$1',
+    [trackId],
+  );
+  await checkRelease(id, (r) => r.status === "published");
+  assert.equal(
+    (await request(`/releases/${id}`)).release.title,
+    "Community single",
   );
   checks.push(
-    "Visible audio waiting state blocks publication and automatically becomes ready; all publication choices remain exposed on desktop and mobile",
+    "Single title and metadata entered once; artwork uploads automatically; publication finishes in the real worker after the browser closes",
   );
-  await page.getByRole("button", { name: "Release now", exact: true }).click();
-  await page
-    .getByRole("button", { name: "Start revision", exact: true })
+  const collection = await context.newPage();
+  collection.on("pageerror", (error) => errors.push(error.message));
+  await collection.goto(`${client}/dashboard/releases/new`);
+  await collection
+    .getByLabel("Audio files", { exact: true })
+    .setInputFiles(
+      ["One", "Two", "Three"].map((name) => ({
+        name: `${name}.wav`,
+        mimeType: "audio/wav",
+        buffer: wav,
+      })),
+    );
+  await collection
+    .getByRole("heading", { name: "Tracklist", exact: true })
     .waitFor();
-  const original = (await request(`/releases/${releaseId}`)).release;
-  assert.equal(original.tracks[0].track.credits[0].name, "Community Composer");
-  assert.equal(original.tracks[0].track.isrc, "ZAABC2600001");
-  checks.push(
-    "Five-step Single flow uploads, attaches, saves credits and artwork, and publishes through the real API",
+  const collectionId = new URL(collection.url()).pathname.split("/").at(-1);
+  await checkRelease(
+    collectionId,
+    (r) => r.tracks.length === 3 && r.type === "ep",
   );
-  await page
-    .getByRole("button", { name: "Start revision", exact: true })
+  await collection.getByRole("button", { name: "Done", exact: true }).click();
+  await collection
+    .getByRole("button", { name: "Continue", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Release basics", exact: true })
+  await collection
+    .getByRole("button", { name: "Apply shared credits & label", exact: true })
     .click();
-  await page.getByLabel("Title", { exact: true }).fill("Community EP revision");
-  await page
-    .getByRole("button", { name: "Save & continue", exact: true })
+  await collection
+    .getByLabel("Record label", { exact: true })
+    .first()
+    .fill("Shared label");
+  await collection
+    .getByRole("button", { name: "Apply to selected songs", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Upload a new track", exact: true })
-    .click();
-  await page
-    .getByRole("dialog", { name: "Change release type", exact: true })
-    .waitFor();
-  await capture(
-    "06-type-change",
-    "Single prompts for EP before a second recording",
+  await checkRelease(collectionId, (r) =>
+    r.tracks.every((t) => t.track.recordLabel === "Shared label"),
   );
-  await page
-    .getByRole("button", { name: "Change type & upload", exact: true })
+  await collection
+    .getByRole("button", { name: "3. Three", exact: true })
     .click();
-  await page
-    .getByLabel("Track title", { exact: true })
-    .fill("Second local song");
-  await page
-    .getByLabel("Audio file", { exact: true })
-    .setInputFiles({ name: "second.wav", mimeType: "audio/wav", buffer: wav });
-  let failAttach = true;
-  await page.route(`**/api/v1/releases/${releaseId}/tracks`, async (route) => {
-    if (route.request().method() === "POST" && failAttach) {
-      failAttach = false;
-      await route.abort("failed");
-    } else await route.continue();
-  });
-  await page
-    .getByRole("button", { name: "Upload & add recording", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Retry adding recording", exact: true })
-    .waitFor();
-  assert.equal((await request("/tracks/mine")).items.length, 2);
-  await capture(
-    "07-upload-retry",
-    "Attachment failure retains completed audio for retry",
+  await collection
+    .getByLabel("Record label", { exact: true })
+    .fill("Different label");
+  await checkRelease(
+    collectionId,
+    (r) => r.tracks[2].track.recordLabel === "Different label",
   );
-  await page
-    .getByRole("button", { name: "Retry adding recording", exact: true })
+  await collection
+    .getByRole("button", { name: "Save & exit", exact: true })
     .click();
-  await page.getByText("Second local song", { exact: true }).first().waitFor();
-  await page.unroute(`**/api/v1/releases/${releaseId}/tracks`);
-  await page
-    .getByRole("button", { name: "Save & continue", exact: true })
+  await collection.goto(
+    `${client}/dashboard/releases/${collectionId}?step=information`,
+  );
+  await collection
+    .getByRole("button", { name: "3. Three", exact: true })
     .click();
-  await page
-    .getByLabel("Track title", { exact: true })
-    .fill("Revised first song");
-  await page.getByRole("button", { name: "Save & exit", exact: true }).click();
-  await page.waitForURL("**/dashboard/releases");
-  await page
-    .getByRole("link", { name: "Community EP revision", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Add music", exact: true }).click();
   assert.equal(
-    (await request(`/releases/${releaseId}/manage`)).release.tracks.length,
-    2,
-  );
-  const beforeApply = (await request(`/releases/${releaseId}`)).release;
-  assert.equal(beforeApply.title, "Community single");
-  assert.equal(beforeApply.tracks.length, 1);
-  assert.equal(beforeApply.tracks[0].track.title, "Local song with credits");
-  assert.equal((await request("/tracks")).items.length, 1);
-  assert.equal(
-    (await request(`/tracks/${original.tracks[0].trackId}`)).track.title,
-    "Local song with credits",
+    await collection.getByLabel("Record label", { exact: true }).inputValue(),
+    "Different label",
   );
   for (const width of [360, 390, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await overflow(`Release at ${width}`);
-    await capture(`08-music-${width}`, "Saved two-song revision after resume");
+    await collection.setViewportSize({ width, height: 900 });
+    await overflow(`Collection ${width}`, collection);
+    await capture(
+      `06-collection-${width}`,
+      "Reopened collection with an individual metadata override",
+      collection,
+    );
   }
-  await page
-    .getByRole("button", { name: "Review & publish", exact: true })
-    .click();
-  await capture(
-    "09-revision-review",
-    "Apply revision while the old Single remains public",
-  );
-  await page
-    .getByRole("button", { name: "Apply release update", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Start revision", exact: true })
-    .waitFor();
-  const afterApply = (await request(`/releases/${releaseId}`)).release;
-  assert.equal(afterApply.title, "Community EP revision");
-  assert.equal(afterApply.type, "ep");
-  assert.equal(afterApply.tracks.length, 2);
-  assert.equal(afterApply.tracks[0].track.title, "Revised first song");
-  assert.equal((await request("/tracks")).items.length, 2);
   checks.push(
-    "Saved published revisions preserve the public release and recording metadata until explicit application",
-  );
-  checks.push(
-    "Single-to-EP prompt, completed-audio attachment retry, save and exit, resume, and five responsive widths",
+    "Three-file upload suggests EP without interruption; shared label applies once; song exception and saved draft survive reopening at five widths",
   );
   assert.deepEqual(errors, []);
   await writeFile(
@@ -391,6 +315,8 @@ try {
         checks,
         captures,
         pageErrors: errors,
+        processingBoundary:
+          "Local audio readiness was controlled in PostgreSQL; publication and browser-close completion use the actual API, durable requests, and worker.",
       },
       null,
       2,
@@ -399,11 +325,7 @@ try {
   console.log(
     JSON.stringify({ checks, captures: captures.length, pageErrors: errors }),
   );
-} catch (error) {
-  await page
-    .screenshot({ path: `${output}/failure.png`, fullPage: true })
-    .catch(() => {});
-  throw error;
 } finally {
+  await pool.end();
   await browser.close();
 }

@@ -1,3 +1,5 @@
+import { tracksRepository } from "../tracks/tracks.repository.js";
+import { databaseService } from "../../services/database.service.js";
 import {
   completeUploadSessionSchema,
   createUploadSessionSchema,
@@ -23,13 +25,31 @@ const sanitizeFileName = (fileName: string) =>
   fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
 
 const detectedContentType = (body: Buffer) => {
-  if (body.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))) return "image/png";
-  if (body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff) return "image/jpeg";
-  if (body.subarray(0, 4).toString("ascii") === "RIFF" && body.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  if (
+    body
+      .subarray(0, 8)
+      .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  )
+    return "image/png";
+  if (body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff)
+    return "image/jpeg";
+  if (
+    body.subarray(0, 4).toString("ascii") === "RIFF" &&
+    body.subarray(8, 12).toString("ascii") === "WEBP"
+  )
+    return "image/webp";
   if (body.subarray(0, 4).toString("ascii") === "fLaC") return "audio/flac";
-  if (body.subarray(0, 4).toString("ascii") === "RIFF" && body.subarray(8, 12).toString("ascii") === "WAVE") return "audio/wav";
+  if (
+    body.subarray(0, 4).toString("ascii") === "RIFF" &&
+    body.subarray(8, 12).toString("ascii") === "WAVE"
+  )
+    return "audio/wav";
   if (body.subarray(4, 8).toString("ascii") === "ftyp") return "audio/mp4";
-  if (body.subarray(0, 3).toString("ascii") === "ID3" || (body[0] === 0xff && (body[1] & 0xe0) === 0xe0)) return "audio/mpeg";
+  if (
+    body.subarray(0, 3).toString("ascii") === "ID3" ||
+    (body[0] === 0xff && (body[1] & 0xe0) === 0xe0)
+  )
+    return "audio/mpeg";
   return null;
 };
 
@@ -47,16 +67,25 @@ const contentTypesMatch = (declared: string, detected: string) => {
 };
 
 export const uploadsService = {
-  validatePayload(session: UploadSession, received: { sizeBytes: number; sample: Buffer }) {
+  validatePayload(
+    session: UploadSession,
+    received: { sizeBytes: number; sample: Buffer },
+  ) {
     if (received.sizeBytes !== session.sizeBytes) {
-      throw new HttpError(400, "Uploaded file size does not match the upload session");
+      throw new HttpError(
+        400,
+        "Uploaded file size does not match the upload session",
+      );
     }
     if (received.sizeBytes > uploadMaxBytes(session.purpose)) {
       throw new HttpError(413, "Uploaded file exceeds the allowed size");
     }
     const detected = detectedContentType(received.sample);
     if (!detected || !contentTypesMatch(session.contentType, detected)) {
-      throw new HttpError(400, "Uploaded file type does not match the upload session");
+      throw new HttpError(
+        400,
+        "Uploaded file type does not match the upload session",
+      );
     }
   },
 
@@ -80,7 +109,11 @@ export const uploadsService = {
 
     let session: UploadSession;
 
-    if (parsed.purpose === "audio" && muxService.isEnabled() && env.STORAGE_PROVIDER !== "s3") {
+    if (
+      parsed.purpose === "audio" &&
+      muxService.isEnabled() &&
+      env.STORAGE_PROVIDER !== "s3"
+    ) {
       const upload = await muxService.createDirectUpload({
         trackId: parsed.trackId!,
         title: track!.title,
@@ -107,8 +140,7 @@ export const uploadsService = {
         expiresAt: expiresInMinutes(30),
       };
     } else {
-      const storagePrefix =
-        parsed.purpose === "cover" ? "covers" : "masters";
+      const storagePrefix = parsed.purpose === "cover" ? "covers" : "masters";
       const ownerPath = parsed.releaseId
         ? `releases/${parsed.releaseId}`
         : `tracks/${parsed.trackId}`;
@@ -147,13 +179,19 @@ export const uploadsService = {
     }
 
     if (session.provider === "mux" && session.remoteUploadId) {
-      await muxService.cancelUpload(session.remoteUploadId).catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
+      await muxService
+        .cancelUpload(session.remoteUploadId)
+        .catch((error: unknown) => {
+          const message =
+            error instanceof Error ? error.message : String(error);
 
-        if (!message.toLowerCase().includes("404") && !message.toLowerCase().includes("not found")) {
-          throw error;
-        }
-      });
+          if (
+            !message.toLowerCase().includes("404") &&
+            !message.toLowerCase().includes("not found")
+          ) {
+            throw error;
+          }
+        });
     }
 
     if (session.storageKey) {
@@ -185,16 +223,26 @@ export const uploadsService = {
       throw new Error("Upload session not found");
     }
 
-    let storedMetadata: Awaited<ReturnType<typeof storageService.getStoredObjectMetadata>> | null = null;
-    if ((session.provider === "local" || session.provider === "s3") && session.storageKey) {
+    let storedMetadata: Awaited<
+      ReturnType<typeof storageService.getStoredObjectMetadata>
+    > | null = null;
+    if (
+      (session.provider === "local" || session.provider === "s3") &&
+      session.storageKey
+    ) {
       try {
         storedMetadata = await storageService.getStoredObjectMetadata(
           session.storageKey,
           session.fileName,
         );
       } catch {
-        await storageService.deleteObject(session.storageKey).catch(() => undefined);
-        throw new HttpError(400, "Uploaded file is missing or could not be verified");
+        await storageService
+          .deleteObject(session.storageKey)
+          .catch(() => undefined);
+        throw new HttpError(
+          400,
+          "Uploaded file is missing or could not be verified",
+        );
       }
       if (
         storedMetadata.sizeBytes !== session.sizeBytes ||
@@ -202,7 +250,10 @@ export const uploadsService = {
         !contentTypesMatch(session.contentType, storedMetadata.contentType)
       ) {
         await storageService.deleteObject(session.storageKey);
-        throw new HttpError(400, "Uploaded file does not match the upload session");
+        throw new HttpError(
+          400,
+          "Uploaded file does not match the upload session",
+        );
       }
     }
 
@@ -212,9 +263,12 @@ export const uploadsService = {
       }
 
       if (session.releaseId) {
-        const release = await releasesService.attachCoverArt(session.releaseId, {
-          coverStorageKey: session.storageKey,
-        });
+        const release = await releasesService.attachCoverArt(
+          session.releaseId,
+          {
+            coverStorageKey: session.storageKey,
+          },
+        );
 
         return { release };
       }
@@ -264,37 +318,41 @@ export const uploadsService = {
     });
 
     if (env.MEDIA_PROVIDER === "mux") {
-      if (session.provider === "s3") {
-        let asset;
-        if (session.remoteUploadId) {
-          asset = await muxService.getAsset(session.remoteUploadId);
-        } else {
-          asset = await muxService.createAssetFromUrl(
-            storageService.getDownloadUrl(storageKey, "s3", 3600),
+      await databaseService.transaction(async (client) => {
+        await client.query(
+          "UPDATE tracks SET status='processing',payload=payload || $2::jsonb WHERE id=$1",
+          [
             session.trackId,
-          );
-          await uploadsRepository.upsert({ ...session, remoteUploadId: asset.id });
-        }
-        if (asset.status === "ready") {
-          return { track: await tracksService.markPlaybackReady(session.trackId, {
-            runtime: asset.duration ? `${Math.floor(asset.duration / 60)}:${String(Math.round(asset.duration % 60)).padStart(2, "0")}` : "Ready",
-            muxAssetId: asset.id,
-            muxPlaybackId: asset.playback_ids?.[0]?.id,
-          }) };
-        }
-        return { track: await tracksService.markMuxAssetCreated(session.trackId, { muxAssetId: asset.id }) };
-      }
-      return { track: await tracksService.markProcessing(track.id) };
+            JSON.stringify({
+              status: "processing",
+              mediaProvider: "mux",
+              muxUploadId: null,
+              muxAssetId: session.remoteUploadId ?? null,
+              muxPlaybackId: null,
+              muxAssetStatus: "waiting",
+              playbackReady: false,
+            }),
+          ],
+        );
+        await client.query(
+          "INSERT INTO media_jobs(id,kind,payload) VALUES($1,'ingest',$2::jsonb) ON CONFLICT(id) DO NOTHING",
+          [
+            `ingest:${session.id}`,
+            JSON.stringify({ sessionId: session.id, trackId: session.trackId }),
+          ],
+        );
+      });
+      return { track: await tracksRepository.findById(session.trackId) };
     }
 
     return {
       track: await tracksService.markPlaybackReady(track.id, {
-      runtime: "Ready",
-      streamMediaUrl: storageService.getDownloadUrl(
-        track.masterStorageKey!,
-        track.mediaStorageProvider,
-      ),
-      streamManifestUrl: `/api/v1/playback/tracks/${track.id}/manifest.m3u8`,
+        runtime: "Ready",
+        streamMediaUrl: storageService.getDownloadUrl(
+          track.masterStorageKey!,
+          track.mediaStorageProvider,
+        ),
+        streamManifestUrl: `/api/v1/playback/tracks/${track.id}/manifest.m3u8`,
       }),
     };
   },

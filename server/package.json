@@ -17,7 +17,9 @@
     "admin:reset-password": "tsx src/scripts/reset-admin-password.ts",
     "treasury:derive-secret": "tsx src/scripts/derive-treasury-key-from-mnemonic.ts",
     "treasury:add-trustline": "tsx src/scripts/add-treasury-trustline.ts",
-    "agreements:demo:testnet": "tsx src/scripts/demo-contributor-agreements-testnet.ts"
+    "agreements:demo:testnet": "tsx src/scripts/demo-contributor-agreements-testnet.ts",
+    "worker": "node dist/worker.js",
+    "dev:worker": "tsx src/worker.ts"
   },
   "dependencies": {
     "@music-city/shared": "workspace:*",

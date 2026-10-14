@@ -125,35 +125,6 @@ tracksRouter.post(
   }),
 );
 
-tracksRouter.post(
-  "/:trackId/sync-media",
-  requireSession,
-  asyncHandler(async (request, response) => {
-    const trackId = String(request.params.trackId);
-    const ownsTrack = await tracksService.userOwnsTrack(
-      request.session!.walletAddress,
-      trackId,
-    );
-
-    if (!ownsTrack) {
-      throw new HttpError(404, "Track not found");
-    }
-
-    try {
-      const track = await tracksService.syncMuxTrack(trackId);
-      response.json({ track });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        throw error;
-      }
-
-      throw new HttpError(
-        400,
-        error instanceof Error ? error.message : "Track sync failed",
-      );
-    }
-  }),
-);
 
 tracksRouter.delete(
   "/:trackId",

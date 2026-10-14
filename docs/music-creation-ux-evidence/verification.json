@@ -1,0 +1,133 @@
+{
+  "recordedAt": "2026-10-14T20:47:29.265Z",
+  "browser": "154.0.8037.97",
+  "checks": [
+    "Single title and metadata entered once; artwork uploads automatically; publication finishes in the real worker after the browser closes",
+    "Three-file upload suggests EP without interruption; shared label applies once; song exception and saved draft survive reopening at five widths"
+  ],
+  "captures": [
+    {
+      "file": "01-add-music.png",
+      "route": "/dashboard/releases/new",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Music-first release creation",
+      "result": "passed"
+    },
+    {
+      "file": "02-song-details.png",
+      "route": "/dashboard/releases/rel_80ac018190794237",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Song metadata collected once",
+      "result": "passed"
+    },
+    {
+      "file": "03-release-details.png",
+      "route": "/dashboard/releases/rel_80ac018190794237",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Single reuses title and artwork uploads on selection",
+      "result": "passed"
+    },
+    {
+      "file": "04-review.png",
+      "route": "/dashboard/releases/rel_80ac018190794237",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Compact review and open publication choices",
+      "result": "passed"
+    },
+    {
+      "file": "05-processing.png",
+      "route": "/dashboard/releases/rel_80ac018190794237",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "Durable publication accepted before readiness",
+      "result": "passed"
+    },
+    {
+      "file": "05-processing-mobile.png",
+      "route": "/dashboard/releases/rel_80ac018190794237",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "deviceScale": 1,
+      "state": "Mobile processing and accepted publication",
+      "result": "passed"
+    },
+    {
+      "file": "06-collection-360.png",
+      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "viewport": {
+        "width": 360,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Reopened collection with an individual metadata override",
+      "result": "passed"
+    },
+    {
+      "file": "06-collection-390.png",
+      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "viewport": {
+        "width": 390,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Reopened collection with an individual metadata override",
+      "result": "passed"
+    },
+    {
+      "file": "06-collection-768.png",
+      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Reopened collection with an individual metadata override",
+      "result": "passed"
+    },
+    {
+      "file": "06-collection-1024.png",
+      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Reopened collection with an individual metadata override",
+      "result": "passed"
+    },
+    {
+      "file": "06-collection-1440.png",
+      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScale": 1,
+      "state": "Reopened collection with an individual metadata override",
+      "result": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "processingBoundary": "Local audio readiness was controlled in PostgreSQL; publication and browser-close completion use the actual API, durable requests, and worker."
+}

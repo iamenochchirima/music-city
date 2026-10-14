@@ -94,7 +94,7 @@ it("exposes all publication choices and shows date selection directly", async ()
   await user.click(screen.getByRole("radio", { name: "Schedule release" }));
   expect(screen.getByLabelText("Scheduled release time")).toBeTruthy();
 });
-it("visibly reports ready counts and blocks publication while retaining draft saving", async () => {
+it("reports ready counts and accepts publication while audio processes", async () => {
   const user = userEvent.setup();
   render(<Example />);
   expect(
@@ -107,56 +107,38 @@ it("visibly reports ready counts and blocks publication while retaining draft sa
       .getAttribute("aria-valuenow"),
   ).toBe("50");
   expect(
-    screen
-      .getByRole("button", { name: "Waiting for audio..." })
-      .hasAttribute("disabled"),
-  ).toBe(true);
+    screen.getByRole("button", { name: "Publish" }).hasAttribute("disabled"),
+  ).toBe(false);
+  await user.click(screen.getByRole("button", { name: "Publish" }));
+  expect(publish).toHaveBeenCalledOnce();
+  publish.mockClear();
   await user.click(screen.getByRole("radio", { name: "Keep as draft" }));
   await user.click(screen.getByRole("button", { name: "Save as draft" }));
   expect(publish).toHaveBeenCalledOnce();
 });
-it("automatically checks pending recordings and enables publication when ready", async () => {
-  vi.useFakeTimers();
-  sync.mockResolvedValue({
-    ...pending,
-    playbackReady: true,
-    status: "uploaded",
-  });
+it("shows processing without browser-driven media synchronization", async () => {
   render(<Example />);
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(1000);
-  });
-  expect(sync).toHaveBeenCalledWith("token", "pending");
-  expect(sync).toHaveBeenCalledOnce();
-  expect(screen.queryByText("Processing audio")).toBeNull();
-  expect(
-    screen.getByRole("heading", { name: "Ready to publish" }),
-  ).toBeTruthy();
-  expect(
-    screen
-      .getByRole("button", { name: "Release now" })
-      .hasAttribute("disabled"),
-  ).toBe(false);
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(10000);
-  });
-  expect(sync).toHaveBeenCalledOnce();
+  expect(screen.getByText("Processing audio")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /Refresh/ })).toBeNull();
+  expect(sync).not.toHaveBeenCalled();
 });
-it("makes a failed status check recoverable without enabling publication", async () => {
-  vi.useFakeTimers();
-  sync.mockRejectedValueOnce(new Error("Offline"));
-  render(<Example />);
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(1000);
-  });
-  expect(screen.getByText("Status check interrupted")).toBeTruthy();
+it("prevents a second publish while a durable request is pending", () => {
+  render(
+    <Example
+      value={{
+        ...release,
+        publication: {
+          id: "request",
+          state: "processing",
+          mode: "published",
+          releaseAt: null,
+          error: null,
+        },
+      }}
+    />,
+  );
   expect(
-    screen.getByRole("button", { name: "Retry status check" }),
-  ).toBeTruthy();
-  expect(
-    screen
-      .getByRole("button", { name: "Waiting for audio..." })
-      .hasAttribute("disabled"),
+    screen.getByRole("button", { name: "Processing" }).hasAttribute("disabled"),
   ).toBe(true);
 });
 it("shows failed audio as a failure instead of an endless waiting state", async () => {

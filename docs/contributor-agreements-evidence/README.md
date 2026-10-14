@@ -1,4 +1,6 @@
-# Contributor agreements verification
+# Contributor agreements verification evidence
+
+Current scope and progress belong to the [SOW 2 tracker](../sow-2-tracker.md). This document records historical evidence and the service-level demonstration setup. Current browser consent uses Dynamic Stellar wallets and remains unverified.
 
 The 2 October 2026 run used a disposable local PostgreSQL database and fresh Stellar Testnet accounts. [stellar-testnet.json](stellar-testnet.json) contains public account configuration, contributor signatures, canonical versions, transaction hashes, ledgers, contract read-back and audit history. Private signing keys are excluded.
 
@@ -42,13 +44,13 @@ pnpm build
 
 The database tests refuse remote connections or database names without `_test`. They use real PostgreSQL transactions and generated Ed25519 signatures. Finalization integration tests mock only the RPC boundary to exercise failure, concurrency and reconciliation. The live demonstration separately verifies actual chain authorization.
 
-Creator/admin component tests render the production components with mocked HTTP and wallet transports. They verify review, cancellation, error handling, response actions, signature collection, permissions and status/history. They do not prove real Freighter browser-extension signing. That authenticated creator browser check remains a milestone gate.
+Creator/admin component tests render the production components with mocked HTTP and wallet transports. They verify review, cancellation, error handling, response actions, signature collection, permissions and status/history. They do not prove signing through the current Dynamic Stellar wallet integration. The authenticated creator browser check remains an acceptance requirement in the tracker.
 
 ## Browser evidence
 
-- [Creator provider unavailable](creator-provider-unavailable.png): historical screenshot of Dynamic's initialization failure, which led to the direct Freighter wallet path; successful extension signing remains unverified.
+- [Creator provider unavailable](creator-provider-unavailable.png): historical screenshot of Dynamic's initialization failure, which led to the direct Freighter wallet path; the current browser wallet flow remains unverified.
 - [Admin confirmed Testnet publication](admin-testnet-finalized.png): accepted 70/30 proposal, two signers, ledger and explorer link, read through the real local API/database.
 - [Admin Testnet version history](admin-testnet-history.png): finalized versions 1/3 and preserved disputed version 2 with fresh consent and audit events.
 - [Dispute review](admin-dispute.png) and [resolution](admin-resolution.png): earlier disposable local fixtures exercising admin resolution into an unsigned owner-controlled draft.
 
-Production migration/deployment, treasury custody and broad hardening remain later work. These results do not claim completion of the settlement or direct-support milestones, or all of SOW Deliverable 2.
+The application was deployed on 14 October 2026. Complete agreement treasury configuration, current wallet verification, and broader treasury custody work remain outstanding. These results do not claim completion of the settlement or direct-support milestones, or all of SOW Deliverable 2.

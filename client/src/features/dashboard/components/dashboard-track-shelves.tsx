@@ -46,13 +46,11 @@ const TrackLibrarySection = ({
   description,
   tracks,
   activeTrackId,
-  syncingTrackId,
   deletingTrackId,
   selectionMode,
   selectedTrackIds,
   canPlayTrack,
   onPlay,
-  onSync,
   onDelete,
   onToggleSelectionMode,
   onToggleTrackSelected,
@@ -61,13 +59,11 @@ const TrackLibrarySection = ({
   description: string;
   tracks: TrackSummary[];
   activeTrackId: string | null;
-  syncingTrackId: string | null;
   deletingTrackId: string | null;
   selectionMode: boolean;
   selectedTrackIds: string[];
   canPlayTrack: (track: TrackSummary) => boolean;
   onPlay: (track: TrackSummary) => Promise<void>;
-  onSync: (track: TrackSummary) => Promise<void>;
   onDelete: (track: TrackSummary) => Promise<void>;
   onToggleSelectionMode: (track: TrackSummary) => void;
   onToggleTrackSelected: (trackId: string) => void;
@@ -84,7 +80,6 @@ const TrackLibrarySection = ({
       </div>
       <ul className="divide-y divide-border">
         {tracks.map((track) => {
-          const isSyncing = syncingTrackId === track.id;
           const isDeleting = deletingTrackId === track.id;
           const isActive = activeTrackId === track.id;
           return (
@@ -132,21 +127,12 @@ const TrackLibrarySection = ({
                       <Play className="h-4 w-4 fill-current" />
                     </Button>
                   ) : (
-                    <Button
-                      variant="outline"
-                      aria-label={`Refresh ${track.title} status`}
-                      disabled={isSyncing}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void onSync(track);
-                      }}
+                    <span
+                      aria-label="Audio processing"
+                      className="inline-flex h-10 items-center px-3"
                     >
-                      {isSyncing ? (
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                    </Button>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    </span>
                   )}
 
                   <DropdownMenu>
@@ -193,7 +179,7 @@ const TrackLibrarySection = ({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="cursor-pointer text-destructive focus:text-destructive"
-                        disabled={isDeleting || isSyncing}
+                        disabled={isDeleting}
                         onClick={() => void onDelete(track)}
                       >
                         {isDeleting ? (
@@ -229,7 +215,6 @@ export const DashboardTrackShelves = ({
 }: DashboardTrackShelvesProps) => {
   const { session } = useAuth();
   const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
-  const [syncingTrackId, setSyncingTrackId] = useState<string | null>(null);
   const [deletingTrackId, setDeletingTrackId] = useState<string | null>(null);
   const [trackPendingDelete, setTrackPendingDelete] =
     useState<TrackSummary | null>(null);
@@ -247,33 +232,30 @@ export const DashboardTrackShelves = ({
     setPlaybackQueue(readyTracks);
   }, [readyTracks, setPlaybackQueue]);
 
-  const syncTrack = async (track: TrackSummary) => {
-    const token = session?.token;
-
-    if (!token) {
+  useEffect(() => {
+    if (!session?.token || !pipelineTracks.some((t) => t.status !== "failed"))
       return;
-    }
-
-    try {
-      setSyncingTrackId(track.id);
-      const updated = await tracksApi.syncTrackMedia(token, track.id);
-      onTrackSynced(updated);
-
-      if (updated.playbackReady) {
-        toast.success("Track is ready to play.");
-      } else {
-        toast.message("Track is still processing.");
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to refresh track status",
-      );
-    } finally {
-      setSyncingTrackId(null);
-    }
-  };
+    let active = true;
+    const timer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void tracksApi
+        .listMyTracks(session.token!)
+        .then((updated) => {
+          if (active)
+            updated
+              .filter((t) => pipelineTracks.some((p) => p.id === t.id))
+              .forEach((t) => onTrackSynced(t));
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [
+    session?.token,
+    tracks.map((t) => `${t.id}:${t.playbackReady}:${t.status}`).join(","),
+  ]);
 
   const deleteTrack = async (track: TrackSummary) => {
     setTrackPendingDelete(track);
@@ -458,13 +440,11 @@ export const DashboardTrackShelves = ({
         description="Playable tracks"
         tracks={readyTracks}
         activeTrackId={activeTrackId}
-        syncingTrackId={syncingTrackId}
         deletingTrackId={deletingTrackId}
         selectionMode={selectionMode}
         selectedTrackIds={selectedTrackIds}
         canPlayTrack={canPlayTrack}
         onPlay={playTrack}
-        onSync={syncTrack}
         onDelete={deleteTrack}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}
@@ -474,13 +454,11 @@ export const DashboardTrackShelves = ({
         description="Uploads still processing"
         tracks={pipelineTracks}
         activeTrackId={activeTrackId}
-        syncingTrackId={syncingTrackId}
         deletingTrackId={deletingTrackId}
         selectionMode={selectionMode}
         selectedTrackIds={selectedTrackIds}
         canPlayTrack={canPlayTrack}
         onPlay={playTrack}
-        onSync={syncTrack}
         onDelete={deleteTrack}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}

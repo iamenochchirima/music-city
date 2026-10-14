@@ -1,8 +1,9 @@
-"use client";
+import { ReleaseSharedDetails } from "./release-shared-details";
+("use client");
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   releaseUpdateSchema,
   type ReleaseDetail,
@@ -17,7 +18,7 @@ import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
 import { StepNavigation } from "@/components/studio/step-navigation";
 import { ActionBar } from "@/components/studio/action-bar";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { usersApi } from "@/features/users/lib/users-api";
 import { releaseSteps, type ReleaseStep } from "../lib/release-steps";
 import { ReleaseAudioUploader } from "./release-audio-uploader";
@@ -30,7 +31,6 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { useAuth } from "@/hooks/use-auth";
 import { trackEvent } from "@/lib/analytics";
-import { ReleaseTrackLabels } from "./release-track-labels";
 import { ReleaseBasicsFields } from "./release-basics-fields";
 import { ReleaseDetailsEditor } from "./release-details-editor";
 import { ReleaseArtworkEditor } from "./release-artwork-editor";
@@ -39,13 +39,15 @@ import { ReleaseReview, type ReadinessIssue } from "./release-review";
 
 type ReleaseSection = ReleaseStep;
 const targetSection = (id: string): ReleaseSection =>
-  id === "release-cover"
-    ? "artwork"
-    : id === "release-tracklist"
-      ? "music"
-      : id === "release-date"
-        ? "review"
-        : "basics";
+  id === "release-track-information"
+    ? "information"
+    : id === "release-cover"
+      ? "artwork"
+      : id === "release-tracklist"
+        ? "music"
+        : id === "release-date"
+          ? "review"
+          : "artwork";
 const releaseDetails = (release: ReleaseDetail) => ({
   title: release.title.trim(),
   artistName: release.artistName.trim(),
@@ -92,15 +94,20 @@ const MAX_COVER_SIZE_BYTES = 10 * 1024 * 1024;
 
 export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const router = useRouter();
+  const location = useLocation();
+  const [audioBusy, setAudioBusy] = useState(false);
+  const [replaceAudioId, setReplaceAudioId] = useState<string | undefined>();
+  const [useSongTitle, setUseSongTitle] = useState(true);
+
   const [params, setParams] = useSearchParams();
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
   const [trackErrors, setTrackErrors] = useState<
     Record<string, Record<string, string>>
   >({});
   const [informationTrack, setInformationTrack] = useState<string | null>(null);
-  const [isAudioOpen, setIsAudioOpen] = useState(false);
-  const [typePrompt, setTypePrompt] = useState<"add" | "upload" | null>(null);
-  const [nextType, setNextType] = useState<"ep" | "album">("ep");
+  const [isAudioOpen, setIsAudioOpen] = useState(
+    !!location.state?.files?.length,
+  );
   const { session } = useAuth();
   const [release, setRelease] = useState<ReleaseDetail | null>(null);
   const [myTracks, setMyTracks] = useState<TrackSummary[]>([]);
@@ -122,7 +129,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       window.localStorage.getItem(`music-city:release-step:${releaseId}`);
     return releaseSteps.some((item) => item.id === step)
       ? (step as ReleaseSection)
-      : "basics";
+      : "music";
   });
   const [savedRelease, setSavedRelease] = useState<ReleaseDetail | null>(null);
   const [actionError, setActionError] = useState("");
@@ -162,6 +169,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         ]);
 
         if (!cancelled) {
+          setUseSongTitle(
+            !nextRelease?.title ||
+              nextRelease.title === nextRelease.tracks[0]?.track.title,
+          );
           setRelease(nextRelease);
           setSavedRelease(nextRelease);
           setMyTracks(nextTracks);
@@ -222,7 +233,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             ? "artwork"
             : key.startsWith("tracks")
               ? "music"
-              : "basics";
+              : "artwork";
       if (destination === "artwork") setArtworkError(error.fieldErrors[key]);
       setSection(destination);
       requestAnimationFrame(() =>
@@ -251,7 +262,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         ["description", "recordLabel"].includes(String(issue.path[0])),
       )
         ? "artwork"
-        : "basics",
+        : "artwork",
     );
     requestAnimationFrame(() =>
       document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
@@ -298,7 +309,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           ? { ...item, track: { ...item.track, ...trackInfo(draft.track) } }
           : item;
       });
-      return { ...current, tracks: preserved, trackCount: tracks.length };
+      return {
+        ...current,
+        type: updated.type,
+        title:
+          current.type === "single" && updated.type !== "single" && useSongTitle
+            ? ""
+            : current.title,
+        tracks: preserved,
+        trackCount: tracks.length,
+      };
     });
   };
   const trackInfo = (track: TrackSummary) => ({
@@ -372,6 +392,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   };
   const saveWorkspace = async () => {
     if (!session?.token || !release) return false;
+    if (["processing", "scheduled"].includes(release.publication?.state ?? ""))
+      return true;
     const details = validatedDetails();
     if (!details) return false;
     setIsSaving(true);
@@ -385,7 +407,9 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         details,
       );
       setSavedRelease(updated);
-      setRelease(updated);
+      setRelease((current) =>
+        current ? { ...current, publication: updated.publication } : updated,
+      );
       return true;
     } catch (error) {
       reportError(error, "Unable to save draft");
@@ -406,7 +430,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       return;
     }
     const index = releaseSteps.findIndex((step) => step.id === section);
-    selectStep(releaseSteps[Math.min(index + 1, 4)].id);
+    selectStep(releaseSteps[Math.min(index + 1, releaseSteps.length - 1)].id);
     requestAnimationFrame(() =>
       document
         .getElementById("release-progress")
@@ -427,17 +451,11 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       applyTracks(updated);
     }
   };
-  const needsLargerType = () =>
-    !!release &&
-    ((release.type === "single" && release.tracks.length >= 1) ||
-      (release.type === "ep" && release.tracks.length >= 6));
   const uploadNewTrack = async () => {
-    if (needsLargerType()) {
-      setNextType(release?.type === "ep" ? "album" : "ep");
-      setTypePrompt("upload");
-      return;
+    if (await saveWorkspace()) {
+      setReplaceAudioId(undefined);
+      setIsAudioOpen(true);
     }
-    if (await saveWorkspace()) setIsAudioOpen(true);
   };
 
   const uploadCover = async () => {
@@ -533,11 +551,6 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   };
 
   const addTrack = async (confirmed = false) => {
-    if (!confirmed && needsLargerType()) {
-      setNextType(release?.type === "ep" ? "album" : "ep");
-      setTypePrompt("add");
-      return;
-    }
     const token = session?.token;
 
     if (!token || !release || !selectedTrackId) {
@@ -673,24 +686,30 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     try {
       await saveTrackInformation();
       await saveOrderBeforeNavigation();
-      const updated = await releasesApi.updateRelease(
-        session.token,
-        release.id,
-        {
-          ...details,
-          status,
-          releaseDate:
-            status === "scheduled" ? toIsoString(releaseDateInput) : undefined,
-        },
-      );
+      await releasesApi.updateRelease(session.token, release.id, details);
+      const updated =
+        status === "draft"
+          ? await releasesApi.updateRelease(session.token, release.id, {
+              status: "draft",
+            })
+          : await releasesApi.publish(
+              session.token,
+              release.id,
+              status as "published" | "scheduled",
+              status === "scheduled"
+                ? toIsoString(releaseDateInput)
+                : undefined,
+            );
       setRelease(updated);
       setSavedRelease(updated);
-      setLaunchMode(toLaunchMode(updated.status));
+      setLaunchMode(updated.publication?.mode ?? toLaunchMode(updated.status));
       setReleaseDateInput(toDateTimeLocalValue(updated.releaseDate));
       if (status === "published") trackEvent("release_published");
       toast.success(
         status === "published"
-          ? "Release published."
+          ? updated.publication?.state === "processing"
+            ? "Publication requested. You can leave this page."
+            : "Release published."
           : status === "scheduled"
             ? "Release scheduled."
             : "Release moved to draft.",
@@ -721,6 +740,149 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       setIsDeleting(false);
     }
   };
+
+  const publicationPending = ["processing", "scheduled"].includes(
+    release?.publication?.state ?? "",
+  );
+  const draftSignature = JSON.stringify(
+    release
+      ? [
+          releaseDetails(release),
+          orderItems(release),
+          release.tracks.map((item) => trackInfo(item.track)),
+        ]
+      : null,
+  );
+  const savedSignature = JSON.stringify(
+    savedRelease
+      ? [
+          releaseDetails(savedRelease),
+          orderItems(savedRelease),
+          savedRelease.tracks.map((item) => trackInfo(item.track)),
+        ]
+      : null,
+  );
+  const saveAction = useRef(saveWorkspace);
+  saveAction.current = saveWorkspace;
+  useEffect(() => {
+    if (
+      !release ||
+      !savedRelease ||
+      actionError ||
+      isSaving ||
+      audioBusy ||
+      publicationPending ||
+      (!release.hasRevision &&
+        ["published", "scheduled"].includes(release.status)) ||
+      draftSignature === savedSignature ||
+      release.tracks.some(
+        (item) =>
+          !trackMetadataUpdateSchema.safeParse(trackInfo(item.track)).success,
+      )
+    )
+      return;
+    const timer = setTimeout(() => void saveAction.current(), 1000);
+    return () => clearTimeout(timer);
+  }, [
+    draftSignature,
+    savedSignature,
+    isSaving,
+    audioBusy,
+    publicationPending,
+    actionError,
+  ]);
+  useEffect(() => {
+    if (
+      !release ||
+      release.type !== "single" ||
+      !useSongTitle ||
+      !release.tracks[0] ||
+      release.title === release.tracks[0].track.title
+    )
+      return;
+    setRelease((current) =>
+      current ? { ...current, title: current.tracks[0].track.title } : current,
+    );
+  }, [release?.tracks[0]?.track.title, release?.type, useSongTitle]);
+  useEffect(() => {
+    if (
+      !session?.token ||
+      !release ||
+      isSaving ||
+      audioBusy ||
+      !(
+        publicationPending ||
+        release.tracks.some(
+          (item) => !item.track.playbackReady && item.track.status !== "failed",
+        )
+      )
+    )
+      return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const check = async () => {
+      if (document.visibilityState !== "hidden")
+        try {
+          const updated = await releasesApi.getManageRelease(
+            session.token!,
+            releaseId,
+          );
+          if (updated && !cancelled) {
+            const merge = (current: ReleaseDetail | null) =>
+              current
+                ? {
+                    ...current,
+                    status: updated.status,
+                    hasRevision: updated.hasRevision,
+                    publication: updated.publication,
+                    tracks: current.tracks.map((item) => {
+                      const audio = updated.tracks.find(
+                        (t) => t.trackId === item.trackId,
+                      )?.track;
+                      return audio
+                        ? {
+                            ...item,
+                            track: {
+                              ...item.track,
+                              status: audio.status,
+                              playbackReady: audio.playbackReady,
+                              runtime: audio.runtime,
+                              muxAssetId: audio.muxAssetId,
+                              muxPlaybackId: audio.muxPlaybackId,
+                              muxAssetStatus: audio.muxAssetStatus,
+                            },
+                          }
+                        : item;
+                    }),
+                  }
+                : current;
+            setRelease(merge);
+            setSavedRelease(merge);
+          }
+        } catch {
+          /* The server keeps working while this view reconnects. */
+        }
+      if (!cancelled) timer = setTimeout(check, 5000);
+    };
+    timer = setTimeout(check, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    session?.token,
+    releaseId,
+    publicationPending,
+    isSaving,
+    audioBusy,
+    release?.tracks
+      .map((t) => `${t.trackId}:${t.track.playbackReady}:${t.track.status}`)
+      .join(","),
+  ]);
+  useEffect(() => {
+    if (!coverFile || isSaving || publicationPending) return;
+    void uploadCover();
+  }, [coverFile]);
 
   if (!session?.token) {
     return (
@@ -863,14 +1025,6 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     });
   }
 
-  if (release.tracks.some((item) => !item.track.playbackReady)) {
-    readinessIssues.push({
-      label: "Wait for every track to finish audio processing",
-      kind: "audio",
-      targetId: "release-tracklist",
-    });
-  }
-
   if (release.tracks.filter((item) => item.isFocusTrack).length > 1) {
     readinessIssues.push({
       label: "Choose only one focus track",
@@ -902,18 +1056,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       void saveWorkspace();
       return;
     }
-    if (launchMode !== "draft" && readinessIssues.length) {
+    if (
+      launchMode !== "draft" &&
+      readinessIssues.some((issue) => issue.kind !== "audio")
+    ) {
       focusReadinessTarget(readinessIssues[0].targetId);
       return;
     }
     void updateStatus(launchMode);
   };
   const completedSteps = [
-    ...(release.title.trim() &&
-    release.artistName.trim() &&
-    release.genre.trim()
-      ? ["basics"]
-      : []),
     ...(release.tracks.length ? ["music"] : []),
     ...(release.tracks.length &&
     release.tracks.every(
@@ -924,30 +1076,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       : []),
     ...(release.coverStorageKey || release.coverImageUrl ? ["artwork"] : []),
   ];
-  const refreshAudio = async () => {
-    if (!(await saveWorkspace()) || !session?.token) return;
-    setIsSaving(true);
-    try {
-      await Promise.all(
-        release.tracks
-          .filter((item) => !item.track.playbackReady)
-          .map((item) =>
-            tracksApi.syncTrackMedia(session.token!, item.trackId),
-          ),
-      );
-      const updated = await releasesApi.getManageRelease(
-        session.token,
-        release.id,
-      );
-      if (!updated) throw new Error("Release not found");
-      setRelease(updated);
-      setSavedRelease(updated);
-    } catch (error) {
-      reportError(error, "Unable to refresh recordings");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
   const detailsDirty =
     JSON.stringify(releaseDetails(release)) !==
     JSON.stringify(savedRelease ? releaseDetails(savedRelease) : null);
@@ -974,7 +1103,15 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         eyebrow="Release"
         description={`${release.artistName} · ${release.type.toUpperCase()} · ${release.tracks.length} ${release.tracks.length === 1 ? "track" : "tracks"}`}
         actions={
-          <StatusBadge status={savedRelease?.status ?? release.status} />
+          <StatusBadge
+            status={
+              release.publication?.state === "failed"
+                ? "Needs attention"
+                : publicationPending
+                  ? release.publication!.state
+                  : (savedRelease?.status ?? release.status)
+            }
+          />
         }
       >
         <p role="status" className="text-sm text-muted-foreground">
@@ -998,7 +1135,9 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                         : null,
                     ),
                 )
-              ? "Unsaved changes"
+              ? actionError
+                ? "Couldn’t save"
+                : "Unsaved changes"
               : "All changes saved"}
         </p>
       </StudioPageHeader>
@@ -1032,17 +1171,74 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           disabled={isSaving}
         />
       </div>
-      {section === "basics" ? (
-        <form
-          className="max-w-[720px] rounded-lg border border-border bg-card p-4 sm:p-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void continueStep();
-          }}
+      {publicationPending && (
+        <section
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/50 bg-warning/5 p-4"
         >
-          <fieldset disabled={isSaving}>
+          <p>
+            {release.publication?.state === "scheduled"
+              ? "Release scheduled"
+              : "Processing · publishes automatically"}
+          </p>
+          <Button
+            variant="outline"
+            disabled={isSaving}
+            onClick={async () => {
+              try {
+                const updated = await releasesApi.cancelPublication(
+                  session.token!,
+                  release.id,
+                );
+                setRelease(updated);
+                setSavedRelease(updated);
+              } catch (e) {
+                reportError(e, "Couldn't cancel publication");
+              }
+            }}
+          >
+            Cancel publication & edit
+          </Button>
+        </section>
+      )}
+      {release.publication?.state === "failed" && (
+        <p
+          role="alert"
+          className="rounded-lg border border-destructive/50 p-4 text-destructive"
+        >
+          {release.publication.error}
+        </p>
+      )}
+      {section === "artwork" ? (
+        <div className="max-w-[720px] space-y-6">
+          <fieldset
+            disabled={isSaving || publicationPending}
+            className="space-y-4 rounded-lg border border-border bg-card p-4 sm:p-6"
+          >
+            {release.type === "single" && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={useSongTitle}
+                  onChange={(e) => {
+                    setUseSongTitle(e.target.checked);
+                    if (e.target.checked)
+                      setRelease((current) =>
+                        current
+                          ? {
+                              ...current,
+                              title: current.tracks[0]?.track.title ?? "",
+                            }
+                          : current,
+                      );
+                  }}
+                />
+                Use song title for this release
+              </label>
+            )}
             <ReleaseBasicsFields
               value={release}
+              hideTitle={release.type === "single" && useSongTitle}
               onChange={(patch) =>
                 setRelease((current) =>
                   current ? { ...current, ...patch } : current,
@@ -1051,10 +1247,6 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               errors={fieldErrors}
             />
           </fieldset>
-        </form>
-      ) : null}
-      {section === "artwork" ? (
-        <div className="space-y-6">
           <ReleaseDetailsEditor
             release={release}
             onChange={(patch) =>
@@ -1062,45 +1254,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                 current ? { ...current, ...patch } : current,
               )
             }
-            busy={isSaving}
+            busy={isSaving || publicationPending}
             errors={fieldErrors}
-          >
-            <ReleaseTrackLabels
-              releaseId={release.id}
-              label={release.recordLabel ?? ""}
-              tracks={release.tracks.map((item) => item.track)}
-              token={session.token}
-              onApplied={(updated) => {
-                setRelease((current) =>
-                  current
-                    ? {
-                        ...current,
-                        tracks: current.tracks.map((item) => ({
-                          ...item,
-                          track:
-                            updated.find(
-                              (track) => track.id === item.trackId,
-                            ) ?? item.track,
-                        })),
-                      }
-                    : current,
-                );
-                setMyTracks((current) =>
-                  current.map(
-                    (track) =>
-                      updated.find((item) => item.id === track.id) ?? track,
-                  ),
-                );
-              }}
-            />
-          </ReleaseDetailsEditor>
+          ></ReleaseDetailsEditor>
 
           <ReleaseArtworkEditor
             image={release.coverImageUrl}
             preview={coverPreviewUrl}
             file={coverFile}
             progress={coverUploadProgress}
-            busy={isSaving}
+            busy={isSaving || publicationPending}
             error={artworkError}
             onSelect={handleCoverFileChange}
             onUpload={() => void uploadCover()}
@@ -1109,20 +1272,11 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       ) : null}
       {section === "music" ? (
         <div className="space-y-6">
-          {release.tracks.some((item) => !item.track.playbackReady) ? (
-            <Button
-              variant="outline"
-              disabled={isSaving}
-              onClick={() => void refreshAudio()}
-            >
-              Refresh audio status
-            </Button>
-          ) : null}
           <ReleaseTracklistEditor
             release={release}
             available={availableTracks}
             selected={selectedTrackId}
-            busy={isSaving}
+            busy={isSaving || publicationPending}
             onSelect={setSelectedTrackId}
             onAdd={() => void addTrack()}
             onUpload={() => void uploadNewTrack()}
@@ -1130,6 +1284,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             onMove={moveTrack}
             onRemove={(id) => void removeTrack(id)}
             onSave={() => void saveTrackOrder()}
+            onReplace={(id) => {
+              setReplaceAudioId(id);
+              setIsAudioOpen(true);
+            }}
             onEdit={(id) => {
               setInformationTrack(id);
               selectStep("information");
@@ -1145,8 +1303,13 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                   track,
                 ])
               }
-              onBusy={setIsSaving}
-              onClose={() => setIsAudioOpen(false)}
+              onBusy={setAudioBusy}
+              initialFiles={location.state?.files ?? []}
+              replaceId={replaceAudioId}
+              onClose={() => {
+                setIsAudioOpen(false);
+                setReplaceAudioId(undefined);
+              }}
               onAdded={(updated, track) => {
                 applyTracks(updated, true);
                 setMyTracks((current) => [
@@ -1159,27 +1322,48 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         </div>
       ) : null}
       {section === "information" ? (
-        <ReleaseTrackInformation
-          selectedTrack={informationTrack}
-          release={release}
-          artists={artists}
-          busy={isSaving}
-          errors={trackErrors}
-          onChange={(id, patch) =>
-            setRelease((current) =>
-              current
-                ? {
-                    ...current,
-                    tracks: current.tracks.map((item) =>
-                      item.trackId === id
-                        ? { ...item, track: { ...item.track, ...patch } }
-                        : item,
-                    ),
-                  }
-                : current,
-            )
-          }
-        />
+        <div className="space-y-6">
+          <ReleaseSharedDetails
+            release={release}
+            artists={artists}
+            busy={isSaving || publicationPending}
+            onChange={(id, patch) =>
+              setRelease((current) =>
+                current
+                  ? {
+                      ...current,
+                      tracks: current.tracks.map((item) =>
+                        item.trackId === id
+                          ? { ...item, track: { ...item.track, ...patch } }
+                          : item,
+                      ),
+                    }
+                  : current,
+              )
+            }
+          />
+          <ReleaseTrackInformation
+            selectedTrack={informationTrack}
+            release={release}
+            artists={artists}
+            busy={isSaving || publicationPending}
+            errors={trackErrors}
+            onChange={(id, patch) =>
+              setRelease((current) =>
+                current
+                  ? {
+                      ...current,
+                      tracks: current.tracks.map((item) =>
+                        item.trackId === id
+                          ? { ...item, track: { ...item.track, ...patch } }
+                          : item,
+                      ),
+                    }
+                  : current,
+              )
+            }
+          />
+        </div>
       ) : null}
       {section === "review" ? (
         <>
@@ -1187,27 +1371,42 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             token={session.token}
             onAudioUpdated={(updated) => {
               const merge = (current: ReleaseDetail | null) =>
-                current ? {
-                  ...current,
-                  tracks: current.tracks.map((item) => {
-                    const audio = updated.find((track) => track.id === item.trackId);
-                    if (!audio) return item;
-                    const fields = [
-                      "status", "runtime", "playbackReady", "muxAssetStatus",
-                      "muxAssetId", "muxPlaybackId", "playbackUrl", "streamMediaUrl",
-                      "streamManifestUrl", "masterStorageKey", "streamManifestKey", "archiveStatus",
-                    ] as const;
-                    return {
-                      ...item,
-                      track: {
-                        ...item.track,
-                        ...Object.fromEntries(fields
-                          .filter((key) => key in audio)
-                          .map((key) => [key, audio[key]])),
-                      },
-                    };
-                  }),
-                } : current;
+                current
+                  ? {
+                      ...current,
+                      tracks: current.tracks.map((item) => {
+                        const audio = updated.find(
+                          (track) => track.id === item.trackId,
+                        );
+                        if (!audio) return item;
+                        const fields = [
+                          "status",
+                          "runtime",
+                          "playbackReady",
+                          "muxAssetStatus",
+                          "muxAssetId",
+                          "muxPlaybackId",
+                          "playbackUrl",
+                          "streamMediaUrl",
+                          "streamManifestUrl",
+                          "masterStorageKey",
+                          "streamManifestKey",
+                          "archiveStatus",
+                        ] as const;
+                        return {
+                          ...item,
+                          track: {
+                            ...item.track,
+                            ...Object.fromEntries(
+                              fields
+                                .filter((key) => key in audio)
+                                .map((key) => [key, audio[key]]),
+                            ),
+                          },
+                        };
+                      }),
+                    }
+                  : current;
               setRelease(merge);
               setSavedRelease(merge);
             }}
@@ -1231,7 +1430,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       <ActionBar>
         <Button
           variant="outline"
-          disabled={isSaving || section === "basics"}
+          disabled={isSaving || section === "music"}
           onClick={() =>
             selectStep(
               releaseSteps[
@@ -1254,84 +1453,15 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             Save & exit
           </Button>
           {section !== "review" ? (
-            <Button disabled={isSaving} onClick={() => void continueStep()}>
-              {isSaving ? "Saving..." : "Save & continue"}
+            <Button
+              disabled={isSaving || audioBusy}
+              onClick={() => void continueStep()}
+            >
+              {isSaving ? "Saving..." : "Continue"}
             </Button>
           ) : null}
         </div>
       </ActionBar>
-      {typePrompt ? (
-        <Dialog
-          title="Change release type"
-          description="A Single holds one song and an EP holds up to six. Choose a larger release before adding another recording."
-          busy={isSaving}
-          onClose={() => setTypePrompt(null)}
-        >
-          <div className="space-y-4">
-            <Select
-              aria-label="New release type"
-              value={nextType}
-              onChange={(e) => setNextType(e.target.value as "ep" | "album")}
-              className="h-11 rounded-md border border-input bg-background px-3"
-            >
-              <option value="ep" disabled={release.tracks.length >= 6}>
-                EP · 2–6 tracks
-              </option>
-              <option value="album">Album · 7+ tracks</option>
-            </Select>
-            <Button
-              disabled={isSaving}
-              onClick={async () => {
-                setIsSaving(true);
-                try {
-                  await saveTrackInformation();
-                  await saveOrderBeforeNavigation();
-                  const updated = await releasesApi.updateRelease(
-                    session.token!,
-                    release.id,
-                    { ...releaseDetails(release), type: nextType },
-                  );
-                  setRelease(updated);
-                  setSavedRelease(updated);
-                  setTypePrompt(null);
-                  if (typePrompt === "upload") setIsAudioOpen(true);
-                  else {
-                    const added = await releasesApi.addTrackToRelease(
-                      session.token!,
-                      release.id,
-                      {
-                        trackId: selectedTrackId,
-                        discNumber: 1,
-                        isFocusTrack: false,
-                      },
-                    );
-                    applyTracks(added, true);
-                    setSelectedTrackId("");
-                  }
-                } catch (error) {
-                  reportError(error, "Unable to change release type");
-                } finally {
-                  setIsSaving(false);
-                }
-              }}
-            >
-              Change type &{" "}
-              {typePrompt === "upload" ? "upload" : "add recording"}
-            </Button>
-          </div>
-        </Dialog>
-      ) : null}
-      <div className="border-t border-border pt-4">
-        <Button
-          variant="ghost"
-          className="text-destructive"
-          disabled={isSaving || isDeleting}
-          onClick={() => setIsDeleteConfirmOpen(true)}
-        >
-          <Trash2 />
-          Delete release
-        </Button>
-      </div>
       {isDeleteConfirmOpen ? (
         <Dialog
           title={`Delete "${release.title}"?`}

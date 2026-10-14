@@ -1,5 +1,7 @@
 # music-city
 
+The [SOW 2 milestone tracker](docs/sow-2-tracker.md) tracks the submitted deliverables, implementation, acceptance tests, evidence, and remaining work.
+
 Music City is now organized as a small workspace:
 
 - `client`: React + Vite frontend

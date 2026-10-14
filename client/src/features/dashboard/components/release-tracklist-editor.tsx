@@ -1,3 +1,5 @@
+const trackFailed = (track: { status?: string; muxAssetStatus?: string }) =>
+  track.status === "failed" || track.muxAssetStatus === "errored";
 import { recordingDuration } from "../lib/recording-duration";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import type {
@@ -25,6 +27,7 @@ export function ReleaseTracklistEditor({
   onRemove,
   onSave,
   onEdit,
+  onReplace,
 }: {
   release: ReleaseDetail;
   available: TrackSummary[];
@@ -38,6 +41,7 @@ export function ReleaseTracklistEditor({
   onRemove: (id: string) => void;
   onSave: () => void;
   onEdit: (id: string) => void;
+  onReplace: (id: string) => void;
 }) {
   return (
     <section
@@ -66,7 +70,23 @@ export function ReleaseTracklistEditor({
                     {item.track.isExplicit ? "Explicit" : "Not explicit"} ·{" "}
                     {item.track.playbackReady ? "Ready" : "Processing"}
                   </p>
-                  <Button variant="link" className="px-0" disabled={busy} onClick={() => onEdit(item.trackId)}>Edit track information</Button>
+                  {trackFailed(item.track) && (
+                    <Button
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => onReplace(item.trackId)}
+                    >
+                      Replace audio
+                    </Button>
+                  )}
+                  <Button
+                    variant="link"
+                    className="px-0"
+                    disabled={busy}
+                    onClick={() => onEdit(item.trackId)}
+                  >
+                    Edit track information
+                  </Button>
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <Button
@@ -110,37 +130,41 @@ export function ReleaseTracklistEditor({
                     }
                   />
                 </FormField>
-                <FormField
-                  id={`disc-number-${item.trackId}`}
-                  label="Disc"
-                  className="w-20"
-                >
-                  <Input
-                    type="number"
-                    min={1}
-                    disabled={busy}
-                    value={item.discNumber}
-                    aria-label={`Disc number for ${item.track.title}`}
-                    onChange={(event) =>
-                      onChange(item.trackId, {
-                        discNumber: Number(event.target.value) || 1,
-                      })
-                    }
-                  />
-                </FormField>
-                <label className="flex min-h-11 items-center gap-2 text-sm">
-                  <Checkbox
-                    disabled={busy}
-                    checked={item.isFocusTrack}
-                    aria-label={`Set ${item.track.title} as focus track`}
-                    onChange={(event) =>
-                      onChange(item.trackId, {
-                        isFocusTrack: event.target.checked,
-                      })
-                    }
-                  />
-                  Focus
-                </label>
+                {release.type !== "single" && (
+                  <>
+                    <FormField
+                      id={`disc-number-${item.trackId}`}
+                      label="Disc"
+                      className="w-20"
+                    >
+                      <Input
+                        type="number"
+                        min={1}
+                        disabled={busy}
+                        value={item.discNumber}
+                        aria-label={`Disc number for ${item.track.title}`}
+                        onChange={(event) =>
+                          onChange(item.trackId, {
+                            discNumber: Number(event.target.value) || 1,
+                          })
+                        }
+                      />
+                    </FormField>
+                    <label className="flex min-h-11 items-center gap-2 text-sm">
+                      <Checkbox
+                        disabled={busy}
+                        checked={item.isFocusTrack}
+                        aria-label={`Set ${item.track.title} as focus track`}
+                        onChange={(event) =>
+                          onChange(item.trackId, {
+                            isFocusTrack: event.target.checked,
+                          })
+                        }
+                      />
+                      Focus
+                    </label>
+                  </>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -162,16 +186,6 @@ export function ReleaseTracklistEditor({
           track.
         </p>
       )}
-      {release.tracks.length ? (
-        <ActionBar>
-          <p className="text-sm text-muted-foreground">
-            {release.tracks.length} tracks
-          </p>
-          <Button variant="outline" disabled={busy} onClick={onSave}>
-            {busy ? "Saving..." : "Save order"}
-          </Button>
-        </ActionBar>
-      ) : null}
       <div className="space-y-4 border-t border-border pt-6">
         <FormField id="release-add-track" label="Add an uploaded track">
           <Select

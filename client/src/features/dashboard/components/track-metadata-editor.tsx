@@ -46,12 +46,14 @@ export function TrackMetadataEditor({
   artists,
   errors = {},
   disabled = false,
+  hideIsrc = false,
 }: {
   value: TrackMetadataDraft;
   onChange: (value: TrackMetadataDraft) => void;
   artists: ArtistSummary[];
   errors?: Record<string, string>;
   disabled?: boolean;
+  hideIsrc?: boolean;
 }) {
   const id = useId();
   const addButton = useRef<HTMLButtonElement>(null);
@@ -237,7 +239,7 @@ export function TrackMetadataEditor({
           description="Optional. Add an existing recording code and the label for this track."
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
+            {!hideIsrc && <FormField
               id={`${id}-isrc`}
               label="Existing ISRC"
               hint="Music City does not issue ISRCs."
@@ -248,7 +250,7 @@ export function TrackMetadataEditor({
                 onChange={(e) => onChange({ ...value, isrc: e.target.value })}
                 placeholder="For example, USRC17607839"
               />
-            </FormField>
+            </FormField>}
             <FormField
               id={`${id}-label`}
               label="Record label"
