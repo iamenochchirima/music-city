@@ -28,7 +28,7 @@ Railway uses `/api/v1/health/ready` as its readiness check. A healthy HTTP respo
 6. Deploy `v0-music-city` and `music-city-admin` on Vercel with production variables. Both projects use subdirectories of this monorepo.
 7. Verify the public pages, frontend API targets, CORS, authentication, and release creation and editing.
 
-`.vercelignore` and `.railwayignore` exclude local environment files, imported credentials, and runtime data from CLI uploads. Production frontend builds obtain their variables from Vercel. API signing keys and database credentials stay in Railway.
+`.vercelignore` and `.railwayignore` exclude local environment files, imported credentials, and runtime data from CLI uploads. Production frontend builds obtain their variables from Vercel. API signing keys and database credentials stay in Railway. Client and admin builds expose only public frontend variables and the build mode. Internal Vercel build credentials are excluded. The admin build also compiles the shared workspace package before Vite, so a clean deployment does not depend on cached output.
 
 ## Rollout on 14 October 2026
 

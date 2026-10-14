@@ -3,7 +3,10 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const env = {
+    ...loadEnv(mode, process.cwd(), ["VITE_", "NEXT_PUBLIC_"]),
+    NODE_ENV: mode === "production" ? "production" : "development",
+  };
 
   return {
     plugins: [react()],
