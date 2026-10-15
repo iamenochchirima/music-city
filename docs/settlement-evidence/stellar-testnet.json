@@ -1,0 +1,1805 @@
+{
+  "status": "service_testnet_lifecycle_verified_browser_pending",
+  "network": "Test SDF Network ; September 2015",
+  "assetCode": "USDC",
+  "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+  "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+  "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+  "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+  "trackId": "81de5695-7f5e-4288-bcc7-252699dd32c6",
+  "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+  "claimMechanism": "Soroban escrow, contract ID + batch ID + recipient index. Not native balance IDs.",
+  "walletEvidence": "Generated disposable keys exercise real Testnet transactions. Dynamic browser wallet verification is separate.",
+  "trustline-GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": {
+    "transactionHash": "06bee79871447b7bb0827264b2774a9e987f351530bea0f7ac4c8a7b21d17dbb",
+    "ledger": 5204446,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/06bee79871447b7bb0827264b2774a9e987f351530bea0f7ac4c8a7b21d17dbb"
+  },
+  "trustline-GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ": {
+    "transactionHash": "355b95dbf76d2e3a14347c6e4d697531afe525b7f13a2965b8f44c3f186c97b8",
+    "ledger": 5204447,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/355b95dbf76d2e3a14347c6e4d697531afe525b7f13a2965b8f44c3f186c97b8"
+  },
+  "trustline-GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI": {
+    "transactionHash": "6e4aa75bfd0bcb0ff1d1cd8e38c648e674f2db42d51df5c79b1ed5eed296e5fa",
+    "ledger": 5204448,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/6e4aa75bfd0bcb0ff1d1cd8e38c648e674f2db42d51df5c79b1ed5eed296e5fa"
+  },
+  "demoUSDC": {
+    "transactionHash": "37b12a82d4ce616a76967382f27e3c0c2f98ea0d7a16e521813e9d8fa3c5ee36",
+    "ledger": 5204449,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/37b12a82d4ce616a76967382f27e3c0c2f98ea0d7a16e521813e9d8fa3c5ee36"
+  },
+  "settlementContractUpload": {
+    "transactionHash": "2cd7b4392e3e4c340cb95b35c2084341a259660360cf833984d0565218ca681a",
+    "ledger": 5204450,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/2cd7b4392e3e4c340cb95b35c2084341a259660360cf833984d0565218ca681a"
+  },
+  "wasmSha256": "31aacab667aad2f49cf4d85fd3c58437dba9cbf875404025cc1d0c852b0a7de6",
+  "settlementContractDeployment": {
+    "transactionHash": "e1dec88153eecae3b4201a7920199586ebbed9c1ff080ada0bc69d06f229979d",
+    "ledger": 5204451,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/e1dec88153eecae3b4201a7920199586ebbed9c1ff080ada0bc69d06f229979d"
+  },
+  "configuration": {
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "contractId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "threshold": 2,
+    "account": {
+      "_links": {
+        "self": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+        },
+        "transactions": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/transactions{?cursor,limit,order}",
+          "templated": true
+        },
+        "operations": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/operations{?cursor,limit,order}",
+          "templated": true
+        },
+        "payments": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/payments{?cursor,limit,order}",
+          "templated": true
+        },
+        "effects": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/effects{?cursor,limit,order}",
+          "templated": true
+        },
+        "offers": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/offers{?cursor,limit,order}",
+          "templated": true
+        },
+        "trades": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/trades{?cursor,limit,order}",
+          "templated": true
+        },
+        "data": {
+          "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/data/{key}",
+          "templated": true
+        }
+      },
+      "id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "account_id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "sequence": "22352878119157778",
+      "sequence_ledger": 5205123,
+      "sequence_time": "1792049202",
+      "subentry_count": 3,
+      "last_modified_ledger": 5205123,
+      "last_modified_time": "2026-10-15T07:26:42Z",
+      "thresholds": {
+        "low_threshold": 2,
+        "med_threshold": 2,
+        "high_threshold": 2
+      },
+      "flags": {
+        "auth_required": false,
+        "auth_revocable": false,
+        "auth_immutable": false,
+        "auth_clawback_enabled": false
+      },
+      "balances": [
+        {
+          "balance": "30.0000000",
+          "limit": "922337203685.4775807",
+          "buying_liabilities": "0.0000000",
+          "selling_liabilities": "0.0000000",
+          "last_modified_ledger": 5204691,
+          "is_authorized": true,
+          "is_authorized_to_maintain_liabilities": true,
+          "asset_type": "credit_alphanum4",
+          "asset_code": "USDC",
+          "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+        },
+        {
+          "balance": "9759.3833343",
+          "buying_liabilities": "0.0000000",
+          "selling_liabilities": "0.0000000",
+          "asset_type": "native"
+        }
+      ],
+      "signers": [
+        {
+          "weight": 1,
+          "key": "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "type": "ed25519_public_key"
+        },
+        {
+          "weight": 1,
+          "key": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "type": "ed25519_public_key"
+        },
+        {
+          "weight": 1,
+          "key": "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S",
+          "type": "ed25519_public_key"
+        }
+      ],
+      "data": {},
+      "num_sponsoring": 0,
+      "num_sponsored": 0,
+      "paging_token": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+    }
+  },
+  "funding": {
+    "id": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+    "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+    "kind": "settle",
+    "actor": "admin:testnet-settlement-demo",
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "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",
+    "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "signatures": {
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "xF3vYfRNjGGdKf6pYPY8lpeaqPkWFkgTKU/tuupoH1TkxXhMpkEbcxTIuuIjVoNDnLdALEgbt1tqVCsN/4vwBg==",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "R+l63fwO4nKQZf6zHp1oIVnrNncIDxit/P5txzD1ayNBqfpo0lfva2Gwh2lq3/+OciX486rrpd6C5hgkbMqMCw=="
+    },
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-15T06:40:51.000Z",
+    "createdAt": "2026-10-15T06:30:52.701Z",
+    "updatedAt": "2026-10-15T06:30:59.267Z",
+    "ledger": 5204454,
+    "feeCharged": "1519539",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-15T06:30:53.705Z"
+  },
+  "creatorClaim": {
+    "id": "c5d19339-8459-4bf2-998a-98edd72f9241",
+    "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+    "kind": "claim",
+    "claimIndex": 0,
+    "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+    "treasuryAddress": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "AAAAAgAAAAC3nah5NFhz+Ey95OOsXNomL0pAfI0jDKFAv3uEwRRORwAAO7wAT2nVAAAAAgAAAAEAAAAAAAAAAAAAAABq0HV/AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAFY2xhaW0AAAAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAAAAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAABWNsYWltAAAAAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAAAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAAt52oeTRYc/hMveTjrFzaJi9KQHyNIwyhQL97hMEUTkcAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXLgAAAAHQAAAXIAAAAAAAAO1gAAAAA",
+    "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc",
+    "signers": [
+      "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+    ],
+    "signatures": {
+      "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ": "Nb1/EKEJYYRi34Eg8RF4Udx2YbYZGdD35LY4dCqKWV6JQsMltVid6YPAopK/N7hOY0EVcckoHUE+P0teuU8iDw=="
+    },
+    "signedBy": [
+      "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-15T06:41:03.000Z",
+    "createdAt": "2026-10-15T06:31:04.771Z",
+    "updatedAt": "2026-10-15T06:31:14.207Z",
+    "ledger": 5204457,
+    "feeCharged": "10220",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-15T06:31:06.184Z"
+  },
+  "amendedFunding": {
+    "id": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16",
+    "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+    "kind": "settle",
+    "actor": "admin:testnet-settlement-demo",
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "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",
+    "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "signatures": {
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "uNQT2ouz5+e0c9T//kgWNlDj1PEhN/+eCNj8gMc1DGS7n29i/na78M4MtGXlGRzIDCKpSoC9cpzeBac8XtfjAQ==",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "1DzUBqQNGwyM5PZ7tHWh9pxYRcbqxSVss4nizkdKHTk+vzKcUcGsBdWM36sUsf9C37LYubR9VGvv4TaxOa5JCg=="
+    },
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-15T06:41:30.000Z",
+    "createdAt": "2026-10-15T06:31:32.147Z",
+    "updatedAt": "2026-10-15T06:31:38.431Z",
+    "ledger": 5204462,
+    "feeCharged": "883163",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-15T06:31:33.019Z"
+  },
+  "amendedBatch": {
+    "batch": {
+      "id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+      "sourceKey": "ccb1e6406b3f2b90ef0183d49ffdf5d5955391fca534fa595f12c780c5d5f65b",
+      "trackId": "81de5695-7f5e-4288-bcc7-252699dd32c6",
+      "sourceType": "manual_adjustment",
+      "sourceId": "5cd8d64a-41e0-4145-9366-583168b1e097",
+      "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+      "version": 2,
+      "proposalHash": "a448fc300d22e9d4753d5a9a8711cd6b1c6701a57086d97da967a4989f0c4804",
+      "grossUnits": "1000000000",
+      "feeBps": 0,
+      "fundedUnits": "1000000000",
+      "expiresAt": "2026-10-16T06:31:24.000Z",
+      "config": {
+        "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+        "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "assetCode": "USDC",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "allocations": [
+        {
+          "index": 0,
+          "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+          "grossUnits": "500000000",
+          "feeUnits": "0",
+          "amountUnits": "500000000",
+          "ledgerEntryIds": [
+            "9b932d0d-0672-4651-84a4-533f836318ad"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5204464,
+          "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619"
+        },
+        {
+          "index": 1,
+          "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+          "grossUnits": "500000000",
+          "feeUnits": "0",
+          "amountUnits": "500000000",
+          "ledgerEntryIds": [
+            "365abf57-2e8a-4e45-b5fd-e2e202b0f6ad"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5204467,
+          "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a"
+        }
+      ],
+      "state": "closed",
+      "fundedLedger": 5204462,
+      "fundingHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07",
+      "createdAt": "2026-10-15T06:31:26.425Z",
+      "updatedAt": "2026-10-15T06:32:07.638Z"
+    },
+    "attempts": [
+      {
+        "id": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16",
+        "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "kind": "settle",
+        "actor": "admin:testnet-settlement-demo",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAPihsAT2nTAAAACwAAAAEAAAAAAAAAAAAAAABq0HWaAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAGc2V0dGxlAAAAAAABAAAAEQAAAAEAAAAJAAAADwAAAAxhZ3JlZW1lbnRfaWQAAAAOAAAAJGY1NTViMTFhLTFlODYtNGRjMy1hNDg1LTY5MTQ0MTgzM2JjZQAAAA8AAAAIYmF0Y2hfaWQAAAANAAAAIAf+2J7KqtGRGhoN6FR8gxsgOB5cNFGgHWC/nu2gQ34FAAAADwAAAApleHBpcmVzX2F0AAAAAAAFAAAAAGrRxLwAAAAPAAAAB2ZlZV9icHMAAAAAAwAAAAAAAAAPAAAADGdyb3NzX2Ftb3VudAAAAAoAAAAAAAAAAAAAAAA7msoAAAAADwAAAA1wcm9wb3NhbF9oYXNoAAAAAAAADQAAACCkSPwwDSLp1HU9WpqHEc1rHGcBpXCG2X2pZ6SYnwxIBAAAAA8AAAAJc291cmNlX2lkAAAAAAAADQAAACDMseZAaz8rkO8Bg9Sf/fXVlVOR/KU0+llfEseAxdX2WwAAAA8AAAAIdHJhY2tfaWQAAAAOAAAAJDgxZGU1Njk1LTdmNWUtNDI4OC1iY2M3LTI1MjY5OWRkMzJjNgAAAA8AAAAHdmVyc2lvbgAAAAADAAAAAgAAAAEAAAAAAAAAAAAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAAAZzZXR0bGUAAAAAAAEAAAARAAAAAQAAAAkAAAAPAAAADGFncmVlbWVudF9pZAAAAA4AAAAkZjU1NWIxMWEtMWU4Ni00ZGMzLWE0ODUtNjkxNDQxODMzYmNlAAAADwAAAAhiYXRjaF9pZAAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAAPAAAACmV4cGlyZXNfYXQAAAAAAAUAAAAAatHEvAAAAA8AAAAHZmVlX2JwcwAAAAADAAAAAAAAAA8AAAAMZ3Jvc3NfYW1vdW50AAAACgAAAAAAAAAAAAAAADuaygAAAAAPAAAADXByb3Bvc2FsX2hhc2gAAAAAAAANAAAAIKRI/DANIunUdT1amocRzWscZwGlcIbZfalnpJifDEgEAAAADwAAAAlzb3VyY2VfaWQAAAAAAAANAAAAIMyx5kBrPyuQ7wGD1J/99dWVU5H8pTT6WV8Sx4DF1fZbAAAADwAAAAh0cmFja19pZAAAAA4AAAAkODFkZTU2OTUtN2Y1ZS00Mjg4LWJjYzctMjUyNjk5ZGQzMmM2AAAADwAAAAd2ZXJzaW9uAAAAAAMAAAACAAAAAQAAAAAAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAIdHJhbnNmZXIAAAADAAAAEgAAAAAAAAAADX5W/7gnL+ufrTBcDv0uUSwvbCekB2mOnapSUqMJYGAAAAASAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAACgAAAAAAAAAAAAAAADuaygAAAAAAAAAAAQAAAAAAAAAGAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAErbsp2VoX8biLufBkpAoljw1UeOOxCw1t8qw9oYcRbxgAAABAAAAABAAAAAwAAAA8AAAAFU3BsaXQAAAAAAAAOAAAAJDgxZGU1Njk1LTdmNWUtNDI4OC1iY2M3LTI1MjY5OWRkMzJjNgAAAAMAAAACAAAAAQAAAAYAAAABK27KdlaF/G4i7nwZKQKJY8NVHjjsQsNbfKsPaGHEW8YAAAAUAAAAAQAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAcxqsq2Z6rS9Jz02F/TxYQ326nL+HVAQCXMHQyFKwp95gAAAAdH0gjSTXhqOZ0hhr8tpOwyn5NPhMYtuRKPVDVd1bEE7wAAAAQAAAABAAAAAA1+Vv+4Jy/rn60wXA79LlEsL2wnpAdpjp2qUlKjCWBgAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAVCYXRjaAAAAAAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABAAAAABAAAAAgAAAA8AAAAGU291cmNlAAAAAAANAAAAIMyx5kBrPyuQ7wGD1J/99dWVU5H8pTT6WV8Sx4DF1fZbAAAAAQAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAQAAAAAQAAAAIAAAAPAAAAB0JhbGFuY2UAAAAAEgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAAAEAHzVgAAAAdAAABnAAAAAAAA+JtwAAAAA=",
+        "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "uNQT2ouz5+e0c9T//kgWNlDj1PEhN/+eCNj8gMc1DGS7n29i/na78M4MtGXlGRzIDCKpSoC9cpzeBac8XtfjAQ==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "1DzUBqQNGwyM5PZ7tHWh9pxYRcbqxSVss4nizkdKHTk+vzKcUcGsBdWM36sUsf9C37LYubR9VGvv4TaxOa5JCg=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:41:30.000Z",
+        "createdAt": "2026-10-15T06:31:32.147Z",
+        "updatedAt": "2026-10-15T06:31:38.431Z",
+        "ledger": 5204462,
+        "feeCharged": "883163",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:31:33.019Z"
+      },
+      {
+        "id": "a55256c1-fdc6-4e72-9988-2c8b5c0700d3",
+        "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "kind": "claim",
+        "claimIndex": 0,
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "treasuryAddress": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAC3nah5NFhz+Ey95OOsXNomL0pAfI0jDKFAv3uEwRRORwAAO7wAT2nVAAAAAwAAAAEAAAAAAAAAAAAAAABq0HWmAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAFY2xhaW0AAAAAAAACAAAADQAAACAH/tieyqrRkRoaDehUfIMbIDgeXDRRoB1gv57toEN+BQAAAAMAAAAAAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAABWNsYWltAAAAAAAAAgAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAADAAAAAAAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgzLHmQGs/K5DvAYPUn/311ZVTkfylNPpZXxLHgMXV9lsAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAAt52oeTRYc/hMveTjrFzaJi9KQHyNIwyhQL97hMEUTkcAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACAH/tieyqrRkRoaDehUfIMbIDgeXDRRoB1gv57toEN+BQAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXLgAAAAHQAAAXIAAAAAAAAO1gAAAAA",
+        "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619",
+        "signers": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "signatures": {
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ": "cXnYx303H89xYg/Mb9Rv1ohJ1zP3AAa9VAeOhpIff+mr7AiPrtB8ZI9Po77eCn1I3JWuCWbIXcMCrm8p36k7BA=="
+        },
+        "signedBy": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:41:42.000Z",
+        "createdAt": "2026-10-15T06:31:43.375Z",
+        "updatedAt": "2026-10-15T06:31:47.860Z",
+        "ledger": 5204464,
+        "feeCharged": "10220",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:31:44.465Z"
+      },
+      {
+        "id": "5bd67d03-f809-4513-9717-a8f753482ac5",
+        "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "kind": "claim",
+        "claimIndex": 1,
+        "actor": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "treasuryAddress": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAD4PQOTqz9XbC6UxQna1yH3oihOKWHie5JesvyUtbBI4wAAO7oAT2nXAAAAAgAAAAEAAAAAAAAAAAAAAABq0HWwAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAFY2xhaW0AAAAAAAACAAAADQAAACAH/tieyqrRkRoaDehUfIMbIDgeXDRRoB1gv57toEN+BQAAAAMAAAABAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAABWNsYWltAAAAAAAAAgAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAADAAAAAQAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgzLHmQGs/K5DvAYPUn/311ZVTkfylNPpZXxLHgMXV9lsAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAA+D0Dk6s/V2wulMUJ2tch96IoTilh4nuSXrL8lLWwSOMAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACAH/tieyqrRkRoaDehUfIMbIDgeXDRRoB1gv57toEN+BQAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXK7wAAAHQAAAXEAAAAAAAAO1YAAAAA",
+        "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a",
+        "signers": [
+          "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI"
+        ],
+        "signatures": {
+          "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI": "xqp488w219PB2slOEXlwBTqNPJvzdIRVjtG/nx5MjEh+aVpB6PsNW8ezXsuaWwHssF0DWnK6ZhvTyRfI0+scCA=="
+        },
+        "signedBy": [
+          "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:41:52.000Z",
+        "createdAt": "2026-10-15T06:31:54.479Z",
+        "updatedAt": "2026-10-15T06:32:07.281Z",
+        "ledger": 5204467,
+        "feeCharged": "10218",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:31:56.938Z"
+      },
+      {
+        "id": "a2f2699f-a8a5-452e-9c05-710027315c7a",
+        "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "kind": "maintain",
+        "actor": "admin:testnet-settlement-demo",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAJtsAT2nTAAAADAAAAAEAAAAAAAAAAAAAAABq0HXDAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAJZ2V0X2JhdGNoAAAAAAAAAQAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAAAAAAAAQAAAAAAAAAEAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABAAAAABAAAAAgAAAA8AAAAFQmF0Y2gAAAAAAAANAAAAIAf+2J7KqtGRGhoN6FR8gxsgOB5cNFGgHWC/nu2gQ34FAAAAAQAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABlNvdXJjZQAAAAAADQAAACDMseZAaz8rkO8Bg9Sf/fXVlVOR/KU0+llfEseAxdX2WwAAAAEAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAFAAAAAEAAAAHMarKtmeq0vSc9Nhf08WEN9upy/h1QEAlzB0MhSsKfeYAAAAAAA3L6AAAAAAAAAAAAAAAAAAAJncAAAAA",
+        "transactionHash": "069784d76ce305b2f9a6ff79b78ac358d4fad0f0a55126f74bfdb0ad9d34bc69",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "7JB39rMuDEQYLdW/2VpItTGtBQYUPH+efPX4OcjjXD7b+ilEKC2WbUmfPsyuH0mTPdi8LaRr+hsfWmODArQ4BQ==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "ZNnuNg8/vJFHQjrCfxruOFVlToCBnISljOg4Sd8wi8DV+b5JUyij/K+lQwUMziquyXMxftSDjawWqlzprsi7DA=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:42:11.000Z",
+        "createdAt": "2026-10-15T06:32:13.802Z",
+        "updatedAt": "2026-10-15T06:32:17.796Z",
+        "ledger": 5204470,
+        "feeCharged": "4929",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:32:14.804Z"
+      },
+      {
+        "id": "1665ef97-b3df-4d08-a707-16e8c59f3e5c",
+        "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "kind": "maintain",
+        "actor": "admin:testnet-settlement-demo",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAJtsAT2nTAAAADQAAAAEAAAAAAAAAAAAAAABq0HXqAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAJZ2V0X2JhdGNoAAAAAAAAAQAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAAAAAAAAQAAAAAAAAAEAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABAAAAABAAAAAgAAAA8AAAAFQmF0Y2gAAAAAAAANAAAAIAf+2J7KqtGRGhoN6FR8gxsgOB5cNFGgHWC/nu2gQ34FAAAAAQAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABlNvdXJjZQAAAAAADQAAACDMseZAaz8rkO8Bg9Sf/fXVlVOR/KU0+llfEseAxdX2WwAAAAEAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAFAAAAAEAAAAHMarKtmeq0vSc9Nhf08WEN9upy/h1QEAlzB0MhSsKfeYAAAAAAA3L6AAAAAAAAAAAAAAAAAAAJncAAAAA",
+        "transactionHash": "c6df13bd37e819d187d63dbc681db451e21ce6eee45c092cedb756432c9b4606",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "fxjAwj41j+AXfINPywWwfOMCz4YoypQI5XHh/Z+T2e6UY3UcFYemxCZG3+eGiczpm7mIZMD6YHxxuXuljrTqCg==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "Kux6ioJTHnjUTb2AEsgzEvtljBn7P+AWvDE4ZBczYfUzb8/lBGZMQT/i+hPEmvwbHjwvy+3ID2W9RLg2oeOhCQ=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:42:50.000Z",
+        "createdAt": "2026-10-15T06:32:53.044Z",
+        "updatedAt": "2026-10-15T06:32:57.629Z",
+        "ledger": 5204478,
+        "feeCharged": "4929",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:32:54.153Z"
+      }
+    ],
+    "events": [
+      {
+        "id": "13",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "source_reserved",
+        "payload": {
+          "ledgerIds": [
+            "9b932d0d-0672-4651-84a4-533f836318ad",
+            "365abf57-2e8a-4e45-b5fd-e2e202b0f6ad"
+          ],
+          "sourceKey": "ccb1e6406b3f2b90ef0183d49ffdf5d5955391fca534fa595f12c780c5d5f65b",
+          "fundedUnits": "1000000000"
+        },
+        "created_at": "2026-10-15T06:31:26.410Z"
+      },
+      {
+        "id": "14",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16",
+          "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07"
+        },
+        "created_at": "2026-10-15T06:31:28.107Z"
+      },
+      {
+        "id": "15",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16"
+        },
+        "created_at": "2026-10-15T06:31:32.152Z"
+      },
+      {
+        "id": "16",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16"
+        },
+        "created_at": "2026-10-15T06:31:32.159Z"
+      },
+      {
+        "id": "17",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16",
+          "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07"
+        },
+        "created_at": "2026-10-15T06:31:32.166Z"
+      },
+      {
+        "id": "18",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "0",
+          "fundedLedger": 5204462,
+          "reclaimedUnits": "0",
+          "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07"
+        },
+        "created_at": "2026-10-15T06:31:37.897Z"
+      },
+      {
+        "id": "19",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204462,
+          "attemptId": "c9ae6a00-4e4d-4969-9cc6-46fa0179cc16",
+          "feeCharged": "883163",
+          "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07"
+        },
+        "created_at": "2026-10-15T06:31:37.897Z"
+      },
+      {
+        "id": "20",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "a55256c1-fdc6-4e72-9988-2c8b5c0700d3",
+          "claimIndex": 0,
+          "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619"
+        },
+        "created_at": "2026-10-15T06:31:39.223Z"
+      },
+      {
+        "id": "21",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+          ],
+          "attemptId": "a55256c1-fdc6-4e72-9988-2c8b5c0700d3"
+        },
+        "created_at": "2026-10-15T06:31:43.380Z"
+      },
+      {
+        "id": "22",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "a55256c1-fdc6-4e72-9988-2c8b5c0700d3",
+          "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619"
+        },
+        "created_at": "2026-10-15T06:31:43.385Z"
+      },
+      {
+        "id": "23",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "500000000",
+          "fundedLedger": 5204462,
+          "reclaimedUnits": "0",
+          "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619"
+        },
+        "created_at": "2026-10-15T06:31:47.220Z"
+      },
+      {
+        "id": "24",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204464,
+          "attemptId": "a55256c1-fdc6-4e72-9988-2c8b5c0700d3",
+          "feeCharged": "10220",
+          "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619"
+        },
+        "created_at": "2026-10-15T06:31:47.220Z"
+      },
+      {
+        "id": "25",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "5bd67d03-f809-4513-9717-a8f753482ac5",
+          "claimIndex": 1,
+          "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a"
+        },
+        "created_at": "2026-10-15T06:31:48.537Z"
+      },
+      {
+        "id": "26",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI"
+          ],
+          "attemptId": "5bd67d03-f809-4513-9717-a8f753482ac5"
+        },
+        "created_at": "2026-10-15T06:31:54.485Z"
+      },
+      {
+        "id": "27",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "5bd67d03-f809-4513-9717-a8f753482ac5",
+          "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a"
+        },
+        "created_at": "2026-10-15T06:31:54.489Z"
+      },
+      {
+        "id": "28",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "1000000000",
+          "fundedLedger": 5204462,
+          "reclaimedUnits": "0",
+          "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a"
+        },
+        "created_at": "2026-10-15T06:32:06.748Z"
+      },
+      {
+        "id": "29",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204467,
+          "attemptId": "5bd67d03-f809-4513-9717-a8f753482ac5",
+          "feeCharged": "10218",
+          "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a"
+        },
+        "created_at": "2026-10-15T06:32:06.748Z"
+      },
+      {
+        "id": "30",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "a2f2699f-a8a5-452e-9c05-710027315c7a",
+          "transactionHash": "069784d76ce305b2f9a6ff79b78ac358d4fad0f0a55126f74bfdb0ad9d34bc69"
+        },
+        "created_at": "2026-10-15T06:32:09.759Z"
+      },
+      {
+        "id": "31",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "a2f2699f-a8a5-452e-9c05-710027315c7a"
+        },
+        "created_at": "2026-10-15T06:32:13.808Z"
+      },
+      {
+        "id": "32",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "a2f2699f-a8a5-452e-9c05-710027315c7a"
+        },
+        "created_at": "2026-10-15T06:32:13.814Z"
+      },
+      {
+        "id": "33",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "a2f2699f-a8a5-452e-9c05-710027315c7a",
+          "transactionHash": "069784d76ce305b2f9a6ff79b78ac358d4fad0f0a55126f74bfdb0ad9d34bc69"
+        },
+        "created_at": "2026-10-15T06:32:13.821Z"
+      },
+      {
+        "id": "34",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204470,
+          "attemptId": "a2f2699f-a8a5-452e-9c05-710027315c7a",
+          "feeCharged": "4929",
+          "transactionHash": "069784d76ce305b2f9a6ff79b78ac358d4fad0f0a55126f74bfdb0ad9d34bc69"
+        },
+        "created_at": "2026-10-15T06:32:17.519Z"
+      },
+      {
+        "id": "35",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "1665ef97-b3df-4d08-a707-16e8c59f3e5c",
+          "transactionHash": "c6df13bd37e819d187d63dbc681db451e21ce6eee45c092cedb756432c9b4606"
+        },
+        "created_at": "2026-10-15T06:32:49.595Z"
+      },
+      {
+        "id": "36",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "1665ef97-b3df-4d08-a707-16e8c59f3e5c"
+        },
+        "created_at": "2026-10-15T06:32:53.052Z"
+      },
+      {
+        "id": "37",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "1665ef97-b3df-4d08-a707-16e8c59f3e5c"
+        },
+        "created_at": "2026-10-15T06:32:53.060Z"
+      },
+      {
+        "id": "38",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "1665ef97-b3df-4d08-a707-16e8c59f3e5c",
+          "transactionHash": "c6df13bd37e819d187d63dbc681db451e21ce6eee45c092cedb756432c9b4606"
+        },
+        "created_at": "2026-10-15T06:32:53.068Z"
+      },
+      {
+        "id": "39",
+        "batch_id": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204478,
+          "attemptId": "1665ef97-b3df-4d08-a707-16e8c59f3e5c",
+          "feeCharged": "4929",
+          "transactionHash": "c6df13bd37e819d187d63dbc681db451e21ce6eee45c092cedb756432c9b4606"
+        },
+        "created_at": "2026-10-15T06:32:57.297Z"
+      }
+    ]
+  },
+  "amendmentPreservesExistingClaims": true,
+  "duplicateBatch": {
+    "rejected": true,
+    "error": "HostError: Error(Contract, #2)\n\nEvent log (newest first):\n   0: [Diagnostic Event] contract:CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, topics:[error, Error(Contract, #2)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   1: [Diagnostic Event] topics:[fn_call, CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, settle], data:{agreement_id: \"f555b11a-1e86-4dc3-a485-691441833bce\", batch_id: Bytes(07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05), expires_at: 1792132284, fee_bps: 0, gross_amount: 1000000000, proposal_hash: Bytes(a448fc300d22e9d4753d5a9a8711cd6b1c6701a57086d97da967a4989f0c4804), source_id: Bytes(ccb1e6406b3f2b90ef0183d49ffdf5d5955391fca534fa595f12c780c5d5f65b), track_id: \"81de5695-7f5e-4288-bcc7-252699dd32c6\", version: 2}\n"
+  },
+  "duplicateSource": {
+    "rejected": true,
+    "error": "HostError: Error(Contract, #3)\n\nEvent log (newest first):\n   0: [Diagnostic Event] contract:CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, topics:[error, Error(Contract, #3)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   1: [Diagnostic Event] topics:[fn_call, CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, settle], data:{agreement_id: \"f555b11a-1e86-4dc3-a485-691441833bce\", batch_id: Bytes(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), expires_at: 1792132284, fee_bps: 0, gross_amount: 1000000000, proposal_hash: Bytes(a448fc300d22e9d4753d5a9a8711cd6b1c6701a57086d97da967a4989f0c4804), source_id: Bytes(ccb1e6406b3f2b90ef0183d49ffdf5d5955391fca534fa595f12c780c5d5f65b), track_id: \"81de5695-7f5e-4288-bcc7-252699dd32c6\", version: 2}\n"
+  },
+  "repeatedClaim": {
+    "rejected": true,
+    "error": "HostError: Error(Contract, #7)\n\nEvent log (newest first):\n   0: [Diagnostic Event] contract:CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, topics:[error, Error(Contract, #7)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   1: [Diagnostic Event] topics:[fn_call, CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43, claim], data:[Bytes(c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572), 0]\n"
+  },
+  "maintenance": {
+    "id": "1665ef97-b3df-4d08-a707-16e8c59f3e5c",
+    "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+    "kind": "maintain",
+    "actor": "admin:testnet-settlement-demo",
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAJtsAT2nTAAAADQAAAAEAAAAAAAAAAAAAAABq0HXqAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAJZ2V0X2JhdGNoAAAAAAAAAQAAAA0AAAAgB/7Ynsqq0ZEaGg3oVHyDGyA4Hlw0UaAdYL+e7aBDfgUAAAAAAAAAAQAAAAAAAAAEAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABAAAAABAAAAAgAAAA8AAAAFQmF0Y2gAAAAAAAANAAAAIAf+2J7KqtGRGhoN6FR8gxsgOB5cNFGgHWC/nu2gQ34FAAAAAQAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABlNvdXJjZQAAAAAADQAAACDMseZAaz8rkO8Bg9Sf/fXVlVOR/KU0+llfEseAxdX2WwAAAAEAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAFAAAAAEAAAAHMarKtmeq0vSc9Nhf08WEN9upy/h1QEAlzB0MhSsKfeYAAAAAAA3L6AAAAAAAAAAAAAAAAAAAJncAAAAA",
+    "transactionHash": "c6df13bd37e819d187d63dbc681db451e21ce6eee45c092cedb756432c9b4606",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "signatures": {
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "fxjAwj41j+AXfINPywWwfOMCz4YoypQI5XHh/Z+T2e6UY3UcFYemxCZG3+eGiczpm7mIZMD6YHxxuXuljrTqCg==",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "Kux6ioJTHnjUTb2AEsgzEvtljBn7P+AWvDE4ZBczYfUzb8/lBGZMQT/i+hPEmvwbHjwvy+3ID2W9RLg2oeOhCQ=="
+    },
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-15T06:42:50.000Z",
+    "createdAt": "2026-10-15T06:32:53.044Z",
+    "updatedAt": "2026-10-15T06:32:57.629Z",
+    "ledger": 5204478,
+    "feeCharged": "4929",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-15T06:32:54.153Z"
+  },
+  "earlyReclaimRejected": true,
+  "initialBatch": {
+    "batch": {
+      "id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+      "sourceKey": "a4b63954855d9053ea2860208035c2fcfd8334e4eb17d4e0b809f842e4462611",
+      "trackId": "81de5695-7f5e-4288-bcc7-252699dd32c6",
+      "sourceType": "manual_adjustment",
+      "sourceId": "3524ce8f-28ad-4151-814d-5c84a46678d2",
+      "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+      "version": 1,
+      "proposalHash": "077db9b073dcc4b3f8b1030eafec6054a0ef3af081c955ea9216ff7bf05a907b",
+      "grossUnits": "1000000000",
+      "feeBps": 0,
+      "fundedUnits": "1000000000",
+      "expiresAt": "2026-10-15T06:42:46.000Z",
+      "config": {
+        "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+        "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "assetCode": "USDC",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "allocations": [
+        {
+          "index": 0,
+          "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+          "grossUnits": "700000000",
+          "feeUnits": "0",
+          "amountUnits": "700000000",
+          "ledgerEntryIds": [
+            "d6a2e50f-4d7d-4f67-8ab0-2477dd678011"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5204457,
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        {
+          "index": 1,
+          "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+          "grossUnits": "300000000",
+          "feeUnits": "0",
+          "amountUnits": "300000000",
+          "ledgerEntryIds": [
+            "422b542e-285d-48f3-a33a-02e448c7529f"
+          ],
+          "status": "reclaimed",
+          "updatedLedger": 5204691,
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        }
+      ],
+      "state": "closed",
+      "fundedLedger": 5204454,
+      "fundingHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+      "createdAt": "2026-10-15T06:30:47.496Z",
+      "updatedAt": "2026-10-15T06:50:45.586Z"
+    },
+    "attempts": [
+      {
+        "id": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "settle",
+        "actor": "admin:testnet-settlement-demo",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "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",
+        "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "xF3vYfRNjGGdKf6pYPY8lpeaqPkWFkgTKU/tuupoH1TkxXhMpkEbcxTIuuIjVoNDnLdALEgbt1tqVCsN/4vwBg==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "R+l63fwO4nKQZf6zHp1oIVnrNncIDxit/P5txzD1ayNBqfpo0lfva2Gwh2lq3/+OciX486rrpd6C5hgkbMqMCw=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:40:51.000Z",
+        "createdAt": "2026-10-15T06:30:52.701Z",
+        "updatedAt": "2026-10-15T06:30:59.267Z",
+        "ledger": 5204454,
+        "feeCharged": "1519539",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:30:53.705Z"
+      },
+      {
+        "id": "c5d19339-8459-4bf2-998a-98edd72f9241",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "claim",
+        "claimIndex": 0,
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "treasuryAddress": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAC3nah5NFhz+Ey95OOsXNomL0pAfI0jDKFAv3uEwRRORwAAO7wAT2nVAAAAAgAAAAEAAAAAAAAAAAAAAABq0HV/AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAFY2xhaW0AAAAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAAAAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAABWNsYWltAAAAAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAAAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAAt52oeTRYc/hMveTjrFzaJi9KQHyNIwyhQL97hMEUTkcAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXLgAAAAHQAAAXIAAAAAAAAO1gAAAAA",
+        "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc",
+        "signers": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "signatures": {
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ": "Nb1/EKEJYYRi34Eg8RF4Udx2YbYZGdD35LY4dCqKWV6JQsMltVid6YPAopK/N7hOY0EVcckoHUE+P0teuU8iDw=="
+        },
+        "signedBy": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:41:03.000Z",
+        "createdAt": "2026-10-15T06:31:04.771Z",
+        "updatedAt": "2026-10-15T06:31:14.207Z",
+        "ledger": 5204457,
+        "feeCharged": "10220",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:31:06.184Z"
+      },
+      {
+        "id": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "reclaim",
+        "claimIndex": 1,
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAO9MAT2nTAAAADgAAAAEAAAAAAAAAAAAAAABq0HlFAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAHcmVjbGFpbQAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAABAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAB3JlY2xhaW0AAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAQAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAADX5W/7gnL+ufrTBcDv0uUSwvbCekB2mOnapSUqMJYGAAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXcbwAAAHQAAAXIAAAAAAAAO28AAAAA",
+        "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "g3K+7PmyzY3bBHr0DJqTt1I/elMiFKziA6cX1x3bPo3REfb+7chZdQa3fAnVZcnjpVXc+PwylWgosJ6GHTxLBw==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "BVuYNe1yY7R8qhYGuXpg67xgZwsbDGdQOJdA5xlSoHBAo+w1sOz3GbHy9Q3KPW9NQEVZfxnY5LEj5CjoYI4nCQ=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:57:09.000Z",
+        "createdAt": "2026-10-15T06:47:09.886Z",
+        "updatedAt": "2026-10-15T06:50:44.780Z",
+        "ledger": 5204691,
+        "feeCharged": "10397",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:50:40.210Z"
+      }
+    ],
+    "events": [
+      {
+        "id": "1",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "source_reserved",
+        "payload": {
+          "ledgerIds": [
+            "d6a2e50f-4d7d-4f67-8ab0-2477dd678011",
+            "422b542e-285d-48f3-a33a-02e448c7529f"
+          ],
+          "sourceKey": "a4b63954855d9053ea2860208035c2fcfd8334e4eb17d4e0b809f842e4462611",
+          "fundedUnits": "1000000000"
+        },
+        "created_at": "2026-10-15T06:30:47.487Z"
+      },
+      {
+        "id": "2",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:49.073Z"
+      },
+      {
+        "id": "3",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d"
+        },
+        "created_at": "2026-10-15T06:30:52.708Z"
+      },
+      {
+        "id": "4",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d"
+        },
+        "created_at": "2026-10-15T06:30:52.716Z"
+      },
+      {
+        "id": "5",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:52.723Z"
+      },
+      {
+        "id": "6",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "0",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "0",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:58.735Z"
+      },
+      {
+        "id": "7",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204454,
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "feeCharged": "1519539",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:58.735Z"
+      },
+      {
+        "id": "8",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "claimIndex": 0,
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:00.132Z"
+      },
+      {
+        "id": "9",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+          ],
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241"
+        },
+        "created_at": "2026-10-15T06:31:04.777Z"
+      },
+      {
+        "id": "10",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:04.782Z"
+      },
+      {
+        "id": "11",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "700000000",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "0",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:13.673Z"
+      },
+      {
+        "id": "12",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204457,
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "feeCharged": "10220",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:13.673Z"
+      },
+      {
+        "id": "40",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "claimIndex": 1,
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:47:04.502Z"
+      },
+      {
+        "id": "41",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4"
+        },
+        "created_at": "2026-10-15T06:48:28.852Z"
+      },
+      {
+        "id": "42",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4"
+        },
+        "created_at": "2026-10-15T06:49:45.313Z"
+      },
+      {
+        "id": "43",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:37.242Z"
+      },
+      {
+        "id": "44",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "700000000",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "300000000",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:44.213Z"
+      },
+      {
+        "id": "45",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204691,
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "feeCharged": "10397",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:44.213Z"
+      }
+    ]
+  },
+  "verifiedAt": "2026-10-15T07:33:23.544Z",
+  "settlementContractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+  "expiryRecovery": {
+    "id": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+    "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+    "kind": "reclaim",
+    "claimIndex": 1,
+    "actor": "admin:adm_1bda4d56f3a541eb",
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAO9MAT2nTAAAADgAAAAEAAAAAAAAAAAAAAABq0HlFAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAHcmVjbGFpbQAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAABAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAB3JlY2xhaW0AAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAQAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAADX5W/7gnL+ufrTBcDv0uUSwvbCekB2mOnapSUqMJYGAAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXcbwAAAHQAAAXIAAAAAAAAO28AAAAA",
+    "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "signatures": {
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "g3K+7PmyzY3bBHr0DJqTt1I/elMiFKziA6cX1x3bPo3REfb+7chZdQa3fAnVZcnjpVXc+PwylWgosJ6GHTxLBw==",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "BVuYNe1yY7R8qhYGuXpg67xgZwsbDGdQOJdA5xlSoHBAo+w1sOz3GbHy9Q3KPW9NQEVZfxnY5LEj5CjoYI4nCQ=="
+    },
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-15T06:57:09.000Z",
+    "createdAt": "2026-10-15T06:47:09.886Z",
+    "updatedAt": "2026-10-15T06:50:44.780Z",
+    "ledger": 5204691,
+    "feeCharged": "10397",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-15T06:50:40.210Z"
+  },
+  "finalBatch": {
+    "batch": {
+      "id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+      "sourceKey": "a4b63954855d9053ea2860208035c2fcfd8334e4eb17d4e0b809f842e4462611",
+      "trackId": "81de5695-7f5e-4288-bcc7-252699dd32c6",
+      "sourceType": "manual_adjustment",
+      "sourceId": "3524ce8f-28ad-4151-814d-5c84a46678d2",
+      "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+      "version": 1,
+      "proposalHash": "077db9b073dcc4b3f8b1030eafec6054a0ef3af081c955ea9216ff7bf05a907b",
+      "grossUnits": "1000000000",
+      "feeBps": 0,
+      "fundedUnits": "1000000000",
+      "expiresAt": "2026-10-15T06:42:46.000Z",
+      "config": {
+        "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+        "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "assetCode": "USDC",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "allocations": [
+        {
+          "index": 0,
+          "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+          "grossUnits": "700000000",
+          "feeUnits": "0",
+          "amountUnits": "700000000",
+          "ledgerEntryIds": [
+            "d6a2e50f-4d7d-4f67-8ab0-2477dd678011"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5204457,
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        {
+          "index": 1,
+          "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+          "grossUnits": "300000000",
+          "feeUnits": "0",
+          "amountUnits": "300000000",
+          "ledgerEntryIds": [
+            "422b542e-285d-48f3-a33a-02e448c7529f"
+          ],
+          "status": "reclaimed",
+          "updatedLedger": 5204691,
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        }
+      ],
+      "state": "closed",
+      "fundedLedger": 5204454,
+      "fundingHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+      "createdAt": "2026-10-15T06:30:47.496Z",
+      "updatedAt": "2026-10-15T06:50:45.586Z"
+    },
+    "attempts": [
+      {
+        "id": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "settle",
+        "actor": "admin:testnet-settlement-demo",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "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",
+        "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "xF3vYfRNjGGdKf6pYPY8lpeaqPkWFkgTKU/tuupoH1TkxXhMpkEbcxTIuuIjVoNDnLdALEgbt1tqVCsN/4vwBg==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "R+l63fwO4nKQZf6zHp1oIVnrNncIDxit/P5txzD1ayNBqfpo0lfva2Gwh2lq3/+OciX486rrpd6C5hgkbMqMCw=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:40:51.000Z",
+        "createdAt": "2026-10-15T06:30:52.701Z",
+        "updatedAt": "2026-10-15T06:30:59.267Z",
+        "ledger": 5204454,
+        "feeCharged": "1519539",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:30:53.705Z"
+      },
+      {
+        "id": "c5d19339-8459-4bf2-998a-98edd72f9241",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "claim",
+        "claimIndex": 0,
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "treasuryAddress": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAC3nah5NFhz+Ey95OOsXNomL0pAfI0jDKFAv3uEwRRORwAAO7wAT2nVAAAAAgAAAAEAAAAAAAAAAAAAAABq0HV/AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAFY2xhaW0AAAAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAAAAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAABWNsYWltAAAAAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAAAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAAt52oeTRYc/hMveTjrFzaJi9KQHyNIwyhQL97hMEUTkcAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXLgAAAAHQAAAXIAAAAAAAAO1gAAAAA",
+        "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc",
+        "signers": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "signatures": {
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ": "Nb1/EKEJYYRi34Eg8RF4Udx2YbYZGdD35LY4dCqKWV6JQsMltVid6YPAopK/N7hOY0EVcckoHUE+P0teuU8iDw=="
+        },
+        "signedBy": [
+          "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:41:03.000Z",
+        "createdAt": "2026-10-15T06:31:04.771Z",
+        "updatedAt": "2026-10-15T06:31:14.207Z",
+        "ledger": 5204457,
+        "feeCharged": "10220",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:31:06.184Z"
+      },
+      {
+        "id": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+        "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "kind": "reclaim",
+        "claimIndex": 1,
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "transaction": "AAAAAgAAAAANflb/uCcv65+tMFwO/S5RLC9sJ6QHaY6dqlJSowlgYAAAO9MAT2nTAAAADgAAAAEAAAAAAAAAAAAAAABq0HlFAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAHcmVjbGFpbQAAAAACAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAMAAAABAAAAAQAAAAAAAAAAAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAB3JlY2xhaW0AAAAAAgAAAA0AAAAgyMFrvBVUhuDEI0bTEc/LqIYuf5Wo8xo8AeaLyW2phXIAAAADAAAAAQAAAAAAAAABAAAAAAAAAAQAAAAGAAAAASmjOtOZe8GegyHqeWGR8rIp6DBXs1htReqRUd0pOjhQAAAAEAAAAAEAAAACAAAADwAAAAZTb3VyY2UAAAAAAA0AAAAgpLY5VIVdkFPqKGAggDXC/P2DNOTrF9TguAn4QuRGJhEAAAABAAAABgAAAAEpozrTmXvBnoMh6nlhkfKyKegwV7NYbUXqkVHdKTo4UAAAABQAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAABAAAABzGqyrZnqtL0nPTYX9PFhDfbqcv4dUBAJcwdDIUrCn3mAAAAAwAAAAEAAAAADX5W/7gnL+ufrTBcDv0uUSwvbCekB2mOnapSUqMJYGAAAAABVVNEQwAAAABCPn0F8uyvv+wZKyFaPxvpau242OcCVKvjQT4CB95WsgAAAAYAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAAQAAAAAQAAAAIAAAAPAAAABUJhdGNoAAAAAAAADQAAACDIwWu8FVSG4MQjRtMRz8uohi5/lajzGjwB5ovJbamFcgAAAAEAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABKaM605l7wZ6DIep5YZHysinoMFezWG1F6pFR3Sk6OFAAAAABABXcbwAAAHQAAAXIAAAAAAAAO28AAAAA",
+        "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375",
+        "signers": [
+          "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "signatures": {
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "g3K+7PmyzY3bBHr0DJqTt1I/elMiFKziA6cX1x3bPo3REfb+7chZdQa3fAnVZcnjpVXc+PwylWgosJ6GHTxLBw==",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "BVuYNe1yY7R8qhYGuXpg67xgZwsbDGdQOJdA5xlSoHBAo+w1sOz3GbHy9Q3KPW9NQEVZfxnY5LEj5CjoYI4nCQ=="
+        },
+        "signedBy": [
+          "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+          "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+        ],
+        "status": "confirmed",
+        "expiresAt": "2026-10-15T06:57:09.000Z",
+        "createdAt": "2026-10-15T06:47:09.886Z",
+        "updatedAt": "2026-10-15T06:50:44.780Z",
+        "ledger": 5204691,
+        "feeCharged": "10397",
+        "submissionCount": 1,
+        "lastSubmittedAt": "2026-10-15T06:50:40.210Z"
+      }
+    ],
+    "events": [
+      {
+        "id": "1",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "source_reserved",
+        "payload": {
+          "ledgerIds": [
+            "d6a2e50f-4d7d-4f67-8ab0-2477dd678011",
+            "422b542e-285d-48f3-a33a-02e448c7529f"
+          ],
+          "sourceKey": "a4b63954855d9053ea2860208035c2fcfd8334e4eb17d4e0b809f842e4462611",
+          "fundedUnits": "1000000000"
+        },
+        "created_at": "2026-10-15T06:30:47.487Z"
+      },
+      {
+        "id": "2",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:49.073Z"
+      },
+      {
+        "id": "3",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d"
+        },
+        "created_at": "2026-10-15T06:30:52.708Z"
+      },
+      {
+        "id": "4",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d"
+        },
+        "created_at": "2026-10-15T06:30:52.716Z"
+      },
+      {
+        "id": "5",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:testnet-settlement-demo",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:52.723Z"
+      },
+      {
+        "id": "6",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "0",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "0",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:58.735Z"
+      },
+      {
+        "id": "7",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204454,
+          "attemptId": "50f853c3-74b1-4fb6-a3f4-541be255d70d",
+          "feeCharged": "1519539",
+          "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70"
+        },
+        "created_at": "2026-10-15T06:30:58.735Z"
+      },
+      {
+        "id": "8",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "claimIndex": 0,
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:00.132Z"
+      },
+      {
+        "id": "9",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ"
+          ],
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241"
+        },
+        "created_at": "2026-10-15T06:31:04.777Z"
+      },
+      {
+        "id": "10",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:04.782Z"
+      },
+      {
+        "id": "11",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "700000000",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "0",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:13.673Z"
+      },
+      {
+        "id": "12",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204457,
+          "attemptId": "c5d19339-8459-4bf2-998a-98edd72f9241",
+          "feeCharged": "10220",
+          "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc"
+        },
+        "created_at": "2026-10-15T06:31:13.673Z"
+      },
+      {
+        "id": "40",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "transaction_prepared",
+        "payload": {
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "claimIndex": 1,
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:47:04.502Z"
+      },
+      {
+        "id": "41",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+          ],
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4"
+        },
+        "created_at": "2026-10-15T06:48:28.852Z"
+      },
+      {
+        "id": "42",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "signature_recorded",
+        "payload": {
+          "signedBy": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4"
+        },
+        "created_at": "2026-10-15T06:49:45.313Z"
+      },
+      {
+        "id": "43",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "admin:adm_1bda4d56f3a541eb",
+        "action": "submission_requested",
+        "payload": {
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:37.242Z"
+      },
+      {
+        "id": "44",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "chain_state_reconciled",
+        "payload": {
+          "claimedUnits": "700000000",
+          "fundedLedger": 5204454,
+          "reclaimedUnits": "300000000",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:44.213Z"
+      },
+      {
+        "id": "45",
+        "batch_id": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        "actor": "worker",
+        "action": "transaction_confirmed",
+        "payload": {
+          "ledger": 5204691,
+          "attemptId": "cab63ad3-10b0-42b5-9a0c-db24dad6e7c4",
+          "feeCharged": "10397",
+          "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375"
+        },
+        "created_at": "2026-10-15T06:50:44.213Z"
+      }
+    ]
+  },
+  "reconciliation": {
+    "checkedAt": "2026-10-15T07:33:22.798Z",
+    "config": {
+      "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+      "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+      "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+      "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "assetCode": "USDC",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+    },
+    "fundedUnits": "2000000000",
+    "claimedUnits": "1700000000",
+    "reclaimedUnits": "300000000",
+    "openUnits": "0",
+    "escrowBalanceUnits": "0",
+    "surplusUnits": "0",
+    "networkFeeXlmUnits": "2453615",
+    "discrepancies": [],
+    "eventIndex": {
+      "indexedLedger": 5205201,
+      "caughtUp": true,
+      "checkedAt": "2026-10-15T07:33:16.719Z",
+      "unknownBatchIds": []
+    },
+    "ok": true
+  },
+  "contractEvents": [
+    {
+      "id": "0022352959723556864-0000000001",
+      "ledger": 5204454,
+      "closedAt": "2026-10-15T06:30:57Z",
+      "transactionHash": "6052d1707ccbc1562343ee8762b04011ba1e38d72a04f51c04818e5c7cd84c70",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "settlement_funded",
+        "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572"
+      ],
+      "data": {
+        "amount": "1000000000",
+        "expires_at": "1792046566",
+        "proposal_hash": "077db9b073dcc4b3f8b1030eafec6054a0ef3af081c955ea9216ff7bf05a907b",
+        "source_id": "a4b63954855d9053ea2860208035c2fcfd8334e4eb17d4e0b809f842e4462611"
+      }
+    },
+    {
+      "id": "0022352972608454656-0000000001",
+      "ledger": 5204457,
+      "closedAt": "2026-10-15T06:31:12Z",
+      "transactionHash": "f5c9f41b967b424c71012f6518ba4f2ddf7345b4534acc03d9440757e92fabfc",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "claim_consumed",
+        "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        0
+      ],
+      "data": {
+        "amount": "700000000",
+        "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "status": [
+          "Claimed"
+        ]
+      }
+    },
+    {
+      "id": "0022352994083315712-0000000001",
+      "ledger": 5204462,
+      "closedAt": "2026-10-15T06:31:37Z",
+      "transactionHash": "23b0cf9285ee63a39842467abcfd8caf16593af5c291dd394eb17071a6b30f07",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "settlement_funded",
+        "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05"
+      ],
+      "data": {
+        "amount": "1000000000",
+        "expires_at": "1792132284",
+        "proposal_hash": "a448fc300d22e9d4753d5a9a8711cd6b1c6701a57086d97da967a4989f0c4804",
+        "source_id": "ccb1e6406b3f2b90ef0183d49ffdf5d5955391fca534fa595f12c780c5d5f65b"
+      }
+    },
+    {
+      "id": "0022353002673250304-0000000001",
+      "ledger": 5204464,
+      "closedAt": "2026-10-15T06:31:47Z",
+      "transactionHash": "78121367bdd177b27304cf9c3cc3ecd11727bf6847c94eaee99467c079ba5619",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "claim_consumed",
+        "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        0
+      ],
+      "data": {
+        "amount": "500000000",
+        "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+        "status": [
+          "Claimed"
+        ]
+      }
+    },
+    {
+      "id": "0022353015558156288-0000000001",
+      "ledger": 5204467,
+      "closedAt": "2026-10-15T06:32:02Z",
+      "transactionHash": "49e8f47f067826833c3912732c5c8e9c5ecbf835b91289e8be12c516bdd0119a",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "claim_consumed",
+        "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+        1
+      ],
+      "data": {
+        "amount": "500000000",
+        "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "status": [
+          "Claimed"
+        ]
+      }
+    },
+    {
+      "id": "0022353977630830592-0000000001",
+      "ledger": 5204691,
+      "closedAt": "2026-10-15T06:50:42Z",
+      "transactionHash": "9c5cad36663c9da2a3b2a8ce8ca491275ee099d2c026e74feb441827bbe65375",
+      "inSuccessfulContractCall": true,
+      "topics": [
+        "music_city",
+        "claim_consumed",
+        "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+        1
+      ],
+      "data": {
+        "amount": "300000000",
+        "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+        "status": [
+          "Reclaimed"
+        ]
+      }
+    }
+  ],
+  "claimIds": [
+    {
+      "id": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43:c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572:0",
+      "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+      "index": 0,
+      "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+      "amountUnits": "700000000"
+    },
+    {
+      "id": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43:c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572:1",
+      "batchId": "c8c16bbc155486e0c42346d311cfcba8862e7f95a8f31a3c01e68bc96da98572",
+      "index": 1,
+      "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+      "amountUnits": "300000000"
+    },
+    {
+      "id": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43:07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05:0",
+      "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+      "index": 0,
+      "beneficiary": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+      "amountUnits": "500000000"
+    },
+    {
+      "id": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43:07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05:1",
+      "batchId": "07fed89ecaaad1911a1a0de8547c831b20381e5c3451a01d60bf9eeda0437e05",
+      "index": 1,
+      "beneficiary": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+      "amountUnits": "500000000"
+    }
+  ]
+}

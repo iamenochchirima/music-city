@@ -1,3 +1,4 @@
+import { CreatorClaims } from "@/features/settlements/creator-claims";
 "use client";
 
 import { StudioPageHeader } from "@/components/studio/page-header";
@@ -7,7 +8,6 @@ import type { PaymentRecord, SubscriptionRecord, TrackSummary } from "@music-cit
 
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { tracksApi } from "@/features/music/lib/tracks-api";
-import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -142,7 +142,7 @@ export const DashboardRevenueOverview = () => {
   }
 
   if (session.primaryIntent !== "artist" && session.primaryIntent !== "both") {
-    return <ArtistAccessGate action="view artist revenue" />;
+    return <CreatorClaims />;
   }
 
   if (error) {
@@ -155,6 +155,7 @@ export const DashboardRevenueOverview = () => {
 
   return (
     <div className="space-y-5">
+      <CreatorClaims />
       <StudioPageHeader title="Sales" eyebrow="Revenue" description="Confirmed purchases and subscriptions." />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -1,0 +1,135 @@
+{
+  "status": "contracts_deployed_application_rollout_pending",
+  "verifiedAt": "2026-10-15T07:26:44.067Z",
+  "environment": "Railway production, Stellar Testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+  "registryId": "CDIKALTGUF3XQGHCHUKH3IFNFFRE4ZGMCVTOGO3HUC654WS2XQZQQ3SX",
+  "contractId": "CAQNSYYWEMMEYKB4JTSZRKBIQP4MSWURA2FMCBDVPUQ22ENI2BGCKXNW",
+  "assetCode": "USDC",
+  "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+  "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+  "deploymentLedger": 5205123,
+  "wasmSha256": {
+    "registry": "47d208d24d786a399d2186bf2da4ec329f934f84c62db9128f54355dd5b104ef",
+    "settlement": "31aacab667aad2f49cf4d85fd3c58437dba9cbf875404025cc1d0c852b0a7de6"
+  },
+  "treasury": {
+    "_links": {
+      "self": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+      },
+      "transactions": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/transactions{?cursor,limit,order}",
+        "templated": true
+      },
+      "operations": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/operations{?cursor,limit,order}",
+        "templated": true
+      },
+      "payments": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/payments{?cursor,limit,order}",
+        "templated": true
+      },
+      "effects": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/effects{?cursor,limit,order}",
+        "templated": true
+      },
+      "offers": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/offers{?cursor,limit,order}",
+        "templated": true
+      },
+      "trades": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/trades{?cursor,limit,order}",
+        "templated": true
+      },
+      "data": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/data/{key}",
+        "templated": true
+      }
+    },
+    "id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "account_id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "sequence": "22352878119157774",
+    "sequence_ledger": 5204691,
+    "sequence_time": "1792047042",
+    "subentry_count": 3,
+    "last_modified_ledger": 5204691,
+    "last_modified_time": "2026-10-15T06:50:42Z",
+    "thresholds": {
+      "low_threshold": 2,
+      "med_threshold": 2,
+      "high_threshold": 2
+    },
+    "flags": {
+      "auth_required": false,
+      "auth_revocable": false,
+      "auth_immutable": false,
+      "auth_clawback_enabled": false
+    },
+    "balances": [
+      {
+        "balance": "30.0000000",
+        "limit": "922337203685.4775807",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "last_modified_ledger": 5204691,
+        "is_authorized": true,
+        "is_authorized_to_maintain_liabilities": true,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USDC",
+        "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      {
+        "balance": "9759.4328779",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "asset_type": "native"
+      }
+    ],
+    "signers": [
+      {
+        "weight": 1,
+        "key": "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+        "type": "ed25519_public_key"
+      },
+      {
+        "weight": 1,
+        "key": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "type": "ed25519_public_key"
+      },
+      {
+        "weight": 1,
+        "key": "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S",
+        "type": "ed25519_public_key"
+      }
+    ],
+    "data": {},
+    "num_sponsoring": 0,
+    "num_sponsored": 0,
+    "paging_token": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+  },
+  "syntheticEarningsImported": false,
+  "transactions": {
+    "registryUpload": {
+      "transactionHash": "1591d044a9fde21989405e0e5d4c158695428449b2ff49105971e115eb0540b7",
+      "ledger": 5205120,
+      "explorerUrl": "https://stellar.expert/explorer/testnet/tx/1591d044a9fde21989405e0e5d4c158695428449b2ff49105971e115eb0540b7"
+    },
+    "settlementUpload": {
+      "transactionHash": "72cf455c4907eac5ffc5729d158679afbed35cb67fb93e864384c74639bfa121",
+      "ledger": 5205121,
+      "explorerUrl": "https://stellar.expert/explorer/testnet/tx/72cf455c4907eac5ffc5729d158679afbed35cb67fb93e864384c74639bfa121"
+    },
+    "registryDeployment": {
+      "transactionHash": "3fdd335dd28835c571b5e2c076e2fa73bcab9cc90ad04d16743b61592f00fa47",
+      "ledger": 5205122,
+      "explorerUrl": "https://stellar.expert/explorer/testnet/tx/3fdd335dd28835c571b5e2c076e2fa73bcab9cc90ad04d16743b61592f00fa47"
+    },
+    "settlementDeployment": {
+      "transactionHash": "0922bfece4135518f7b13dcd556b0fdd012176be87a15faaf6d8f900d6996e6e",
+      "ledger": 5205123,
+      "explorerUrl": "https://stellar.expert/explorer/testnet/tx/0922bfece4135518f7b13dcd556b0fdd012176be87a15faaf6d8f900d6996e6e"
+    }
+  }
+}

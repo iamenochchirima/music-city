@@ -191,6 +191,7 @@ export const royaltyLedgerEntrySchema = z.object({
   grossAmount: positiveAmountSchema,
   netAmount: positiveAmountSchema,
   feeAmount: optionalPositiveAmountSchema,
+  feeBps: z.number().int().min(0).max(9999).optional(),
   assetCode: optionalStellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
   createdAt: z.string(),
@@ -240,75 +241,6 @@ export const approveRoyaltyLedgerEntriesSchema = z.object({
 });
 export type ApproveRoyaltyLedgerEntriesInput = z.infer<
   typeof approveRoyaltyLedgerEntriesSchema
->;
-
-export const runRoyaltyPayoutsSchema = z.object({
-  recipientWalletAddress: genericWalletAddressSchema.optional(),
-  maxEntries: z.number().int().positive().max(500).default(100),
-  dryRun: z.boolean().default(false),
-});
-export type RunRoyaltyPayoutsInput = z.infer<typeof runRoyaltyPayoutsSchema>;
-
-export const royaltyPayoutExecutionStatusSchema = z.enum([
-  "dry_run",
-  "submitted",
-  "confirmed",
-  "failed",
-  "skipped",
-]);
-export type RoyaltyPayoutExecutionStatus = z.infer<
-  typeof royaltyPayoutExecutionStatusSchema
->;
-
-export const royaltyPayoutExecutionItemSchema = z.object({
-  payoutId: z.string().min(1).optional(),
-  recipientWalletAddress: genericWalletAddressSchema,
-  recipientChain: royaltyChainSchema,
-  payoutRail: royaltySettlementRailSchema,
-  status: royaltyPayoutExecutionStatusSchema,
-  amount: positiveAmountSchema,
-  assetCode: optionalStellarAssetCodeSchema,
-  assetIssuer: optionalStellarAssetIssuerSchema,
-  ledgerEntryIds: z.array(z.string().min(1)).min(1),
-  txHash: z.string().trim().min(1).max(160).optional(),
-  reason: z.string().trim().min(1).max(300).optional(),
-});
-export type RoyaltyPayoutExecutionItem = z.infer<
-  typeof royaltyPayoutExecutionItemSchema
->;
-
-export const royaltyPayoutExecutionResultSchema = z.object({
-  items: z.array(royaltyPayoutExecutionItemSchema),
-});
-export type RoyaltyPayoutExecutionResult = z.infer<
-  typeof royaltyPayoutExecutionResultSchema
->;
-
-export const reconcileRoyaltyPayoutsSchema = z.object({
-  payoutIds: z.array(z.string().min(1)).min(1).max(500).optional(),
-  submittedOnly: z.boolean().default(true),
-  maxItems: z.number().int().positive().max(500).default(100),
-});
-export type ReconcileRoyaltyPayoutsInput = z.infer<
-  typeof reconcileRoyaltyPayoutsSchema
->;
-
-export const royaltyPayoutReconciliationItemSchema = z.object({
-  payoutId: z.string().min(1),
-  status: royaltyPayoutStatusSchema,
-  txHash: z.string().trim().min(1).max(160).optional(),
-  ledgerEntryIds: z.array(z.string().min(1)),
-  reason: z.string().trim().min(1).max(300).optional(),
-});
-export type RoyaltyPayoutReconciliationItem = z.infer<
-  typeof royaltyPayoutReconciliationItemSchema
->;
-
-export const royaltyPayoutReconciliationResultSchema = z.object({
-  items: z.array(royaltyPayoutReconciliationItemSchema),
-});
-export type RoyaltyPayoutReconciliationResult = z.infer<
-  typeof royaltyPayoutReconciliationResultSchema
 >;
 
 export const trackRoyaltySplitListSchema = z.object({

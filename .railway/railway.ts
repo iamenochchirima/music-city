@@ -65,8 +65,30 @@ export default defineRailway(() => {
     replicas: { "asia-southeast1-eqsg3a": 1 },
   });
 
+  const financialWorker = service("financial-worker", {
+    source: github("iamenochchirima/music-city", {
+      branch: "main",
+      checkSuites: false,
+    }),
+    build: {
+      buildCommand: "pnpm --filter server build",
+      buildEnvironment: "V3",
+      builder: "RAILPACK",
+      watchPatterns: [
+        "/server/**",
+        "/packages/shared/**",
+        "/pnpm-lock.yaml",
+        "/package.json",
+        "/.railway/**",
+      ],
+    },
+    start: "pnpm --filter server worker:financial",
+    preDeploy: "pnpm --filter server db:migrate",
+    replicas: { "asia-southeast1-eqsg3a": 1 },
+  });
+
   return project("Music City", {
     variables: { managed: false },
-    resources: [server, worker, Postgres, postgresVolume],
+    resources: [server, worker, financialWorker, Postgres, postgresVolume],
   });
 });

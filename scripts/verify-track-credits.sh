@@ -31,6 +31,7 @@ done
 TRACK_METADATA_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/tracks/track-metadata.integration.test.ts
 MEDIA_WORKER_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/publication/publication.integration.test.ts
 AGREEMENTS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test --test-concurrency=1 src/modules/agreements/agreements.integration.test.ts src/modules/agreements/finalization.integration.test.ts
+SETTLEMENTS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/settlements/settlement.integration.test.ts
 if [[ "${1:-}" != "--browser" && "${1:-}" != "--studio" && "${1:-}" != "--audit" && "${1:-}" != "--release" ]]; then exit 0; fi
 
 python3 - <<'PY' > "$task_root/ports"

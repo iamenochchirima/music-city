@@ -20,7 +20,9 @@
     "test:e2e:studio-ui": "bash scripts/verify-track-credits.sh --studio",
     "test:e2e:release-flow": "bash scripts/verify-track-credits.sh --release",
     "test:e2e:studio-audit": "bash scripts/verify-track-credits.sh --audit",
-    "dev:worker": "pnpm --filter server dev:worker"
+    "dev:worker": "pnpm --filter server dev:worker",
+    "dev:financial-worker": "pnpm --filter server dev:financial-worker",
+    "settlements:demo:testnet": "bash scripts/settlement-testnet-demo.sh"
   },
   "devDependencies": {
     "playwright": "1.64.0",

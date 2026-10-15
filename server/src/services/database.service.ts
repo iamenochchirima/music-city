@@ -1,3 +1,5 @@
+import { settlementChainEventSchemaStatements } from "../modules/settlements/chain-event-schema.js";
+import { settlementSchemaStatements } from "../modules/settlements/settlement-schema.js";
 import { publicationSchemaStatements } from "../modules/publication/publication-schema.js";
 import type { ReleaseDetail, ReleaseSummary, TrackSummary, TrackMetadataUpdateInput, ReleaseTrackMetadataInput } from "@music-city/shared";
 import { referralSchemaStatements, referralActivationSchemaStatements, referralCampaignControlStatements } from "../modules/referrals/referral-schema.js";
@@ -414,6 +416,8 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-02-contributor-agreements", statements: agreementSchemaStatements },
   { name: "2026-10-02-agreement-finalization", statements: finalizationSchemaStatements },
   { name: "2026-10-02-agreement-finalization-integrity", statements: finalizationIntegrityStatements },
+  { name: "2026-10-15-earnings-settlement", statements: settlementSchemaStatements },
+  { name: "2026-10-15-settlement-chain-events", statements: settlementChainEventSchemaStatements },
   {
     name: "2026-10-05-single-use-stellar-auth-challenges",
     statements: [
@@ -927,6 +931,20 @@ const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
       "ad_impressions_ad_id_idx",
     ],
     statements: baseSchemaStatements,
+  },
+  {
+    name:"2026-10-15-settlement-chain-events",
+    migrationName:"2026-10-15-settlement-chain-events",
+    relations:["settlement_chain_events","settlement_chain_cursors","settlement_reconciliation_snapshots"],
+    indexes:["settlement_chain_events_batch_idx"],
+    statements:settlementChainEventSchemaStatements,
+  },
+  {
+    name: "2026-10-15-earnings-settlement",
+    migrationName: "2026-10-15-earnings-settlement",
+    relations: ["settlement_batches", "settlement_reservations", "financial_attempts", "settlement_events"],
+    indexes: ["financial_one_active_source", "financial_attempts_reconcile_idx"],
+    statements: settlementSchemaStatements,
   },
   {
     name: "2026-10-14-background-publication",

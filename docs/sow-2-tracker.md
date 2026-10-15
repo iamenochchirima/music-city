@@ -5,10 +5,10 @@ This is the single working tracker for Music City's submitted SOW 2. The Google 
 ## Source and baseline
 
 - Source: [Music City Instawards SOW - 2](https://docs.google.com/document/d/1Nk0WR6laCp2meQT_VANp3oYFr9YkuZyVKe5ziuPWFoc/edit).
-- Source read: 14 October 2026. Drive reports the document last modified on 11 September 2026 at 17:57:16 UTC.
+- Source read again: 15 October 2026. Drive reports the document last modified on 11 September 2026 at 17:57:16 UTC. The submitted scope is unchanged.
 - Submitted date recorded in the source: 1 August 2026. Suggested start: 3 August 2026. Duration: 30 days. These are submitted dates, not a newly agreed schedule.
 - Builder: Enoch N Chirima. Chapter: South Africa. Chapter lead: David Ogoegbunem.
-- Implementation baseline inspected: `a21ea0b` in [iamenochchirima/music-city](https://github.com/iamenochchirima/music-city).
+- Implementation baseline inspected: `fae2730` in [iamenochchirima/music-city](https://github.com/iamenochchirima/music-city).
 - Scope references below use source sections 4.1, 4.2, 5.1, and 6.1.
 - Reviewer acceptance has not been recorded for any deliverable.
 
@@ -38,7 +38,7 @@ Implementation rules:
 
 | Deliverable | Current position | Next completion boundary |
 | --- | --- | --- |
-| D1. Soroban earnings settlement engine | Open. Backend accounting and a finalized-split registry exist. The complete on-chain settlement and creator-claim engine is not evidenced. | Specify and implement batches, allocation, claimable USDC, claim, expiry, withdrawal, and reconciliation. |
+| D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Complete real Dynamic wallet journeys and reviewer acceptance. |
 | D2. Contributor agreements and treasury controls | Partial. Agreement services and protected registry finalization have historical Testnet evidence. Current browser consent remains unverified. Separate direct support is outstanding. | Verify current wallet consent, configure the deployment, cover protected admin operations, and implement both direct-support destinations. |
 | D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Integrate and demonstrate the complete D1 and D2 lifecycle, including failure recovery and evidence packaging. |
 
@@ -48,17 +48,17 @@ Source: sections 4.1 D1, 5.1 Weeks 1, 2, and 4, and 6.1 D1. D1 owns settlement a
 
 | ID | Submitted requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- | --- |
-| D1-01 | Validate finalized royalty splits | Partial. `effective-split.ts` and the registry expose confirmed agreement versions. | Bind settlement to the exact effective version and evidence. Reject drafts, disputed versions, and unconfirmed finalization. |
-| D1-02 | Create settlement batches from aggregated backend earnings | Partial. A backend ledger and payout records exist. | Define batch identity, eligible earnings, immutable inputs, persistence, and Soroban submission. |
-| D1-03 | Calculate each recipient's allocation | Partial. Backend royalty calculations exist. | Specify asset precision, rounding, remainder distribution, and conservation. Verify identical backend and contract results. |
-| D1-04 | Prevent duplicate settlement | Open for the new engine. | Enforce batch uniqueness on-chain and in persistence. Test repeated and concurrent submissions. |
-| D1-05 | Create claimable Stellar USDC balances | Open. No complete claimable-balance flow was found in the inspected settlement code. | Choose and document the claimable-balance mechanism. Persist each recipient, amount, balance identity, and transaction. |
-| D1-06 | Creator claim handling | Open. | Enforce beneficiary authorization, successful claim, and repeat-claim rejection. |
-| D1-07 | Expiry and reclaim handling | Open. | Define deadlines and reclaim authority. Verify expiry boundaries and conservation without double spending. |
-| D1-08 | Wallet-signed creator withdrawals | Open. Existing treasury payout signing is not creator withdrawal consent. | Implement exact wallet-authorized claims or withdrawals, network checks, cancellation, and replay protection. |
-| D1-09 | Stellar USDC settlement | Partial. An existing treasury payment service signs with one key. | Connect the new engine to funded USDC settlement without substituting the old payout path for the required workflow. |
-| D1-10 | Settlement events and independently verifiable on-chain evidence | Open for settlement. Agreement finalization events are separate evidence. | Emit and capture settlement and claim events, contract IDs, transaction hashes, balance IDs, and explorer links. |
-| D1-11 | Backend reconciliation of on-chain settlement and claims | Partial. Existing payout reconciliation is a starting component. | Reconcile exact batches, allocations, claims, expiry, and uncertain submissions against confirmed chain results. |
+| D1-01 | Validate finalized royalty splits | Exact captured agreement ID, version, hash, registry, and network verified in backend and contract. Historical versions remain valid. E5. | Current browser consent gate SET-03. |
+| D1-02 | Create settlement batches from aggregated backend earnings | Immutable source-wide batches and transactional ledger reservations implemented. PostgreSQL concurrency and audit rollback tests pass. E5. | Reviewer acceptance. |
+| D1-03 | Calculate each recipient's allocation | Seven-decimal integer allocation, deterministic remainder, per-recipient fee floor, and conservation verified in backend and contract. E5. | Reviewer acceptance. |
+| D1-04 | Prevent duplicate settlement | Permanent batch and source uniqueness on-chain, unique database reservations, and exact-envelope retries. Duplicate Testnet simulation rejected. E5. | Reviewer acceptance. |
+| D1-05 | Create claimable Stellar USDC balances | Soroban escrow holds Circle USDC and contract-managed claim records. Four recipient claim IDs and exact funding receipts recorded. E5. | Reviewer acceptance of the documented mechanism. These are not native protocol claimable-balance IDs. |
+| D1-06 | Creator claim handling | Beneficiary-authorized, fixed-destination, single-use claims implemented. Three real Testnet claims confirmed. E5. | Real Dynamic creator wallet journey SET-20. |
+| D1-07 | Expiry and reclaim handling | Expiry boundary, threshold recovery, and repeat rejection implemented. 30 USDC recovered through the admin browser. E5. | Reviewer acceptance. |
+| D1-08 | Wallet-signed creator withdrawals | Exact-XDR creator signing, session wallet, network, readiness, cancellation, and replay checks implemented. E5. | Real Dynamic wallet popup and cancellation SET-20. |
+| D1-09 | Stellar USDC settlement | 200 Circle Testnet USDC funded through threshold treasury transactions. Single-key payout executor removed. E5. | Reviewer acceptance. |
+| D1-10 | Settlement events and independently verifiable on-chain evidence | Six confirmed lifecycle events indexed with receipt validation, ledgers, hashes, and explorer links. Unknown external batches produce exceptions. E5. | Reviewer acceptance. |
+| D1-11 | Backend reconciliation of on-chain settlement and claims | Worker reconciles exact receipts, contract state, indexed events, escrow token balance, and network fees. Demonstrated totals are 200 funded, 170 claimed, 30 recovered, zero outstanding. E5. | Final environment verification SET-22 and reviewer acceptance. |
 
 D1 acceptance checklist:
 
@@ -171,6 +171,127 @@ Next implementation checkpoints:
 4. Implement both D2 direct-support destinations as a separate payment flow.
 5. Complete D3 interfaces, failure tests, deployment, and continuous Testnet evidence. Track provider readiness separately.
 
+## Next implementation chunk: earnings settlement and creator claims
+
+Planned on 15 October 2026 against commit `fae2730`. Status: implementation in progress. The funded escrow contract and accounting integration are under verification. Deployment and real-wallet acceptance remain open.
+
+The outcome is a complete Testnet journey from a contributor-approved agreement to a funded settlement batch, creator-authorized USDC receipt, expiry recovery, and reconciled records. This chunk covers D1-01 through D1-11 and the D3 interfaces, readiness, recovery, and evidence needed to operate that journey. Agreement browser verification and dedicated treasury configuration are prerequisites within this chunk. Direct fan support, provider adapters, and unrelated music-creation UX remain separate work.
+
+### User and administrator lifecycle
+
+1. The artist and collaborator independently approve their exact agreement. Two treasury signers finalize it. Future earnings capture that finalized version.
+2. The administrator previews an eligible earnings batch, including its sources, agreement versions, asset, recipient amounts, and expiry.
+3. Two independent treasury signers authorize the exact funded settlement. The system shows pending until confirmed chain evidence is verified.
+4. Each contributor sees their available USDC and expiry in Revenue. The creator selects Claim USDC, reviews the amount and destination, and signs with the bound wallet.
+5. After confirmation, Revenue shows the receipt and transaction link. A cancelled signature leaves the claim available.
+6. Unclaimed funds expire according to the fixed terms. Authorized recovery returns those funds to the designated treasury and records the outcome.
+7. The administrator reconciles funding, open claims, receipts, and recovered amounts. Unknown submissions remain pending until the original transaction is resolved.
+
+Creator screens show amounts, expiry, actionable errors, and transaction links. Contract IDs, XDR, and reconciliation internals belong in optional detail or admin views. Status refresh and reconciliation run in the backend. Users do not need to refresh or keep the page open after a transaction has been submitted.
+
+### Architecture decisions to settle first
+
+| Decision | Proposed direction and completion requirement |
+| --- | --- |
+| Claimable-balance mechanism | Use a Soroban settlement escrow holding USDC through its Stellar Asset Contract. Claim IDs are contract ID, batch hash, and recipient index. The SOW requires a Soroban-owned claim lifecycle and does not mandate native protocol operations. Record these as contract-managed claimable balances. Reviewer acceptance of the evidence remains SET-24. |
+| Native Stellar claimable balances | These are a distinct protocol mechanism. Soroban contracts cannot directly interact with them. If native balance IDs are required for acceptance, specify the native-operation integration and its consistency guarantees explicitly. Do not label contract claim IDs as native balance IDs. |
+| Asset and network | Bind the network, USDC issuer, and asset contract in configuration and batch hashes. Use Testnet USDC for demonstration. Do not silently change asset, issuer, or network. |
+| Allocation units | Use integer asset units, canonical recipient ordering, and a documented remainder rule. The existing code assigns the remainder to the last recipient. Select one canonical rule and implement it identically in the contract and backend. Reject excess precision instead of silently truncating it. |
+| Treasury control | Protect funding, settlement authorization, reclaim, and any privileged financial configuration with the specified 2-of-3 treasury authorization. Creator claims require the beneficiary's own wallet authorization. Admin login alone cannot authorize a protected chain action. |
+| Expiry | Pin an absolute expiry in the authorized batch. Specify claim-before-expiry and reclaim-at-or-after-expiry boundaries. A claim and reclaim for the same entitlement cannot both succeed. |
+| Contract state lifetime | Define storage lifetime, extension, restoration, and recovery for batch and claim records. Contract storage expiry cannot be mistaken for a paid or reclaimed entitlement. |
+| Execution ownership | Use dedicated settlement attempts and financial reconciliation jobs. Reuse durable-job patterns, not media-processing state or request-local background promises. |
+
+Technical references: [Stellar smart-contract limitations](https://developers.stellar.org/docs/build/smart-contracts/overview), [native claimable balances](https://developers.stellar.org/docs/build/guides/transactions/claimable-balances), and [Stellar Asset Contract](https://developers.stellar.org/docs/tokens/stellar-asset-contract). The implementation uses contract-managed claimable balances. This does not claim reviewer acceptance or native balance IDs. See the [settlement specification](settlement-specification.md) for exact terms.
+
+### Financial invariants
+
+- The current royalty ledger already contains recipient allocations. Identify the original revenue event, track, approved agreement version, asset, and associated ledger entries before constructing a batch. Do not split each recipient's allocated amount again.
+- Capture the effective finalized agreement when earnings are recognized. Settlement and claims retain that exact version and hash. Later amendments govern future earnings and do not change amounts already earned.
+- Validate immutable finalized registry evidence for the captured version. A newer proposed or disputed amendment does not invalidate an older effective finalized agreement.
+- Legacy entries without valid contributor-approved evidence remain visible and blocked for this new workflow until explicitly resolved. Do not invent historical consent.
+- Reserve each eligible ledger entry once. Exclude already paid, reversed, reserved, and unresolved old payout entries. A database reservation and on-chain batch identity jointly prevent duplicate settlement.
+- Separate settlement funding from creator receipt. Confirming a funded claim does not mean the creator has withdrawn it. Preserve historical paid records and their transaction references.
+- Enforce conservation in integer units. Funded amount equals claimed amount plus open claim obligations plus reclaimed amount. Network fees and reserves are recorded separately.
+- Fix recipient wallets, amounts, claim IDs, agreement evidence, expiry, and target contracts in the signed payload. Redirecting a claim requires an explicitly designed authorization flow and is not included in this first implementation.
+- Persist exact transaction envelopes and hashes before submission. A timeout is not a confirmed failure and cannot justify a fresh transaction that might pay twice.
+- Remove the replaced single-key payout execution path and obsolete financial controls. Retain historical records and read-only evidence. No fallback payout rail is permitted when the required settlement flow fails.
+
+### Phased implementation checklist
+
+Checked items indicate finished work with recorded evidence. Update this checklist at each completed phase, not only at the end of the chunk.
+
+Phase 0. Confirm scope and technical specification.
+
+- [x] SET-00. Re-read the submitted Google Doc and inspect the registry, finalized-agreement projection, existing ledger allocation, and single-key payout executor. Source unchanged on 15 October 2026.
+- [x] SET-01. Fix the claimable-balance mechanism, evidence identifiers, expiry, integer precision, rounding, resource limits, and storage lifetime. Resolve any acceptance ambiguity before implementing the contract interface.
+- [x] SET-02. Define canonical batch and claim schemas, states, idempotency keys, source eligibility, ledger reservation, signed payloads, events, and the protected admin action list.
+
+Phase 1. Close the agreement and treasury prerequisites.
+
+- [ ] SET-03. Verify the current Dynamic Stellar wallet flow with two real contributor accounts: review, cancellation, acceptance, and amendment consent. Record the actual browser result rather than generated-key evidence alone.
+- [x] SET-04. Configure a dedicated Testnet treasury and finalized-agreement registry for the demonstrated environment. Verify three independent signers and a threshold requiring two.
+- [x] SET-05. Confirm that a funded batch can pin and verify the exact finalized agreement version, including historical versions still referenced by earnings.
+
+Phase 2. Implement the funded settlement and claim contract.
+
+- [x] SET-06. Add the settlement contract and registry integration. Reject unfinalized, altered, foreign-contract, and wrong-network evidence.
+- [x] SET-07. Implement canonical batch allocation, authorized funding, unique batch and source identities, atomic claim creation, and insufficient-funding rollback.
+- [x] SET-08. Implement beneficiary-authorized claim or withdrawal, replay prevention, fixed destinations, expiry, and threshold-protected reclaim.
+- [x] SET-09. Add immutable evidence, lifecycle events, contract-state lifetime handling, and contract tests for conservation and concurrent actions.
+
+Phase 3. Implement accounting, authorization, and reconciliation.
+
+- [x] SET-10. Add transactional migrations for batches, source reservations, allocations, claim records, signing attempts, and append-only audit events. Preserve existing financial records.
+- [x] SET-11. Build an admin preview that validates source eligibility, captured agreement evidence, totals, asset identity, and expiry before reserving earnings.
+- [x] SET-12. Prepare exact treasury transactions, collect and verify independent signatures, submit once, and confirm both transaction and contract state before marking settlement funded.
+- [x] SET-13. Prepare creator claims for the authenticated beneficiary. Verify wallet, network, trustline readiness, fees, expiry, and exact transaction identity. A login signature does not authorize withdrawal.
+- [x] SET-14. Implement backend reconciliation, restart recovery, bounded retry, unknown-outcome handling, expiry processing, and visible financial discrepancies.
+- [x] SET-15. Retire the replaced single-key executor, mutating payout routes, and obsolete UI controls. Prevent the old and new executors from consuming the same earnings during rollout.
+
+Phase 4. Connect creator and administrator interfaces.
+
+- [x] SET-16. Add creator Revenue balances, pending and available earnings, Claim USDC, expiry, cancellation recovery, and confirmed receipts with explorer links.
+- [x] SET-17. Add admin batch preview, agreement evidence, signer progress, submission and claim status, reclaim, and reconciliation exception views.
+- [x] SET-18. Add automatic read-only status updates and direct corrective actions for missing trustlines, changed wallets, insufficient funds, failed submission, and unresolved outcomes.
+
+Phase 5. Verify, deploy, and package evidence.
+
+- [x] SET-19. Pass the contract, signature, authorization, real PostgreSQL, concurrency, accounting, and failure tests below.
+- [ ] SET-20. Pass real-browser creator claim and admin authorization journeys, including wallet cancellation and successful signing.
+- [x] SET-21. Run the complete funded Testnet demonstration, including expiry recovery, duplicate attempts, and an amendment affecting only later earnings.
+- [ ] SET-22. Back up the target database, apply migrations, deploy the contracts and financial worker, validate runtime configuration, and verify the final environment.
+- [x] SET-23. Package contract IDs, asset identity, batches, claim or balance IDs, transaction hashes, ledgers, explorer links, screenshots, test results, and reconciled totals. Update D1 and the covered D3 rows with evidence.
+- [ ] SET-24. Record reviewer acceptance separately. Completing this chunk does not imply completion of direct support, provider readiness, or all of SOW 2.
+
+### Required tests for this chunk
+
+| Case | Required outcome |
+| --- | --- |
+| Valid 70/30 agreement and 100 USDC | Confirmed settlement produces exactly 70 and 30 USDC of claimable entitlement. |
+| Recipient ledger entries already allocated | Consume each source once without applying a second royalty split. |
+| Rounding, tiny amounts, zero allocations, excess precision, overflow | Apply the specified rule deterministically. Preserve totals and reject unsupported inputs before moving funds. |
+| Pending, disputed, forged, or wrong-registry version | Reject invalid evidence. A valid previously finalized version remains usable for its already captured earnings. |
+| Amendment from 70/30 to 50/50 | Earlier earnings keep 70/30. Earnings captured after the amendment use 50/50. |
+| Duplicate batch, repeated source, concurrent reservation or submission | One financial outcome. No duplicate obligation, fund movement, or ledger consumption. |
+| One treasury signer, duplicate signer, altered envelope | No protected financial operation can succeed. Two independent authorized signers can execute the exact operation. |
+| Wrong claimant, wallet mismatch, altered destination, replay, cancelled signing | No unauthorized receipt or false success. Cancellation leaves the valid claim available. |
+| Missing trustline, account readiness, asset authorization, fee balance, or treasury funding | Show the correct action. Do not mark settlement or claim complete or leave partial financial records. |
+| Claim before expiry, claim at expiry, reclaim before expiry, concurrent claim and reclaim | Enforce the exact boundary. Claim and reclaim cannot consume the same entitlement. |
+| RPC timeout, crash after submission, repeated confirmation, pruned or uncertain history | Reconcile the persisted original transaction. Do not create another payment while its outcome is unresolved. |
+| Contract storage expiry or restoration | Preserve the entitlement and its evidence. Missing state cannot be treated as a successful financial transition. |
+| Database failure during reservation or confirmation | Roll back the complete application transition. Confirmed chain outcomes remain recoverable through reconciliation. |
+| Old payout submitted or uncertain | Exclude its sources until resolved. Preserve the original transaction and prevent cross-executor double payment. |
+| Independent reconciliation | Funding, claims, open obligations, and reclaim agree across ledger entries, database records, contract state, token balances, and events. |
+
+### Demonstration and completion boundary
+
+Use disposable Testnet accounts, the explicit Testnet USDC issuer, an actual finalized 70/30 agreement, and 100 USDC of traceable demonstration earnings. Synthetic earnings must be clearly labelled test fixtures rather than real streams or purchases.
+
+Settle once. Let contributor A sign and receive 70 USDC. Let contributor B's unclaimed 30 USDC expire and recover it through the required authorization. Prove that a second claim, repeated batch, and early reclaim fail. Final reconciliation shows 70 claimed, zero still open, and 30 reclaimed, with fees recorded separately. A second independently funded batch under a 50/50 amendment verifies that old entitlements remain unchanged.
+
+The chunk is functionally complete when that demonstration and all applicable tests pass through the real creator and admin flows. Generated-key service tests, a successful registry publication, and deployment health alone do not complete it. Reviewer acceptance remains an explicitly separate record.
+
 ## Required SOW test matrix
 
 | Test group | Required result | Evidence position |
@@ -196,6 +317,7 @@ Next implementation checkpoints:
 | E1 | [Agreement test evidence](contributor-agreements-evidence/milestone-verification.md) and [repeatable Testnet setup](contributor-agreements-evidence/README.md) | Historical agreement domain, persistence, authorization, signature, finalization, and reconciliation checks. Dates and transport limits belong to those records. |
 | E2 | [Public agreement Testnet record](contributor-agreements-evidence/stellar-testnet.json) | Historical 70/30 finalization, dispute, fresh-consent amendment, treasury thresholds, and immutable registry read-back. No D1 settlement or creator-claim evidence. |
 | E3 | [Production deployment](production-deployment.md) and [deployment evidence](production-deployment-evidence/README.md) | API migrations, readiness, frontend deployment, and selected runtime checks. Not proof of configured agreement finalization or complete SOW acceptance. |
+| E5 | [Settlement lifecycle evidence](settlement-evidence/README.md) | Final contract binaries, funded USDC claims, expiry recovery, immutable event index, tests, admin browser signatures, and explicit real-wallet gaps. |
 | E4 | [Release-flow evidence](release-flow-evidence/README.md) | Current release creation, editing, upload, publication choices, and visible processing. Supporting product work, not a substitute for financial-flow verification. |
 
 Current runtime findings from 14 October 2026:
@@ -216,3 +338,11 @@ Current runtime findings from 14 October 2026:
 | 14 October 2026 | SOW 2 alignment review | Source read and current gaps mapped | This tracker. No reviewer acceptance claimed. |
 
 For future entries, record the requirement IDs, tested commit, environment, result, evidence location, and remaining gap. Mark a deliverable accepted only after its checklist and source-required evidence are complete and acceptance is recorded.
+
+### Settlement implementation checkpoint, 15 October 2026
+
+The final binaries passed 11 contract tests. Server tests passed 110 with eight opt-in suites skipped. The separate disposable PostgreSQL run passed metadata, publication, agreement, and settlement suites, including all 14 settlement subtests. Client tests passed 79 and admin tests passed 16. Workspace typecheck and production builds passed.
+
+E5 records the complete service Testnet lifecycle and real admin browser recovery. Independent reconciliation verified 200 USDC funded, 170 claimed, 30 recovered, zero outstanding, and zero escrow balance. Six lifecycle events and four contract-managed claim IDs are recorded. The deployed live contracts are separate from the synthetic demonstration contracts.
+
+SET-03 and SET-20 remain open because generated contributor keys and uploaded partial treasury signatures do not establish a real Dynamic wallet popup journey. SET-22 remains open until runtime rollout checks pass. Reviewer acceptance and separate direct support are not claimed.

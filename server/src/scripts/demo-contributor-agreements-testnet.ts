@@ -31,7 +31,7 @@ catch(error) {
 }
 const keys = state.secrets.map(secret => Keypair.fromSecret(secret));
 const [treasury,signerB,signerC,owner,contributor] = keys as [Keypair,Keypair,Keypair,Keypair,Keypair];
-const evidencePath = resolve(repoRoot,"docs/contributor-agreements-evidence/stellar-testnet.json");
+const evidencePath = process.env.AGREEMENTS_DEMO_EVIDENCE_PATH ?? resolve(repoRoot,"docs/contributor-agreements-evidence/stellar-testnet.json");
 async function save() {
   await mkdir(dirname(statePath!),{ recursive: true });
   await writeFile(statePath+".tmp",JSON.stringify(state,null,2),{ mode: 0o600 });
@@ -179,6 +179,7 @@ try {
     }
     await accept(contributor); await finalize("initialFinalization",true);
   }
+  if (process.env.AGREEMENTS_DEMO_INITIAL_ONLY !== "true") {
   version = await current();
   if (version.proposal.version===1) {
     await agreements.revise(id,owner.publicKey(),{ ...terms,terms: "Testnet amendment: updated master agreement",resolution: "Review updated terms with fresh signatures" });
@@ -204,5 +205,7 @@ try {
   const detail = await agreements.get(id,owner.publicKey());
   assert.equal(detail.effectiveVersion,3); assert.equal(detail.versions[0]!.state,"finalized"); assert.equal(detail.versions[1]!.state,"disputed");
   state.evidence.status = "verified"; state.evidence.versionHistory = detail.versions; state.evidence.events = detail.events; await save();
+  }
+  if(process.env.AGREEMENTS_DEMO_INITIAL_ONLY === "true" && state.evidence.initialFinalization) {state.evidence.status="initial_finalization_verified";await save();}
   console.log(`Testnet demonstration verified. Public evidence: ${evidencePath}`);
 } finally { await db.close(); }

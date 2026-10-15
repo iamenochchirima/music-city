@@ -81,10 +81,11 @@ export const envSchema = z
     STELLAR_ACCESS_ASSET_ISSUER: z.string().optional(),
     STELLAR_TREASURY_ADDRESS: z.string().optional(),
     AGREEMENT_TREASURY_ADDRESS: z.string().optional(),
-    STELLAR_TREASURY_SECRET: z.string().optional(),
     STELLAR_SETTLEMENT_ASSET_CODE: z.string().default("XLM"),
     STELLAR_SETTLEMENT_ASSET_ISSUER: z.string().optional(),
     ROYALTY_REGISTRY_CONTRACT_ID: z.string().optional(),
+    SETTLEMENT_CONTRACT_ID: z.string().optional(),
+    SETTLEMENT_DEPLOYMENT_LEDGER: z.coerce.number().int().positive().optional(),
     ROYALTY_PAYOUT_APPROVAL_MODE: z.enum(["admin", "automatic"]).default("admin"),
     ROYALTY_PAYOUT_CADENCE: z
       .enum(["manual", "daily", "weekly", "monthly"])

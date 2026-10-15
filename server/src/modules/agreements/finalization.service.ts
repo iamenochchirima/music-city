@@ -71,7 +71,7 @@ export const finalizationService = {
       if (current.state !== "ready") throw new HttpError(409,"Only a fully accepted, undisputed version can start finalization");
       await verifyConsent(client,current);
       const config = agreementsChain.config();
-      const outstanding = await client.query("SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",[config.treasuryAddress]);
+      const outstanding = await client.query("SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",[config.treasuryAddress]);
       if (outstanding.rowCount) throw new HttpError(409,"Reconcile the treasury's outstanding finalization before preparing another transaction");
       const previous = root.effective_version ? await readVersion(client,id,root.effective_version) : null;
       const latest = await agreementsChain.getLatest(current.proposal.trackId);

@@ -2,6 +2,8 @@ import { Keypair, StrKey, Transaction, TransactionBuilder } from "@stellar/stell
 import type { AgreementFinalization } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 
+export type TreasurySigningAttempt = Pick<AgreementFinalization, "transaction" | "networkPassphrase" | "treasuryAddress" | "transactionHash" | "signers" | "signatures" | "signedBy" | "status" | "expiresAt" | "updatedAt">;
+
 export type TreasuryAccount = { account_id: string; thresholds: { low_threshold: number; med_threshold: number; high_threshold: number }; signers: { key: string; type: string; weight: number }[] };
 export function verifyTreasuryConfiguration(account: TreasuryAccount, expected: string): string[] {
   const signers = account.signers.filter(s => s.weight > 0);
@@ -13,7 +15,7 @@ export function verifyTreasuryConfiguration(account: TreasuryAccount, expected: 
   }
   return signers.map(s => s.key).sort();
 }
-export function verifyTreasuryEnvelope(attempt: AgreementFinalization, signedXdr: string): Record<string, string> {
+export function verifyTreasuryEnvelope(attempt: TreasurySigningAttempt, signedXdr: string): Record<string, string> {
   const expected = TransactionBuilder.fromXDR(attempt.transaction,attempt.networkPassphrase);
   let signed;
   try { signed = TransactionBuilder.fromXDR(signedXdr,attempt.networkPassphrase); }
@@ -30,13 +32,13 @@ export function verifyTreasuryEnvelope(attempt: AgreementFinalization, signedXdr
   }
   return signatures;
 }
-export function collectTreasurySignatures(attempt: AgreementFinalization, signedXdr: string, now = new Date()): AgreementFinalization {
+export function collectTreasurySignatures<T extends TreasurySigningAttempt>(attempt: T, signedXdr: string, now = new Date()): T {
   if (attempt.status !== "awaiting_signatures") throw new HttpError(409,"This attempt is no longer collecting signatures");
   if (new Date(attempt.expiresAt).getTime() <= now.getTime()) throw new HttpError(409,"Reconcile the expired finalization before preparing another transaction");
   const signatures = { ...attempt.signatures, ...verifyTreasuryEnvelope(attempt,signedXdr) };
   return { ...attempt, signatures,signedBy: Object.keys(signatures).sort(),updatedAt: now.toISOString() };
 }
-export function signedTreasuryTransaction(attempt: AgreementFinalization): Transaction {
+export function signedTreasuryTransaction(attempt: TreasurySigningAttempt): Transaction {
   if (attempt.signedBy.length < 2 || new Set(attempt.signedBy).size !== attempt.signedBy.length) throw new HttpError(409,"Two independent treasury signatures are required");
   const tx = TransactionBuilder.fromXDR(attempt.transaction,attempt.networkPassphrase);
   if (!(tx instanceof Transaction) || tx.hash().toString("hex") !== attempt.transactionHash) throw new HttpError(409,"Finalization transaction integrity failed");

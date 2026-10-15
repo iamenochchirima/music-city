@@ -116,12 +116,12 @@ const requireTreasuryWalletAddress = async () => {
 };
 
 const requireTreasurySecret = () => {
-  if (!env.STELLAR_TREASURY_SECRET) {
+  if (!process.env.STELLAR_TREASURY_SECRET) {
     fail("STELLAR_TREASURY_SECRET is not configured.");
     throw new Error("unreachable");
   }
 
-  return env.STELLAR_TREASURY_SECRET;
+  return process.env.STELLAR_TREASURY_SECRET;
 };
 
 const main = async () => {

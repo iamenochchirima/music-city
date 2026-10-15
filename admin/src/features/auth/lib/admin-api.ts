@@ -6,15 +6,11 @@ import type {
   AdminAccount,
   AdminAnalyticsOverview,
   AdminBootstrapStatus,
-  ReconcileRoyaltyPayoutsInput,
   AdminPlatformSubscriptionSettings,
   ApproveRoyaltyLedgerEntriesInput,
   AdminSubscriptionList,
   AdminUserList,
   AdminTreasuryOverview,
-  AdminTreasurySettings,
-  AdminTreasuryTransferInput,
-  AdminTreasuryTransferResult,
   AdminSession,
   AdminLoginInput,
   BootstrapAdminInput,
@@ -22,12 +18,9 @@ import type {
   RoyaltyLedgerEntry,
   RoyaltyEngineConfig,
   RoyaltyFeeSettings,
-  RoyaltyPayoutReconciliationResult,
   RoyaltyPayoutSettings,
   TrackRoyaltySplitList,
-  RoyaltyPayoutExecutionResult,
   RoyaltyPayoutRecord,
-  RunRoyaltyPayoutsInput,
   TrackSummary,
 } from "@music-city/shared";
 
@@ -52,15 +45,13 @@ export const adminApi = {
   },
 
   getMe(token: string) {
-    return httpClient
-      .get<AuthResponse>("/auth/me", token)
-      .then((response) => ({
-        ...response,
-        session: {
-          ...response.session,
-          token,
-        },
-      }));
+    return httpClient.get<AuthResponse>("/auth/me", token).then((response) => ({
+      ...response,
+      session: {
+        ...response.session,
+        token,
+      },
+    }));
   },
 
   listAdmins(token: string) {
@@ -77,10 +68,9 @@ export const adminApi = {
 
   getPlatformSubscriptionSettings(token: string) {
     return httpClient
-      .get<{ settings: AdminPlatformSubscriptionSettings }>(
-        "/subscriptions/platform-plan",
-        token,
-      )
+      .get<{
+        settings: AdminPlatformSubscriptionSettings;
+      }>("/subscriptions/platform-plan", token)
       .then((response) => response.settings);
   },
 
@@ -89,26 +79,14 @@ export const adminApi = {
     token: string,
   ) {
     return httpClient
-      .put<{ settings: AdminPlatformSubscriptionSettings }>(
-        "/subscriptions/platform-plan",
-        input,
-        token,
-      )
+      .put<{
+        settings: AdminPlatformSubscriptionSettings;
+      }>("/subscriptions/platform-plan", input, token)
       .then((response) => response.settings);
   },
 
   getTreasury(token: string) {
     return httpClient.get<AdminTreasuryOverview>("/treasury", token);
-  },
-
-  sendTreasuryTransfer(input: AdminTreasuryTransferInput, token: string) {
-    return httpClient
-      .post<{ transfer: AdminTreasuryTransferResult }>(
-        "/treasury/transfers",
-        input,
-        token,
-      )
-      .then((response) => response.transfer);
   },
 
   listSubscriptions(token: string) {
@@ -138,7 +116,10 @@ export const adminApi = {
       .then((response) => response.items);
   },
 
-  createAd(input: Omit<AdRecord, "id" | "createdAt" | "updatedAt">, token: string) {
+  createAd(
+    input: Omit<AdRecord, "id" | "createdAt" | "updatedAt">,
+    token: string,
+  ) {
     return httpClient
       .post<{ ad: AdRecord }>("/ads", input, token)
       .then((response) => response.ad);
@@ -178,10 +159,9 @@ export const adminApi = {
     }
 
     return httpClient
-      .get<{ items: AdImpressionRecord[] }>(
-        `/ads/impressions${query.size > 0 ? `?${query.toString()}` : ""}`,
-        token,
-      )
+      .get<{
+        items: AdImpressionRecord[];
+      }>(`/ads/impressions${query.size > 0 ? `?${query.toString()}` : ""}`, token)
       .then((response) => response.items);
   },
 
@@ -193,33 +173,15 @@ export const adminApi = {
 
   getRoyaltyPayoutSettings(token: string) {
     return httpClient
-      .get<{ settings: RoyaltyPayoutSettings }>("/royalties/payout-settings", token)
-      .then((response) => response.settings);
-  },
-
-  updateRoyaltyPayoutSettings(input: RoyaltyPayoutSettings, token: string) {
-    return httpClient
-      .put<{ settings: RoyaltyPayoutSettings }>(
-        "/royalties/payout-settings",
-        input,
-        token,
-      )
+      .get<{
+        settings: RoyaltyPayoutSettings;
+      }>("/royalties/payout-settings", token)
       .then((response) => response.settings);
   },
 
   getRoyaltyFeeSettings(token: string) {
     return httpClient
       .get<{ settings: RoyaltyFeeSettings }>("/royalties/fee-settings", token)
-      .then((response) => response.settings);
-  },
-
-  updateRoyaltyFeeSettings(input: RoyaltyFeeSettings, token: string) {
-    return httpClient
-      .put<{ settings: RoyaltyFeeSettings }>(
-        "/royalties/fee-settings",
-        input,
-        token,
-      )
       .then((response) => response.settings);
   },
 
@@ -232,10 +194,9 @@ export const adminApi = {
 
   listTrackRoyaltyLedger(trackId: string, token: string) {
     return httpClient
-      .get<{ items: RoyaltyLedgerEntry[] }>(
-        `/royalties/tracks/${trackId}/ledger`,
-        token,
-      )
+      .get<{
+        items: RoyaltyLedgerEntry[];
+      }>(`/royalties/tracks/${trackId}/ledger`, token)
       .then((response) => response.items);
   },
 
@@ -257,10 +218,9 @@ export const adminApi = {
     }
 
     return httpClient
-      .get<{ items: RoyaltyLedgerEntry[] }>(
-        `/royalties/ledger${query.size > 0 ? `?${query.toString()}` : ""}`,
-        token,
-      )
+      .get<{
+        items: RoyaltyLedgerEntry[];
+      }>(`/royalties/ledger${query.size > 0 ? `?${query.toString()}` : ""}`, token)
       .then((response) => response.items);
   },
 
@@ -269,11 +229,9 @@ export const adminApi = {
     token: string,
   ) {
     return httpClient
-      .post<{ items: RoyaltyLedgerEntry[] }>(
-        "/royalties/ledger/approve",
-        input,
-        token,
-      )
+      .post<{
+        items: RoyaltyLedgerEntry[];
+      }>("/royalties/ledger/approve", input, token)
       .then((response) => response.items);
   },
 
@@ -295,33 +253,9 @@ export const adminApi = {
     }
 
     return httpClient
-      .get<{ items: RoyaltyPayoutRecord[] }>(
-        `/royalties/payouts${query.size > 0 ? `?${query.toString()}` : ""}`,
-        token,
-      )
+      .get<{
+        items: RoyaltyPayoutRecord[];
+      }>(`/royalties/payouts${query.size > 0 ? `?${query.toString()}` : ""}`, token)
       .then((response) => response.items);
-  },
-
-  runRoyaltyPayouts(input: RunRoyaltyPayoutsInput, token: string) {
-    return httpClient.post<RoyaltyPayoutExecutionResult>(
-      "/royalties/payouts/run",
-      input,
-      token,
-    );
-  },
-
-  reconcileRoyaltyPayouts(
-    input: ReconcileRoyaltyPayoutsInput,
-    token: string,
-  ) {
-    return httpClient.post<RoyaltyPayoutReconciliationResult>(
-      "/royalties/payouts/reconcile",
-      input,
-      token,
-    );
-  },
-
-  updateTreasury(input: AdminTreasurySettings, token: string) {
-    return httpClient.put<AdminTreasuryOverview>("/treasury", input, token);
   },
 };

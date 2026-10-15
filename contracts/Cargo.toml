@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["royalty-split-registry"]
+members = ["royalty-split-registry", "earnings-settlement"]
 
 [workspace.dependencies]
 soroban-sdk = "26"

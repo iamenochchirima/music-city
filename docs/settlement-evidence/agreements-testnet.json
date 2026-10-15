@@ -1,0 +1,167 @@
+{
+  "status": "initial_finalization_verified",
+  "verifiedAt": "2026-10-15T07:33:06.926Z",
+  "network": "Test SDF Network ; September 2015",
+  "protocolVersion": 29,
+  "rpcUrl": "https://soroban-testnet.stellar.org",
+  "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+  "signers": [
+    "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S",
+    "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT"
+  ],
+  "contributors": [
+    "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+    "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI"
+  ],
+  "trackId": "81de5695-7f5e-4288-bcc7-252699dd32c6",
+  "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+  "contractId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+  "contractUpload": {
+    "transactionHash": "65599fc242a328cce8ba726164892c7852703133709e971fa5c12c2d3a0c7159",
+    "ledger": 5204441,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/65599fc242a328cce8ba726164892c7852703133709e971fa5c12c2d3a0c7159"
+  },
+  "contractDeployment": {
+    "transactionHash": "6d72b0d1865ee20ad115458b394186674a2c524b59da84902868758a75b4d23a",
+    "ledger": 5204442,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/6d72b0d1865ee20ad115458b394186674a2c524b59da84902868758a75b4d23a"
+  },
+  "treasuryConfiguration": {
+    "transactionHash": "cbc6be68d24b46a32f45e16e99723c173da4c255a28deb8459ae8fdfee67df8f",
+    "ledger": 5204443,
+    "threshold": 2
+  },
+  "verifiedTreasury": {
+    "_links": {
+      "self": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+      },
+      "transactions": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/transactions{?cursor,limit,order}",
+        "templated": true
+      },
+      "operations": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/operations{?cursor,limit,order}",
+        "templated": true
+      },
+      "payments": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/payments{?cursor,limit,order}",
+        "templated": true
+      },
+      "effects": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/effects{?cursor,limit,order}",
+        "templated": true
+      },
+      "offers": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/offers{?cursor,limit,order}",
+        "templated": true
+      },
+      "trades": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/trades{?cursor,limit,order}",
+        "templated": true
+      },
+      "data": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5/data/{key}",
+        "templated": true
+      }
+    },
+    "id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "account_id": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "sequence": "22352878119157778",
+    "sequence_ledger": 5205123,
+    "sequence_time": "1792049202",
+    "subentry_count": 3,
+    "last_modified_ledger": 5205123,
+    "last_modified_time": "2026-10-15T07:26:42Z",
+    "thresholds": {
+      "low_threshold": 2,
+      "med_threshold": 2,
+      "high_threshold": 2
+    },
+    "flags": {
+      "auth_required": false,
+      "auth_revocable": false,
+      "auth_immutable": false,
+      "auth_clawback_enabled": false
+    },
+    "balances": [
+      {
+        "balance": "30.0000000",
+        "limit": "922337203685.4775807",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "last_modified_ledger": 5204691,
+        "is_authorized": true,
+        "is_authorized_to_maintain_liabilities": true,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USDC",
+        "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      {
+        "balance": "9759.3833343",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "asset_type": "native"
+      }
+    ],
+    "signers": [
+      {
+        "weight": 1,
+        "key": "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+        "type": "ed25519_public_key"
+      },
+      {
+        "weight": 1,
+        "key": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "type": "ed25519_public_key"
+      },
+      {
+        "weight": 1,
+        "key": "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S",
+        "type": "ed25519_public_key"
+      }
+    ],
+    "data": {},
+    "num_sponsoring": 0,
+    "num_sponsored": 0,
+    "paging_token": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+  },
+  "missingContributorBlocksFinalization": true,
+  "oneSignerRejected": {
+    "transactionHash": "281aab13ca38b2ba5259efe05cf12a63108b241aad7247d68bebf4626f41e3f4",
+    "result": "txBadAuth",
+    "publication": null
+  },
+  "initialFinalization": {
+    "version": 1,
+    "proposalHash": "077db9b073dcc4b3f8b1030eafec6054a0ef3af081c955ea9216ff7bf05a907b",
+    "previousFinalizedHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "transactionHash": "281aab13ca38b2ba5259efe05cf12a63108b241aad7247d68bebf4626f41e3f4",
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "ledger": 5204445,
+    "explorerUrl": "https://stellar.expert/explorer/testnet/tx/281aab13ca38b2ba5259efe05cf12a63108b241aad7247d68bebf4626f41e3f4",
+    "published": {
+      "agreementId": "f555b11a-1e86-4dc3-a485-691441833bce",
+      "version": 1,
+      "recipients": [
+        {
+          "walletAddress": "GC3Z3KDZGRMHH6CMXXSOHLC43ITC6SSAPSGSGDFBIC7XXBGBCRHEOMJJ",
+          "role": "artist",
+          "shareBps": 7000
+        },
+        {
+          "walletAddress": "GD4D2A4TVM7VO3BOSTCQTWWXEH32EKCOFFQ6E64SL2ZPZFFVWBEOHWHI",
+          "role": "producer",
+          "shareBps": 3000
+        }
+      ],
+      "proposalHash": "077db9b073dcc4b3f8b1030eafec6054a0ef3af081c955ea9216ff7bf05a907b",
+      "previousFinalizedHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "finalizedLedger": 5204445
+    }
+  }
+}

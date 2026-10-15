@@ -57,6 +57,12 @@ test("removed split activation and single-key publication routes return 404 even
   const token = tokenService.issueAdminSession({ adminId: "operator",email: "operator@example.test",name: "Operator",role: "super_admin" });
   try {
     for (const [method,path] of [
+      ["POST","/api/v1/admin/royalties/payouts/run"],
+      ["POST","/api/v1/admin/royalties/payouts/reconcile"],
+      ["POST","/api/v1/admin/treasury/transfers"],
+      ["PUT","/api/v1/admin/treasury"],
+      ["PUT","/api/v1/admin/royalties/payout-settings"],
+      ["PUT","/api/v1/admin/royalties/fee-settings"],
       ["PUT","/api/v1/royalties/tracks/track/splits"],
       ["POST","/api/v1/royalties/tracks/track/splits/publish"],
       ["GET","/api/v1/royalties/tracks/track/splits/verify"],

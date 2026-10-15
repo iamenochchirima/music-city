@@ -16,3 +16,4 @@ export * from "./user.js";
 export * from "./wallet.js";
 
 export * from "./referrals.js";
+export * from "./settlements.js";

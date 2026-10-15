@@ -1,3 +1,4 @@
+import { settlementsRouter, adminSettlementsRouter } from "../modules/settlements/settlements.router.js";
 import { referralsRouter, adminReferralsRouter } from "../modules/referrals/referrals.router.js";
 import { sponsorshipsRouter, adminSponsorshipsRouter } from "../modules/sponsorships/sponsorships.router.js";
 import { Router } from "express";
@@ -44,6 +45,8 @@ apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/releases", releasesRouter);
 apiRouter.use("/royalties", royaltiesRouter);
 apiRouter.use("/agreements", agreementsRouter);
+apiRouter.use("/settlements", settlementsRouter);
+apiRouter.use("/admin/settlements", adminSettlementsRouter);
 apiRouter.use("/subscriptions", subscriptionsRouter);
 apiRouter.use("/tracks", tracksRouter);
 apiRouter.use("/uploads", uploadsRouter);

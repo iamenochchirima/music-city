@@ -6,8 +6,6 @@ import {
   adminPlatformSubscriptionSettingsSchema,
   adminSubscriptionListSchema,
   adminSubscriptionRecordSchema,
-  adminTreasuryTransferInputSchema,
-  adminTreasuryTransferResultSchema,
   adminUserListSchema,
   adminUserRecordSchema,
   adminTreasuryOverviewSchema,
@@ -42,7 +40,6 @@ import { paymentsRepository } from "../payments/payments.repository.js";
 import { subscriptionsRepository } from "../subscriptions/subscriptions.repository.js";
 import { usersService } from "../users/users.service.js";
 import { royaltiesService } from "../royalties/royalties.service.js";
-import { stellarPayoutService } from "../royalties/stellar-payout.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { adsService } from "../ads/ads.service.js";
 
@@ -78,11 +75,15 @@ const defaultTreasurySettings = (): AdminTreasurySettings => ({
 });
 
 const nowMs = () => Date.now();
-const dummyPasswordHash = passwordService.hashPassword(randomBytes(32).toString("hex"));
+const dummyPasswordHash = passwordService.hashPassword(
+  randomBytes(32).toString("hex"),
+);
 const authBucket = (kind: "ip" | "email", value: string) =>
   createHash("sha256").update(`${kind}:${value}`).digest("hex");
 const bootstrapTokenMatches = (candidate: string) => {
-  const expected = createHash("sha256").update(env.ADMIN_BOOTSTRAP_TOKEN).digest();
+  const expected = createHash("sha256")
+    .update(env.ADMIN_BOOTSTRAP_TOKEN)
+    .digest();
   const actual = createHash("sha256").update(candidate).digest();
   return timingSafeEqual(expected, actual);
 };
@@ -92,7 +93,9 @@ const normalizeSubscriptionStatus = (subscription: SubscriptionRecord) =>
     ? "expired"
     : subscription.status;
 
-const toAdminSession = (admin: PersistedAdminAccount): Omit<AdminSession, "token"> =>
+const toAdminSession = (
+  admin: PersistedAdminAccount,
+): Omit<AdminSession, "token"> =>
   adminSessionSchema.omit({ token: true }).parse({
     adminId: admin.id,
     email: admin.email,
@@ -134,8 +137,14 @@ export const adminService = {
       updatedAt: timestamp,
     };
 
-    const inserted = await databaseService.createFirstAdmin(admin.id, admin.email, admin.role, admin);
-    if (!inserted) throw new HttpError(409, "Admin bootstrap has already been completed");
+    const inserted = await databaseService.createFirstAdmin(
+      admin.id,
+      admin.email,
+      admin.role,
+      admin,
+    );
+    if (!inserted)
+      throw new HttpError(409, "Admin bootstrap has already been completed");
 
     return {
       admin: sanitizeAdmin(admin),
@@ -147,15 +156,25 @@ export const adminService = {
     const parsed = adminLoginInputSchema.parse(input);
     const email = parsed.email.trim().toLowerCase();
     const bucketKeys = [authBucket("ip", sourceIp), authBucket("email", email)];
-    const allowed = await databaseService.consumeAdminAuthRateLimits(bucketKeys, 5, 900);
-    if (!allowed) throw new HttpError(429, "Too many sign-in attempts. Try again later.");
-    const existing = await databaseService.findAdminByEmail<PersistedAdminAccount>(
-      email,
+    const allowed = await databaseService.consumeAdminAuthRateLimits(
+      bucketKeys,
+      5,
+      900,
     );
+    if (!allowed)
+      throw new HttpError(429, "Too many sign-in attempts. Try again later.");
+    const existing =
+      await databaseService.findAdminByEmail<PersistedAdminAccount>(email);
 
     if (!existing) {
-      await passwordService.verifyPassword(parsed.password, await dummyPasswordHash);
-      logger.warn("Admin sign-in failed", { emailHash: authBucket("email", email), ipHash: authBucket("ip", sourceIp) });
+      await passwordService.verifyPassword(
+        parsed.password,
+        await dummyPasswordHash,
+      );
+      logger.warn("Admin sign-in failed", {
+        emailHash: authBucket("email", email),
+        ipHash: authBucket("ip", sourceIp),
+      });
       throw new HttpError(401, "Invalid email or password");
     }
 
@@ -165,12 +184,18 @@ export const adminService = {
     );
 
     if (!valid) {
-      logger.warn("Admin sign-in failed", { emailHash: authBucket("email", email), ipHash: authBucket("ip", sourceIp) });
+      logger.warn("Admin sign-in failed", {
+        emailHash: authBucket("email", email),
+        ipHash: authBucket("ip", sourceIp),
+      });
       throw new HttpError(401, "Invalid email or password");
     }
 
     await databaseService.clearAdminAuthRateLimits(bucketKeys);
-    logger.info("Admin sign-in succeeded", { adminId: existing.id, ipHash: authBucket("ip", sourceIp) });
+    logger.info("Admin sign-in succeeded", {
+      adminId: existing.id,
+      ipHash: authBucket("ip", sourceIp),
+    });
 
     return {
       admin: sanitizeAdmin(existing),
@@ -179,7 +204,8 @@ export const adminService = {
   },
 
   async getAdminById(adminId: string) {
-    const admin = await databaseService.findAdminById<PersistedAdminAccount>(adminId);
+    const admin =
+      await databaseService.findAdminById<PersistedAdminAccount>(adminId);
 
     if (!admin) {
       throw new HttpError(404, "Admin account not found");
@@ -195,9 +221,10 @@ export const adminService = {
 
   async createAdmin(input: unknown) {
     const parsed = createAdminInputSchema.parse(input);
-    const existing = await databaseService.findAdminByEmail<PersistedAdminAccount>(
-      parsed.email.trim().toLowerCase(),
-    );
+    const existing =
+      await databaseService.findAdminByEmail<PersistedAdminAccount>(
+        parsed.email.trim().toLowerCase(),
+      );
 
     if (existing) {
       throw new HttpError(409, "An admin with this email already exists");
@@ -248,7 +275,9 @@ export const adminService = {
       TREASURY_SETTINGS_KEY,
     );
 
-    return adminTreasurySettingsSchema.parse(stored ?? defaultTreasurySettings());
+    return adminTreasurySettingsSchema.parse(
+      stored ?? defaultTreasurySettings(),
+    );
   },
 
   async getTreasuryOverview(): Promise<AdminTreasuryOverview> {
@@ -263,49 +292,15 @@ export const adminService = {
     });
   },
 
-  async updateTreasurySettings(input: unknown) {
-    const parsed = adminTreasurySettingsSchema.parse(input);
-    const normalized = {
-      walletAddress: parsed.walletAddress.trim(),
-    };
-
-    await treasuryConfigService.assertWalletAddressCanBeConfigured(
-      normalized.walletAddress,
-    );
-
-    await databaseService.upsertSetting(TREASURY_SETTINGS_KEY, normalized);
-
-    return this.getTreasuryOverview();
-  },
-
   async getTreasuryWalletAddress() {
-    const walletAddress = await treasuryConfigService.getConfiguredWalletAddress();
+    const walletAddress =
+      await treasuryConfigService.getConfiguredWalletAddress();
 
     if (!walletAddress) {
       throw new HttpError(500, "Stellar treasury wallet is not configured");
     }
 
     return walletAddress;
-  },
-
-  async submitTreasuryTransfer(input: unknown) {
-    const parsed = adminTreasuryTransferInputSchema.parse(input);
-    const submission = await stellarPayoutService.submitPayment({
-      recipientWalletAddress: parsed.recipientWalletAddress,
-      amount: parsed.amount,
-      assetCode: parsed.assetCode,
-      assetIssuer: parsed.assetIssuer,
-      memoText: parsed.memoText,
-    });
-
-    return adminTreasuryTransferResultSchema.parse({
-      ...submission,
-      recipientWalletAddress: parsed.recipientWalletAddress,
-      assetCode: parsed.assetCode,
-      assetIssuer: parsed.assetIssuer,
-      memoText: parsed.memoText,
-      submittedAt: new Date().toISOString(),
-    });
   },
 
   async listSubscriptions(): Promise<AdminSubscriptionList> {
@@ -341,7 +336,9 @@ export const adminService = {
           updatedAt: subscription.updatedAt,
         });
       })
-      .sort((left, right) => Date.parse(right.endsAt) - Date.parse(left.endsAt));
+      .sort(
+        (left, right) => Date.parse(right.endsAt) - Date.parse(left.endsAt),
+      );
 
     const summary = {
       total: items.length,
@@ -373,24 +370,33 @@ export const adminService = {
     const selectedWindowDays =
       windowDays && ANALYTICS_WINDOWS.has(windowDays) ? windowDays : null;
 
-    const [users, tracks, totalStreams, activeListeners, releaseViews, newFollows, topArtists, topTracks, topReleases] =
-      await Promise.all([
-        usersService.listAllProfiles(),
-        tracksRepository.list(),
-        databaseService.countQualifiedStreamsPlatform(selectedWindowDays),
-        databaseService.countPlatformActiveListeners(selectedWindowDays),
-        databaseService.countAnalyticsEventsByType(
-          "view_release",
-          selectedWindowDays,
-        ),
-        databaseService.countAnalyticsEventsByType(
-          "follow_artist",
-          selectedWindowDays,
-        ),
-        databaseService.listTopArtistsByQualifiedStreams(8, selectedWindowDays),
-        databaseService.listTopTracksByQualifiedStreams(8, selectedWindowDays),
-        databaseService.listTopReleasesByQualifiedStreams(8, selectedWindowDays),
-      ]);
+    const [
+      users,
+      tracks,
+      totalStreams,
+      activeListeners,
+      releaseViews,
+      newFollows,
+      topArtists,
+      topTracks,
+      topReleases,
+    ] = await Promise.all([
+      usersService.listAllProfiles(),
+      tracksRepository.list(),
+      databaseService.countQualifiedStreamsPlatform(selectedWindowDays),
+      databaseService.countPlatformActiveListeners(selectedWindowDays),
+      databaseService.countAnalyticsEventsByType(
+        "view_release",
+        selectedWindowDays,
+      ),
+      databaseService.countAnalyticsEventsByType(
+        "follow_artist",
+        selectedWindowDays,
+      ),
+      databaseService.listTopArtistsByQualifiedStreams(8, selectedWindowDays),
+      databaseService.listTopTracksByQualifiedStreams(8, selectedWindowDays),
+      databaseService.listTopReleasesByQualifiedStreams(8, selectedWindowDays),
+    ]);
 
     return adminAnalyticsOverviewSchema.parse({
       selectedWindowDays,
@@ -398,7 +404,9 @@ export const adminService = {
       activeListeners,
       releaseViews,
       newFollows,
-      totalArtists: users.filter((user) => ["artist", "both"].includes(user.primaryIntent)).length,
+      totalArtists: users.filter((user) =>
+        ["artist", "both"].includes(user.primaryIntent),
+      ).length,
       totalTracks: tracks.length,
       topArtists,
       topTracks,
@@ -412,20 +420,19 @@ export const adminService = {
       subscriptionsRepository.listAll(),
     ]);
 
-    const activeSubscriptionCountByWallet = subscriptions.reduce<Map<string, number>>(
-      (map, subscription) => {
-        if (normalizeSubscriptionStatus(subscription) !== "active") {
-          return map;
-        }
-
-        map.set(
-          subscription.walletAddress,
-          (map.get(subscription.walletAddress) ?? 0) + 1,
-        );
+    const activeSubscriptionCountByWallet = subscriptions.reduce<
+      Map<string, number>
+    >((map, subscription) => {
+      if (normalizeSubscriptionStatus(subscription) !== "active") {
         return map;
-      },
-      new Map(),
-    );
+      }
+
+      map.set(
+        subscription.walletAddress,
+        (map.get(subscription.walletAddress) ?? 0) + 1,
+      );
+      return map;
+    }, new Map());
 
     const items = users
       .map((user) => {
@@ -446,16 +453,25 @@ export const adminService = {
           updatedAt: user.updatedAt,
         });
       })
-      .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
+      .sort(
+        (left, right) =>
+          Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
+      );
 
     const summary = {
       total: items.length,
-      subscribed: items.filter((item) => item.subscriptionStatus === "subscribed")
-        .length,
-      unsubscribed: items.filter((item) => item.subscriptionStatus === "unsubscribed")
-        .length,
-      artists: items.filter((item) => ["artist", "both"].includes(item.primaryIntent)).length,
-      listeners: items.filter((item) => ["listener", "both"].includes(item.primaryIntent)).length,
+      subscribed: items.filter(
+        (item) => item.subscriptionStatus === "subscribed",
+      ).length,
+      unsubscribed: items.filter(
+        (item) => item.subscriptionStatus === "unsubscribed",
+      ).length,
+      artists: items.filter((item) =>
+        ["artist", "both"].includes(item.primaryIntent),
+      ).length,
+      listeners: items.filter((item) =>
+        ["listener", "both"].includes(item.primaryIntent),
+      ).length,
     };
 
     return adminUserListSchema.parse({
@@ -496,16 +512,8 @@ export const adminService = {
     return royaltiesService.getPayoutSettings();
   },
 
-  updateRoyaltyPayoutSettings(input: unknown) {
-    return royaltiesService.updatePayoutSettings(input);
-  },
-
   getRoyaltyFeeSettings() {
     return royaltiesService.getFeeSettings();
-  },
-
-  updateRoyaltyFeeSettings(input: unknown) {
-    return royaltiesService.updateFeeSettings(input);
   },
 
   listTrackRoyaltySplits(trackId: string) {
@@ -533,14 +541,4 @@ export const adminService = {
   approveRoyaltyLedgerEntries(input: unknown) {
     return royaltiesService.approveLedgerEntries(input as never);
   },
-
-  runRoyaltyPayouts(input: unknown) {
-    return royaltiesService.runPayouts(input as never);
-  },
-
-  reconcileRoyaltyPayouts(input: unknown) {
-    return royaltiesService.reconcilePayouts(input as never);
-  },
-
-
 };

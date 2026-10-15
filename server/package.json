@@ -19,7 +19,11 @@
     "treasury:add-trustline": "tsx src/scripts/add-treasury-trustline.ts",
     "agreements:demo:testnet": "tsx src/scripts/demo-contributor-agreements-testnet.ts",
     "worker": "node dist/worker.js",
-    "dev:worker": "tsx src/worker.ts"
+    "dev:worker": "tsx src/worker.ts",
+    "worker:financial": "node dist/financial-worker.js",
+    "dev:financial-worker": "tsx src/financial-worker.ts",
+    "settlements:demo:testnet": "tsx src/scripts/demo-settlements-testnet.ts",
+    "settlements:deploy:testnet": "tsx src/scripts/deploy-settlement-testnet.ts"
   },
   "dependencies": {
     "@music-city/shared": "workspace:*",
