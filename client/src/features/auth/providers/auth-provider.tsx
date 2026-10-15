@@ -632,13 +632,6 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (user && showAuthFlow) {
-      logDynamicAuth("closing auth flow after Dynamic user resolved", {
-        userId: user.userId ?? null,
-      });
-      setShowAuthFlow(false);
-    }
-
     if (user && !session) {
       logDynamicAuth("effect sync trigger", {
         reason: "user without app session",

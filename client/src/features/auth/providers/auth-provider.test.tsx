@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     email: string;
     verifiedCredentials: { chain: string; address: string }[];
   },
+  showAuthFlow: false,
   setShowAuthFlow: vi.fn(),
   setShowLinkNewWalletModal: vi.fn(),
   handleLogOut: vi.fn(),
@@ -29,7 +30,7 @@ vi.mock("@dynamic-labs/sdk-react-core", () => ({
     primaryWallet: mocks.user
       ? { address: mocks.user.verifiedCredentials[0]?.address, connector: {} }
       : null,
-    showAuthFlow: false,
+    showAuthFlow: mocks.showAuthFlow,
     setShowAuthFlow: mocks.setShowAuthFlow,
     handleLogOut: mocks.handleLogOut,
   }),
@@ -94,6 +95,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mocks.user = null;
+  mocks.showAuthFlow = false;
   mocks.dynamicToken = "dynamic-jwt";
   mocks.createDynamicSession.mockResolvedValue(session);
   mocks.getMe.mockResolvedValue(null);
@@ -136,4 +138,12 @@ it("verifies a Dynamic login, creates the app session, and binds a referral to i
   expect(mocks.bindReferralWallet).toHaveBeenCalledWith(walletAddress);
   expect(JSON.parse(localStorage.getItem("music-city-auth-session") ?? "{}"))
     .toMatchObject({ walletAddress, token: session.token });
+});
+
+it("preserves provider reauthentication prompts for an existing user", async () => {
+  mocks.user = { userId: "dynamic-user", email: session.email, verifiedCredentials: [{ chain: "stellar", address: walletAddress }] };
+  mocks.showAuthFlow = true;
+  render(<AuthProvider><LoginControls /></AuthProvider>);
+  await waitFor(() => expect(mocks.createDynamicSession).toHaveBeenCalled());
+  expect(mocks.setShowAuthFlow).not.toHaveBeenCalledWith(false);
 });

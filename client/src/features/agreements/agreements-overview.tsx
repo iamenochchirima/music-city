@@ -1,3 +1,4 @@
+import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import { agreementTermsSchema, royaltyRecipientRoleSchema, type AgreementAction, type AgreementVersion, type AgreementFinalization, type TrackSummary } from "@music-city/shared";
@@ -5,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { httpClient } from "@/lib/api/http-client";
 import { clientEnv } from "@/lib/config/env";
 import { tracksApi } from "@/features/music/lib/tracks-api";
-import { ensureActiveStellarAccount, resolveStellarWallet } from "@/features/wallet/lib/resolve-stellar-wallet";
+import { resolveStellarWallet } from "@/features/wallet/lib/resolve-stellar-wallet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,6 +17,7 @@ const inputStyle = "rounded-lg border border-white/15 bg-slate-950 p-3 text-sm t
 const stateLabel = (state: string) => state === "ready" ? "Ready for treasury finalization" : state.replaceAll("_", " ");
 
 export function AgreementsOverview() {
+  const authorizeWallet = useStellarAuthorization();
   const { session, error: authError } = useAuth();
   const { primaryWallet } = useDynamicContext();
   const userWallets = useUserWallets();
@@ -100,7 +102,7 @@ export function AgreementsOverview() {
       if (!stellarWallet || stellarWallet.address !== session!.walletAddress) {
         throw new Error("Your signed-in Stellar wallet is unavailable. Sign in again and retry.");
       }
-      await ensureActiveStellarAccount(stellarWallet);
+      await authorizeWallet(stellarWallet);
       const signedTransaction = await stellarWallet.signTransaction(challenge.transaction);
       await httpClient.post(`/agreements/${detail!.id}/responses`,{ challengeId: challenge.id,signedTransaction },token);
       await load(detail!.id); setReason("");

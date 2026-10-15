@@ -1,5 +1,7 @@
 "use client";
 
+import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 import type { WalletAccount, WalletBalance } from "@music-city/shared";
@@ -24,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
 import {
-  ensureActiveStellarAccount,
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
 import { clientEnv } from "@/lib/config/env";
@@ -128,6 +129,7 @@ const describeWalletError = (caughtError: unknown, fallback: string) => {
 };
 
 export const WalletOverviewCard = () => {
+  const authorizeWallet = useStellarAuthorization();
   const { session } = useAuth();
   const { primaryWallet } = useDynamicContext();
   const userWallets = useUserWallets();
@@ -252,7 +254,7 @@ export const WalletOverviewCard = () => {
     try {
       setIsSending(true);
       await stellarWallet.connector.connect();
-      await ensureActiveStellarAccount(stellarWallet);
+      await authorizeWallet(stellarWallet);
       const txHash = await stellarWallet.sendBalance({
         amount: amount.trim(),
         toAddress: recipient.trim(),
@@ -297,7 +299,7 @@ export const WalletOverviewCard = () => {
     void stellarWallet
       .connector.connect()
       .then(async () => {
-        await ensureActiveStellarAccount(stellarWallet);
+        await authorizeWallet(stellarWallet);
         return stellarWallet.addTrustline({
           assetCode: clientEnv.stellarTestnetUsdcCode,
           assetIssuer: clientEnv.stellarTestnetUsdcIssuer,

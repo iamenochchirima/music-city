@@ -347,6 +347,9 @@ export const AccountOverview = () => {
             <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white">
               <Link href="/account/agreements">Royalty agreements</Link>
             </Button>
+            <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white">
+              <Link href="/dashboard/revenue">Your earnings</Link>
+            </Button>
             <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                 Tracks

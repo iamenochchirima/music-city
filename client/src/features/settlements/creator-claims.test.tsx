@@ -18,6 +18,7 @@ vi.mock("@/lib/api/http-client", () => ({
   httpClient: { get: m.get, post: m.post },
 }));
 vi.mock("@dynamic-labs/sdk-react-core", () => ({
+  useStepUpAuthentication: () => ({ isStepUpRequired: async () => false, promptStepUpAuth: async () => undefined }),
   useDynamicContext: () => ({
     primaryWallet: {
       address: m.wallet,
@@ -109,7 +110,7 @@ it("requires review, then signs and submits the bound beneficiary claim", async 
   expect(
     screen.getByRole("region", { name: "Review withdrawal" }).textContent,
   ).toContain(m.wallet);
-  await user.click(screen.getByRole("button", { name: "Continue in wallet" }));
+  await user.click(screen.getByRole("button", { name: "Sign and claim" }));
   await waitFor(() =>
     expect(m.post).toHaveBeenCalledWith(
       "/settlements/attempts/claim-attempt/submit",
@@ -124,7 +125,7 @@ it("wallet cancellation keeps the claim available without submitting a withdrawa
   const user = userEvent.setup();
   render(<CreatorClaims />);
   await user.click(await screen.findByRole("button", { name: "Claim USDC" }));
-  await user.click(screen.getByRole("button", { name: "Continue in wallet" }));
+  await user.click(screen.getByRole("button", { name: "Sign and claim" }));
   expect((await screen.findByRole("alert")).textContent).toContain(
     "Signing cancelled",
   );
@@ -174,7 +175,7 @@ it("wrong network or beneficiary stops signing before funds can move", async () 
   const user = userEvent.setup();
   render(<CreatorClaims />);
   await user.click(await screen.findByRole("button", { name: "Claim USDC" }));
-  await user.click(screen.getByRole("button", { name: "Continue in wallet" }));
+  await user.click(screen.getByRole("button", { name: "Sign and claim" }));
   expect((await screen.findByRole("alert")).textContent).toContain(
     "network changed",
   );

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@dynamic-labs/sdk-react-core", () => ({
+  useStepUpAuthentication: () => ({ isStepUpRequired: async () => false, promptStepUpAuth: async () => undefined }),
   useDynamicContext: () => ({ primaryWallet: null }),
   useUserWallets: () => [],
 }));

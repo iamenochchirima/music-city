@@ -5,7 +5,8 @@ import userEvent from "@testing-library/user-event";
 import type { PaymentIntentRecord } from "@music-city/shared";
 import { StellarCheckoutProvider, useStellarCheckout } from "./use-stellar-checkout";
 const mocks = vi.hoisted(() => ({ send: vi.fn(), active: vi.fn(), resolve: vi.fn() }));
-vi.mock("@dynamic-labs/sdk-react-core", () => ({ useDynamicContext: () => ({ primaryWallet: { address: "wallet" } }), useUserWallets: () => [] }));
+vi.mock("@dynamic-labs/sdk-react-core", () => ({ useStepUpAuthentication: () => ({ isStepUpRequired: async () => false, promptStepUpAuth: async () => undefined }),
+  useDynamicContext: () => ({ primaryWallet: { address: "wallet" } }), useUserWallets: () => [] }));
 vi.mock("@/hooks/use-auth", () => ({ useAuth: () => ({ session: { walletAddress: "wallet" } }) }));
 vi.mock("@/features/wallet/lib/resolve-stellar-wallet", () => ({ resolveStellarWallet: mocks.resolve, ensureActiveStellarAccount: mocks.active }));
 const intent = { amount: "10", destinationAddress: "treasury", assetCode: "XLM" } as PaymentIntentRecord;

@@ -96,6 +96,9 @@ importers:
 
   client:
     dependencies:
+      '@dynamic-labs/sdk-api-core':
+        specifier: 0.0.1015
+        version: 0.0.1015
       '@dynamic-labs/sdk-react-core':
         specifier: 4.88.3
         version: 4.88.3(@dynamic-labs-wallet/primitives@1.0.16)(@types/react@19.0.0)(bufferutil@4.1.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(utf-8-validate@6.0.6)

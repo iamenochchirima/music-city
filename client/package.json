@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dynamic-labs/sdk-api-core": "0.0.1015",
     "@dynamic-labs/sdk-react-core": "4.88.3",
     "@dynamic-labs/stellar": "4.88.3",
     "@music-city/shared": "workspace:*",

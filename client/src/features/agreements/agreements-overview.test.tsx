@@ -10,6 +10,7 @@ vi.mock("@/hooks/use-auth",()=>({ useAuth: ()=>({ session: mocks.session }) }));
 vi.mock("@/lib/api/http-client",()=>({ httpClient: { get: mocks.get,post: mocks.post,put: mocks.put } }));
 vi.mock("@/features/music/lib/tracks-api",()=>({ tracksApi: { listMyTracks: mocks.tracks } }));
 vi.mock("@dynamic-labs/sdk-react-core",()=>({
+  useStepUpAuthentication: () => ({ isStepUpRequired: async () => false, promptStepUpAuth: async () => undefined }),
   useDynamicContext:()=>({primaryWallet:{address:mocks.session.walletAddress,chain:"stellar",connector:{},signTransaction:mocks.sign}}),
   useUserWallets:()=>[{address:mocks.session.walletAddress,chain:"stellar",connector:{},signTransaction:mocks.sign}],
 }));

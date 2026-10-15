@@ -1,3 +1,4 @@
+import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
   useDynamicContext,
@@ -9,7 +10,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { httpClient } from "@/lib/api/http-client";
 import { clientEnv } from "@/lib/config/env";
 import {
-  ensureActiveStellarAccount,
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const money = (units: string) => {
 type EarningsBatch = SettlementBatch & { trackTitle?: string | null };
 type Detail = { batch: SettlementBatch; attempts: FinancialAttempt[] };
 export function CreatorClaims() {
+  const authorizeWallet = useStellarAuthorization();
   const { session } = useAuth();
   const { primaryWallet } = useDynamicContext();
   const wallets = useUserWallets();
@@ -110,7 +111,7 @@ export function CreatorClaims() {
           "Withdrawal wallet or network changed. Review this claim again",
         );
       if (attempt.status === "awaiting_signatures") {
-        await ensureActiveStellarAccount(wallet);
+        await authorizeWallet(wallet);
         const signedTransaction = await wallet.signTransaction(
           attempt.transaction,
         );
@@ -287,8 +288,7 @@ export function CreatorClaims() {
             USDC
           </h3>
           <p className="text-sm text-muted-foreground">
-            To your connected Stellar wallet. Your wallet will ask you to
-            approve the withdrawal.
+            To your connected Stellar wallet. Confirm below to sign this withdrawal.
           </p>
           <p className="break-all font-mono text-xs">{session.walletAddress}</p>
           <div className="flex flex-wrap gap-3">
@@ -299,7 +299,7 @@ export function CreatorClaims() {
                   Waiting for wallet
                 </>
               ) : (
-                "Continue in wallet"
+                "Sign and claim"
               )}
             </Button>
             <Button

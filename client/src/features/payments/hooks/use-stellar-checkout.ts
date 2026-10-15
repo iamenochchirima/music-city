@@ -1,5 +1,7 @@
 "use client";
 
+import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
+
 import { createContext, createElement, useCallback, useContext, type ReactNode } from "react";
 import { useDynamicContext, useUserWallets } from "@dynamic-labs/sdk-react-core";
 
@@ -7,7 +9,6 @@ import type { PaymentIntentRecord } from "@music-city/shared";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
-  ensureActiveStellarAccount,
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
 
@@ -23,6 +24,7 @@ export const useStellarCheckout = () => {
 };
 
 export const StellarCheckoutProvider = ({ children }: { children: ReactNode }) => {
+  const authorizeWallet = useStellarAuthorization();
   const { session } = useAuth();
   const { primaryWallet } = useDynamicContext();
   const userWallets = useUserWallets();
@@ -45,7 +47,7 @@ export const StellarCheckoutProvider = ({ children }: { children: ReactNode }) =
         throw new Error("Connected Stellar wallet address is missing.");
       }
 
-      await ensureActiveStellarAccount(stellarWallet);
+      await authorizeWallet(stellarWallet);
 
       const txHash = await stellarWallet.sendBalance({
         amount: intent.amount,
@@ -64,7 +66,7 @@ export const StellarCheckoutProvider = ({ children }: { children: ReactNode }) =
 
       return txHash;
     },
-    [primaryWallet, session?.walletAddress, userWallets],
+    [primaryWallet, session?.walletAddress, userWallets, authorizeWallet],
   );
   return createElement(StellarCheckoutContext.Provider, { value: checkout }, children);
 };

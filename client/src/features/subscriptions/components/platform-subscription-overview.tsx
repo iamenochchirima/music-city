@@ -1,5 +1,7 @@
 "use client";
 
+import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
+
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -21,7 +23,6 @@ import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checko
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
 import {
-  ensureActiveStellarAccount,
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
 import { useAuth } from "@/hooks/use-auth";
@@ -123,6 +124,7 @@ export const PlatformSubscriptionOverview = ({
   const { primaryWallet } = useDynamicContext();
   const userWallets = useUserWallets();
   const runCheckout = useStellarCheckout();
+  const authorizeWallet = useStellarAuthorization();
   const [plan, setPlan] = useState<PlatformSubscriptionPlan | null>(null);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [account, setAccount] = useState<WalletAccount | null>(null);
@@ -270,7 +272,7 @@ export const PlatformSubscriptionOverview = ({
     void stellarWallet.connector
       .connect()
       .then(async () => {
-        await ensureActiveStellarAccount(stellarWallet);
+        await authorizeWallet(stellarWallet);
         return stellarWallet.addTrustline({
           assetCode: plan.assetCode,
           assetIssuer: plan.assetIssuer ?? clientEnv.stellarTestnetUsdcIssuer,
