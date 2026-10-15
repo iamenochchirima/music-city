@@ -230,6 +230,7 @@ export const releaseSummarySchema = z.object({
   releaseDate: z.string().optional(),
   publishedAt: z.string().optional(),
   trackCount: z.number().int().min(0).default(0),
+  expectedTrackCount: z.number().int().min(1).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
@@ -248,6 +249,7 @@ export type ReleaseDetail = Omit<
 };
 
 export const releaseCreateSchema = z.object({
+  expectedTrackCount: z.number().int().min(1).optional(),
   title: z.string().max(160).default(""),
   artistName: z.string().min(1).max(120).optional(),
   type: releaseTypeSchema.default("single"),

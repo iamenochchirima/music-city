@@ -12,6 +12,7 @@ export function FormField({
   id,
   label,
   hint,
+  help,
   error,
   children,
   className,
@@ -19,6 +20,7 @@ export function FormField({
   id: string;
   label: string;
   hint?: ReactNode;
+  help?: ReactNode;
   error?: string;
   children: ReactElement<FieldControl>;
   className?: string;
@@ -32,7 +34,10 @@ export function FormField({
     .join(" ");
   return (
     <div className={cn("min-w-0 space-y-2", className)}>
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex min-h-7 items-center gap-1.5">
+        <Label htmlFor={id}>{label}</Label>
+        {help}
+      </div>
       {cloneElement(children, {
         id,
         "aria-describedby": description || undefined,

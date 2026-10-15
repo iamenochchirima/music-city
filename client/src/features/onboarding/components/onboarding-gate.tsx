@@ -50,6 +50,28 @@ export const OnboardingGate = () => {
         key={session.walletAddress}
         mode="modal"
         onBusyChange={setBusy}
+        footerActions={
+          <div className="flex items-center gap-1">
+            {canDismiss ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => setDismissed(true)}
+              >
+                Cancel
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void logout()}
+            >
+              Sign out
+            </Button>
+          </div>
+        }
         onCompleted={(_, destination) => {
           setBusy(true);
           void refreshSessionProfile()
@@ -67,26 +89,6 @@ export const OnboardingGate = () => {
             .finally(() => setBusy(false));
         }}
       />
-      <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-border pt-4">
-        {canDismiss ? (
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy}
-            onClick={() => setDismissed(true)}
-          >
-            Continue later
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => void logout()}
-        >
-          Sign out
-        </Button>
-      </div>
     </Dialog>
   );
 };

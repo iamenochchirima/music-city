@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import { publicationService } from "../publication/publication.service.js";
 import {
   releaseCreateSchema,
@@ -20,6 +21,24 @@ import {
   releasesRepository,
   type StoredRelease,
 } from "./releases.repository.js";
+
+const plannedSongCount = (type: ReleaseSummary["type"], count?: number) => {
+  if (
+    count !== undefined &&
+    ((type === "single" && count !== 1) ||
+      (type === "ep" && (count < 2 || count > 6)) ||
+      (type === "album" && count < 7))
+  ) {
+    throw new ZodError([
+      {
+        code: "custom",
+        path: ["expectedTrackCount"],
+        message: "Choose a song count that matches the release format",
+      },
+    ]);
+  }
+  return type === "single" ? 1 : count;
+};
 
 const hydrateReleaseUrls = <
   T extends { coverStorageKey?: string; coverImageUrl?: string },
@@ -432,6 +451,10 @@ export const releasesService = {
       coverStorageKey: parsed.coverStorageKey?.trim() || undefined,
       releaseDate: parsed.releaseDate,
       trackCount: 0,
+      expectedTrackCount: plannedSongCount(
+        parsed.type,
+        parsed.expectedTrackCount,
+      ),
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -483,6 +506,13 @@ export const releasesService = {
       title: parsed.title !== undefined ? parsed.title.trim() : existing.title,
       artistName: parsed.artistName?.trim() || existing.artistName,
       type: parsed.type ?? existing.type,
+      expectedTrackCount: plannedSongCount(
+        parsed.type ?? existing.type,
+        parsed.expectedTrackCount ??
+          (parsed.type && parsed.type !== existing.type
+            ? undefined
+            : existing.expectedTrackCount),
+      ),
       genre: parsed.genre !== undefined ? parsed.genre.trim() : existing.genre,
       description:
         parsed.description !== undefined
@@ -503,6 +533,13 @@ export const releasesService = {
       title: parsed.title !== undefined ? parsed.title.trim() : existing.title,
       artistName: parsed.artistName?.trim() || existing.artistName,
       type: parsed.type ?? existing.type,
+      expectedTrackCount: plannedSongCount(
+        parsed.type ?? existing.type,
+        parsed.expectedTrackCount ??
+          (parsed.type && parsed.type !== existing.type
+            ? undefined
+            : existing.expectedTrackCount),
+      ),
       genre: parsed.genre !== undefined ? parsed.genre.trim() : existing.genre,
       description:
         parsed.description !== undefined
@@ -584,6 +621,16 @@ export const releasesService = {
       }
     }
 
+    if (
+      !alreadyInRelease &&
+      release.expectedTrackCount &&
+      existingAssignments.length >= release.expectedTrackCount
+    ) {
+      throw new Error(
+        "All songs have been added. Update the song count before adding more.",
+      );
+    }
+
     const trackNumber =
       parsed.trackNumber ??
       alreadyInRelease?.track_number ??
@@ -594,7 +641,9 @@ export const releasesService = {
       ((release.type === "single" && existingAssignments.length >= 1) ||
         (release.type === "ep" && existingAssignments.length >= 6))
     ) {
-      release.type = existingAssignments.length >= 6 ? "album" : "ep";
+      throw new Error(
+        "This release is full. Change its format before adding more songs.",
+      );
     }
     if (
       parsed.isFocusTrack &&

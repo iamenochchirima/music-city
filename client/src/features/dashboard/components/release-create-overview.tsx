@@ -1,32 +1,41 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { ReleaseCreateInput } from "@music-city/shared";
 import { useAuth } from "@/hooks/use-auth";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { ArtistAccessGate } from "@/features/onboarding/components/artist-access-gate";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { StepNavigation } from "@/components/studio/step-navigation";
 import { FormStepHeader } from "@/components/studio/form-step-header";
+import { ReleaseSetupFields, releaseSetupErrors } from "./release-setup-fields";
 import { releaseSteps } from "../lib/release-steps";
 export function ReleaseCreateOverview() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const [value, setValue] = useState<ReleaseCreateInput>({
+    title: "",
+    type: "single",
+    expectedTrackCount: 1,
+    genre: "",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  async function start(files: File[] = []) {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  async function start() {
     if (!session?.token || busy) return;
+    const nextErrors = releaseSetupErrors(value);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
     setBusy(true);
     setError("");
     try {
       const release = await releasesApi.createRelease(session.token, {
-        title: "",
-        genre: "",
-        type: "single",
+        ...value,
+        title: value.title.trim(),
         artistName: session.displayName,
       });
       navigate(`/dashboard/releases/${release.id}?step=music`, {
         replace: true,
-        state: { files },
       });
     } catch (e) {
       setError(
@@ -44,8 +53,8 @@ export function ReleaseCreateOverview() {
     <div className="max-w-[720px] space-y-6">
       <FormStepHeader
         eyebrow="Create a release"
-        title="Add your music"
-        description="Start with your songs. You can add the details while audio processes."
+        title="Set up your release"
+        description="Give it a name and choose what you’re releasing."
       />
       <StepNavigation
         steps={releaseSteps}
@@ -55,37 +64,33 @@ export function ReleaseCreateOverview() {
         disabled
         label="Release progress"
       />
-      <section className="space-y-5 rounded-lg border border-border bg-card p-6">
-        <label className="block space-y-3 rounded-lg border border-dashed border-input p-6 text-center">
-          <span className="block text-lg font-semibold">
-            Choose audio files
-          </span>
-          <span className="block text-sm text-muted-foreground">
-            MP3, WAV, FLAC, AAC, OGG, or M4A · up to 500 MB each
-          </span>
-          <Input
-            aria-label="Audio files"
-            type="file"
-            multiple
-            accept="audio/*,.flac,.m4a"
-            disabled={busy}
-            className="h-auto py-2"
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
-              if (files.length) void start(files);
-            }}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void start();
+        }}
+        className="space-y-6 rounded-lg border border-border bg-card p-4 sm:p-6"
+      >
+        <fieldset disabled={busy}>
+          <ReleaseSetupFields
+            value={value}
+            onChange={(patch) =>
+              setValue((current) => ({ ...current, ...patch }))
+            }
+            errors={errors}
           />
-        </label>
-        <Button variant="outline" disabled={busy} onClick={() => void start()}>
-          Choose from library
-        </Button>
-        {busy && <p role="status">Starting your release...</p>}
+        </fieldset>
         {error && (
           <p role="alert" className="text-destructive">
             {error}
           </p>
         )}
-      </section>
+        <div className="flex justify-end border-t border-border pt-5">
+          <Button disabled={busy} type="submit">
+            {busy ? "Starting your release..." : "Continue to songs"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

@@ -98,6 +98,8 @@ export function validatePublication(
       400,
       "Choose a release format that matches the number of songs",
     );
+  if (release.expectedTrackCount && count !== release.expectedTrackCount)
+    throw new HttpError(400, "Add all planned songs or update the song count before publishing");
   if (
     new Set(assignments.map((a) => a.track_number)).size !== count ||
     assignments.some((a) => a.track_number < 1 || a.disc_number < 1) ||

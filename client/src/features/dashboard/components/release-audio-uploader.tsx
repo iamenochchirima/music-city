@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { releasesApi } from "@/features/music/lib/releases-api";
@@ -6,11 +6,11 @@ import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { LoaderCircle, CircleCheck, CircleAlert } from "lucide-react";
+import { LoaderCircle, Clock3, CircleAlert } from "lucide-react";
 type Upload = {
   file: File;
   progress: number;
-  state: "uploading" | "done" | "failed";
+  state: "queued" | "uploading" | "done" | "failed";
   track?: TrackSummary;
   error?: string;
   replaceId?: string;
@@ -22,7 +22,7 @@ export function ReleaseAudioUploader({
   onSaved,
   onBusy,
   onClose,
-  initialFiles = [],
+  maxFiles,
   replaceId,
 }: {
   release: ReleaseDetail;
@@ -31,12 +31,12 @@ export function ReleaseAudioUploader({
   onAdded: (r: ReleaseDetail, t: TrackSummary) => void;
   onBusy: (busy: boolean) => void;
   onClose: () => void;
-  initialFiles?: File[];
+  maxFiles?: number;
   replaceId?: string;
 }) {
   const [items, setItems] = useState<Upload[]>([]);
   const [busy, setBusy] = useState(false);
-  const started = useRef(false);
+  const [selectionError, setSelectionError] = useState("");
   const running = useRef(false);
   const callbacks = useRef({ onAdded, onSaved, onBusy });
   callbacks.current = { onAdded, onSaved, onBusy };
@@ -127,90 +127,107 @@ export function ReleaseAudioUploader({
     callbacks.current.onBusy(false);
   }
   const choose = (files: File[]) => {
+    const limit = replaceId ? 1 : maxFiles;
+    if (limit !== undefined && files.length > limit) {
+      setSelectionError(
+        limit === 0
+          ? "All songs are added. Update the song count to add more."
+          : `Choose up to ${limit} ${limit === 1 ? "song" : "songs"}.`,
+      );
+      return;
+    }
+    setSelectionError("");
     const batch = files.map((file) => ({
       file,
       progress: 0,
-      state: "uploading" as const,
+      state: "queued" as const,
       replaceId,
     }));
     setItems((current) => [...current, ...batch]);
     void run(batch);
   };
-  useEffect(() => {
-    if (!started.current && initialFiles.length) {
-      started.current = true;
-      choose(initialFiles);
-    }
-  }, []);
   return (
-    <section className="space-y-4 rounded-lg border border-dashed border-input p-5">
-      <label className="block space-y-2">
-        <span className="block font-semibold">
-          {replaceId ? "Replace audio" : "Add audio files"}
-        </span>
-        <Input
-          type="file"
-          aria-label={replaceId ? "Replacement audio" : "Audio files"}
-          multiple={!replaceId}
-          disabled={busy}
-          accept="audio/*,.flac,.m4a"
-          className="h-auto py-2"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            if (files.length) choose(files);
-            e.target.value = "";
-          }}
-        />
-      </label>
-      <p className="text-xs text-muted-foreground">
-        MP3, WAV, FLAC, AAC, OGG, or M4A · up to 500 MB each
-      </p>
-      {items.map((item, i) => (
-        <div key={i} className="space-y-2" role="status">
-          <div className="flex items-center gap-2 text-sm">
-            {item.state === "uploading" ? (
-              <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
-            ) : item.state === "done" ? (
-              <CircleCheck className="h-4 w-4 shrink-0 text-primary" />
-            ) : (
-              <CircleAlert className="h-4 w-4 shrink-0 text-destructive" />
-            )}
-            <span className="min-w-0 flex-1 break-words">{item.file.name}</span>
-            <span>
-              {item.state === "uploading"
-                ? `${item.progress}%`
-                : item.state === "done"
-                  ? "Uploaded"
-                  : "Failed"}
+    <div className="space-y-4">
+      {(replaceId || maxFiles === undefined || maxFiles > 0) && (
+        <>
+          <label className="block space-y-2">
+            <span className="block font-semibold">
+              {replaceId ? "Replace audio" : "Add audio files"}
             </span>
-          </div>
-          {item.state === "uploading" && (
-            <Progress
-              value={item.progress}
-              aria-label={`Uploading ${item.file.name}`}
-            />
-          )}{" "}
-          {item.error && (
-            <p role="alert" className="text-sm text-destructive">
-              {item.error}
-            </p>
-          )}
-          {item.state === "failed" && (
-            <Button
-              variant="outline"
+            <Input
+              type="file"
+              aria-label={replaceId ? "Replacement audio" : "Audio files"}
+              multiple={!replaceId && (maxFiles === undefined || maxFiles > 1)}
               disabled={busy}
-              onClick={() => void run([item])}
-            >
-              {item.track ? "Retry adding song" : "Retry upload"}
-            </Button>
-          )}
-        </div>
-      ))}
-      {!busy && (
+              accept="audio/*,.flac,.m4a"
+              className="h-auto py-2"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length) choose(files);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          <p className="text-xs text-muted-foreground">
+            MP3, WAV, FLAC, AAC, OGG, or M4A · up to 500 MB each
+          </p>
+        </>
+      )}
+      {selectionError && (
+        <p role="alert" className="text-sm text-destructive">
+          {selectionError}
+        </p>
+      )}
+      {items
+        .filter((item) => item.state !== "done")
+        .map((item, i) => (
+          <div key={i} className="space-y-2" role="status">
+            <div className="flex items-center gap-2 text-sm">
+              {item.state === "uploading" ? (
+                <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
+              ) : item.state === "queued" ? (
+                <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <CircleAlert className="h-4 w-4 shrink-0 text-destructive" />
+              )}
+              <span className="min-w-0 flex-1 break-words">
+                {item.file.name}
+              </span>
+              <span>
+                {item.state === "uploading"
+                  ? `${item.progress}%`
+                  : item.state === "queued"
+                    ? "Waiting to upload"
+                    : "Failed"}
+              </span>
+            </div>
+            {item.state === "uploading" && (
+              <Progress
+                value={item.progress}
+                aria-label={`Uploading ${item.file.name}`}
+              />
+            )}{" "}
+            {item.error && (
+              <p role="alert" className="text-sm text-destructive">
+                {item.error}
+              </p>
+            )}
+            {item.state === "failed" && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => void run([item])}
+              >
+                {item.track ? "Retry adding song" : "Retry upload"}
+              </Button>
+            )}
+          </div>
+        ))}
+      {!busy && (maxFiles !== 0 || replaceId) && (
         <Button variant="ghost" onClick={onClose}>
-          Done
+          Close uploader
         </Button>
       )}
-    </section>
+    </div>
   );
 }

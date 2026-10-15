@@ -38,11 +38,7 @@ export function ReleaseTrackInformation({
       className="max-w-[720px] space-y-6 rounded-lg border border-border bg-card p-4 sm:p-6"
     >
       <div>
-        <h3 className="text-lg font-semibold">Track information</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Check each recording's title, credits, ISRC, and record label. Credits
-          are optional and do not set royalty shares.
-        </p>
+        <h3 className="text-lg font-semibold">Song details</h3>
       </div>
       {!active ? (
         <p className="text-sm text-muted-foreground">
@@ -50,22 +46,24 @@ export function ReleaseTrackInformation({
         </p>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2" aria-label="Choose a track">
-            {release.tracks.map((item, index) => (
-              <Button
-                key={item.trackId}
-                variant={
-                  active.trackId === item.trackId ? "secondary" : "outline"
-                }
-                disabled={busy}
-                aria-pressed={active.trackId === item.trackId}
-                onClick={() => setSelected(item.trackId)}
-                className="max-w-full h-auto whitespace-normal text-left"
-              >
-                {index + 1}. {item.track.title}
-              </Button>
-            ))}
-          </div>
+          {release.tracks.length > 1 && (
+            <div className="flex flex-wrap gap-2" aria-label="Choose a track">
+              {release.tracks.map((item, index) => (
+                <Button
+                  key={item.trackId}
+                  variant={
+                    active.trackId === item.trackId ? "secondary" : "outline"
+                  }
+                  disabled={busy}
+                  aria-pressed={active.trackId === item.trackId}
+                  onClick={() => setSelected(item.trackId)}
+                  className="max-w-full h-auto whitespace-normal text-left"
+                >
+                  {index + 1}. {item.track.title}
+                </Button>
+              ))}
+            </div>
+          )}
           <fieldset
             disabled={busy}
             className="min-w-0 space-y-6"
@@ -73,7 +71,7 @@ export function ReleaseTrackInformation({
           >
             <FormField
               id={`release-track-title-${active.trackId}`}
-              label="Track title"
+              label="Song title"
               error={errors[active.trackId]?.title}
             >
               <Input

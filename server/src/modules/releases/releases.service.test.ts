@@ -324,3 +324,88 @@ test("scheduled revision edits stay private while the original schedule and artw
     assert.ok(!Object.hasOwn(visible!,"liveVersion"));
   } finally {cleanup.reverse().forEach(fn => fn());}
 });
+
+test("release plan persists its song count and rejects incompatible formats", async () => {
+  let persisted: ReleaseSummary | undefined;
+  const cleanup = [
+    restore(usersService, "getProfile", async () => artistProfile),
+    restore(releasesRepository, "upsert", async (next) => {
+      persisted = next;
+      return next;
+    }),
+    restore(releasesRepository, "listTracks", async () => []),
+  ];
+  try {
+    const created = await releasesService.createRelease(walletAddress, {
+      title: "Night Songs",
+      type: "ep",
+      expectedTrackCount: 4,
+    });
+    assert.equal(created.expectedTrackCount, 4);
+    assert.equal(persisted?.expectedTrackCount, 4);
+    await assert.rejects(
+      releasesService.createRelease(walletAddress, {
+        title: "Night Songs",
+        type: "ep",
+        expectedTrackCount: 8,
+      }),
+      /song count that matches/,
+    );
+  } finally {
+    cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
+  }
+});
+
+test("adding another song never silently converts a Single into an EP", async () => {
+  const current = { ...release("single"), expectedTrackCount: 1 };
+  let assigned = false;
+  const cleanup = [
+    restore(usersService, "getProfile", async () => artistProfile),
+    restore(releasesRepository, "findById", async () => current),
+    restore(releasesRepository, "listByArtist", async () => [current]),
+    restore(releasesRepository, "listTracks", async () => [
+      {
+        release_id: current.id,
+        track_id: "trk-1",
+        track_number: 1,
+        disc_number: 1,
+        is_focus_track: false,
+      },
+    ]),
+    restore(tracksRepository, "findById", async () => track("trk-2")),
+    restore(releasesRepository, "assignTrack", async () => {
+      assigned = true;
+    }),
+  ];
+  try {
+    await assert.rejects(
+      releasesService.addTrackToRelease(walletAddress, current.id, {
+        trackId: "trk-2",
+      }),
+      /song count before adding more/,
+    );
+    assert.equal(current.type, "single");
+    assert.equal(assigned, false);
+  } finally {
+    cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
+  }
+});
+
+test("publication rejects a tracklist missing planned songs", () => {
+  const current = { ...release("ep"), expectedTrackCount: 4 };
+  const assignments = [1, 2].map((n) => ({
+    release_id: current.id,
+    track_id: `trk-${n}`,
+    track_number: n,
+    disc_number: 1,
+    is_focus_track: false,
+  }));
+  assert.throws(
+    () =>
+      validatePublication(current, assignments, [
+        track("trk-1"),
+        track("trk-2"),
+      ]),
+    /Add all planned songs/,
+  );
+});

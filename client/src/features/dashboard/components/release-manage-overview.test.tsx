@@ -108,7 +108,7 @@ function Location() {
   const l = useLocation();
   return <output aria-label="Destination">{l.pathname}</output>;
 }
-async function open(step = "artwork") {
+async function open(step = "basics") {
   render(
     <MemoryRouter initialEntries={[`/?step=${step}`]}>
       <ReleaseManageOverview releaseId="release" />
@@ -117,12 +117,12 @@ async function open(step = "artwork") {
   );
   await screen.findByRole("heading", { name: "Original" });
 }
-it("has four steps and autosaves changed release details", async () => {
+it("starts with release setup and autosaves changed release details", async () => {
   const user = userEvent.setup();
   await open();
-  expect(screen.queryByRole("button", { name: "Release basics" })).toBeNull();
-  await user.clear(screen.getByLabelText("Title"));
-  await user.type(screen.getByLabelText("Title"), "New title");
+  expect(screen.getByRole("button", { name: "Release setup" })).toBeTruthy();
+  await user.clear(screen.getByLabelText("Release name"));
+  await user.type(screen.getByLabelText("Release name"), "New title");
   await waitFor(
     () =>
       expect(mocks.update).toHaveBeenCalledWith(
@@ -135,7 +135,7 @@ it("has four steps and autosaves changed release details", async () => {
 });
 it("uploads artwork immediately without a separate upload action", async () => {
   const user = userEvent.setup();
-  await open();
+  await open("artwork");
   await user.upload(
     screen.getByLabelText("Artwork file"),
     new File(["image"], "cover.png", { type: "image/png" }),
@@ -186,12 +186,12 @@ it("requires explicit cancellation before editing a queued version", async () =>
   mocks.load.mockResolvedValue({ ...base, publication: pending });
   const user = userEvent.setup();
   await open();
-  expect((screen.getByLabelText("Title") as HTMLInputElement).disabled).toBe(
-    false,
-  );
-  expect(screen.getByLabelText("Title").closest("fieldset")?.disabled).toBe(
-    true,
-  );
+  expect(
+    (screen.getByLabelText("Release name") as HTMLInputElement).disabled,
+  ).toBe(false);
+  expect(
+    screen.getByLabelText("Release name").closest("fieldset")?.disabled,
+  ).toBe(true);
   await user.click(
     screen.getByRole("button", { name: "Cancel publication & edit" }),
   );
@@ -199,22 +199,42 @@ it("requires explicit cancellation before editing a queued version", async () =>
     expect(mocks.cancel).toHaveBeenCalledWith("token", "release"),
   );
   await waitFor(() =>
-    expect(screen.getByLabelText("Title").closest("fieldset")?.disabled).toBe(
-      false,
-    ),
+    expect(
+      screen.getByLabelText("Release name").closest("fieldset")?.disabled,
+    ).toBe(false),
   );
 });
 it("failed autosave keeps the entered value and offers an explicit retry", async () => {
   mocks.update.mockRejectedValue(new Error("Offline"));
   const user = userEvent.setup();
   await open();
-  await user.clear(screen.getByLabelText("Title"));
-  await user.type(screen.getByLabelText("Title"), "Retained title");
+  await user.clear(screen.getByLabelText("Release name"));
+  await user.type(screen.getByLabelText("Release name"), "Retained title");
   await waitFor(() => expect(mocks.update).toHaveBeenCalled(), {
     timeout: 4000,
   });
-  expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
-    "Retained title",
-  );
+  expect(
+    (screen.getByLabelText("Release name") as HTMLInputElement).value,
+  ).toBe("Retained title");
   expect(screen.getByRole("button", { name: "Continue" })).toBeTruthy();
+});
+
+it("a filled Single shows its song once without another picker or ordering fields", async () => {
+  await open("music");
+  expect(screen.getByText("1 of 1 song added")).toBeTruthy();
+  expect(screen.getAllByText("One")).toHaveLength(1);
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Choose from library" }),
+  ).toBeNull();
+  expect(screen.queryByRole("button", { name: /Move One/ })).toBeNull();
+});
+it("blocks an incomplete planned tracklist before song details", async () => {
+  mocks.load.mockResolvedValue({ ...base, type: "ep", expectedTrackCount: 3 });
+  const user = userEvent.setup();
+  await open("music");
+  expect(screen.getByText("1 of 3 songs added")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(screen.getByRole("alert").textContent).toContain("Add all your songs");
+  expect(mocks.update).not.toHaveBeenCalled();
 });

@@ -181,7 +181,7 @@ export function CreatorClaims() {
           </p>
         </div>
         <div className="rounded-xl border border-border p-5">
-          <p className="text-sm text-muted-foreground">Awaiting funding</p>
+          <p className="text-sm text-muted-foreground">Payment pending</p>
           <p className="mt-2 text-2xl font-semibold">
             {money(pending.toString())} <span className="text-sm">USDC</span>
           </p>
@@ -197,7 +197,7 @@ export function CreatorClaims() {
         </p>
       ) : !claims.length ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-          Your approved earnings will appear here when a settlement is prepared.
+          Your earnings will appear here when they’re ready.
         </p>
       ) : (
         <div className="space-y-3">
@@ -226,11 +226,11 @@ export function CreatorClaims() {
                     {a.status === "claimed"
                       ? "Received"
                       : a.status === "reclaimed"
-                        ? "Expired and recovered"
+                        ? "Claim period ended"
                         : expired
                           ? "Claim expired"
                           : a.status === "pending"
-                            ? "Awaiting treasury funding"
+                            ? "Payment pending"
                             : `Claim by ${new Date(batch.expiresAt).toLocaleString()}`}
                   </p>
                 </div>
@@ -270,7 +270,7 @@ export function CreatorClaims() {
                 )}
                 {batch.discrepancy && (
                   <p role="status" className="w-full text-sm text-amber-300">
-                    This settlement needs a check. Your funds remain recorded.
+                    We’re checking this payment. Claiming is temporarily unavailable.
                   </p>
                 )}
               </article>

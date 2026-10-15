@@ -89,6 +89,13 @@ it.each(["artist", "both"] as const)("completes the %s branch without losing art
   await screen.findByText("Your artist workspace is ready.");
   expect(mocks.save).toHaveBeenCalledWith("token", expect.objectContaining({ step: "artist_identity", bio: "Artist biography", genres: ["Afrobeats"] }));
   expect(mocks.complete).toHaveBeenCalledOnce();
+  await user.click(screen.getByRole("button", { name: "Back" }));
+  await screen.findByLabelText("Header image");
+  await user.click(screen.getByRole("button", { name: "Back" }));
+  expect((screen.getByLabelText("Short biography") as HTMLTextAreaElement).value).toBe("Artist biography");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await user.click(screen.getByRole("button", { name: "Skip for now" }));
+  await screen.findByText("Your artist workspace is ready.");
   await user.click(screen.getByRole("button", { name: "Create your first release" }));
   expect(completed).toHaveBeenCalledWith(intent, "/dashboard/create");
 });

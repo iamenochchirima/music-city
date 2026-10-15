@@ -183,7 +183,7 @@ export function ReleaseReview({
                     value: "draft",
                     label: "Keep as draft",
                     description: release.hasRevision
-                      ? "Save this revision for later."
+                      ? "Save your changes for later."
                       : "Save and finish later.",
                   },
                   {
@@ -283,7 +283,7 @@ export function ReleaseReview({
                 : release.hasRevision && mode !== "draft"
                   ? "Apply release update"
                   : release.hasRevision
-                    ? "Save revision"
+                    ? "Save changes"
                     : mode === "scheduled"
                       ? "Schedule release"
                       : mode === "published"

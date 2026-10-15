@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -33,6 +33,7 @@ import { ArtistActivationSummary } from "@/features/sponsorships/artist-activati
 type OnboardingFormProps = {
   mode?: "page" | "modal";
   onBusyChange?: (busy: boolean) => void;
+  footerActions?: ReactNode;
   onCompleted?: (intent: PrimaryIntent, destination: string) => void;
 };
 
@@ -382,6 +383,7 @@ export const OnboardingForm = ({
   mode = "page",
   onCompleted,
   onBusyChange,
+  footerActions,
 }: OnboardingFormProps) => {
   const router = useRouter();
   const { session, refreshSessionProfile } = useAuth();
@@ -894,6 +896,8 @@ export const OnboardingForm = ({
       setStep(
         isArtistIntent(primaryIntent) ? "artist_identity" : "personalize",
       );
+    } else if (step === "complete") {
+      setStep("visuals");
     }
   };
 
@@ -986,8 +990,8 @@ export const OnboardingForm = ({
     <form
       className={
         mode === "modal"
-          ? "space-y-6"
-          : "studio-theme w-full max-w-[720px] space-y-6 rounded-lg border border-border bg-card p-4 sm:p-6"
+          ? "space-y-5"
+          : "studio-theme w-full max-w-[720px] space-y-5 rounded-lg border border-border bg-card p-4 sm:p-6"
       }
       onSubmit={handleSubmit}
       noValidate
@@ -1515,7 +1519,7 @@ export const OnboardingForm = ({
         ) : null}
 
         {step === "complete" ? (
-          <div className="space-y-5 py-8 text-center">
+          <div className="space-y-4 py-4 text-center">
             <p className="text-sm font-medium text-primary">You’re ready</p>
             <h2
               ref={stepHeading}
@@ -1531,11 +1535,6 @@ export const OnboardingForm = ({
                 ? "Start with a fresh release, follow an artist, or build your first playlist."
                 : "Your profile is ready. Continue into the studio whenever you want to release music."}
             </p>
-            {primaryIntent !== "listener" && artistActivationQuote ? (
-              <div className="mx-auto max-w-md text-left">
-                <ArtistActivationSummary quote={artistActivationQuote} />
-              </div>
-            ) : null}
           </div>
         ) : null}
       </fieldset>
@@ -1544,21 +1543,21 @@ export const OnboardingForm = ({
           {saveError}. Your entries are still here. Try again.
         </p>
       ) : null}
-      <ActionBar>
-        {step !== "identity" && step !== "complete" ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleBack}
-            disabled={isSaving}
-          >
-            Back
-          </Button>
-        ) : (
-          <span />
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-3">
+      <ActionBar className="gap-4 pt-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {step !== "identity" ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={isSaving || isPreparingMedia}
+            >
+              Back
+            </Button>
+          ) : null}
+          {footerActions}
+        </div>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {step === "personalize" ||
           step === "artist_identity" ||
           step === "visuals" ? (
