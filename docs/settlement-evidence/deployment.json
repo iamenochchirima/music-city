@@ -207,9 +207,20 @@
     "workspaceTypecheck": "passed",
     "workspaceBuild": "passed"
   },
-  "remainingGates": [
+  "remainingGatesAtInitialRollout": [
     "SET-03: real Dynamic contributor consent and amendment browser journeys",
     "SET-20: real Dynamic creator claim and wallet cancellation",
     "SET-24: reviewer acceptance; separate direct-support/provider scope not completed"
+  ],
+  "subsequentVerification": {
+    "evidence": "dynamic-browser.json",
+    "deployment": "dynamic-deployment.json",
+    "resolvedGates": [
+      "SET-03",
+      "SET-20"
+    ]
+  },
+  "remainingGates": [
+    "SET-24 reviewer acceptance; direct-support and provider adapters are separate scope"
   ]
 }

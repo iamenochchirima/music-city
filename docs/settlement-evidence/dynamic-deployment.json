@@ -1,0 +1,136 @@
+{
+  "verifiedAt": "2026-10-15T08:27:49.575Z",
+  "commit": "721fe67c0d8ace02630ca2c3cb6180f85e2aa216",
+  "services": [
+    {
+      "service": "server",
+      "id": "3dd42570-95ee-408f-8c2c-bf010e897111",
+      "status": "SUCCESS",
+      "commit": "721fe67c0d8ace02630ca2c3cb6180f85e2aa216"
+    },
+    {
+      "service": "media-worker",
+      "id": "4089fe0d-d18d-485d-9bd5-5c882a485b33",
+      "status": "SUCCESS",
+      "commit": "721fe67c0d8ace02630ca2c3cb6180f85e2aa216"
+    },
+    {
+      "service": "financial-worker",
+      "id": "4036f864-0237-4c3d-8122-e14b81dcdaff",
+      "status": "SUCCESS",
+      "commit": "721fe67c0d8ace02630ca2c3cb6180f85e2aa216"
+    }
+  ],
+  "client": {
+    "id": "dpl_GkVbHNmEnBN4qwAvQzF1GwyeLTa2",
+    "status": "READY",
+    "url": "v0-music-city-pwxrka4k9-iamenochchirimas-projects.vercel.app",
+    "aliases": [
+      "music-city.vercel.app",
+      "v0-music-city-iamenochchirimas-projects.vercel.app"
+    ]
+  },
+  "served": {
+    "at": "2026-10-15T08:25:25.623Z",
+    "status": 200,
+    "assets": [
+      "https://music-city.vercel.app/assets/index-BSWe27H6.js"
+    ],
+    "signAndClaim": true,
+    "accountEarningsLink": true,
+    "liveDynamicEnvironment": true,
+    "sandboxEnvironmentBundled": false
+  },
+  "runtime": {
+    "checkedAt": "2026-10-15T08:26:01.117Z",
+    "migrations": [
+      {
+        "name": "2026-10-15-earnings-settlement"
+      },
+      {
+        "name": "2026-10-15-settlement-chain-events"
+      }
+    ],
+    "relations": [
+      {
+        "table_name": "settlement_batches"
+      },
+      {
+        "table_name": "settlement_chain_cursors"
+      },
+      {
+        "table_name": "settlement_chain_events"
+      },
+      {
+        "table_name": "settlement_events"
+      },
+      {
+        "table_name": "settlement_reconciliation_snapshots"
+      },
+      {
+        "table_name": "settlement_reservations"
+      }
+    ],
+    "snapshots": [
+      {
+        "payload": {
+          "ok": true,
+          "config": {
+            "assetCode": "USDC",
+            "contractId": "CAQNSYYWEMMEYKB4JTSZRKBIQP4MSWURA2FMCBDVPUQ22ENI2BGCKXNW",
+            "registryId": "CDIKALTGUF3XQGHCHUKH3IFNFFRE4ZGMCVTOGO3HUC654WS2XQZQQ3SX",
+            "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "networkPassphrase": "Test SDF Network ; September 2015"
+          },
+          "checkedAt": "2026-10-15T08:26:00.336Z",
+          "openUnits": "0",
+          "eventIndex": {
+            "caughtUp": true,
+            "checkedAt": "2026-10-15T08:25:58.030Z",
+            "indexedLedger": 5205834,
+            "unknownBatchIds": []
+          },
+          "fundedUnits": "0",
+          "claimedUnits": "0",
+          "surplusUnits": "0",
+          "discrepancies": [],
+          "reclaimedUnits": "0",
+          "escrowBalanceUnits": "0",
+          "networkFeeXlmUnits": "0"
+        },
+        "error": null,
+        "updated_at": "2026-10-15T08:26:00.337Z"
+      }
+    ],
+    "cursors": [
+      {
+        "deployment_ledger": "5205123",
+        "indexed_ledger": "5205834",
+        "caught_up": true,
+        "checked_at": "2026-10-15T08:25:58.030Z",
+        "error": null
+      }
+    ]
+  },
+  "health": {
+    "ok": true,
+    "database": {
+      "ok": true,
+      "schemaOk": true
+    },
+    "schemaOk": true
+  },
+  "productionAuthentication": {
+    "environmentId": "36b4587d-d6e3-4831-8a77-0d1b0de32e32",
+    "usesOriginalLiveEnvironment": true,
+    "treasurySigningSecretPresent": false
+  },
+  "clientTests": {
+    "passed": 85,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "browserEvidence": "dynamic-browser.json"
+}

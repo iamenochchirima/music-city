@@ -22,7 +22,7 @@ The actual admin interface prepared recovery, verified one then two independent 
 
 The browser used the official local admin bootstrap and login routes against the dedicated demonstration database. Signatures were generated from disposable Testnet keys and uploaded through the interface. This does not verify a Dynamic wallet popup. A development reload also occurred during confirmation, so this capture alone does not prove uninterrupted automatic browser updates.
 
-Real contributor review, cancellation, acceptance, amendment consent, and creator claim through Dynamic remain SET-03 and SET-20. Reviewer acceptance remains SET-24.
+The original capture did not exercise Dynamic. The subsequent [real Dynamic browser record](dynamic-browser.json) closes SET-03 and SET-20. Reviewer acceptance remains SET-24.
 
 ## Deployment
 
@@ -51,3 +51,25 @@ Run `pnpm settlements:demo:testnet`. It preserves a private database volume and 
 See [the settlement specification](../settlement-specification.md) for exact amounts, lifecycle rules, configuration, maintenance, and recovery. Private keys, database credentials, sessions, and private backups are excluded from this evidence directory.
 
 The `initial-*.json` files preserve an earlier candidate demonstration. They are historical evidence and do not identify the final deployed binary.
+
+## Real Dynamic browser follow-up
+
+[Dynamic browser evidence](dynamic-browser.json) records real hosted-provider authentication for two separate Sandbox identities, embedded Stellar wallet creation, trustline signing, four exact contributor consent signatures, and four confirmed creator claims. No Dynamic contributor private key was exported or supplied to the CLI.
+
+CLI setup created a disposable track and initial proposed 70/30 agreement, supplied native reserves through Friendbot, and used two existing treasury keys to finalize accepted versions and fund each 0.01 USDC source. The actual creator pages handled contributor review and signatures. The owner created the 60/40 amendment through the actual editor. It began with no inherited consent, left version one effective until finalization, and changed only the later source.
+
+The in-app browser used the existing allowed origin `http://localhost:3000`, the Dynamic Sandbox environment, and a local API with the same environment's JWKS verification. No production authentication setting was weakened. Sandbox test accounts use Dynamic's official static verification mechanism. Sandbox Wallet Sign also requires provider reauthentication, so cancellation was verified inside the real provider flow.
+
+Cancelling consent authorization recorded no contributor acceptance. Cancelling withdrawal authorization left an available entitlement and a prepared attempt with zero signatures and zero submissions. Retry confirmed the same transaction hash once. The page changed from signing to confirming to received without a refresh. The listener contributor could claim without artist activation.
+
+The new sources total 0.02 USDC, all claimed. Combined with the earlier demonstration, the escrow independently reconciles 200.02 funded, 170.02 claimed, 30 recovered, zero outstanding, and zero token balance. These are demonstration contracts, separate from the fresh live application contracts.
+
+- [Provider authorization prompt](dynamic-step-up-signing-prompt.png)
+- [Cancelled consent](dynamic-wallet-consent-cancelled.png)
+- [Cancelled withdrawal authorization](dynamic-withdrawal-wallet-cancelled.png)
+- [Both contributor receipts](dynamic-contributor-claims-confirmed.png)
+- [Both owner receipts](dynamic-all-owner-claims-confirmed.png)
+
+The browser test found two integration defects. Custom wallet actions now request Dynamic's `wallet:sign` authorization when required, and the app no longer dismisses provider reauthentication merely because a user is already signed in. Cancellation propagates before signing or submitting. The shared authorization applies to agreements, claims, transfers, checkout, and trustlines. It does not introduce a test signer or alternative production payout path.
+
+[Final deployment verification](dynamic-deployment.json) records commit `721fe67`, 85 passing client tests, client typecheck and build, deployment IDs, served code, Live authentication identity, and the healthy worker report. Backend and contract source are unchanged from the preceding verified rollout. SET-01 through SET-23 are complete; SET-24 and separate SOW scope remain open.

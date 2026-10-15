@@ -38,9 +38,9 @@ Implementation rules:
 
 | Deliverable | Current position | Next completion boundary |
 | --- | --- | --- |
-| D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Complete real Dynamic wallet journeys and reviewer acceptance. |
-| D2. Contributor agreements and treasury controls | Partial. Agreement services and protected registry finalization have historical Testnet evidence. Current browser consent remains unverified. Separate direct support is outstanding. | Verify current wallet consent, configure the deployment, cover protected admin operations, and implement both direct-support destinations. |
-| D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Integrate and demonstrate the complete D1 and D2 lifecycle, including failure recovery and evidence packaging. |
+| D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Record reviewer acceptance. Real Dynamic wallet journeys passed in E5. |
+| D2. Contributor agreements and treasury controls | Partial. Agreement services and protected registry finalization have historical Testnet evidence. Current Dynamic browser consent and protected settlement operations passed in E5. Separate direct support is outstanding. | Implement both separate direct-support destinations and obtain reviewer acceptance. |
+| D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Settlement integration, failure recovery, deployment, and evidence are complete in E5. Finish separate support integration and full SOW acceptance. |
 
 ## D1. Soroban earnings settlement engine
 
@@ -48,24 +48,24 @@ Source: sections 4.1 D1, 5.1 Weeks 1, 2, and 4, and 6.1 D1. D1 owns settlement a
 
 | ID | Submitted requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- | --- |
-| D1-01 | Validate finalized royalty splits | Exact captured agreement ID, version, hash, registry, and network verified in backend and contract. Historical versions remain valid. E5. | Current browser consent gate SET-03. |
+| D1-01 | Validate finalized royalty splits | Exact captured agreement ID, version, hash, registry, and network verified in backend and contract. Historical versions remain valid. E5. | Reviewer acceptance. Current Dynamic consent verified in E5. |
 | D1-02 | Create settlement batches from aggregated backend earnings | Immutable source-wide batches and transactional ledger reservations implemented. PostgreSQL concurrency and audit rollback tests pass. E5. | Reviewer acceptance. |
 | D1-03 | Calculate each recipient's allocation | Seven-decimal integer allocation, deterministic remainder, per-recipient fee floor, and conservation verified in backend and contract. E5. | Reviewer acceptance. |
 | D1-04 | Prevent duplicate settlement | Permanent batch and source uniqueness on-chain, unique database reservations, and exact-envelope retries. Duplicate Testnet simulation rejected. E5. | Reviewer acceptance. |
 | D1-05 | Create claimable Stellar USDC balances | Soroban escrow holds Circle USDC and contract-managed claim records. Four recipient claim IDs and exact funding receipts recorded. E5. | Reviewer acceptance of the documented mechanism. These are not native protocol claimable-balance IDs. |
-| D1-06 | Creator claim handling | Beneficiary-authorized, fixed-destination, single-use claims implemented. Three real Testnet claims confirmed. E5. | Real Dynamic creator wallet journey SET-20. |
+| D1-06 | Creator claim handling | Beneficiary-authorized, fixed-destination, single-use claims implemented. Three real Testnet claims confirmed. E5. | Reviewer acceptance. Current Dynamic claims verified in E5. |
 | D1-07 | Expiry and reclaim handling | Expiry boundary, threshold recovery, and repeat rejection implemented. 30 USDC recovered through the admin browser. E5. | Reviewer acceptance. |
-| D1-08 | Wallet-signed creator withdrawals | Exact-XDR creator signing, session wallet, network, readiness, cancellation, and replay checks implemented. E5. | Real Dynamic wallet popup and cancellation SET-20. |
+| D1-08 | Wallet-signed creator withdrawals | Exact-XDR creator signing, session wallet, network, readiness, cancellation, and replay checks implemented. E5. | Reviewer acceptance. Real provider cancellation and signing verified in E5. |
 | D1-09 | Stellar USDC settlement | 200 Circle Testnet USDC funded through threshold treasury transactions. Single-key payout executor removed. E5. | Reviewer acceptance. |
 | D1-10 | Settlement events and independently verifiable on-chain evidence | Six confirmed lifecycle events indexed with receipt validation, ledgers, hashes, and explorer links. Unknown external batches produce exceptions. E5. | Reviewer acceptance. |
-| D1-11 | Backend reconciliation of on-chain settlement and claims | Worker reconciles exact receipts, contract state, indexed events, escrow token balance, and network fees. Demonstrated totals are 200 funded, 170 claimed, 30 recovered, zero outstanding. E5. | Real wallet verification and reviewer acceptance. |
+| D1-11 | Backend reconciliation of on-chain settlement and claims | Worker reconciles exact receipts, contract state, indexed events, escrow token balance, and network fees. Demonstrated totals are 200 funded, 170 claimed, 30 recovered, zero outstanding. E5. | Reviewer acceptance. |
 
 D1 acceptance checklist:
 
 - [ ] Approve the canonical batch, allocation, claim, expiry, authorization, and event specification.
 - [x] Demonstrate one earnings batch allocated to multiple recipients using a verified finalized agreement.
 - [x] Demonstrate duplicate prevention with no duplicate payment or claimable balance.
-- [ ] Demonstrate wallet-authorized USDC claim or withdrawal and beneficiary restrictions.
+- [x] Demonstrate wallet-authorized USDC claim or withdrawal and beneficiary restrictions.
 - [x] Demonstrate expiry and reclaim, including boundary and repeated-action tests.
 - [x] Match backend records to confirmed settlement, claim, balance, and event evidence.
 - [x] Package contract tests, integration tests, Testnet evidence, screenshots, and technical documentation.
@@ -78,20 +78,20 @@ Source: sections 4.1 D2, 5.1 Weeks 1, 3, and 4, and 6.1 D2. D2 owns consent, gov
 | ID | Submitted requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- | --- |
 | D2-01 | Canonical split proposal | Implemented. Versioned proposal, wallet, role, share, terms, track, release context, and hash. Domain and database evidence in E1. | Verify creation and review through the current deployed creator interface. |
-| D2-02 | Wallet-signed acceptance | Implemented. One-time challenges bind exact proposal, action, wallet, version, and network. Real generated-key verification is recorded. | Demonstrate two actual users reviewing, cancelling, and signing through the current Dynamic Stellar wallet integration. |
+| D2-02 | Wallet-signed acceptance | Verified through real Dynamic Sandbox accounts. Four independent provider signatures authorize exact original and amended proposals. Cancellation records no consent. E5. | Reviewer acceptance. |
 | D2-03 | Rejection and dispute | Verified historically. Signed responses block finalization. | Capture current creator and admin behavior and actionable recovery. |
-| D2-04 | Finalization requires complete consent | Verified historically. Ready-state checks and confirmed registry read-back gate the effective version. | Repeat end-to-end with current browser-generated contributor signatures. |
-| D2-05 | Amendments preserve history and require fresh consent | Verified historically. Finalized versions 1 and 3 and disputed version 2 are recorded in E2. | Verify current interfaces preserve the old effective version until the amendment confirms. |
+| D2-04 | Finalization requires complete consent | Current browser-generated consent and two treasury signatures finalized versions 1 and 2. Earlier effective terms remained active until confirmation. E5. | Reviewer acceptance. |
+| D2-05 | Amendments preserve history and require fresh consent | Real Dynamic browser verification preserves the 70/30 entitlement while a 60/40 amendment requires fresh signatures and governs a different source. E5. E2 retains historical dispute coverage. | Reviewer acceptance. |
 | D2-06 | Direct fan-to-artist support payments | Open as a separate SOW flow. Existing purchases and subscriptions are not proof of direct support. | Implement destination selection, exact wallet-authorized payment, confirmation, idempotency, and history. |
 | D2-07 | Direct fan-to-contributor support payments | Open as a separate SOW flow. | Implement an explicit contributor destination and verify the recipient receives the intended support payment. |
-| D2-08 | 2-of-3 treasury authorization for finalization | Verified historically. One signer failed and two succeeded against a disposable Testnet treasury and registry. | Configure the current environment and repeat exact transaction preparation, independent signing, and confirmation. |
-| D2-09 | 2-of-3 authorization for protected admin actions | Partial. Agreement finalization is protected. Super-admin application permission is not chain multisignature authorization. | Specify the complete protected-action list. Remove or replace single-key bypasses for those actions and test each boundary. |
+| D2-08 | 2-of-3 treasury authorization for finalization | Current dedicated treasury and registries verify thresholds of two. Both Dynamic-consented versions finalized with two distinct signatures. E5. | Reviewer acceptance. |
+| D2-09 | 2-of-3 authorization for protected admin actions | Finalization, funding, recovery, maintenance, and restoration require exact threshold signatures. The single-key executor and mutable financial controls are removed. E5. | Reviewer acceptance. Separate support must preserve these controls. |
 | D2-10 | Migration, approval records, state transitions, and audit history | Implemented. Transaction-backed agreement records and integrity constraints exist. | Include dated migration evidence and current UI history for the final D2 demonstration. |
 
 D2 acceptance checklist:
 
 - [ ] Demonstrate a registered owner and contributor creating and independently signing the same 70/30 proposal through the current UI.
-- [ ] Cancel signing and verify that no consent is recorded.
+- [x] Cancel signing and verify that no consent is recorded.
 - [ ] Reject unauthorized contributors, changed proposals, duplicate or replayed responses, invalid splits, and incomplete acceptance.
 - [ ] Demonstrate rejection, dispute, resolution, amendment, fresh consent, and preserved history.
 - [x] Verify three independent treasury signers, the registry treasury, and thresholds requiring two.
@@ -107,16 +107,16 @@ Source: sections 4.1 D3, 5.1 Week 4, and 6.1 D3. D3 integrates the two technical
 
 | ID | Submitted requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- | --- |
-| D3-01 | Creator and administrator interfaces for D1 and D2 | Creator Revenue claims and admin settlement preview, threshold signing, receipts, recovery, and global reconciliation implemented. E5. | Real Dynamic wallet journeys and separate direct support. |
-| D3-02 | Wallet and trustline readiness | Network, beneficiary, trustline authorization and capacity, USDC balance, XLM reserve and fees checked with corrective actions. E5. | Real wallet confirmation and separate support readiness. |
-| D3-03 | Settlement and claim status | Automatic read-only polling presents preparation, signature collection, submission, confirmation, claim, expiry, and recovery. E5. | Real wallet journey SET-20. |
+| D3-01 | Creator and administrator interfaces for D1 and D2 | Creator Revenue claims and admin settlement preview, threshold signing, receipts, recovery, and global reconciliation implemented. E5. | Separate direct support and reviewer acceptance. |
+| D3-02 | Wallet and trustline readiness | Network, beneficiary, trustline authorization and capacity, USDC balance, XLM reserve and fees checked with corrective actions. E5. | Separate support readiness and reviewer acceptance. |
+| D3-03 | Settlement and claim status | Automatic read-only polling presents preparation, signature collection, submission, confirmation, claim, expiry, and recovery. E5. | Reviewer acceptance. Real provider signing and cancellation verified in E5. |
 | D3-04 | Support-payment history | Open. | Show recipient, amount, asset, status, and confirmed transaction reference for each support payment. |
-| D3-05 | Payout and reconciliation workflows | New financial worker and durable event index reconcile exact receipts, contract state, token obligations, and unique fees. Old payout records remain read-only. E5. | Real wallet verification and reviewer acceptance. |
+| D3-05 | Payout and reconciliation workflows | New financial worker and durable event index reconcile exact receipts, contract state, token obligations, and unique fees. Old payout records remain read-only. E5. | Reviewer acceptance. |
 | D3-06 | Multisignature configuration evidence | Dedicated current treasury and both deployed registries verify three distinct weight-one keys and thresholds of two. E5. | Reviewer acceptance. |
-| D3-07 | Failure recovery | Exact-envelope bounded retries, unknown-outcome retention, archival restoration, signed maintenance, and expiry recovery implemented and tested. E5. | Real wallet cancellation and separate support failures. |
-| D3-08 | Automated security and failure tests | Contract, domain, signatures, routes, readiness, components, and real PostgreSQL failure/concurrency suites pass. E5. | Real browser wallet gates and separate support tests. |
-| D3-09 | Deployment documentation and final Testnet deployment | Settlement API, financial worker, media worker, creator and admin frontends, dedicated registry, and escrow deployed and runtime-verified. E5. | Real wallet gates and separate support deployment. Application deployment alone does not complete the SOW. |
-| D3-10 | Transaction evidence and end-to-end Testnet verification | Generated-key service lifecycle and real admin browser recovery confirmed on Testnet, including amendment and expiry. E5. | Real Dynamic consent and creator claims, reviewer acceptance, and direct support. |
+| D3-07 | Failure recovery | Exact-envelope bounded retries, unknown-outcome retention, archival restoration, signed maintenance, and expiry recovery implemented and tested. E5. | Separate support failures and reviewer acceptance. |
+| D3-08 | Automated security and failure tests | Contract, domain, signatures, routes, readiness, components, and real PostgreSQL failure/concurrency suites pass. E5. | Separate support tests and reviewer acceptance. |
+| D3-09 | Deployment documentation and final Testnet deployment | Settlement API, financial worker, media worker, creator and admin frontends, dedicated registry, and escrow deployed and runtime-verified. E5. | Separate support deployment and reviewer acceptance. Application deployment alone does not complete the SOW. |
+| D3-10 | Transaction evidence and end-to-end Testnet verification | Generated-key service lifecycle and real admin browser recovery confirmed on Testnet, including amendment and expiry. E5. | Reviewer acceptance and separate direct support. |
 
 D3 acceptance checklist:
 
@@ -158,22 +158,20 @@ The submitted weekly plan remains the scope reference. The current implementatio
 
 | Submitted week | Required output | Current gap |
 | --- | --- | --- |
-| Week 1 | Approved D1 and D2 specifications, contract architecture, integration map, Testnet configuration, treasury plan, security assumptions, and executable tests | D2 model exists. D1 batch, allocation, claim, expiry, and support specifications need completion. Approval is not recorded. |
-| Week 2 | Working settlement and creator-claim flow, contract tests, integration, balance and transaction evidence, reconciliation | D1 remains open. |
-| Week 3 | Contributor agreements, direct support, treasury controls, and creator/admin views | Agreement Testnet evidence exists. Current wallet verification, live treasury configuration, support, and full admin protection remain open. |
-| Week 4 | Integrated final deployment, complete tests, and technical evidence pack | Complete D1 and D2, then verify and package D3. |
+| Week 1 | Approved D1 and D2 specifications, contract architecture, integration map, Testnet configuration, treasury plan, security assumptions, and executable tests | Settlement specification, contracts, treasury configuration, and executable tests are complete in E5. Separate support specification and reviewer approval remain. |
+| Week 2 | Working settlement and creator-claim flow, contract tests, integration, balance and transaction evidence, reconciliation | D1 implementation and real Dynamic Testnet lifecycle verified in E5. Reviewer acceptance remains. |
+| Week 3 | Contributor agreements, direct support, treasury controls, and creator/admin views | Current wallet consent, dedicated treasury, protected settlement actions, and claims verified in E5. Separate support remains open. |
+| Week 4 | Integrated final deployment, complete tests, and technical evidence pack | Settlement rollout and evidence are complete. Add separate support and provider evidence, then obtain full SOW acceptance. |
 
 Next implementation checkpoints:
 
-1. Close current agreement browser verification and reconcile the wallet documentation with the actual Dynamic implementation.
-2. Specify the dedicated treasury, registry, and protected admin action set. Configure the intended Testnet environment and verify its signatures and thresholds.
-3. Specify and implement D1 batches, allocation, claimable USDC, wallet withdrawal, expiry, and reconciliation. Replace conflicting payout paths within that scope.
-4. Implement both D2 direct-support destinations as a separate payment flow.
-5. Complete D3 interfaces, failure tests, deployment, and continuous Testnet evidence. Track provider readiness separately.
+1. Obtain reviewer acceptance of the settlement specification and E5 evidence.
+2. Implement both D2 direct-support destinations as a separate payment flow.
+3. Finish the remaining D2 interface verification and D3 support integration. Track provider readiness separately.
 
-## Next implementation chunk: earnings settlement and creator claims
+## Earnings settlement and creator claims chunk
 
-Planned on 15 October 2026 against commit `fae2730`. Status: implementation in progress. The funded escrow contract and accounting integration are under verification. Deployment and real-wallet acceptance remain open.
+Planned on 15 October 2026 against commit `fae2730`. Implementation, real Dynamic browser verification, and final rollout are complete at `721fe67`. E5 records the evidence. Reviewer acceptance remains SET-24.
 
 The outcome is a complete Testnet journey from a contributor-approved agreement to a funded settlement batch, creator-authorized USDC receipt, expiry recovery, and reconciled records. This chunk covers D1-01 through D1-11 and the D3 interfaces, readiness, recovery, and evidence needed to operate that journey. Agreement browser verification and dedicated treasury configuration are prerequisites within this chunk. Direct fan support, provider adapters, and unrelated music-creation UX remain separate work.
 
@@ -229,7 +227,7 @@ Phase 0. Confirm scope and technical specification.
 
 Phase 1. Close the agreement and treasury prerequisites.
 
-- [ ] SET-03. Verify the current Dynamic Stellar wallet flow with two real contributor accounts: review, cancellation, acceptance, and amendment consent. Record the actual browser result rather than generated-key evidence alone.
+- [x] SET-03. Verify the current Dynamic Stellar wallet flow with two real contributor accounts: review, cancellation, acceptance, and amendment consent. Record the actual browser result rather than generated-key evidence alone.
 - [x] SET-04. Configure a dedicated Testnet treasury and finalized-agreement registry for the demonstrated environment. Verify three independent signers and a threshold requiring two.
 - [x] SET-05. Confirm that a funded batch can pin and verify the exact finalized agreement version, including historical versions still referenced by earnings.
 
@@ -258,7 +256,7 @@ Phase 4. Connect creator and administrator interfaces.
 Phase 5. Verify, deploy, and package evidence.
 
 - [x] SET-19. Pass the contract, signature, authorization, real PostgreSQL, concurrency, accounting, and failure tests below.
-- [ ] SET-20. Pass real-browser creator claim and admin authorization journeys, including wallet cancellation and successful signing.
+- [x] SET-20. Pass real-browser creator claim and admin authorization journeys, including wallet cancellation and successful signing.
 - [x] SET-21. Run the complete funded Testnet demonstration, including expiry recovery, duplicate attempts, and an amendment affecting only later earnings.
 - [x] SET-22. Back up the target database, apply migrations, deploy the contracts and financial worker, validate runtime configuration, and verify the final environment.
 - [x] SET-23. Package contract IDs, asset identity, batches, claim or balance IDs, transaction hashes, ledgers, explorer links, screenshots, test results, and reconciled totals. Update D1 and the covered D3 rows with evidence.
@@ -296,19 +294,19 @@ The chunk is functionally complete when that demonstration and all applicable te
 
 | Test group | Required result | Evidence position |
 | --- | --- | --- |
-| Finalized-split and invalid-split tests | Only exact confirmed splits settle. Invalid shares, wallets, totals, and versions fail. | Agreement validation is recorded in E1. Settlement tests remain open. |
-| Incomplete acceptance and unauthorized contributors | Missing consent and outsider signatures cannot finalize. | Historical agreement tests in E1. Current browser proof remains open. |
-| Dispute and amendment history | Blocked versions cannot finalize. New versions require fresh consent and preserve effective history. | Historical E1 and E2. Current UI verification remains open. |
+| Finalized-split and invalid-split tests | Only exact confirmed splits settle. Invalid shares, wallets, totals, and versions fail. | E1 plus E5 contract, domain, and PostgreSQL tests. Exact captured historical versions are checked before funding. |
+| Incomplete acceptance and unauthorized contributors | Missing consent and outsider signatures cannot finalize. | E1 and E5 authorization tests. Current Dynamic signatures and cancelled consent are independently verified in E5. |
+| Dispute and amendment history | Blocked versions cannot finalize. New versions require fresh consent and preserve effective history. | E1 and E2 retain dispute evidence. E5 verifies fresh Dynamic amendment consent, effective history, and unchanged funded entitlements. |
 | Duplicate approval | Identical retries do not add consent or duplicate events. Changed or replayed signatures fail. | Historical E1. |
-| Duplicate settlement and allocation | Repeated or concurrent batch submission cannot pay twice. Allocations conserve the batch amount. | Open for D1. |
-| Claimable balances and creator claim | Correct balances exist. Only the authorized beneficiary claims once. | Open for D1. |
-| Expiry and reclaim | Exact deadline rules hold. Claim and reclaim cannot both succeed for the same funds. | Open for D1. |
-| Wallet-signed withdrawal | Correct wallet and network authorize the exact action. Cancellation, altered transactions, and replay fail safely. | Open for D1. |
-| Trustline and insufficient balance | Unready wallets or insufficient funds fail without false confirmation or partial accounting. | New-flow evidence remains open. |
+| Duplicate settlement and allocation | Repeated or concurrent batch submission cannot pay twice. Allocations conserve the batch amount. | E5 contract replay tests, Testnet duplicate simulations, source uniqueness, and real PostgreSQL concurrency tests. |
+| Claimable balances and creator claim | Correct balances exist. Only the authorized beneficiary claims once. | E5 funded escrow records and seven real Testnet claims, including four through Dynamic. Unauthorized and repeated claims are rejected in tests. |
+| Expiry and reclaim | Exact deadline rules hold. Claim and reclaim cannot both succeed for the same funds. | E5 exact boundary and replay tests plus actual 30 USDC recovery through the admin browser. |
+| Wallet-signed withdrawal | Correct wallet and network authorize the exact action. Cancellation, altered transactions, and replay fail safely. | E5 verifies real provider approval, cancellation with zero signatures and submissions, same-hash retry, beneficiary receipts, and mismatch/replay tests. |
+| Trustline and insufficient balance | Unready wallets or insufficient funds fail without false confirmation or partial accounting. | E5 readiness tests and both actual Dynamic trustline transactions. Insufficient funding rolls back in contract tests. |
 | Direct support | Artist and contributor destinations receive the exact intended payment. Duplicate confirmations do not duplicate history. | Open for D2. |
-| Multisignature threshold | One signer fails. Two independent valid signers succeed. Wrong or altered envelopes fail. | Historical finalization evidence E1 and E2. Full protected-action coverage remains open. |
-| Failed settlement and retry | Failures retain truthful status. Uncertain results reconcile the original transaction before another attempt. | Agreement recovery tests in E1. D1 and support coverage remain open. |
-| Reconciliation | Backend totals and status match confirmed transactions, events, claims, and expiry outcomes. | Agreement confirmation evidence exists. Complete financial reconciliation remains open. |
+| Multisignature threshold | One signer fails. Two independent valid signers succeed. Wrong or altered envelopes fail. | E1 and E5 verify one-signer rejection and two-signer publication, funding, recovery, restoration, and maintenance authorization. |
+| Failed settlement and retry | Failures retain truthful status. Uncertain results reconcile the original transaction before another attempt. | E5 verifies exact-envelope retry bounds, uncertain-outcome retention, receipt mismatch, immutable audit rollback, and pruned-history refusal. Separate support remains open. |
+| Reconciliation | Backend totals and status match confirmed transactions, events, claims, and expiry outcomes. | E5 verifies receipts, event index, token balance, unique fees, external-batch discrepancies, and final conservation with zero outstanding. |
 
 ## Evidence register
 
@@ -337,7 +335,9 @@ Historical baseline findings from 14 October 2026, superseded for settlement by 
 | 14 October 2026 | Release review UI | Tests, browser flow, deployment, and served bundle verified | E4, commit `a21ea0b`. |
 | 14 October 2026 | SOW 2 alignment review | Source read and current gaps mapped | This tracker. No reviewer acceptance claimed. |
 
-| 15 October 2026 | SET-01 through SET-23 implementation and Testnet rollout | Implementation, automated checks, service lifecycle, admin browser recovery, and rollout verified. SET-03 and SET-20 remain open. | E5 records tested commit `3b4fa52`, deployment IDs, receipts, migrations, data preservation, and real-wallet limits. |
+| 15 October 2026 | SET-01 through SET-23 implementation and Testnet rollout | Implementation, automated checks, service lifecycle, admin browser recovery, and initial rollout verified. Real-wallet gates were open at this initial checkpoint and subsequently closed below. | E5 records tested commit `3b4fa52`, deployment IDs, receipts, migrations, data preservation, and real-wallet limits. |
+
+| 15 October 2026 | SET-03 and SET-20 real Dynamic follow-up | Both gates passed, including provider cancellation, four consent signatures, four claims, and unchanged historical entitlements. SET-01 through SET-23 complete. | E5 dynamic-browser.json and dynamic-deployment.json, commit `721fe67`. Reviewer acceptance remains separate. |
 
 For future entries, record the requirement IDs, tested commit, environment, result, evidence location, and remaining gap. Mark a deliverable accepted only after its checklist and source-required evidence are complete and acceptance is recorded.
 
@@ -347,4 +347,14 @@ The final binaries passed 11 contract tests. Server tests passed 110 with eight 
 
 E5 records the complete service Testnet lifecycle and real admin browser recovery. Independent reconciliation verified 200 USDC funded, 170 claimed, 30 recovered, zero outstanding, and zero escrow balance. Six lifecycle events and four contract-managed claim IDs are recorded. The deployed live contracts are separate from the synthetic demonstration contracts.
 
-SET-03 and SET-20 remain open because generated contributor keys and uploaded partial treasury signatures do not establish a real Dynamic wallet popup journey. SET-22 passed. All three Railway processes run commit `3b4fa52`, both Vercel frontends are ready, migrations and API access controls passed, the live event index is caught up, and existing database records match the pre-deployment audit. E5 contains deployment IDs and the cached reconciliation report. Reviewer acceptance and separate direct support are not claimed.
+The initial generated-key demonstration did not establish Dynamic wallet behavior. The follow-up real Dynamic Sandbox browser verification now closes SET-03 and SET-20. It covers two independent embedded wallets, exact original and amended consent, provider signing cancellation, unsigned withdrawal retry, all four confirmed claims, and automatic status updates. The original two 100 USDC batches remain historical evidence. The additional two 0.01 USDC batches bring the demonstration escrow totals to 200.02 funded, 170.02 claimed, 30 recovered, and zero outstanding. SET-22 passed. The initial three Railway deployments ran commit `3b4fa52`; the final rollout runs `721fe67`, both Vercel frontends are ready, migrations and API access controls passed, the live event index is caught up, and existing database records match the pre-deployment audit. E5 contains deployment IDs and the cached reconciliation report. Reviewer acceptance and separate direct support are not claimed.
+
+### Real Dynamic browser verification completed, 15 October 2026
+
+The in-app browser completed genuine Dynamic Sandbox authentication and embedded-wallet signing on the existing approved origin `http://localhost:3000`. A Chrome extension is not required for this flow. Static test accounts and signing reauthentication are enabled only in Sandbox. Live authentication retains environment `36b4587d-d6e3-4831-8a77-0d1b0de32e32`.
+
+[Dynamic browser evidence](settlement-evidence/dynamic-browser.json) independently verifies all four contributor consent signatures and the exact confirmed receipts for four claims. Cancelling Dynamic consent authorization left the amendment unsigned by that contributor. Cancelling withdrawal authorization left zero signatures and zero submissions. Retrying used the same prepared transaction hash and confirmed once. The listener contributor reached claims through the account's Your earnings link without artist activation.
+
+The test exposed and fixed missing scoped provider authorization and premature closing of reauthentication prompts. Commit `721fe67` centralizes wallet authorization across agreements, claims, transfers, checkout, and trustlines. All 85 client tests, client typecheck, and the production build pass. [Deployment verification](settlement-evidence/dynamic-deployment.json) records the final rollout and confirms the live bundle still uses Live authentication.
+
+SET-01 through SET-23 are complete. SET-24 remains reviewer acceptance. Separate direct support, provider adapters, and the rest of SOW 2 remain tracked in their own rows.
