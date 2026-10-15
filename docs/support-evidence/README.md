@@ -54,4 +54,10 @@ Run normal checks with `pnpm test`, `pnpm typecheck`, and `pnpm build`. Run the 
 
 ## Deployment
 
-Deployment verification is recorded separately in `deployment.json` after the migration, API readiness, worker runtime, and both Vercel builds are confirmed. Live Dynamic authentication retains its existing environment. Sandbox authentication is used only for the local browser demonstration.
+[Deployment verification](deployment.json) records implementation commit `2dbca88a718f0b8d0f8e77c69f3a2f11bbad5d8c`. The API, media worker, and financial worker are successful on Railway. Both Vercel frontends are ready. The support migration, immutable triggers, required indexes, API readiness, route authentication, CORS, served bundles, and financial-worker startup passed verification. The live browser also opened the artist Support dialog.
+
+A private PostgreSQL backup preceded rollout. Before-and-after hashes match for the existing users, recordings, releases, royalty records, agreements, and settlement batches. Production contains zero support payment fixtures or demonstration events. Live Dynamic authentication retains its existing environment; the served bundle contains no Sandbox environment. Sandbox authentication is used only for the local browser demonstration.
+
+The local disposable demonstration remains available for testing. Its artist and contributor records are distinct from production. Financial receipts and history are retained.
+
+![Deployed artist Support dialog](live-support.png)

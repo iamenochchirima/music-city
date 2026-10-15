@@ -1,0 +1,161 @@
+{
+  "verifiedAt": "2026-10-15T13:24:59.582Z",
+  "commit": "2dbca88a718f0b8d0f8e77c69f3a2f11bbad5d8c",
+  "services": [
+    {
+      "service": "media-worker",
+      "id": "4e7b907a-535d-4e11-a3fc-2cb44a78277f",
+      "status": "SUCCESS",
+      "commit": "2dbca88a718f0b8d0f8e77c69f3a2f11bbad5d8c"
+    },
+    {
+      "service": "server",
+      "id": "001dc962-cd71-4c80-be46-ee03f7c8e44f",
+      "status": "SUCCESS",
+      "commit": "2dbca88a718f0b8d0f8e77c69f3a2f11bbad5d8c"
+    },
+    {
+      "service": "financial-worker",
+      "id": "9c2e6634-21b3-49f5-b8df-d0e98755a852",
+      "status": "SUCCESS",
+      "commit": "2dbca88a718f0b8d0f8e77c69f3a2f11bbad5d8c"
+    }
+  ],
+  "frontends": [
+    {
+      "name": "client",
+      "id": "dpl_EdxMvfpSxNrd6xp7a3dzFyYqE69h",
+      "status": "READY",
+      "url": "v0-music-city-9k9550dh1-iamenochchirimas-projects.vercel.app",
+      "aliases": [
+        "music-city.vercel.app",
+        "v0-music-city-iamenochchirimas-projects.vercel.app"
+      ]
+    },
+    {
+      "name": "admin",
+      "id": "dpl_R1d3wRE7E2Jj1h1yBEr5aRmeAnEk",
+      "status": "READY",
+      "url": "music-city-admin-14ymtblez-iamenochchirimas-projects.vercel.app",
+      "aliases": [
+        "music-city-admin.vercel.app",
+        "music-city-admin-iamenochchirimas-projects.vercel.app"
+      ]
+    }
+  ],
+  "served": {
+    "checkedAt": "2026-10-15T13:22:07.156Z",
+    "frontends": [
+      {
+        "name": "client",
+        "url": "https://music-city.vercel.app",
+        "status": 200,
+        "assets": [
+          "https://music-city.vercel.app/assets/index-Cg5dTvvp.js"
+        ],
+        "supportUiPresent": true,
+        "privateVariablesExcluded": true,
+        "liveDynamicEnvironment": true,
+        "sandboxEnvironmentBundled": false
+      },
+      {
+        "name": "admin",
+        "url": "https://music-city-admin.vercel.app",
+        "status": 200,
+        "assets": [
+          "https://music-city-admin.vercel.app/assets/index-CjU1magy.js"
+        ],
+        "supportUiPresent": true,
+        "privateVariablesExcluded": true
+      }
+    ],
+    "api": [
+      {
+        "path": "/health/ready",
+        "status": 200
+      },
+      {
+        "path": "/support",
+        "status": 401
+      },
+      {
+        "path": "/admin/support",
+        "status": 401
+      },
+      {
+        "path": "/support/recipients/artists/not-a-profile",
+        "status": 404
+      }
+    ],
+    "cors": true
+  },
+  "configuration": {
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "assetCode": "USDC",
+    "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  },
+  "database": {
+    "checkedAt": "2026-10-15T13:22:34.024Z",
+    "migration": "2026-10-15-direct-support",
+    "triggers": [
+      "support_event_immutable",
+      "support_payment_retained"
+    ],
+    "indexes": [
+      "support_events_pkey",
+      "support_one_active_sender",
+      "support_payments_pkey",
+      "support_payments_sender_request_key_key",
+      "support_payments_transaction_hash_key",
+      "support_recipient_idx",
+      "support_reconcile_idx"
+    ],
+    "counts": {
+      "payments": 0,
+      "events": 0
+    },
+    "existingRecordsUnchanged": true,
+    "comparedTables": [
+      "users",
+      "tracks",
+      "releases",
+      "royalty_splits",
+      "royalty_ledger",
+      "royalty_payouts",
+      "contributor_agreements",
+      "agreement_versions",
+      "agreement_responses",
+      "agreement_events",
+      "agreement_finalizations",
+      "settlement_batches"
+    ],
+    "backupTaken": true
+  },
+  "worker": {
+    "started": true,
+    "observedCycleErrors": false,
+    "intervalSeconds": 10
+  },
+  "tests": {
+    "server": {
+      "passed": 119,
+      "skipped": 9
+    },
+    "supportPostgres": {
+      "passed": 11,
+      "skipped": 0
+    },
+    "client": {
+      "passed": 96,
+      "files": 25
+    },
+    "admin": {
+      "passed": 16,
+      "files": 4
+    },
+    "workspaceTypecheck": "passed",
+    "productionBuilds": "passed"
+  },
+  "realTransfers": "Two payments through Dynamic Sandbox on real Stellar Testnet, recorded separately in testnet.json. No production payment records or synthetic fixtures created.",
+  "reviewerAcceptance": "pending"
+}
