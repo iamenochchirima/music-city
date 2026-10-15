@@ -1,0 +1,215 @@
+{
+  "verifiedAt": "2026-10-15T07:41:44.679Z",
+  "testedCommit": "3b4fa522c7d95632a11810104288b513d8c234ac",
+  "network": "Stellar Testnet",
+  "railway": [
+    {
+      "service": "server",
+      "deploymentId": "8045cb3e-1b74-48b9-91c0-f885ffd007da",
+      "status": "SUCCESS",
+      "commit": "3b4fa522c7d95632a11810104288b513d8c234ac"
+    },
+    {
+      "service": "media-worker",
+      "deploymentId": "65b93fb9-db54-4dd3-8fa7-a0a74c443299",
+      "status": "SUCCESS",
+      "commit": "3b4fa522c7d95632a11810104288b513d8c234ac"
+    },
+    {
+      "service": "financial-worker",
+      "deploymentId": "8ae06280-5503-4883-a809-9f54a3000d8e",
+      "status": "SUCCESS",
+      "commit": "3b4fa522c7d95632a11810104288b513d8c234ac"
+    }
+  ],
+  "vercel": [
+    {
+      "name": "client",
+      "id": "dpl_H7rVSb2sPsnVp39MYTC2mFXD3P3F",
+      "status": "READY",
+      "url": "v0-music-city-8cmu9myuz-iamenochchirimas-projects.vercel.app",
+      "aliases": [
+        "music-city.vercel.app",
+        "v0-music-city-iamenochchirimas-projects.vercel.app"
+      ]
+    },
+    {
+      "name": "admin",
+      "id": "dpl_4H2AQFL6TT2eeUbKXvHA1U6hxLRF",
+      "status": "READY",
+      "url": "music-city-admin-9ui9mblbq-iamenochchirimas-projects.vercel.app",
+      "aliases": [
+        "music-city-admin.vercel.app",
+        "music-city-admin-iamenochchirimas-projects.vercel.app"
+      ]
+    }
+  ],
+  "database": {
+    "preDeploymentBackupArchiveReadable": true,
+    "existingRecordsPreserved": true,
+    "comparison": {
+      "before": "2026-10-15T07:34:39.941Z",
+      "after": "2026-10-15T07:40:18.189Z",
+      "tables": {
+        "users": {
+          "count": 6,
+          "sha256": "efdfdc4388627d8ea718d08b672a2c8ab8df3397f9d65f531b1d0ef9c1b4702a"
+        },
+        "tracks": {
+          "count": 3,
+          "sha256": "48802eccb4160f9daedadf09d551b29e9ca180cae8c47daf55038cb54c3d9400"
+        },
+        "releases": {
+          "count": 2,
+          "sha256": "9921eb1e148b3984ba0e11088146ae4058c13c79ab3c95e3d40f50ba78557814"
+        },
+        "royalty_splits": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "royalty_ledger": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "royalty_payouts": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "contributor_agreements": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "agreement_versions": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "agreement_responses": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "agreement_events": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "agreement_finalizations": {
+          "count": 0,
+          "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      }
+    },
+    "migrations": [
+      {
+        "name": "2026-10-15-earnings-settlement"
+      },
+      {
+        "name": "2026-10-15-settlement-chain-events"
+      }
+    ]
+  },
+  "runtime": {
+    "checkedAt": "2026-10-15T07:39:55.405Z",
+    "migrations": [
+      {
+        "name": "2026-10-15-earnings-settlement"
+      },
+      {
+        "name": "2026-10-15-settlement-chain-events"
+      }
+    ],
+    "relations": [
+      {
+        "table_name": "settlement_batches"
+      },
+      {
+        "table_name": "settlement_chain_cursors"
+      },
+      {
+        "table_name": "settlement_chain_events"
+      },
+      {
+        "table_name": "settlement_events"
+      },
+      {
+        "table_name": "settlement_reconciliation_snapshots"
+      },
+      {
+        "table_name": "settlement_reservations"
+      }
+    ],
+    "snapshots": [
+      {
+        "payload": {
+          "ok": true,
+          "config": {
+            "assetCode": "USDC",
+            "contractId": "CAQNSYYWEMMEYKB4JTSZRKBIQP4MSWURA2FMCBDVPUQ22ENI2BGCKXNW",
+            "registryId": "CDIKALTGUF3XQGHCHUKH3IFNFFRE4ZGMCVTOGO3HUC654WS2XQZQQ3SX",
+            "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "networkPassphrase": "Test SDF Network ; September 2015"
+          },
+          "checkedAt": "2026-10-15T07:39:41.939Z",
+          "openUnits": "0",
+          "eventIndex": {
+            "caughtUp": true,
+            "checkedAt": "2026-10-15T07:39:39.433Z",
+            "indexedLedger": 5205278,
+            "unknownBatchIds": []
+          },
+          "fundedUnits": "0",
+          "claimedUnits": "0",
+          "surplusUnits": "0",
+          "discrepancies": [],
+          "reclaimedUnits": "0",
+          "escrowBalanceUnits": "0",
+          "networkFeeXlmUnits": "0"
+        },
+        "error": null,
+        "updated_at": "2026-10-15T07:39:41.941Z"
+      }
+    ],
+    "cursors": [
+      {
+        "deployment_ledger": "5205123",
+        "indexed_ledger": "5205281",
+        "caught_up": true,
+        "checked_at": "2026-10-15T07:39:51.997Z",
+        "error": null
+      }
+    ],
+    "apiReady": true,
+    "unauthenticatedCreatorStatus": 401,
+    "unauthenticatedAdminStatus": 401,
+    "servedClientClaimCode": true,
+    "servedAdminReconciliationCode": true
+  },
+  "tests": {
+    "contract": {
+      "passed": 11
+    },
+    "server": {
+      "passed": 110,
+      "skipped": 8
+    },
+    "client": {
+      "passed": 79
+    },
+    "admin": {
+      "passed": 16
+    },
+    "postgres": {
+      "metadata": 10,
+      "publication": 9,
+      "agreements": 20,
+      "settlements": 15
+    },
+    "workspaceTypecheck": "passed",
+    "workspaceBuild": "passed"
+  },
+  "remainingGates": [
+    "SET-03: real Dynamic contributor consent and amendment browser journeys",
+    "SET-20: real Dynamic creator claim and wallet cancellation",
+    "SET-24: reviewer acceptance; separate direct-support/provider scope not completed"
+  ]
+}

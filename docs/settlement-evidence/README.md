@@ -18,6 +18,7 @@ The actual admin interface prepared recovery, verified one then two independent 
 - [One signature](admin-recovery-one-signature.png)
 - [Two signatures](admin-recovery-two-signatures.png)
 - [Confirmed recovery](admin-recovery-confirmed.png)
+- [Independent reconciliation displayed in admin](admin-reconciliation-confirmed.png)
 
 The browser used the official local admin bootstrap and login routes against the dedicated demonstration database. Signatures were generated from disposable Testnet keys and uploaded through the interface. This does not verify a Dynamic wallet popup. A development reload also occurred during confirmation, so this capture alone does not prove uninterrupted automatic browser updates.
 
@@ -29,7 +30,7 @@ Real contributor review, cancellation, acceptance, amendment consent, and creato
 
 The API and financial worker require the same contract, registry, treasury, asset, network, and deployment ledger. The worker indexes successful contract events from that ledger, reconciles persisted attempts, and caches a global report. An incomplete index, unknown batch, missing receipt, stale report, or inconsistent token balance cannot appear as verified.
 
-The application rollout record will be added after actual runtime verification. The existence of deployed contracts alone does not prove application rollout.
+[Deployment verification](deployment.json) records commit `3b4fa522c7d95632a11810104288b513d8c234ac`, successful API and both worker deployments, both ready Vercel frontends, migrations, API access checks, served frontend code, and a caught-up worker report. The fresh live escrow has zero obligations and zero balance. Existing records have identical before-and-after hashes. The pre-deployment backup archive was checked with `pg_restore --list`. The actual funded lifecycle is recorded against the separate demonstration contracts above.
 
 ## Automated verification
 

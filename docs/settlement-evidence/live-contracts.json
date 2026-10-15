@@ -1,5 +1,5 @@
 {
-  "status": "contracts_deployed_application_rollout_pending",
+  "status": "contracts_and_application_deployed_testnet",
   "verifiedAt": "2026-10-15T07:26:44.067Z",
   "environment": "Railway production, Stellar Testnet",
   "networkPassphrase": "Test SDF Network ; September 2015",
@@ -131,5 +131,6 @@
       "ledger": 5205123,
       "explorerUrl": "https://stellar.expert/explorer/testnet/tx/0922bfece4135518f7b13dcd556b0fdd012176be87a15faaf6d8f900d6996e6e"
     }
-  }
+  },
+  "applicationEvidence": "deployment.json"
 }
