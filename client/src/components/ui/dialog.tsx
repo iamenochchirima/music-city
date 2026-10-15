@@ -10,6 +10,7 @@ export function Dialog({
   busy = false,
   className,
   hideTitle = false,
+  suspended = false,
 }: {
   title: string;
   description?: string;
@@ -18,6 +19,7 @@ export function Dialog({
   busy?: boolean;
   className?: string;
   hideTitle?: boolean;
+  suspended?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const restoreFocus = useRef(document.activeElement as HTMLElement | null);
@@ -25,7 +27,6 @@ export function Dialog({
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     const dialog = ref.current!;
-    dialog.showModal();
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -33,6 +34,11 @@ export function Dialog({
       if (restoreFocus.current?.isConnected) restoreFocus.current.focus();
     };
   }, []);
+  useEffect(() => {
+    const dialog = ref.current!;
+    if (suspended) dialog.close();
+    else if (!dialog.open) dialog.showModal();
+  }, [suspended]);
   return createPortal(
     <dialog
       ref={ref}

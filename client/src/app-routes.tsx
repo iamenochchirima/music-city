@@ -1,3 +1,4 @@
+import { SupportHistory } from "@/features/support/support-history";
 import { ReferralJoin } from "@/features/referrals/referral-join";
 import { ReferralsOverview } from "@/features/referrals/referrals-overview";
 import LandingPage from "@/app/page";
@@ -273,6 +274,7 @@ export const AppRoutes = () => (
       }
     />
     <Route path="/join" element={<ReferralJoin />} />
+    <Route path="/account/support" element={<PageContainer><div className="py-10"><SupportHistory /></div></PageContainer>} />
     <Route path="/account/referrals" element={<PageContainer><div className="py-10"><ReferralsOverview /></div></PageContainer>} />
     <Route path="/account/playlists" element={<AccountPlaylistsPage />} />
     <Route path="/account/agreements" element={<PageContainer><div className="py-10"><AgreementsOverview /></div></PageContainer>} />

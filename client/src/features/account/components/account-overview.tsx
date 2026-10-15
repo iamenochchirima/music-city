@@ -329,6 +329,7 @@ export const AccountOverview = () => {
 
       <div className="space-y-6">
         <WalletOverviewCard />
+        <Button asChild variant="outline"><Link href="/account/support">Support history</Link></Button>
 
         <Card className="border-white/10 bg-white/5 text-white shadow-none">
           <CardHeader>

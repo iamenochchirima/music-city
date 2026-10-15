@@ -1,3 +1,4 @@
+import { TrackSupport } from "@/features/support/support-controls";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -273,6 +274,7 @@ export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
             </div>
           </div>
 
+          <TrackSupport trackId={track.id} />
           {track.description ? (
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.22em] text-slate-500">

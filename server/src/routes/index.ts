@@ -1,3 +1,5 @@
+import { adminSupportRouter } from "../modules/support/admin-support.router.js";
+import { supportRouter } from "../modules/support/support.router.js";
 import { settlementsRouter, adminSettlementsRouter } from "../modules/settlements/settlements.router.js";
 import { referralsRouter, adminReferralsRouter } from "../modules/referrals/referrals.router.js";
 import { sponsorshipsRouter, adminSponsorshipsRouter } from "../modules/sponsorships/sponsorships.router.js";
@@ -42,6 +44,8 @@ apiRouter.use("/playback", playbackRouter);
 apiRouter.use("/playlists", playlistsRouter);
 apiRouter.use("/media", mediaRouter);
 apiRouter.use("/payments", paymentsRouter);
+apiRouter.use("/support", supportRouter);
+apiRouter.use("/admin/support", adminSupportRouter);
 apiRouter.use("/releases", releasesRouter);
 apiRouter.use("/royalties", royaltiesRouter);
 apiRouter.use("/agreements", agreementsRouter);

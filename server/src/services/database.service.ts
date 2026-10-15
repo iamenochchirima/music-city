@@ -1,3 +1,4 @@
+import { supportSchemaStatements } from "../modules/support/support-schema.js";
 import { settlementChainEventSchemaStatements } from "../modules/settlements/chain-event-schema.js";
 import { settlementSchemaStatements } from "../modules/settlements/settlement-schema.js";
 import { publicationSchemaStatements } from "../modules/publication/publication-schema.js";
@@ -407,6 +408,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-15-direct-support", statements: supportSchemaStatements },
   { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
   { name: "2026-10-11-early-user-sponsorship-capacity", statements: sponsorshipCapacityMigrationStatements },
@@ -897,6 +899,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-15-direct-support", migrationName: "2026-10-15-direct-support", relations: ["support_payments", "support_events"], indexes: ["support_one_active_sender", "support_recipient_idx", "support_reconcile_idx"], statements: supportSchemaStatements },
   {
     name: "base-core",
     relations: [

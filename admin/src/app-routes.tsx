@@ -1,3 +1,4 @@
+import { AdminSupportPage } from "@/features/support/support-page";
 import { RoyaltyLedgerPage, TreasuryAccountPage } from "@/features/settlements/financial-history";
 import { AdminSettlementsPage } from "@/features/settlements/settlements-page";
 import { AdminReferralsPage } from "@/features/referrals/referrals-page";
@@ -49,6 +50,7 @@ import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/console/support", label: "Fan support", description: "Direct USDC payments", icon: Wallet },
   { href: "/console/sponsorships", label: "Artist sponsorship", description: "Early-user discount", icon: Ticket },
   { href: "/console/referrals", label: "Referrals", description: "Artist registration", icon: ShieldCheck },
   { href: "/console/settlements", label: "Settlements", description: "Fund and reconcile earnings", icon: ShieldCheck },
@@ -1758,6 +1760,7 @@ export const AppRoutes = () => {
       />
       <Route path="/console/referrals" element={<ProtectedRoute><SidebarLayout><AdminReferralsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/sponsorships" element={<ProtectedRoute><SidebarLayout><AdminSponsorshipsPage /></SidebarLayout></ProtectedRoute>} />
+      <Route path="/console/support" element={<ProtectedRoute><SidebarLayout><AdminSupportPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/settlements" element={<ProtectedRoute><SidebarLayout><AdminSettlementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/agreements" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route

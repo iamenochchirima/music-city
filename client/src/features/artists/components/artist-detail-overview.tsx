@@ -1,3 +1,4 @@
+import { ArtistSupport } from "@/features/support/support-controls";
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -175,6 +176,8 @@ export const ArtistDetailOverview = ({ artistId }: { artistId: string }) => {
               {profile.followerCount === 1 ? "" : "s"}
             </p>
           </div>
+          <div className="flex flex-wrap gap-3">
+          <ArtistSupport artistId={profile.id} />
           {session ? (
             <Button
               variant={isFollowing ? "default" : "outline"}
@@ -190,6 +193,7 @@ export const ArtistDetailOverview = ({ artistId }: { artistId: string }) => {
               {isFollowing ? "Following" : "Follow artist"}
             </Button>
           ) : null}
+          </div>
         </div>
       </section>
 
