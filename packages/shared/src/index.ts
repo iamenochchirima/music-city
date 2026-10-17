@@ -18,3 +18,5 @@ export * from "./wallet.js";
 export * from "./referrals.js";
 export * from "./settlements.js";
 export * from "./support.js";
+
+export * from "./agreement-views.js";

@@ -78,3 +78,10 @@ export const finalizationIntegrityStatements = [
   $$`,
   `CREATE TRIGGER agreement_effective_retained BEFORE UPDATE ON contributor_agreements FOR EACH ROW EXECUTE FUNCTION retain_effective_agreement()`,
 ];
+
+export const agreementRecoveryStatements = [
+  `ALTER TABLE agreement_finalizations ADD COLUMN checked_at TIMESTAMPTZ,
+    ADD COLUMN submission_count INTEGER NOT NULL DEFAULT 0 CHECK(submission_count >= 0),
+    ADD COLUMN last_submitted_at TIMESTAMPTZ`,
+  `CREATE INDEX agreement_finalization_recovery ON agreement_finalizations(status,checked_at)`,
+];

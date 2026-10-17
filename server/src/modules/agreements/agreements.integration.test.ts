@@ -129,6 +129,33 @@ test("PostgreSQL contributor agreement workflow", { skip: !testUrl }, async t =>
       assert.equal(record.effectiveVersion,null);
       await assert.rejects(agreementsService.get(id,outsider.publicKey()));
     });
+    await t.test("removed contributors retain only their submitted versions and authorized context",async()=>{
+      const v=await create(),id=v.proposal.agreementId;
+      await assert.rejects(agreementsService.get(id,b.publicKey()),/not been sent/);
+      assert.equal((await agreementsService.list(b.publicKey())).some(x=>x.id===id),false);
+      await agreementsService.submit(id,a.publicKey());
+      const c=await agreementsService.challenge(id,b.publicKey(),{action:"reject",reason:"Revise attribution"});
+      await agreementsService.respond(id,b.publicKey(),{challengeId:c.id,signedTransaction:sign(c.transaction,b)});
+      await agreementsService.revise(id,a.publicKey(),{recipients:[{walletAddress:a.publicKey(),role:"artist",shareBps:8000},{walletAddress:outsider.publicKey(),role:"producer",shareBps:2000}],terms:"New private terms",resolution:"Contributor removed"},1);
+      await assert.rejects(agreementsService.submit(id,a.publicKey(),1),/agreement changed/);
+      await agreementsService.submit(id,a.publicKey(),2);
+      const old=await agreementsService.get(id,b.publicKey());
+      assert.equal(old.currentVersion,1); assert.equal(old.versions.length,1);
+      assert.ok(!JSON.stringify(old).includes("New private terms"));
+      assert.equal(old.permissions.accept,false);assert.equal(old.permissions.revise,false);
+      assert.equal(old.context.track.title,"Untitled recording");
+      const summary=(await agreementsService.list(b.publicKey())).find(x=>x.id===id)!;
+      assert.equal(summary.current.proposal.version,1);
+      assert.equal((await agreementsService.get(id,outsider.publicKey())).currentVersion,2);
+    });
+    await t.test("same draft preparation and submission retries preserve a single agreement and audit event",async()=>{
+      const v=await create(),id=v.proposal.agreementId;
+      const retry=await agreementsService.create(a.publicKey(),{trackId:v.proposal.trackId,...terms});
+      assert.equal(retry.proposal.agreementId,id);
+      await agreementsService.submit(id,a.publicKey(),1);
+      await agreementsService.submit(id,a.publicKey(),1);
+      assert.equal((await agreementsService.get(id,a.publicKey())).events.filter(e=>e.action==='proposed').length,1);
+    });
     await t.test("a release-bound track snapshots its owned release into the signed proposal", async () => {
       const trackId = randomUUID(), releaseId = randomUUID();
       await databaseService.transaction(async client => {

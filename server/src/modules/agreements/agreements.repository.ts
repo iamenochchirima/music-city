@@ -1,6 +1,7 @@
 import type { PoolClient } from "pg";
-import { agreementVersionSchema, type AgreementVersion } from "@music-city/shared";
+import { agreementVersionSchema, type AgreementVersion, type AgreementSummary } from "@music-city/shared";
 import { databaseService } from "../../services/database.service.js";
+import { agreementContext, visibleAgreementVersions } from "./agreement-views.js";
 import { HttpError } from "../../utils/http-error.js";
 
 export type AgreementRoot = { id: string; track_id: string; owner_wallet: string; current_version: number; effective_version: number | null };
@@ -40,10 +41,18 @@ export const agreementsRepository = {
       return work(client,root,await readVersion(client,id,root.current_version));
     });
   },
-  async list(actor: string) {
+  async list(actor: string): Promise<AgreementSummary[]> {
     return databaseService.transaction(async client => {
-      const rows = await client.query("SELECT a.*,v.payload FROM contributor_agreements a JOIN agreement_versions v ON v.agreement_id=a.id AND v.version=a.current_version WHERE a.owner_wallet=$1 OR EXISTS(SELECT 1 FROM agreement_contributors c WHERE c.agreement_id=a.id AND c.wallet_address=$1) ORDER BY a.created_at DESC", [actor]);
-      return rows.rows.map(row => ({ id: row.id as string, effectiveVersion: row.effective_version as number | null, current: agreementVersionSchema.parse(row.payload) }));
+      const roots = await client.query<AgreementRoot>("SELECT a.* FROM contributor_agreements a WHERE a.owner_wallet=$1 OR EXISTS(SELECT 1 FROM agreement_contributors c WHERE c.agreement_id=a.id AND c.wallet_address=$1) ORDER BY a.created_at DESC LIMIT 100", [actor]);
+      const summaries: AgreementSummary[] = [];
+      for (const root of roots.rows) {
+        const rows = await client.query<{payload: AgreementVersion}>("SELECT payload FROM agreement_versions WHERE agreement_id=$1 ORDER BY version",[root.id]);
+        const versions = visibleAgreementVersions(rows.rows.map(r=>agreementVersionSchema.parse(r.payload)),actor,root.owner_wallet);
+        const current = versions.at(-1);
+        if (!current) continue;
+        summaries.push({id:root.id,current,effectiveVersion:versions.some(v=>v.proposal.version===root.effective_version)?root.effective_version:null,context:await agreementContext(client,versions)});
+      }
+      return summaries;
     });
   },
 };

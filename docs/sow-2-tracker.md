@@ -430,10 +430,10 @@ Complete each phase with its focused checks before proceeding. Update these boxe
 
 #### Phase 1. Establish the verification environment and response contracts
 
-- [ ] AGR-03 Restore an isolated local PostgreSQL, API, client, admin, and financial worker using the existing review setup. Preserve prior demonstration receipts. Use Dynamic Sandbox and Stellar Testnet only for mutable verification.
+- [x] AGR-03 Restore an isolated local PostgreSQL, API, client, admin, and financial worker using the existing review setup. Preserve prior demonstration receipts. Use Dynamic Sandbox and Stellar Testnet only for mutable verification.
 - [ ] AGR-04 Prepare an owner, a registered listener contributor, an outsider, an ordinary admin, a super admin, and three independent Testnet treasury signers. Verify network, registry, thresholds, and required balances. Use the ordinary application sign-in flows.
-- [ ] AGR-05 Define typed summary and detail responses with authorized recording title, owner identity, contributor identity, current version, active version, response status, and next permitted actions. Keep display metadata outside the signed canonical proposal.
-- [ ] AGR-06 Define and enforce visibility by role and version. Owners and authorized admins can inspect the full record. Contributors retain versions they participated in. Historical membership alone must not reveal future proposals they were removed from. Keep unrelated wallets out. Do not change valid historical consent.
+- [x] AGR-05 Define typed summary and detail responses with authorized recording title, owner identity, contributor identity, current version, active version, response status, and next permitted actions. Keep display metadata outside the signed canonical proposal.
+- [x] AGR-06 Define and enforce visibility by role and version. Owners and authorized admins can inspect the full record. Contributors retain versions they participated in. Historical membership alone must not reveal future proposals they were removed from. Keep unrelated wallets out. Do not change valid historical consent.
 
 #### Phase 2. Make creation and review straightforward
 
@@ -503,3 +503,7 @@ For every matrix row, record the date, source commit, environment, actor role, b
 The final evidence set must include a baseline, dated scenario results, desktop and mobile screenshots, real Dynamic consent proof, two-signer finalization receipts, registry read-back, historical entitlement comparison, automated test results, and deployment verification. Classify each result as real browser and chain, mocked transport, or unverified. Existing E1, E2, E5, and E6 remain supporting evidence with their original dates.
 
 This chunk is complete only when AGR-03 through AGR-29 and the applicable CU scenarios pass. A written plan, successful build, manually seeded final state, or historical screenshot does not establish completion. If real authentication or signing is unavailable, continue independent implementation and testing, record the exact remaining gap, and leave its verification box open. Reviewer acceptance and broader SOW 2 completion remain separate.
+
+### Agreement implementation checkpoint, 17 October 2026
+
+The local review database, API, client, admin, and financial worker are restored. Authorized summary/detail responses now contain recording and registered contributor names without changing signed proposal data. Version-level visibility excludes unpublished drafts and future proposals from removed contributors. Fifteen agreement checks and ten finalization checks passed against disposable PostgreSQL, with mocked chain transport in the latter suite. Server typecheck passed. Current browser lifecycle and rollout verification remain open.
