@@ -135,6 +135,44 @@ describe("admin agreement lifecycle", () => {
       "admin-test-session",
     );
   });
+  it("uses an active retry even when its UUID sorts before an expired attempt", async () => {
+    const original = mocks.get.getMockImplementation()!;
+    mocks.get.mockImplementation(async (path: string) => {
+      const value = await original(path);
+      if (value.finalizations)
+        value.finalizations = [
+          {
+            ...value.finalizations[0],
+            id: "a-new",
+            createdAt: "2026-10-17T14:00:00Z",
+          },
+          {
+            ...value.finalizations[0],
+            id: "z-old",
+            status: "expired",
+            createdAt: "2026-10-17T13:00:00Z",
+          },
+        ];
+      return value;
+    });
+    const user = open();
+    await screen.findByRole("heading", { name: "Demo recording" });
+    await user.click(screen.getByText("Paste signed transaction"));
+    await user.type(
+      screen.getByLabelText("Signed transaction XDR"),
+      "retry-envelope",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Add verified signature" }),
+    );
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith(
+        `/agreements/${version.proposal.agreementId}/finalizations/a-new/signatures`,
+        { signedTransaction: "retry-envelope" },
+        "admin-test-session",
+      ),
+    );
+  });
   it("requires the reviewed version and hash when preparing finalization", async () => {
     hasAttempt = false;
     version.state = "ready";

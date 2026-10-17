@@ -172,7 +172,7 @@ export const agreementsService = {
         throw new HttpError(403, "This proposal has not been sent to you");
       const visibleNumbers = visible.map((v) => v.proposal.version);
       const attempts = await client.query(
-        "SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 ORDER BY version,id",
+        "SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 ORDER BY version,payload->>'createdAt',id",
         [id],
       );
       const selected = visible.at(-1)!;

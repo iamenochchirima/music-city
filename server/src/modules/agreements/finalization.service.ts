@@ -60,7 +60,7 @@ export const finalizationService = {
   async detail(id: string, actor: string) {
     return agreementsRepository.locked(id,actor,async (client,root) => {
       const versions = await client.query("SELECT payload FROM agreement_versions WHERE agreement_id=$1 ORDER BY version",[id]);
-      const attempts = await client.query("SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 ORDER BY version,id",[id]);
+      const attempts = await client.query("SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 ORDER BY version,payload->>'createdAt',id",[id]);
       const events = await client.query("SELECT id,version,actor_wallet,action,payload,created_at FROM agreement_events WHERE agreement_id=$1 ORDER BY id",[id]);
       return { id,currentVersion: root.current_version,effectiveVersion: root.effective_version,versions: versions.rows.map(r => r.payload),finalizations: attempts.rows.map(r => agreementFinalizationSchema.parse(r.payload)),events: events.rows,context:await agreementContext(client,versions.rows.map(r=>r.payload)) };
     },true);

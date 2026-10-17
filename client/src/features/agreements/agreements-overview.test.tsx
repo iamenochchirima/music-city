@@ -146,6 +146,7 @@ beforeEach(() => {
   mocks.save.mockResolvedValue({ version });
   mocks.challenge.mockResolvedValue({
     id: "challenge",
+    expiresAt: new Date(Date.now() + 300000).toISOString(),
     transaction: "exact-challenge",
     proposalHash: version.proposalHash,
     networkPassphrase: version.proposal.networkPassphrase,
@@ -321,6 +322,26 @@ describe("agreement lifecycle UI", () => {
     );
     expect(mocks.sign).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+  it("allows fresh signing after an expired response was confirmed unrecorded", async () => {
+    mocks.challenge.mockResolvedValueOnce({
+      id: "expired",
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+      transaction: "exact-challenge",
+      proposalHash: version.proposalHash,
+      networkPassphrase: version.proposal.networkPassphrase,
+    });
+    mocks.respond.mockRejectedValueOnce(
+      new Error("Agreement response challenge expired"),
+    );
+    const user = open();
+    await user.click(
+      await screen.findByRole("button", { name: "Accept and sign" }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain("expired");
+    await user.click(screen.getByRole("button", { name: "Accept and sign" }));
+    await waitFor(() => expect(mocks.challenge).toHaveBeenCalledTimes(2));
+    expect(mocks.sign).toHaveBeenCalledTimes(2);
   });
   it("opens an existing agreement directly from its recording context", async () => {
     mocks.forTrack.mockResolvedValue({ id: detail.id });

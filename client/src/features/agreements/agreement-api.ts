@@ -74,6 +74,7 @@ export const agreementApi = {
     request<{
       id: string;
       transaction: string;
+      expiresAt: string;
       proposalHash: string;
       networkPassphrase: string;
     }>(token, `/${id}/challenges`, "POST", body),

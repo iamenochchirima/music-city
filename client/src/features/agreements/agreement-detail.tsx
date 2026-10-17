@@ -59,6 +59,7 @@ export function AgreementDetailPanel({
     action: AgreementAction;
     reason: string;
     challengeId: string;
+    expiresAt: string;
     signedTransaction: string;
   } | null>(null);
   const lock = useRef(false);
@@ -80,10 +81,23 @@ export function AgreementDetailPanel({
   const owner = version.proposal.ownerWallet === session?.walletAddress;
   const attempt = detail.finalizations
     .filter((a) => a.version === version.proposal.version)
-    .at(-1);
+    .sort((a, b) => {
+      const active = (status: string) =>
+        ["awaiting_signatures", "submitting", "submitted"].includes(status)
+          ? 1
+          : 0;
+      return (
+        active(b.status) - active(a.status) ||
+        (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+      );
+    })[0];
   const name = (wallet: string) =>
     detail.context.people.find((p) => p.walletAddress === wallet)?.name ??
-    "Contributor";
+    (wallet.startsWith("admin:")
+      ? "Administrator"
+      : wallet.startsWith("worker:")
+        ? "System"
+        : "Contributor");
   async function run(work: () => Promise<void>) {
     if (lock.current) return;
     lock.current = true;
@@ -164,6 +178,7 @@ export function AgreementDetailPanel({
             action,
             reason: text,
             challengeId: challenge.id,
+            expiresAt: challenge.expiresAt,
             signedTransaction,
           };
           pending.current = signed;
@@ -199,8 +214,12 @@ export function AgreementDetailPanel({
           !saved.versions.some((v) =>
             v.responses.some((r) => r.challengeId === signed!.challengeId),
           )
-        )
+        ) {
+          // A successful read found no recorded response; an expired envelope cannot be retried.
+          if (Date.parse(signed.expiresAt) <= Date.now())
+            pending.current = null;
           throw e;
+        }
       }
       pending.current = null;
       setChoice(null);

@@ -59,7 +59,16 @@ export function AdminAgreementsPage() {
   const canOperate = session?.role === "super_admin";
   const attempt = detail?.finalizations
     .filter((a) => a.version === detail.currentVersion)
-    .at(-1);
+    .sort((a, b) => {
+      const active = (status: string) =>
+        ["awaiting_signatures", "submitting", "submitted"].includes(status)
+          ? 1
+          : 0;
+      return (
+        active(b.status) - active(a.status) ||
+        (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+      );
+    })[0];
   useEffect(() => {
     setError(null);
     setResolution("");
@@ -147,8 +156,16 @@ export function AdminAgreementsPage() {
             </span>
           )}
       </header>
-      {busy && <p role="status" className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle className="size-4 animate-spin"/>Working…</p>}
-    {error && (
+      {busy && (
+        <p
+          role="status"
+          className="flex items-center gap-2 text-sm text-slate-400"
+        >
+          <LoaderCircle className="size-4 animate-spin" />
+          Working…
+        </p>
+      )}
+      {error && (
         <p
           role="alert"
           className="rounded border border-red-500/30 p-3 text-sm text-red-200"
