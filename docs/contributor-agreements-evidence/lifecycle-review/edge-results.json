@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-17T14:55:53.790Z",
+  "environment": "isolated local PostgreSQL and actual Stellar Testnet",
+  "expiry": {
+    "attemptId": "5dfdcb61-ad03-4444-95eb-acb2ddcbb6de",
+    "hash": "8acb6bb0cb2191a7339170b429022954d397e7af883f9f634845be79a71e3139",
+    "expiresAt": "2026-10-17T14:54:56.000Z",
+    "status": "expired",
+    "updatedAt": "2026-10-17T14:55:03.329Z",
+    "signedBy": [],
+    "effectiveVersion": null,
+    "registry": null,
+    "events": [
+      {
+        "action": "finalization_expired",
+        "actor_wallet": "worker:agreements",
+        "created_at": "2026-10-17T14:55:03.024Z"
+      }
+    ]
+  },
+  "lostResponse": {
+    "responses": 1,
+    "acceptanceEvents": 1
+  },
+  "download": {
+    "file": "agreement-aea3f92e-8a4e-4494-9984-5a80889f431e.xdr",
+    "modifiedAt": "2026-10-17T14:29:11.071Z",
+    "bytes": 1900,
+    "sha256": "862ed1c4fa0b903c24a21efb69398bd5be4ad860c5128a0658d176ec8782741f",
+    "matchesPreparedTransaction": true,
+    "toolCapture": "Timed out; actual browser download found and verified in Downloads"
+  }
+}

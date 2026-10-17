@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-17",
+  "results": [
+    {
+      "suite": "server-default",
+      "passed": 121,
+      "skipped": 9,
+      "outputSha256": "982e37e2ca64c0b5638432e018cabd60c1804ac8610e1e27bf9fa7f908e6a730"
+    },
+    {
+      "suite": "client-final",
+      "passed": 106,
+      "skipped": 0,
+      "outputSha256": "ccf2666d3d5387747933a7ed1e64d00ab5f6537d3d905cd8f0d6f4085a41fb93"
+    },
+    {
+      "suite": "admin-final",
+      "passed": 18,
+      "skipped": 0,
+      "outputSha256": "ccf2666d3d5387747933a7ed1e64d00ab5f6537d3d905cd8f0d6f4085a41fb93"
+    },
+    {
+      "suite": "postgres-agreements-and-views",
+      "passed": 17,
+      "skipped": 0,
+      "outputSha256": "8e717d9f17995652ff150f1be8b53cdf8309937155c82a6fe8334686200224dc"
+    },
+    {
+      "suite": "postgres-finalization-mocked-transport",
+      "passed": 10,
+      "skipped": 0,
+      "outputSha256": "f4f6da3115124ef0a166086f628828e62b006230c1c924acb511eb66a9d7a0e2"
+    }
+  ],
+  "checks": [
+    "Workspace typecheck passed before final focus change; client typecheck passed after it.",
+    "Whole workspace production builds passed; admin rebuilt after mobile navigation; client rebuilt after focus correction.",
+    "Fresh empty local database migration passed.",
+    "Real-wallet and Testnet checks are separate from mocked transport tests."
+  ]
+}

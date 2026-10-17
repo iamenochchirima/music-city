@@ -26,5 +26,12 @@
   },
   "testFixturesCreatedInProduction": false,
   "freshLocalDatabaseMigrationPassed": true,
-  "backup": "A retained 15 October backup predates this migration. A fresh backup was requested after detection. This report does not claim the fresh backup preceded the early migration."
+  "backup": "A retained 15 October backup predates this migration. A fresh backup was requested after detection. This report does not claim the fresh backup preceded the early migration.",
+  "rolloutBackup": {
+    "createdAt": "2026-10-17T14:14:28.356Z",
+    "bytes": 184271,
+    "sha256": "abf02432d9eefbf888bcd952905013fd7d4997ad91918ba814362e5c724e79e9",
+    "privateBackupRetained": true,
+    "timing": "Before application rollout; after the early additive migration"
+  }
 }

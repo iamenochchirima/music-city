@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-17T14:45:32.061Z",
+  "environment": "isolated local API",
+  "role": "admin",
+  "results": [
+    {
+      "path": "/agreements/21389393-e694-4bc2-81e2-cda0930b678c/finalizations",
+      "status": 403
+    },
+    {
+      "path": "/agreements/ee478af9-094f-40fa-bc8a-8d1db07b7e6b/resolutions",
+      "status": 403
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-17T14:45:03.210Z",
+  "environment": "isolated local PostgreSQL; real Dynamic Sandbox",
+  "items": {
+    "attempts": [
+      {
+        "id": "86f679c4-ed49-457f-b993-d58840c1b2ee",
+        "transaction_hash": "6ccb2ee5b6c97f6a70cb84fd56d34ba4e451afe169af457008b87c53f3507b5b",
+        "status": "confirmed",
+        "submission_count": 1
+      }
+    ],
+    "activations": [
+      {
+        "action": "finalized",
+        "version": 2
+      }
+    ]
+  }
+}

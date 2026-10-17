@@ -1,0 +1,70 @@
+{
+  "at": "2026-10-17T14:38:02.238Z",
+  "batchId": "a89381f626280c14e809fd7a875d0327fdc5ec80c41d2d0ce9983241cb84c1e4",
+  "entries": [
+    {
+      "id": "462dc386-9206-490c-b110-a2ef485067f4",
+      "feeBps": 0,
+      "status": "approved",
+      "splitId": "agreement:2b72f194-f053-4a58-8ea6-abae3844b998:1",
+      "trackId": "trk_a5e85a5cab664f07",
+      "sourceId": "3f7e0a6b-bab2-4d0a-bc4d-f9fd83b574b4",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T14:34:53.572Z",
+      "netAmount": "0.0070000",
+      "updatedAt": "2026-10-17T14:34:53.572Z",
+      "sourceType": "manual_adjustment",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "grossAmount": "0.0070000",
+      "recipientRole": "artist",
+      "recipientChain": "stellar",
+      "recipientWalletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U"
+    },
+    {
+      "id": "a7ec47d6-e39e-4ac3-8347-89daa09613ce",
+      "feeBps": 0,
+      "status": "approved",
+      "splitId": "agreement:2b72f194-f053-4a58-8ea6-abae3844b998:1",
+      "trackId": "trk_a5e85a5cab664f07",
+      "sourceId": "3f7e0a6b-bab2-4d0a-bc4d-f9fd83b574b4",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T14:34:53.572Z",
+      "netAmount": "0.0030000",
+      "updatedAt": "2026-10-17T14:34:53.572Z",
+      "sourceType": "manual_adjustment",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "grossAmount": "0.0030000",
+      "recipientRole": "producer",
+      "recipientChain": "stellar",
+      "recipientWalletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL"
+    }
+  ],
+  "allocations": [
+    {
+      "index": 0,
+      "status": "available",
+      "feeUnits": "0",
+      "grossUnits": "70000",
+      "amountUnits": "70000",
+      "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "updatedLedger": 5244825,
+      "ledgerEntryIds": [
+        "462dc386-9206-490c-b110-a2ef485067f4"
+      ]
+    },
+    {
+      "index": 1,
+      "status": "available",
+      "feeUnits": "0",
+      "grossUnits": "30000",
+      "amountUnits": "30000",
+      "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "updatedLedger": 5244825,
+      "ledgerEntryIds": [
+        "a7ec47d6-e39e-4ac3-8347-89daa09613ce"
+      ]
+    }
+  ],
+  "entriesHash": "ce99421bf7fc1c3f9651b4065b436ed3a48942bb0e803552d5d35510ea64b209",
+  "allocationsHash": "8f1de852628d0574f34a1715a2f3eb6425656cf2f01d33515e1d0e0e22b403d7"
+}

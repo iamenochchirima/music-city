@@ -1,0 +1,188 @@
+{
+  "at": "2026-10-17T14:52:14.008Z",
+  "results": [
+    {
+      "path": "/health",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "music-city-server"
+      }
+    },
+    {
+      "path": "/health/ready",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "music-city-server",
+        "database": {
+          "ok": true,
+          "schemaOk": true
+        },
+        "storage": {
+          "provider": "s3",
+          "mediaProvider": "mux"
+        },
+        "schema": {
+          "ok": true,
+          "checkedAt": "2026-10-17T14:52:13.266Z",
+          "groups": [
+            {
+              "name": "2026-10-17-agreement-recovery",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-15-direct-support",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "base-core",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-15-settlement-chain-events",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-15-earnings-settlement",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-14-background-publication",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-09-onboarding-artist-activation-step",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-08-registration-referrals",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-11-early-user-sponsorship-capacity",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-08-referral-campaign-controls",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-10-08-referral-paid-activation",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-08-14-onboarding-intent-foundation",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-08-14-release-first-track-publication",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-08-14-onboarding-welcome-step",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-07-02-engagement-analytics-foundation",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            },
+            {
+              "name": "2026-07-02-engagement-qualified-stream-idempotency",
+              "migrationApplied": true,
+              "missingRelations": [],
+              "missingIndexes": [],
+              "missingColumns": [],
+              "missingConstraints": []
+            }
+          ]
+        },
+        "checkedAt": "2026-10-17T14:52:13.266Z"
+      }
+    },
+    {
+      "path": "/agreements",
+      "status": 401,
+      "body": {
+        "error": "Authentication required"
+      }
+    },
+    {
+      "path": "/admin/agreements",
+      "status": 401,
+      "body": {
+        "error": "Admin authentication required"
+      }
+    },
+    {
+      "origin": "https://music-city.vercel.app",
+      "allowOrigin": "https://music-city.vercel.app",
+      "status": 200
+    },
+    {
+      "origin": "https://music-city-admin.vercel.app",
+      "allowOrigin": "https://music-city-admin.vercel.app",
+      "status": 200
+    }
+  ]
+}

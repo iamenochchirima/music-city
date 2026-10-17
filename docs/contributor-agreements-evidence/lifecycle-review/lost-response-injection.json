@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-17T14:51:36.389Z",
+  "environment": "isolated local API proxy only",
+  "method": "POST",
+  "path": "/api/v1/agreements/8a9c872c-a47f-4752-a9f6-ce2bd450d052/responses",
+  "upstreamStatus": 200,
+  "action": "Closed browser connection after upstream completed successful response; no request payload retained"
+}

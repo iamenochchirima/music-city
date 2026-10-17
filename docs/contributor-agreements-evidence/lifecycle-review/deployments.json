@@ -1,0 +1,97 @@
+{
+  "at": "2026-10-17T15:02:44.411Z",
+  "frontends": [
+    {
+      "project": "v0-music-city",
+      "id": "dpl_BtsuWhzcb5jnXcUsdtiaKV51dkb2",
+      "readyState": "READY",
+      "url": "https://music-city.vercel.app",
+      "aliases": [
+        "music-city.vercel.app",
+        "v0-music-city-iamenochchirimas-projects.vercel.app"
+      ],
+      "sourceCommit": "11c38a4",
+      "correctApi": true,
+      "liveAuthOnly": true,
+      "assets": [
+        {
+          "path": "/assets/index-C3jqh5cG.js",
+          "sha256": "e114858b04ab05c85eac5229e0034bd1f490747c581cd2be60313129fe817ac1"
+        }
+      ]
+    },
+    {
+      "project": "music-city-admin",
+      "id": "dpl_EVKhPEgtxw49pjVecuL1qkRB7CyQ",
+      "readyState": "READY",
+      "url": "https://music-city-admin.vercel.app",
+      "aliases": [
+        "music-city-admin.vercel.app",
+        "music-city-admin-iamenochchirimas-projects.vercel.app"
+      ],
+      "sourceCommit": "bc181c1",
+      "correctApi": true,
+      "assets": [
+        {
+          "path": "/assets/index-BdCytQsV.js",
+          "sha256": "24b1ee4b62ef2deeb5a55f25112a653120a0c6e280b571fd3907505c9cc58151"
+        }
+      ]
+    }
+  ],
+  "railway": [
+    {
+      "serviceId": "77776f09-df31-487a-bc89-21329eb34798",
+      "deploymentId": "c1f60e1a-09f5-401e-8f3e-a5640d58bd9b",
+      "status": "SUCCESS",
+      "sourceCommit": "2a71a1e8d7143c04055d3a15b830f14fca642b29"
+    },
+    {
+      "serviceId": "39dc5a07-9241-4bb2-bff8-750fd1076f77",
+      "deploymentId": "f80155e3-1015-4d1a-b35b-2a1505ff00de",
+      "status": "SUCCESS"
+    },
+    {
+      "serviceId": "0f087c42-ae80-4f99-8d4c-79f97683644b",
+      "deploymentId": "6ec9cad2-b7bd-44d3-8e13-a8abcb81e401",
+      "status": "SUCCESS",
+      "sourceCommit": "2a71a1e8d7143c04055d3a15b830f14fca642b29"
+    },
+    {
+      "serviceId": "d9c966b8-ce48-4a52-afd3-968bd05271e2",
+      "deploymentId": "fc6360c0-c6a8-4433-a834-4b02f5b949fd",
+      "status": "SUCCESS",
+      "sourceCommit": "2a71a1e8d7143c04055d3a15b830f14fca642b29"
+    }
+  ],
+  "productionRecordsBeforeLiveLogin": {
+    "users": true,
+    "tracks": true,
+    "releases": true,
+    "royalty_splits": true,
+    "royalty_ledger": true,
+    "royalty_payouts": true,
+    "contributor_agreements": true,
+    "agreement_versions": true,
+    "agreement_responses": true,
+    "agreement_events": true,
+    "agreement_finalizations": true,
+    "settlement_batches": true
+  },
+  "note": "The additive recovery migration was applied early by the setup-helper race. See setup-verification.json. Fresh backup preceded rollout, not that earlier migration.",
+  "productionRecordsAfterLiveLogin": {
+    "users": true,
+    "tracks": true,
+    "releases": true,
+    "royalty_splits": true,
+    "royalty_ledger": true,
+    "royalty_payouts": true,
+    "contributor_agreements": true,
+    "agreement_versions": true,
+    "agreement_responses": true,
+    "agreement_events": true,
+    "agreement_finalizations": true,
+    "settlement_batches": true
+  },
+  "workerStartupConfirmedAt": "2026-10-17T14:49:12.336Z"
+}

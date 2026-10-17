@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-17T14:44:09.056Z",
+  "environment": "isolated local database and API only",
+  "attemptId": "86f679c4-ed49-457f-b993-d58840c1b2ee",
+  "transactionHash": "6ccb2ee5b6c97f6a70cb84fd56d34ba4e451afe169af457008b87c53f3507b5b",
+  "statusAtInterruption": "submitting",
+  "submissionCount": 1,
+  "networkReceiptBeforeInterruption": "unknown; not asserted",
+  "action": "Stopped local API after persisted submission intent; financial worker already stopped"
+}

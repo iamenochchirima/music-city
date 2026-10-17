@@ -1,0 +1,285 @@
+{
+  "at": "2026-10-17T14:52:12.326Z",
+  "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+  "reports": [
+    {
+      "key": "main",
+      "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+      "version": 1,
+      "state": "finalized",
+      "proposalHash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "16e26792-6b4b-42b0-afb9-ab819b9893ac",
+          "proposalHash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+          "validWalletSignature": true
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "6ddeb3bd-c886-445d-a32b-793accc785aa",
+          "proposalHash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": [
+        {
+          "id": "aea3f92e-8a4e-4494-9984-5a80889f431e",
+          "status": "confirmed",
+          "transactionHash": "b199ee8b29fedf4c944a3ac4a88a78e97eb8b1dedd472006caccc5edea70857c",
+          "signers": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "ledger": 5244785,
+          "expiresAt": "2026-10-17T14:38:40.000Z",
+          "registry": {
+            "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+            "version": 1,
+            "recipients": [
+              {
+                "walletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+                "role": "artist",
+                "shareBps": 7000
+              },
+              {
+                "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+                "role": "producer",
+                "shareBps": 3000
+              }
+            ],
+            "proposalHash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+            "previousFinalizedHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "finalizedLedger": 5244785
+          },
+          "validTreasurySignatures": true
+        }
+      ]
+    },
+    {
+      "key": "main",
+      "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+      "version": 2,
+      "state": "finalized",
+      "proposalHash": "0b50c1775c76bfb2e10bba533b16a071d036dbdca04bbc9348d86e2e4fffa84c",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "c30a61c7-b719-43a1-bac9-a616f6fac50f",
+          "proposalHash": "0b50c1775c76bfb2e10bba533b16a071d036dbdca04bbc9348d86e2e4fffa84c",
+          "validWalletSignature": true
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "a1e069ed-0ea3-4591-9020-b36da8c47683",
+          "proposalHash": "0b50c1775c76bfb2e10bba533b16a071d036dbdca04bbc9348d86e2e4fffa84c",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": [
+        {
+          "id": "ce21a7c0-e1ce-4eea-8828-fc302a4c4103",
+          "status": "confirmed",
+          "transactionHash": "fd173be9f404729ee70efee6b6abc490ba7797bc3c9f62563a9e188617b3bb8c",
+          "signers": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "ledger": 5244903,
+          "expiresAt": "2026-10-17T14:49:58.000Z",
+          "registry": {
+            "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+            "version": 2,
+            "recipients": [
+              {
+                "walletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+                "role": "artist",
+                "shareBps": 6000
+              },
+              {
+                "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+                "role": "producer",
+                "shareBps": 4000
+              }
+            ],
+            "proposalHash": "0b50c1775c76bfb2e10bba533b16a071d036dbdca04bbc9348d86e2e4fffa84c",
+            "previousFinalizedHash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+            "finalizedLedger": 5244903
+          },
+          "validTreasurySignatures": true
+        }
+      ]
+    },
+    {
+      "key": "main",
+      "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+      "version": 3,
+      "state": "proposed",
+      "proposalHash": "f293b1d6ea553d519fedcd4a2b5da815972e06dbe3dd5871dfd706244a5b0496",
+      "responses": [],
+      "attempts": []
+    },
+    {
+      "key": "reject",
+      "agreementId": "8a9c872c-a47f-4752-a9f6-ce2bd450d052",
+      "version": 1,
+      "state": "rejected",
+      "proposalHash": "7d1513b26bcf61346a525d416f2b13a9a45ac889813b92564339fcc480997f71",
+      "responses": [
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "reject",
+          "reason": "Please revise the producer share before we proceed.",
+          "challengeId": "a24e49b4-d512-4bce-afeb-1ad923eafbe7",
+          "proposalHash": "7d1513b26bcf61346a525d416f2b13a9a45ac889813b92564339fcc480997f71",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": []
+    },
+    {
+      "key": "reject",
+      "agreementId": "8a9c872c-a47f-4752-a9f6-ce2bd450d052",
+      "version": 2,
+      "state": "proposed",
+      "proposalHash": "c12fcbca0370e5d6c68da3a2309dde73929a8a5ee570b89efbc8bbad61752aea",
+      "responses": [
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "8b230789-c61f-477f-a3c5-5f57eefca1b0",
+          "proposalHash": "c12fcbca0370e5d6c68da3a2309dde73929a8a5ee570b89efbc8bbad61752aea",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": []
+    },
+    {
+      "key": "dispute",
+      "agreementId": "ee478af9-094f-40fa-bc8a-8d1db07b7e6b",
+      "version": 1,
+      "state": "disputed",
+      "proposalHash": "2eceb03c63ebbcce6548469ce01c2d7fce13953eed2211d0fb877b16dc8f9e58",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "0e0a0704-de60-40ac-9b13-07eb8e9c88ce",
+          "proposalHash": "2eceb03c63ebbcce6548469ce01c2d7fce13953eed2211d0fb877b16dc8f9e58",
+          "validWalletSignature": true
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "b9a2c819-72db-49bb-babf-87fcbcde956d",
+          "proposalHash": "2eceb03c63ebbcce6548469ce01c2d7fce13953eed2211d0fb877b16dc8f9e58",
+          "validWalletSignature": true
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "dispute",
+          "reason": "The producer credit needs a written resolution.",
+          "challengeId": "575c524a-7d0a-4a44-bd8d-7898eb75d0f2",
+          "proposalHash": "2eceb03c63ebbcce6548469ce01c2d7fce13953eed2211d0fb877b16dc8f9e58",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": []
+    },
+    {
+      "key": "dispute",
+      "agreementId": "ee478af9-094f-40fa-bc8a-8d1db07b7e6b",
+      "version": 2,
+      "state": "finalized",
+      "proposalHash": "eefb7e2f25b345d445cfd212cc5a3165f86f7e4b8a75abdf2725f5a219036da2",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "c51bf2e7-328a-402b-9073-0bbbde5e028e",
+          "proposalHash": "eefb7e2f25b345d445cfd212cc5a3165f86f7e4b8a75abdf2725f5a219036da2",
+          "validWalletSignature": true
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "e1fe79fa-2378-4caa-b77f-eddbf1d10acc",
+          "proposalHash": "eefb7e2f25b345d445cfd212cc5a3165f86f7e4b8a75abdf2725f5a219036da2",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": [
+        {
+          "id": "86f679c4-ed49-457f-b993-d58840c1b2ee",
+          "status": "confirmed",
+          "transactionHash": "6ccb2ee5b6c97f6a70cb84fd56d34ba4e451afe169af457008b87c53f3507b5b",
+          "signers": [
+            "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+            "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+          ],
+          "ledger": 5244933,
+          "expiresAt": "2026-10-17T14:53:06.000Z",
+          "registry": {
+            "agreementId": "ee478af9-094f-40fa-bc8a-8d1db07b7e6b",
+            "version": 2,
+            "recipients": [
+              {
+                "walletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+                "role": "artist",
+                "shareBps": 7000
+              },
+              {
+                "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+                "role": "producer",
+                "shareBps": 3000
+              }
+            ],
+            "proposalHash": "eefb7e2f25b345d445cfd212cc5a3165f86f7e4b8a75abdf2725f5a219036da2",
+            "previousFinalizedHash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "finalizedLedger": 5244933
+          },
+          "validTreasurySignatures": true
+        }
+      ]
+    },
+    {
+      "key": "expire",
+      "agreementId": "21389393-e694-4bc2-81e2-cda0930b678c",
+      "version": 1,
+      "state": "finalizing",
+      "proposalHash": "94aa56831a020fdbe1ef6cb3b6482bb5b536f6fc0888aa22ca7fb25fe46080b5",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept",
+          "reason": "",
+          "challengeId": "0ec287d0-0aee-4fa6-a1ad-e8770c758f67",
+          "proposalHash": "94aa56831a020fdbe1ef6cb3b6482bb5b536f6fc0888aa22ca7fb25fe46080b5",
+          "validWalletSignature": true
+        }
+      ],
+      "attempts": [
+        {
+          "id": "5dfdcb61-ad03-4444-95eb-acb2ddcbb6de",
+          "status": "awaiting_signatures",
+          "transactionHash": "8acb6bb0cb2191a7339170b429022954d397e7af883f9f634845be79a71e3139",
+          "signers": [],
+          "expiresAt": "2026-10-17T14:54:56.000Z"
+        }
+      ]
+    }
+  ]
+}

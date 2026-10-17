@@ -1,0 +1,53 @@
+Full server suite; default environment
+server test: ℹ tests 130
+server test: ℹ pass 121
+server test: ℹ fail 0
+server test: ℹ cancelled 0
+server test: ℹ skipped 9
+server test: Done
+
+Final full client and admin suites
+admin test:  Test Files  4 passed (4)
+admin test:       Tests  18 passed (18)
+admin test: Done
+client test:  Test Files  27 passed (27)
+client test:       Tests  106 passed (106)
+client test: Done
+
+Agreement and view PostgreSQL checks
+ℹ tests 17
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+
+Finalization PostgreSQL checks; mocked transport
+ℹ tests 10
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+
+Workspace typecheck
+> music-city@ typecheck /home/enock/Desktop/workspace/clients/music-city
+> pnpm -r typecheck
+packages/shared typecheck$ tsc --noEmit -p tsconfig.json
+packages/shared typecheck: Done
+admin typecheck$ tsc --noEmit
+client typecheck$ tsc --noEmit
+server typecheck$ tsc --noEmit
+admin typecheck: Done
+client typecheck: Done
+server typecheck: Done
+
+Final client typecheck
+> client@0.1.0 typecheck /home/enock/Desktop/workspace/clients/music-city/client
+
+Fresh empty database migration
+{"freshDatabase":true,"migration":"2026-10-17-agreement-recovery","passed":true}
+
+Final admin build
+✓ built in 2.07s
+
+Final client build
+✓ built in 17.50s

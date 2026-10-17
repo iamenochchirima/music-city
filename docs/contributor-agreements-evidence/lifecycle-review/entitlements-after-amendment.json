@@ -1,0 +1,221 @@
+{
+  "registryBatch": {
+    "claimed": "0",
+    "claims": [
+      {
+        "amount": "70000",
+        "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "status": [
+          "Available"
+        ],
+        "updated_ledger": 5244825
+      },
+      {
+        "amount": "30000",
+        "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "status": [
+          "Available"
+        ],
+        "updated_ledger": 5244825
+      }
+    ],
+    "funded": "100000",
+    "funded_ledger": 5244825,
+    "reclaimed": "0",
+    "request": {
+      "agreement_id": "2b72f194-f053-4a58-8ea6-abae3844b998",
+      "batch_id": {
+        "type": "Buffer",
+        "data": [
+          168,
+          147,
+          129,
+          246,
+          38,
+          40,
+          12,
+          20,
+          232,
+          9,
+          253,
+          122,
+          135,
+          93,
+          3,
+          39,
+          253,
+          197,
+          236,
+          128,
+          196,
+          29,
+          45,
+          12,
+          233,
+          152,
+          50,
+          65,
+          203,
+          132,
+          193,
+          228
+        ]
+      },
+      "expires_at": "1792269293",
+      "fee_bps": 0,
+      "gross_amount": "100000",
+      "proposal_hash": {
+        "type": "Buffer",
+        "data": [
+          71,
+          23,
+          15,
+          147,
+          128,
+          99,
+          127,
+          33,
+          177,
+          167,
+          74,
+          48,
+          239,
+          6,
+          103,
+          255,
+          97,
+          203,
+          177,
+          79,
+          116,
+          186,
+          55,
+          121,
+          158,
+          174,
+          188,
+          213,
+          127,
+          132,
+          199,
+          98
+        ]
+      },
+      "source_id": {
+        "type": "Buffer",
+        "data": [
+          233,
+          240,
+          8,
+          215,
+          135,
+          224,
+          114,
+          20,
+          234,
+          241,
+          33,
+          4,
+          104,
+          150,
+          39,
+          111,
+          36,
+          93,
+          44,
+          229,
+          211,
+          153,
+          221,
+          42,
+          78,
+          220,
+          140,
+          214,
+          145,
+          214,
+          212,
+          177
+        ]
+      },
+      "track_id": "trk_a5e85a5cab664f07",
+      "version": 1
+    }
+  },
+  "at": "2026-10-17T15:02:41.591Z",
+  "effective": {
+    "id": "agreement:2b72f194-f053-4a58-8ea6-abae3844b998:2",
+    "trackId": "trk_a5e85a5cab664f07",
+    "version": 2,
+    "status": "active",
+    "historical": false,
+    "agreementId": "2b72f194-f053-4a58-8ea6-abae3844b998",
+    "finalizationId": "ce21a7c0-e1ce-4eea-8828-fc302a4c4103",
+    "proposalHash": "0b50c1775c76bfb2e10bba533b16a071d036dbdca04bbc9348d86e2e4fffa84c",
+    "registryKind": "soroban",
+    "registryChain": "stellar",
+    "registryNetwork": "stellar:testnet",
+    "registryContractId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+    "registryTxHash": "fd173be9f404729ee70efee6b6abc490ba7797bc3c9f62563a9e188617b3bb8c",
+    "registryPublishedAt": "2026-10-17T14:42:16.673Z",
+    "registryVerificationStatus": "match",
+    "registryVerifiedAt": "2026-10-17T14:42:16.673Z",
+    "registryVerificationMessage": "Contributor consent and threshold-authorized publication confirmed.",
+    "recipients": [
+      {
+        "walletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "chain": "stellar",
+        "role": "artist",
+        "shareBps": 6000,
+        "payoutRail": "stellar"
+      },
+      {
+        "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "chain": "stellar",
+        "role": "producer",
+        "shareBps": 4000,
+        "payoutRail": "stellar"
+      }
+    ],
+    "totalBps": 10000,
+    "notes": "Demo agreement. No legal effect.",
+    "createdAt": "2026-10-17T14:38:17.800Z",
+    "updatedAt": "2026-10-17T14:42:16.673Z"
+  },
+  "originalLedgerEntriesUnchanged": true,
+  "originalFundedAllocationsUnchanged": true,
+  "entriesHash": "ce99421bf7fc1c3f9651b4065b436ed3a48942bb0e803552d5d35510ea64b209",
+  "allocationsHash": "8f1de852628d0574f34a1715a2f3eb6425656cf2f01d33515e1d0e0e22b403d7",
+  "batchId": "a89381f626280c14e809fd7a875d0327fdc5ec80c41d2d0ce9983241cb84c1e4",
+  "funding": {
+    "id": "4dc13553-51b1-43ae-83cb-8509c4a31ebc",
+    "batchId": "a89381f626280c14e809fd7a875d0327fdc5ec80c41d2d0ce9983241cb84c1e4",
+    "kind": "settle",
+    "actor": "admin:lifecycle-review",
+    "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "transaction": "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",
+    "transactionHash": "df0dc511239deff8b84ffb443f51a3e9437f82c02c6ceb9b23e8d540e9fd1925",
+    "signers": [
+      "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "signatures": {
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5": "4GZ6+HXeRQ+3/s3QcspcvIwcJpGjdSz4pJ0beShtSF/AN2R/xkvcqJ0/qrDDuiDXqLpIxJlehovzM3qeKf41AA==",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S": "zuyT/yWUUe6twfyE+rHEuFfcVuwTtf69xeNQ83mvOmjBsNsWa3my2PFbMaxwn8S9Jb2D/FeztrKRrH2eDvaVBQ=="
+    },
+    "signedBy": [
+      "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+    ],
+    "status": "confirmed",
+    "expiresAt": "2026-10-17T14:45:06.000Z",
+    "createdAt": "2026-10-17T14:35:07.270Z",
+    "updatedAt": "2026-10-17T14:35:12.699Z",
+    "submissionCount": 1,
+    "lastSubmittedAt": "2026-10-17T14:35:08.401Z",
+    "ledger": 5244825,
+    "feeCharged": "640037612"
+  }
+}

@@ -39,8 +39,8 @@ Implementation rules:
 | Deliverable | Current position | Next completion boundary |
 | --- | --- | --- |
 | D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Record reviewer acceptance. Real Dynamic wallet journeys passed in E5. |
-| D2. Contributor agreements and treasury controls | Partial. Agreement services and protected registry finalization have historical Testnet evidence. Current Dynamic browser consent and protected settlement operations passed in E5. Direct artist and contributor support passed real Dynamic Testnet verification in E6. | Complete remaining agreement UI evidence and obtain reviewer acceptance. |
-| D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Settlement integration, failure recovery, deployment, and evidence are complete in E5. Direct support integration passed in E6. Its rollout is verified. Complete the remaining agreement UI evidence and obtain SOW acceptance. |
+| D2. Contributor agreements and treasury controls | Implemented. E7 verifies the current creator/admin agreement lifecycle through real Dynamic Sandbox and Stellar Testnet. E5 covers protected settlement operations; E6 covers direct support. | Complete authenticated production admin setup in E7 and obtain reviewer acceptance. |
+| D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Settlement integration, failure recovery, deployment, and evidence are complete in E5. Direct support integration passed in E6. Its rollout is verified. Complete authenticated live admin setup in E7 and obtain SOW acceptance. |
 
 ## D1. Soroban earnings settlement engine
 
@@ -77,28 +77,28 @@ Source: sections 4.1 D2, 5.1 Weeks 1, 3, and 4, and 6.1 D2. D2 owns consent, gov
 
 | ID | Submitted requirement | Implementation and evidence | Remaining work |
 | --- | --- | --- | --- |
-| D2-01 | Canonical split proposal | Implemented. Versioned proposal, wallet, role, share, terms, track, release context, and hash. Domain and database evidence in E1. | Verify creation and review through the current deployed creator interface. |
+| D2-01 | Canonical split proposal | Current recording-to-proposal UI, registered identities, exact splits, review and submission verified in E7. Production serves the same implementation. | Complete authenticated production admin setup and reviewer acceptance. |
 | D2-02 | Wallet-signed acceptance | Verified through real Dynamic Sandbox accounts. Four independent provider signatures authorize exact original and amended proposals. Cancellation records no consent. E5. | Reviewer acceptance. |
-| D2-03 | Rejection and dispute | Verified historically. Signed responses block finalization. | Capture current creator and admin behavior and actionable recovery. |
+| D2-03 | Rejection and dispute | Real signed rejection, accepted-contributor dispute, admin resolution, owner resubmission and fresh consent verified in E7. | Reviewer acceptance. |
 | D2-04 | Finalization requires complete consent | Current browser-generated consent and two treasury signatures finalized versions 1 and 2. Earlier effective terms remained active until confirmation. E5. | Reviewer acceptance. |
 | D2-05 | Amendments preserve history and require fresh consent | Real Dynamic browser verification preserves the 70/30 entitlement while a 60/40 amendment requires fresh signatures and governs a different source. E5. E2 retains historical dispute coverage. | Reviewer acceptance. |
 | D2-06 | Direct fan-to-artist support payments | Implemented. Exact direct USDC payment, Dynamic signature, receipt, balance reconciliation, and retained history verified in E6. | Reviewer acceptance. Rollout verified in E6. |
 | D2-07 | Direct fan-to-contributor support payments | Implemented for registered contributors linked to public recordings. Real Dynamic payment to a listener contributor verified in E6. | Reviewer acceptance. Rollout verified in E6. |
 | D2-08 | 2-of-3 treasury authorization for finalization | Current dedicated treasury and registries verify thresholds of two. Both Dynamic-consented versions finalized with two distinct signatures. E5. | Reviewer acceptance. |
 | D2-09 | 2-of-3 authorization for protected admin actions | Finalization, funding, recovery, maintenance, and restoration require exact threshold signatures. The single-key executor and mutable financial controls are removed. E5. | Reviewer acceptance. Separate support must preserve these controls. |
-| D2-10 | Migration, approval records, state transitions, and audit history | Implemented. Transaction-backed agreement records and integrity constraints exist. | Include dated migration evidence and current UI history for the final D2 demonstration. |
+| D2-10 | Migration, approval records, state transitions, and audit history | E7 records current approval history, fresh-database migrations, recovery and preserved production records. Early additive migration exception is disclosed. | Review the rollout exception; authenticated production admin setup and reviewer acceptance. |
 
 D2 acceptance checklist:
 
-- [ ] Demonstrate a registered owner and contributor creating and independently signing the same 70/30 proposal through the current UI.
+- [x] Demonstrate a registered owner and contributor creating and independently signing the same 70/30 proposal through the current UI.
 - [x] Cancel signing and verify that no consent is recorded.
-- [ ] Reject unauthorized contributors, changed proposals, duplicate or replayed responses, invalid splits, and incomplete acceptance.
-- [ ] Demonstrate rejection, dispute, resolution, amendment, fresh consent, and preserved history.
+- [x] Reject unauthorized contributors, changed proposals, duplicate or replayed responses, invalid splits, and incomplete acceptance.
+- [x] Demonstrate rejection, dispute, resolution, amendment, fresh consent, and preserved history.
 - [x] Verify three independent treasury signers, the registry treasury, and thresholds requiring two.
 - [x] Demonstrate one signer cannot finalize and two distinct signers can finalize.
 - [ ] Verify every specified protected admin action requires the required treasury authorization.
 - [x] Demonstrate separate fan-to-artist and fan-to-contributor support payments with transaction evidence.
-- [ ] Package approval records, migrations, state transitions, support hashes, treasury evidence, screenshots, and tests.
+- [x] Package approval records, migrations, state transitions, support hashes, treasury evidence, screenshots, and tests.
 - [ ] Record reviewer acceptance of D2.
 
 ## D3. Product integration, operations, reconciliation, and verification
@@ -161,7 +161,7 @@ The submitted weekly plan remains the scope reference. The current implementatio
 | Week 1 | Approved D1 and D2 specifications, contract architecture, integration map, Testnet configuration, treasury plan, security assumptions, and executable tests | Settlement specification, contracts, treasury configuration, and executable tests are complete in E5. E6 records the direct-support specification and tests. Reviewer approval remains. |
 | Week 2 | Working settlement and creator-claim flow, contract tests, integration, balance and transaction evidence, reconciliation | D1 implementation and real Dynamic Testnet lifecycle verified in E5. Reviewer acceptance remains. |
 | Week 3 | Contributor agreements, direct support, treasury controls, and creator/admin views | Current wallet consent, dedicated treasury, protected settlement actions, and claims verified in E5. E6 verifies support failures and original-hash recovery. |
-| Week 4 | Integrated final deployment, complete tests, and technical evidence pack | Settlement rollout and evidence are complete in E5. E6 records direct support. Finish remaining agreement UI evidence, track provider work separately, and obtain SOW acceptance. |
+| Week 4 | Integrated final deployment, complete tests, and technical evidence pack | Settlement rollout and evidence are complete in E5. E6 records direct support. Finish authenticated live admin setup in E7, track provider work separately, and obtain SOW acceptance. |
 
 Next implementation checkpoints:
 
@@ -317,6 +317,7 @@ The chunk is functionally complete when that demonstration and all applicable te
 | E3 | [Production deployment](production-deployment.md) and [deployment evidence](production-deployment-evidence/README.md) | API migrations, readiness, frontend deployment, and selected runtime checks. Not proof of configured agreement finalization or complete SOW acceptance. |
 | E5 | [Settlement lifecycle evidence](settlement-evidence/README.md) | Final contract binaries, funded USDC claims, expiry recovery, immutable event index, tests, admin browser signatures, and explicit real-wallet gaps. |
 | E6 | [Direct support evidence](support-evidence/README.md) | Exact artist and contributor payments through Dynamic Sandbox, cancelled signing, immutable history, PostgreSQL concurrency, and independent Testnet reconciliation. |
+| E7 | [Current agreement lifecycle evidence](contributor-agreements-evidence/lifecycle-review/README.md) | Real creator/admin Testnet lifecycle, independent signatures and registry checks, original-hash restart recovery, lost response, real expiry, historical entitlement comparison, responsive UI, and rollout. Live first-admin setup remains open; early migration exception disclosed. |
 | E4 | [Release-flow evidence](release-flow-evidence/README.md) | Current release creation, editing, upload, publication choices, and visible processing. Supporting product work, not a substitute for financial-flow verification. |
 
 Historical baseline findings from 14 October 2026, superseded for settlement by E5:
@@ -431,7 +432,7 @@ Complete each phase with its focused checks before proceeding. Update these boxe
 #### Phase 1. Establish the verification environment and response contracts
 
 - [x] AGR-03 Restore an isolated local PostgreSQL, API, client, admin, and financial worker using the existing review setup. Preserve prior demonstration receipts. Use Dynamic Sandbox and Stellar Testnet only for mutable verification.
-- [ ] AGR-04 Prepare an owner, a registered listener contributor, an outsider, an ordinary admin, a super admin, and three independent Testnet treasury signers. Verify network, registry, thresholds, and required balances. Use the ordinary application sign-in flows.
+- [x] AGR-04 Prepare an owner, a registered listener contributor, an outsider, an ordinary admin, a super admin, and three independent Testnet treasury signers. Verify network, registry, thresholds, and required balances. Use the ordinary application sign-in flows.
 - [x] AGR-05 Define typed summary and detail responses with authorized recording title, owner identity, contributor identity, current version, active version, response status, and next permitted actions. Keep display metadata outside the signed canonical proposal.
 - [x] AGR-06 Define and enforce visibility by role and version. Owners and authorized admins can inspect the full record. Contributors retain versions they participated in. Historical membership alone must not reveal future proposals they were removed from. Keep unrelated wallets out. Do not change valid historical consent.
 
@@ -439,39 +440,39 @@ Complete each phase with its focused checks before proceeding. Update these boxe
 
 - [x] AGR-07 Add a recording-level agreement action and persistent list/detail routes. Existing agreements open directly instead of offering duplicate creation. Preserve navigation and browser Back behavior.
 - [x] AGR-08 Replace the combined creator screen with focused list, editor, review, and detail components using the established form and layout components. Keep one primary action per task.
-- [ ] AGR-09 Add authenticated registered-contributor lookup by name or exact wallet. Show the resolved name, role, and wallet for confirmation. Reuse selected recording credits where useful without assigning shares or consent automatically. Do not expose email addresses or unrelated private profile fields.
-- [ ] AGR-10 Validate duplicate wallets, registered accounts, roles, positive shares, precision, and the exact 100% total on both client and server. Keep terms and entered values after a failed save. Map validation failures to the relevant fields.
-- [ ] AGR-11 Implement a recoverable draft and one review summary before sending. Prevent duplicate drafts or revisions after a repeated click or lost response. Recover the existing result before offering another mutation.
+- [x] AGR-09 Add authenticated registered-contributor lookup by name or exact wallet. Show the resolved name, role, and wallet for confirmation. Reuse selected recording credits where useful without assigning shares or consent automatically. Do not expose email addresses or unrelated private profile fields.
+- [x] AGR-10 Validate duplicate wallets, registered accounts, roles, positive shares, precision, and the exact 100% total on both client and server. Keep terms and entered values after a failed save. Map validation failures to the relevant fields.
+- [x] AGR-11 Implement a recoverable draft and one review summary before sending. Prevent duplicate drafts or revisions after a repeated click or lost response. Recover the existing result before offering another mutation.
 
 #### Phase 3. Complete contributor responses and dispute recovery
 
-- [ ] AGR-12 Present an inbox of actionable proposals with recording titles and personal response status. A listener contributor must reach the same review without artist activation.
-- [ ] AGR-13 Show the complete proposal before signing. Bind the response to its wallet, action, reason, version, hash, challenge, expiry, and network. Preserve scoped Dynamic authorization and provider prompt visibility. Recover response state after an interrupted request before enabling another response.
-- [ ] AGR-14 Make rejection and dispute separate deliberate actions with a required reason. Remove the always-visible combined reason form. Preserve a prior acceptance when a contributor later disputes an eligible version.
-- [ ] AGR-15 Complete owner revision and admin resolution paths. Require a reason, preserve the blocked version, create one new draft, and require owner submission plus fresh consent. Serialize concurrent owner and admin actions so they cannot create competing revisions.
-- [ ] AGR-16 Show the current proposal separately from the active agreement. Verify initial rejection, a dispute before finalization, an accepted contributor's dispute before finalization, and a revised agreement after an active version. Finalized versions remain immutable.
+- [x] AGR-12 Present an inbox of actionable proposals with recording titles and personal response status. A listener contributor must reach the same review without artist activation.
+- [x] AGR-13 Show the complete proposal before signing. Bind the response to its wallet, action, reason, version, hash, challenge, expiry, and network. Preserve scoped Dynamic authorization and provider prompt visibility. Recover response state after an interrupted request before enabling another response.
+- [x] AGR-14 Make rejection and dispute separate deliberate actions with a required reason. Remove the always-visible combined reason form. Preserve a prior acceptance when a contributor later disputes an eligible version.
+- [x] AGR-15 Complete owner revision and admin resolution paths. Require a reason, preserve the blocked version, create one new draft, and require owner submission plus fresh consent. Serialize concurrent owner and admin actions so they cannot create competing revisions.
+- [x] AGR-16 Show the current proposal separately from the active agreement. Verify initial rejection, a dispute before finalization, an accepted contributor's dispute before finalization, and a revised agreement after an active version. Finalized versions remain immutable.
 - [x] AGR-17 Add automatic, bounded polling while relevant states are pending. Refresh on focus, stop on unmount, and ignore stale responses after account or agreement changes. Show a compact interrupted-status state with retry when reads fail. Never infer consent or activation from a spinner ending.
 
 #### Phase 4. Finish admin finalization and background recovery
 
-- [ ] AGR-18 Refactor admin list/detail views around recording context, consent progress, blocked reasons, active version, and the next allowed action. Keep hashes, XDR, and registry details in an accessible verification disclosure. Ordinary admins remain read-only.
-- [ ] AGR-19 Preserve prepare, download, and signed-envelope import for treasury signers. Verify the exact envelope, network, source, registry, proposal hash, and two distinct authorized signatures. Duplicate, altered, or outsider signatures cannot increase the count. Do not add a server-held signing key.
-- [ ] AGR-20 Add agreement finalizations to the financial worker with per-attempt serialization, fair scheduling, and isolated errors. Persist authorization and submission intent before network calls. Reconcile the original hash after timeouts or restarts. Bound retries of the same envelope and prevent replacement while the outcome is uncertain.
-- [ ] AGR-21 Preserve chain-based expiry and history coverage checks. Confirm exact receipt and registry contents before changing the active version. Failed attempts retain evidence and allow a new attempt only after a verified terminal outcome. Add additive migrations only for fields or indexes the worker actually needs.
-- [ ] AGR-22 Display automatic finalization progress and confirmed receipts in both interfaces. A cancelled signer prompt or incomplete threshold must leave the proposal inactive. Remove normal dependence on **Check transaction outcome**.
+- [x] AGR-18 Refactor admin list/detail views around recording context, consent progress, blocked reasons, active version, and the next allowed action. Keep hashes, XDR, and registry details in an accessible verification disclosure. Ordinary admins remain read-only.
+- [x] AGR-19 Preserve prepare, download, and signed-envelope import for treasury signers. Verify the exact envelope, network, source, registry, proposal hash, and two distinct authorized signatures. Duplicate, altered, or outsider signatures cannot increase the count. Do not add a server-held signing key.
+- [x] AGR-20 Add agreement finalizations to the financial worker with per-attempt serialization, fair scheduling, and isolated errors. Persist authorization and submission intent before network calls. Reconcile the original hash after timeouts or restarts. Bound retries of the same envelope and prevent replacement while the outcome is uncertain.
+- [x] AGR-21 Preserve chain-based expiry and history coverage checks. Confirm exact receipt and registry contents before changing the active version. Failed attempts retain evidence and allow a new attempt only after a verified terminal outcome. Add additive migrations only for fields or indexes the worker actually needs.
+- [x] AGR-22 Display automatic finalization progress and confirmed receipts in both interfaces. A cancelled signer prompt or incomplete threshold must leave the proposal inactive. Remove normal dependence on **Check transaction outcome**.
 
 #### Phase 5. Finish history, UX, and regression verification
 
-- [ ] AGR-23 Present a compact version history with full prior terms, shares, responses, reasons, resolution records, timestamps, actors, and receipts available on demand. Human-readable names supplement immutable wallet identity.
-- [ ] AGR-24 Inspect creator and admin screens at desktop and 390-pixel mobile widths through computer use. Check long titles, wallets, terms, validation, keyboard focus, provider overlays, loading, empty states, and interrupted requests. Fix overflow, inconsistent spacing, and repeated explanations.
-- [ ] AGR-25 Extend domain, HTTP, PostgreSQL, worker, client, and admin tests for changed behavior. Run workspace typecheck and production builds. Verify settlement still consumes the exact confirmed version and historical entitlements remain unchanged. Verify support remains independent.
-- [ ] AGR-26 Execute the complete computer-use matrix below. Save evidence for each scenario, including browser-visible results and independent service or chain checks. Close real-wallet gaps rather than relabeling mocked results.
+- [x] AGR-23 Present a compact version history with full prior terms, shares, responses, reasons, resolution records, timestamps, actors, and receipts available on demand. Human-readable names supplement immutable wallet identity.
+- [x] AGR-24 Inspect creator and admin screens at desktop and 390-pixel mobile widths through computer use. Check long titles, wallets, terms, validation, keyboard focus, provider overlays, loading, empty states, and interrupted requests. Fix overflow, inconsistent spacing, and repeated explanations.
+- [x] AGR-25 Extend domain, HTTP, PostgreSQL, worker, client, and admin tests for changed behavior. Run workspace typecheck and production builds. Verify settlement still consumes the exact confirmed version and historical entitlements remain unchanged. Verify support remains independent.
+- [x] AGR-26 Execute the complete computer-use matrix below. Save evidence for each scenario, including browser-visible results and independent service or chain checks. Close real-wallet gaps rather than relabeling mocked results.
 
 #### Phase 6. Roll out and close the chunk
 
 - [ ] AGR-27 Back up production before any migration. Deploy the API, financial worker, and both affected frontends. Deploy other services if shared runtime or schema changes require it. Verify migrations, worker startup, readiness, CORS, authorization, exact source commits, and existing-record preservation.
 - [ ] AGR-28 Verify deployed creator and admin navigation, detail deep links, and access boundaries through computer use. The current live admin page requires initial setup. Complete legitimate operator setup before claiming authenticated production verification. Use the isolated environment for destructive scenarios and synthetic agreements.
-- [ ] AGR-29 Package results under `docs/contributor-agreements-evidence/lifecycle-review/`. Reconcile overlapping D2 and D3 checklist rows against actual evidence. Keep unverified items open. Record reviewer acceptance separately.
+- [x] AGR-29 Package results under `docs/contributor-agreements-evidence/lifecycle-review/`. Reconcile overlapping D2 and D3 checklist rows against actual evidence. Keep unverified items open. Record reviewer acceptance separately.
 
 ### Required computer-use verification matrix
 
@@ -507,3 +508,23 @@ This chunk is complete only when AGR-03 through AGR-29 and the applicable CU sce
 ### Agreement implementation checkpoint, 17 October 2026
 
 The local review database, API, client, admin, and financial worker are restored. Authorized summary/detail responses now contain recording and registered contributor names without changing signed proposal data. Version-level visibility excludes unpublished drafts and future proposals from removed contributors. Fifteen agreement checks and ten finalization checks passed against disposable PostgreSQL, with mocked chain transport in the latter suite. Server typecheck passed. Current browser lifecycle and rollout verification remain open.
+
+### Agreement lifecycle verification checkpoint, 17 October 2026, 14:34 UTC
+
+Commits `04096bb`, `882c231`, and `889113a` implement the authorized response contracts, routed creator and admin screens, and retained-attempt worker. Open Sky version 1 was created and sent through the creator UI. Both independent Dynamic Sandbox wallets signed it; two external Testnet treasury signatures were imported through admin. The first signature left submission disabled. The second enabled it. The UI automatically confirmed transaction `b199ee8b29fedf4c944a3ac4a88a78e97eb8b1dedd472006caccc5edea70857c` and the database now records effective version 1.
+
+The browser download capture timed out. Verification used the exact prepared XDR displayed by the admin verification disclosure, followed by real file imports. Successful browser download capture is not claimed. The setup-helper incident and production record audit are recorded in [setup verification](contributor-agreements-evidence/lifecycle-review/setup-verification.json). Production admin setup, remaining lifecycle branches, responsive inspection, and rollout are still open.
+
+### Agreement lifecycle verification checkpoint, 17 October 2026, 14:52 UTC
+
+The browser has exercised rejection, an accepted contributor's later dispute, super-admin resolution, owner editing and resubmission, independent fresh consent, and a 70/30 to 60/40 active amendment. Exact on-chain registry checks and original funded entitlement hashes are saved in the lifecycle evidence directory. A local API crash after committed submission intent recovered attempt `86f679c4-ed49-457f-b993-d58840c1b2ee` by its original hash, with one activation event and no replacement attempt. A local proxy then dropped one successful consent response; the actual browser recovered the recorded response without requesting a second signature.
+
+Independent review found and prompted fixes for random-UUID attempt selection and expired challenge retries (`2a71a1e`). The final focused runs passed 13 creator, 8 admin, 17 PostgreSQL agreement, and 10 PostgreSQL finalization checks. The full baseline suite passed 121 server, 105 client, and 17 admin checks, with nine server checks skipped in its default environment; the PostgreSQL suites ran separately. Workspace typecheck and production builds passed. Mobile admin navigation was fixed after actual 390-pixel inspection (`bc181c1`).
+
+Railway API, financial worker, and media worker report successful deployments of `2a71a1e`. The client deployment is ready; the final mobile-admin deployment is still being checked. Production application and financial table hashes match the audit before rollout. Authenticated production admin verification remains pending legitimate first-admin setup. The early additive migration is a documented rollout exception, not a passed backup-before-migration check.
+
+### Agreement lifecycle handoff, 17 October 2026
+
+E7 now records all CU-01 through CU-14 checks, including the exact observations and transport limits. The final UI suites passed 106 client and 18 admin tests. Real provider cancellation returns keyboard focus to the agreement heading (`11c38a4`). The XDR download capture timeout was investigated: the actual file exists in Downloads and matches the prepared 1,900-byte transaction exactly. This supersedes the earlier uncertainty about download completion.
+
+AGR-27 remains open as a rollout exception: the early additive migration occurred before the fresh backup; the earlier 15 October backup and unchanged-record audit are retained. Deployment and runtime checks passed. AGR-28 remains open because the live admin service requires first-admin setup. An existing Live listener signed in normally and reached the deployed inbox. No synthetic production agreement or financial transaction was created. AGR-29 packages these results and explicitly leaves reviewer acceptance and broader SOW completion open.

@@ -1,0 +1,246 @@
+{
+  "at": "2026-10-17T15:00:30.259084+00:00",
+  "scenarios": [
+    {
+      "id": "CU-01",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Owner created Open Sky 70/30 from its recording, saved/reloaded, reviewed and sent. Independent listener saw the recording title.",
+      "screenshot": "screenshots/review-proposal.png"
+    },
+    {
+      "id": "CU-02",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Browser blocked 99% total, zero share and excess precision; unknown account returned no result; existing contributor result was disabled. Corrected values saved. Domain and PostgreSQL checks reject malformed or unknown recipients.",
+      "screenshot": "screenshots/mobile-validation.png"
+    },
+    {
+      "id": "CU-03",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Ngoni and listener Kwame independently signed through real Dynamic Sandbox prompts. Admin automatically reflected consent. Public-key signatures independently verified.",
+      "screenshot": "screenshots/independent-consent-ready.png"
+    },
+    {
+      "id": "CU-04",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Provider cancellation recorded no response. Local proxy dropped an upstream 200 response after real consent; browser recovered one acceptance and one event without another signature.",
+      "screenshot": "screenshots/lost-response-recovered.png"
+    },
+    {
+      "id": "CU-05",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Kwame rejected City Lights with a signed reason; owner revised to 60/40 and sent version 2 without carried consent. Version 1 and reason remain.",
+      "screenshot": "screenshots/rejected-proposal.png"
+    },
+    {
+      "id": "CU-06",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Kwame accepted River Road, then signed a dispute. Both responses persisted. Admin lost prepare control and showed the reason.",
+      "screenshot": "screenshots/admin-disputed.png"
+    },
+    {
+      "id": "CU-07",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Super admin recorded resolution; version 2 was an unsigned draft. Owner edited its terms and sent it. Both wallets signed fresh consent before two-signer confirmation.",
+      "screenshot": "screenshots/recovered-original-transaction.png"
+    },
+    {
+      "id": "CU-08",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Admin could not prepare incomplete consent. First treasury signature left submit disabled; second exact authorized signature enabled it. Ordinary admin had no mutation controls and API returned 403.",
+      "screenshot": "screenshots/one-signature-blocked.png"
+    },
+    {
+      "id": "CU-09",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Real Testnet finalization automatically changed interfaces from confirming to active. Independent registry, proposal and treasury signatures match.",
+      "screenshot": "screenshots/amendment-active.png"
+    },
+    {
+      "id": "CU-10",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Stopped isolated API after committed submitting intent with worker stopped. Navigated away, restarted API/worker and reopened the route. Original attempt/hash confirmed, one activation event, no replacement. This used navigation away, not a whole-browser crash.",
+      "screenshot": "screenshots/recovered-original-transaction.png"
+    },
+    {
+      "id": "CU-11",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Unsigned New Day attempt expired on real chain time, worker recorded expiry, no active version or registry. Separately mocked pruned transport history stayed unresolved in PostgreSQL checks.",
+      "screenshot": "screenshots/unsigned-expired.png"
+    },
+    {
+      "id": "CU-12",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Active 70/30 changed to 60/40 only after fresh two-wallet consent and two treasury signatures. Earlier funded 0.01 Testnet USDC entries and allocations retain identical hashes.",
+      "screenshot": "screenshots/amendment-old-active.png"
+    },
+    {
+      "id": "CU-13",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "Signed-out gate, unrelated Amara denial, removed Kwame historical-only access, ordinary read-only admin, and super-admin operation verified through normal sign-in. Future excluded version 3 terms are absent.",
+      "screenshot": "screenshots/removed-contributor-history.png"
+    },
+    {
+      "id": "CU-14",
+      "status": "passed",
+      "date": "2026-10-17",
+      "sourceCommits": [
+        "882c231",
+        "889113a",
+        "2a71a1e",
+        "bc181c1",
+        "11c38a4"
+      ],
+      "environment": "isolated local PostgreSQL; real Dynamic Sandbox; Stellar Testnet",
+      "observed": "390px creator/admin, long title, mobile menu, keyboard history, deep-link reload and Back verified. Real provider cancellation returned focus to H1, closed overlay and recorded no consent.",
+      "screenshot": "screenshots/keyboard-signing-cancelled.png"
+    }
+  ],
+  "independentEvidence": [
+    "independent-chain-check.json",
+    "edge-results.json",
+    "restart-interruption.json",
+    "restart-result.json",
+    "entitlements-before-amendment.json",
+    "entitlements-after-amendment.json",
+    "ordinary-admin-api.json",
+    "lost-response-injection.json"
+  ],
+  "cancelledConsentSnapshot": {
+    "at": "2026-10-17T14:19:22.452Z",
+    "environment": "isolated local PostgreSQL; real Dynamic Sandbox",
+    "items": [
+      {
+        "key": "main",
+        "id": "2b72f194-f053-4a58-8ea6-abae3844b998",
+        "currentVersion": 1,
+        "effectiveVersion": null,
+        "versions": [
+          {
+            "version": 1,
+            "state": "proposed",
+            "hash": "47170f9380637f21b1a74a30ef0667ff61cbb14f74ba37799eaebcd57f84c762",
+            "responses": []
+          }
+        ]
+      }
+    ]
+  },
+  "production": {
+    "creator": "Normal Live Google login reached listener inbox; no synthetic production agreement created.",
+    "admin": "Setup required. No authenticated production admin claim.",
+    "evidence": [
+      "deployments.json",
+      "live-api.json"
+    ]
+  },
+  "limits": [
+    "Pruned network history is mocked transport evidence, not a real Testnet outage.",
+    "Treasury keys used only in private local external-signing helper; none added to app or evidence.",
+    "Download capture tool timed out; actual downloaded file was independently found and byte-verified.",
+    "Early additive production migration and backup exception recorded in setup-verification.json."
+  ]
+}
