@@ -167,7 +167,7 @@ Next implementation checkpoints:
 
 1. Obtain reviewer acceptance of the settlement specification and E5 evidence.
 2. Review the direct-support implementation and E6 evidence.
-3. Finish the remaining D2 proposal, rejection, dispute, and history interface verification. Track provider readiness separately.
+3. Complete the [agreement lifecycle implementation plan](#agreement-lifecycle-implementation-plan) below. Track provider readiness separately.
 
 ## Earnings settlement and creator claims chunk
 
@@ -384,3 +384,122 @@ SUP-01 through SUP-11 are complete at implementation commit `2dbca88`. E6 record
 All three Railway services run the implementation commit. Both Vercel frontends are ready. The support migration and immutable audit triggers are present, readiness and route access checks pass, the financial worker started, and the deployed browser opens the Support dialog. A private backup preceded rollout. Existing users, recordings, releases, agreements, royalty records, and settlement batches match the pre-deployment audit. No support fixtures or payments were inserted into production. Live authentication remains unchanged.
 
 SUP-12 remains reviewer acceptance. This completes the direct-support chunk, not the entire SOW 2. Remaining agreement interface evidence, provider readiness, and deliverable acceptance retain their own checklist items above.
+
+## Agreement lifecycle implementation plan
+
+Planned 17 October 2026 against `bba39eb`. This chunk completes the creator and admin agreement experience and its current browser evidence. It covers D2-01, D2-03, and D2-10, verifies the existing D2 consent and treasury controls, and closes the related D3 interface and recovery gaps. It does not expand into fiat providers, new settlement contracts, unrelated release redesign, or general platform hardening.
+
+The completion target is one understandable journey from a recording to an active agreement, including rejection, dispute resolution, fresh consent, and preserved history. Replace conflicting UI and code in the same change. Keep valid signatures, financial records, and historical evidence.
+
+### Baseline and known gaps
+
+- [x] AGR-01 Inspect the existing creator, admin, service, repository, signature, chain, and test implementations.
+- [x] AGR-02 Inspect the deployed entry points through computer use and save a dated baseline.
+
+[Computer-use baseline](contributor-agreements-evidence/lifecycle-review/baseline.json) records read-only checks on 17 October. The creator route displays a sign-in instruction. The admin route redirects to authentication and presents first-admin setup. No account, agreement, signature, or transaction was created. These checks do not establish the authenticated lifecycle.
+
+Source inspection establishes the following starting points:
+
+| Area | Current behavior | Work required |
+| --- | --- | --- |
+| Creator entry | `/account/agreements` exists in the account and Studio navigation. No recording-level agreement entry was found. | Open or create the agreement from its recording. Retain account access for listener contributors. |
+| Creation and review | One large component handles the list, editor, review, responses, and history. Contributors are entered by wallet. Listener views can show a raw track ID because titles come from owned tracks. | Separate the tasks, resolve registered identities, and return authorized recording context from the server. |
+| State changes | Initial loading and explicit actions fetch data. There is no periodic refresh in either agreement screen. | Keep cross-user responses and finalization status current without a manual refresh requirement. |
+| Admin finalization | Exact transaction download, signature import, two-signature submission, and a manual outcome check exist. | Keep exact signature checks. Make pending progress and automatic reconciliation visible. |
+| Worker | The financial worker scans support and settlements, but does not scan agreement finalizations. | Add retained-attempt reconciliation and bounded recovery for agreement publication. |
+| History and access | Versions and events are retained. Membership in any version currently grants agreement detail access. | Define and test version visibility, including removed contributors and unpublished drafts. |
+| Existing verification | Domain, PostgreSQL, component, and prior real Dynamic evidence already exist. | Extend focused tests and perform the complete current creator and admin journey. Do not replace real-wallet evidence with mocks. |
+
+### Intended user flow
+
+1. The owner opens a recording and selects **Royalty agreement**. An existing agreement opens directly. Otherwise, the recording is already selected.
+2. The owner selects registered contributors, roles, percentages, and any additional terms. Each contributor appears once. A visible total must reach exactly 100%.
+3. The owner saves a draft, reviews one summary, and sends the proposal. Sending fixes that version. Each included wallet, including the owner's when included, must independently consent.
+4. A contributor opens **Royalty agreements** from their account. They see the recording title, owner, complete split, their share, terms, and one clear next action.
+5. **Accept and sign** requests the exact wallet authorization. **Reject** and **Raise dispute** reveal a reason field only when selected. Cancelling signing records no response.
+6. A rejected or disputed version blocks finalization. The owner can revise it with a reason. A super admin can record a resolution and create an owner-controlled revised draft. Neither path creates consent.
+7. The owner reviews and sends the revision. Every included contributor signs the revised version again. An existing active version stays active during this process.
+8. Once consent is complete, a super admin reviews the exact proposal and prepares finalization. Two independent treasury signers authorize the same transaction before submission.
+9. The worker verifies the receipt and registry state. Both interfaces automatically show **Active** only after confirmation. History identifies each version, response, resolution, and receipt.
+
+Use a list page and a shareable detail URL for each agreement. Keep the existing account and admin entry points. Add optional recording context to creation. Refreshing a detail URL must restore the same agreement and selected version.
+
+### Implementation order and checklist
+
+Complete each phase with its focused checks before proceeding. Update these boxes with the tested commit and evidence when the work passes.
+
+#### Phase 1. Establish the verification environment and response contracts
+
+- [ ] AGR-03 Restore an isolated local PostgreSQL, API, client, admin, and financial worker using the existing review setup. Preserve prior demonstration receipts. Use Dynamic Sandbox and Stellar Testnet only for mutable verification.
+- [ ] AGR-04 Prepare an owner, a registered listener contributor, an outsider, an ordinary admin, a super admin, and three independent Testnet treasury signers. Verify network, registry, thresholds, and required balances. Use the ordinary application sign-in flows.
+- [ ] AGR-05 Define typed summary and detail responses with authorized recording title, owner identity, contributor identity, current version, active version, response status, and next permitted actions. Keep display metadata outside the signed canonical proposal.
+- [ ] AGR-06 Define and enforce visibility by role and version. Owners and authorized admins can inspect the full record. Contributors retain versions they participated in. Historical membership alone must not reveal future proposals they were removed from. Keep unrelated wallets out. Do not change valid historical consent.
+
+#### Phase 2. Make creation and review straightforward
+
+- [ ] AGR-07 Add a recording-level agreement action and persistent list/detail routes. Existing agreements open directly instead of offering duplicate creation. Preserve navigation and browser Back behavior.
+- [ ] AGR-08 Replace the combined creator screen with focused list, editor, review, and detail components using the established form and layout components. Keep one primary action per task.
+- [ ] AGR-09 Add authenticated registered-contributor lookup by name or exact wallet. Show the resolved name, role, and wallet for confirmation. Reuse selected recording credits where useful without assigning shares or consent automatically. Do not expose email addresses or unrelated private profile fields.
+- [ ] AGR-10 Validate duplicate wallets, registered accounts, roles, positive shares, precision, and the exact 100% total on both client and server. Keep terms and entered values after a failed save. Map validation failures to the relevant fields.
+- [ ] AGR-11 Implement a recoverable draft and one review summary before sending. Prevent duplicate drafts or revisions after a repeated click or lost response. Recover the existing result before offering another mutation.
+
+#### Phase 3. Complete contributor responses and dispute recovery
+
+- [ ] AGR-12 Present an inbox of actionable proposals with recording titles and personal response status. A listener contributor must reach the same review without artist activation.
+- [ ] AGR-13 Show the complete proposal before signing. Bind the response to its wallet, action, reason, version, hash, challenge, expiry, and network. Preserve scoped Dynamic authorization and provider prompt visibility. Recover response state after an interrupted request before enabling another response.
+- [ ] AGR-14 Make rejection and dispute separate deliberate actions with a required reason. Remove the always-visible combined reason form. Preserve a prior acceptance when a contributor later disputes an eligible version.
+- [ ] AGR-15 Complete owner revision and admin resolution paths. Require a reason, preserve the blocked version, create one new draft, and require owner submission plus fresh consent. Serialize concurrent owner and admin actions so they cannot create competing revisions.
+- [ ] AGR-16 Show the current proposal separately from the active agreement. Verify initial rejection, a dispute before finalization, an accepted contributor's dispute before finalization, and a revised agreement after an active version. Finalized versions remain immutable.
+- [ ] AGR-17 Add automatic, bounded polling while relevant states are pending. Refresh on focus, stop on unmount, and ignore stale responses after account or agreement changes. Show a compact interrupted-status state with retry when reads fail. Never infer consent or activation from a spinner ending.
+
+#### Phase 4. Finish admin finalization and background recovery
+
+- [ ] AGR-18 Refactor admin list/detail views around recording context, consent progress, blocked reasons, active version, and the next allowed action. Keep hashes, XDR, and registry details in an accessible verification disclosure. Ordinary admins remain read-only.
+- [ ] AGR-19 Preserve prepare, download, and signed-envelope import for treasury signers. Verify the exact envelope, network, source, registry, proposal hash, and two distinct authorized signatures. Duplicate, altered, or outsider signatures cannot increase the count. Do not add a server-held signing key.
+- [ ] AGR-20 Add agreement finalizations to the financial worker with per-attempt serialization, fair scheduling, and isolated errors. Persist authorization and submission intent before network calls. Reconcile the original hash after timeouts or restarts. Bound retries of the same envelope and prevent replacement while the outcome is uncertain.
+- [ ] AGR-21 Preserve chain-based expiry and history coverage checks. Confirm exact receipt and registry contents before changing the active version. Failed attempts retain evidence and allow a new attempt only after a verified terminal outcome. Add additive migrations only for fields or indexes the worker actually needs.
+- [ ] AGR-22 Display automatic finalization progress and confirmed receipts in both interfaces. A cancelled signer prompt or incomplete threshold must leave the proposal inactive. Remove normal dependence on **Check transaction outcome**.
+
+#### Phase 5. Finish history, UX, and regression verification
+
+- [ ] AGR-23 Present a compact version history with full prior terms, shares, responses, reasons, resolution records, timestamps, actors, and receipts available on demand. Human-readable names supplement immutable wallet identity.
+- [ ] AGR-24 Inspect creator and admin screens at desktop and 390-pixel mobile widths through computer use. Check long titles, wallets, terms, validation, keyboard focus, provider overlays, loading, empty states, and interrupted requests. Fix overflow, inconsistent spacing, and repeated explanations.
+- [ ] AGR-25 Extend domain, HTTP, PostgreSQL, worker, client, and admin tests for changed behavior. Run workspace typecheck and production builds. Verify settlement still consumes the exact confirmed version and historical entitlements remain unchanged. Verify support remains independent.
+- [ ] AGR-26 Execute the complete computer-use matrix below. Save evidence for each scenario, including browser-visible results and independent service or chain checks. Close real-wallet gaps rather than relabeling mocked results.
+
+#### Phase 6. Roll out and close the chunk
+
+- [ ] AGR-27 Back up production before any migration. Deploy the API, financial worker, and both affected frontends. Deploy other services if shared runtime or schema changes require it. Verify migrations, worker startup, readiness, CORS, authorization, exact source commits, and existing-record preservation.
+- [ ] AGR-28 Verify deployed creator and admin navigation, detail deep links, and access boundaries through computer use. The current live admin page requires initial setup. Complete legitimate operator setup before claiming authenticated production verification. Use the isolated environment for destructive scenarios and synthetic agreements.
+- [ ] AGR-29 Package results under `docs/contributor-agreements-evidence/lifecycle-review/`. Reconcile overlapping D2 and D3 checklist rows against actual evidence. Keep unverified items open. Record reviewer acceptance separately.
+
+### Required computer-use verification matrix
+
+Drive the real rendered client, admin, and Dynamic prompts with the computer-use tool. Use CLI helpers for disposable setup, failure injection, treasury signatures held outside the server, and independent database or chain inspection. Helpers must not substitute for the creator actions being demonstrated. Never inject a session into browser storage, fabricate a contributor response, or count a mocked wallet as a real signature.
+
+| ID | Browser journey | Required visible and independent result |
+| --- | --- | --- |
+| CU-01 | Open a recording, create a 70/30 proposal, save, reload, review, and send. | The recording is preselected, values persist, exactly one agreement exists, and the submitted version is fixed. Both roles see the correct recording title. |
+| CU-02 | Enter duplicate or unknown wallets, invalid shares, excess precision, and a total other than 100%. | Inline correction is clear. No invalid draft or proposal is saved. A valid correction succeeds without re-entering unrelated fields. |
+| CU-03 | Open the proposal as the listener contributor and sign acceptance. Independently sign as the included owner. | Actual Dynamic prompts authorize the exact version. The other screen updates automatically. Consent records verify against the real linked wallets. |
+| CU-04 | Cancel the provider prompt, then retry the response. Interrupt the HTTP response after a successful save. | Cancellation records no consent. A lost response recovers the existing result. Retrying cannot duplicate consent or events. |
+| CU-05 | Open a separate proposed agreement as a contributor, reject it with a reason, then revise it as owner. | The reason and rejection remain in history. Finalization is blocked. The revised draft has no carried-over consent and is sent by its owner. |
+| CU-06 | Accept a proposed version, then raise a dispute before finalization. Inspect it as admin. | Original acceptance and later dispute are both retained. Finalization is blocked and the reason is visible to authorized participants. |
+| CU-07 | Record a resolution as super admin, return to owner, edit the revised draft, and send it. | Resolution creates a draft, not acceptance or activation. Fresh real Dynamic signatures are required from all included contributors. |
+| CU-08 | Open the admin review with incomplete consent, then with complete consent. Add one treasury signature and then a second distinct signature. | Incomplete consent and one signature cannot finalize. Two verified signatures for the same exact transaction enable submission. Normal admin access cannot operate finalization. |
+| CU-09 | Submit finalization and leave both screens open. | Pending state is visible. The worker confirms the original hash. Both screens show the active version and a real receipt without a manual status check. Registry data matches every approved term and recipient. |
+| CU-10 | Interrupt submission, close a tab, restart the worker, then reopen the detail URL. | The retained attempt resumes by its original identity. No replacement or second publication is created while unresolved. Each confirmed outcome has one activation event. |
+| CU-11 | Let an unsigned attempt expire. Separately inject missing or pruned transaction history in an isolated automated fixture. | Proven expiry permits a new attempt. Incomplete history remains unresolved. The UI does not falsely show failure or activation. Record the simulated transport case separately from real-chain evidence. |
+| CU-12 | Amend an active 70/30 agreement to 60/40 and complete new consent and treasury confirmation. | The old agreement stays active until confirmation. Earlier signatures do not authorize the amendment. Historical versions and funded entitlements remain unchanged. |
+| CU-13 | Open direct URLs as a signed-out user, outsider, removed contributor, ordinary admin, and super admin. | Correct sign-in and permission boundaries hold. A former contributor retains permitted history without reading a future version they are excluded from. Server checks enforce the same rules. |
+| CU-14 | Review history, refresh a deep link, use browser Back, and complete representative actions on mobile and by keyboard. | The selected agreement is recoverable, actions are reachable, long content stays within the viewport, and focus returns correctly after a prompt or dialog. |
+
+Use separate disposable recordings where mutually exclusive branches require them. Do not repeatedly reset an immutable proposal to reuse a fixture. Test races, altered signatures, audit rollback, and unauthorized HTTP mutations through focused automated checks as well as visible role checks.
+
+### Evidence and completion rules
+
+For every matrix row, record the date, source commit, environment, actor role, browser path, expected result, observed result, screenshot, and independent check. Include agreement IDs, version hashes, finalization hashes, ledgers, and explorer links when applicable. Keep passwords, tokens, OTPs, callback codes, and private keys out of the evidence.
+
+The final evidence set must include a baseline, dated scenario results, desktop and mobile screenshots, real Dynamic consent proof, two-signer finalization receipts, registry read-back, historical entitlement comparison, automated test results, and deployment verification. Classify each result as real browser and chain, mocked transport, or unverified. Existing E1, E2, E5, and E6 remain supporting evidence with their original dates.
+
+This chunk is complete only when AGR-03 through AGR-29 and the applicable CU scenarios pass. A written plan, successful build, manually seeded final state, or historical screenshot does not establish completion. If real authentication or signing is unavailable, continue independent implementation and testing, record the exact remaining gap, and leave its verification box open. Reviewer acceptance and broader SOW 2 completion remain separate.

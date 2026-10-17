@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-17T13:46:29.186Z",
+  "commit": "bba39eb",
+  "method": "Computer use through Codex in-app browser. Read-only navigation. No agreement, response, admin account, or chain transaction created.",
+  "creator": {
+    "requestedUrl": "https://music-city.vercel.app/account/agreements",
+    "observedUrl": "https://music-city.vercel.app/account/agreements",
+    "result": "Signed-out page displays sign-in instruction. Authenticated creator controls were not verified in this check.",
+    "screenshot": "creator-entry.png"
+  },
+  "admin": {
+    "requestedUrl": "https://music-city-admin.vercel.app/console/agreements",
+    "observedUrl": "https://music-city-admin.vercel.app/auth",
+    "result": "Redirected to auth. Page presents first-admin setup fields and Create admin. No bootstrap token or password entered. Authenticated admin controls were not verified in this check.",
+    "screenshot": "admin-entry.png"
+  },
+  "lifecycleVerification": "Pending implementation acceptance. This baseline does not establish proposal creation, contributor responses, dispute resolution, finalization, or treasury signing."
+}
