@@ -63,6 +63,7 @@ export function AgreementDetailPanel({
     signedTransaction: string;
   } | null>(null);
   const lock = useRef(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -119,6 +120,7 @@ export function AgreementDetailPanel({
       if (alive.current) {
         setBusy(false);
         setWalletWaiting(false);
+        titleRef.current?.focus();
       }
       onBusy(false);
     }
@@ -232,7 +234,7 @@ export function AgreementDetailPanel({
       <header className="space-y-3 border-b border-border pb-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="break-words text-2xl font-semibold">
+            <h1 ref={titleRef} tabIndex={-1} className="break-words text-2xl font-semibold outline-none">
               {detail.context.track.title}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">

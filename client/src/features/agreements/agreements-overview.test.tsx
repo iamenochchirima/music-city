@@ -239,6 +239,7 @@ describe("agreement lifecycle UI", () => {
       "No response recorded",
     );
     expect(mocks.respond).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole("heading", {name: "Demo recording"}));
   });
   it.each(["reject", "dispute"] as const)(
     "asks for a reason only when choosing %s",
