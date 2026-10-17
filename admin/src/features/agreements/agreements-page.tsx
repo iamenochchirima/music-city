@@ -147,7 +147,8 @@ export function AdminAgreementsPage() {
             </span>
           )}
       </header>
-      {error && (
+      {busy && <p role="status" className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle className="size-4 animate-spin"/>Working…</p>}
+    {error && (
         <p
           role="alert"
           className="rounded border border-red-500/30 p-3 text-sm text-red-200"
