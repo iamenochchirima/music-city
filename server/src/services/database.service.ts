@@ -409,7 +409,6 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 
 const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-15-direct-support", statements: supportSchemaStatements },
-  { name: "2026-10-17-agreement-recovery", statements: agreementRecoveryStatements },
   { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
   { name: "2026-10-11-early-user-sponsorship-capacity", statements: sponsorshipCapacityMigrationStatements },
@@ -419,6 +418,7 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-02-contributor-agreements", statements: agreementSchemaStatements },
   { name: "2026-10-02-agreement-finalization", statements: finalizationSchemaStatements },
   { name: "2026-10-02-agreement-finalization-integrity", statements: finalizationIntegrityStatements },
+  { name: "2026-10-17-agreement-recovery", statements: agreementRecoveryStatements },
   { name: "2026-10-15-earnings-settlement", statements: settlementSchemaStatements },
   { name: "2026-10-15-settlement-chain-events", statements: settlementChainEventSchemaStatements },
   {

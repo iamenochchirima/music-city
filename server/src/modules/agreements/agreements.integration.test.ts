@@ -156,6 +156,24 @@ test("PostgreSQL contributor agreement workflow", { skip: !testUrl }, async t =>
       await agreementsService.submit(id,a.publicKey(),1);
       assert.equal((await agreementsService.get(id,a.publicKey())).events.filter(e=>e.action==='proposed').length,1);
     });
+    await t.test("cancelled unsent drafts stay private but cancelled sent versions remain in participant history",async()=>{
+      const unsent=await create(),id=unsent.proposal.agreementId;
+      await agreementsService.cancel(id,a.publicKey());
+      await assert.rejects(agreementsService.get(id,b.publicKey()),/not been sent/);
+      assert.equal((await agreementsService.list(b.publicKey())).some(x=>x.id===id),false);
+      const sent=await create(),sentId=sent.proposal.agreementId;
+      await agreementsService.submit(sentId,a.publicKey());
+      await agreementsService.cancel(sentId,a.publicKey());
+      assert.equal((await agreementsService.get(sentId,b.publicKey())).versions[0]!.state,'cancelled');
+    });
+    await t.test("draft hash preconditions reject stale edits and stale submission within the same version",async()=>{
+      const v=await create(),id=v.proposal.agreementId;
+      const changed=await agreementsService.edit(id,a.publicKey(),{...terms,terms:'Reviewed new terms'},1,v.proposalHash);
+      assert.notEqual(changed.proposalHash,v.proposalHash);
+      await assert.rejects(agreementsService.edit(id,a.publicKey(),terms,1,v.proposalHash),/draft changed/);
+      await assert.rejects(agreementsService.submit(id,a.publicKey(),1,v.proposalHash),/draft changed/);
+      await agreementsService.submit(id,a.publicKey(),1,changed.proposalHash);
+    });
     await t.test("a release-bound track snapshots its owned release into the signed proposal", async () => {
       const trackId = randomUUID(), releaseId = randomUUID();
       await databaseService.transaction(async client => {

@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-17T14:15:33.721Z",
+  "incident": "A setup helper statically imported application modules while its local environment initializer awaited files. The application captured production configuration first. It applied the additive recovery migration, then its recipient lookup assertion stopped execution before any fixture creation.",
+  "correction": "Await local environment initialization before dynamically importing application modules. Refuse non-local database hosts, names not ending in _test, and a mismatch between process and application configuration.",
+  "earlyMigration": [
+    {
+      "name": "2026-10-17-agreement-recovery",
+      "applied_at": "2026-10-17T14:09:47.954Z"
+    }
+  ],
+  "comparedTo": "15 October 2026 pre-support database audit",
+  "existingApplicationRecordsUnchanged": true,
+  "counts": {
+    "users": 6,
+    "tracks": 3,
+    "releases": 2,
+    "royalty_splits": 0,
+    "royalty_ledger": 0,
+    "royalty_payouts": 0,
+    "contributor_agreements": 0,
+    "agreement_versions": 0,
+    "agreement_responses": 0,
+    "agreement_events": 0,
+    "agreement_finalizations": 0,
+    "settlement_batches": 0
+  },
+  "testFixturesCreatedInProduction": false,
+  "freshLocalDatabaseMigrationPassed": true,
+  "backup": "A retained 15 October backup predates this migration. A fresh backup was requested after detection. This report does not claim the fresh backup preceded the early migration."
+}

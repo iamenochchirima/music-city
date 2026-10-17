@@ -437,8 +437,8 @@ Complete each phase with its focused checks before proceeding. Update these boxe
 
 #### Phase 2. Make creation and review straightforward
 
-- [ ] AGR-07 Add a recording-level agreement action and persistent list/detail routes. Existing agreements open directly instead of offering duplicate creation. Preserve navigation and browser Back behavior.
-- [ ] AGR-08 Replace the combined creator screen with focused list, editor, review, and detail components using the established form and layout components. Keep one primary action per task.
+- [x] AGR-07 Add a recording-level agreement action and persistent list/detail routes. Existing agreements open directly instead of offering duplicate creation. Preserve navigation and browser Back behavior.
+- [x] AGR-08 Replace the combined creator screen with focused list, editor, review, and detail components using the established form and layout components. Keep one primary action per task.
 - [ ] AGR-09 Add authenticated registered-contributor lookup by name or exact wallet. Show the resolved name, role, and wallet for confirmation. Reuse selected recording credits where useful without assigning shares or consent automatically. Do not expose email addresses or unrelated private profile fields.
 - [ ] AGR-10 Validate duplicate wallets, registered accounts, roles, positive shares, precision, and the exact 100% total on both client and server. Keep terms and entered values after a failed save. Map validation failures to the relevant fields.
 - [ ] AGR-11 Implement a recoverable draft and one review summary before sending. Prevent duplicate drafts or revisions after a repeated click or lost response. Recover the existing result before offering another mutation.
@@ -450,7 +450,7 @@ Complete each phase with its focused checks before proceeding. Update these boxe
 - [ ] AGR-14 Make rejection and dispute separate deliberate actions with a required reason. Remove the always-visible combined reason form. Preserve a prior acceptance when a contributor later disputes an eligible version.
 - [ ] AGR-15 Complete owner revision and admin resolution paths. Require a reason, preserve the blocked version, create one new draft, and require owner submission plus fresh consent. Serialize concurrent owner and admin actions so they cannot create competing revisions.
 - [ ] AGR-16 Show the current proposal separately from the active agreement. Verify initial rejection, a dispute before finalization, an accepted contributor's dispute before finalization, and a revised agreement after an active version. Finalized versions remain immutable.
-- [ ] AGR-17 Add automatic, bounded polling while relevant states are pending. Refresh on focus, stop on unmount, and ignore stale responses after account or agreement changes. Show a compact interrupted-status state with retry when reads fail. Never infer consent or activation from a spinner ending.
+- [x] AGR-17 Add automatic, bounded polling while relevant states are pending. Refresh on focus, stop on unmount, and ignore stale responses after account or agreement changes. Show a compact interrupted-status state with retry when reads fail. Never infer consent or activation from a spinner ending.
 
 #### Phase 4. Finish admin finalization and background recovery
 

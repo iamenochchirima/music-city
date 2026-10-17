@@ -5,7 +5,7 @@ import { env } from "../../config/env.js";
 import { HttpError } from "../../utils/http-error.js";
 import { verifyTreasuryConfiguration, type TreasuryAccount } from "./treasury-signatures.js";
 
-const rpc = () => new Server(env.STELLAR_SOROBAN_RPC_URL);
+const rpc = () => new Server(env.STELLAR_SOROBAN_RPC_URL,{timeout:15000});
 export function agreementChainConfig() {
   if (!env.AGREEMENT_TREASURY_ADDRESS || !env.ROYALTY_REGISTRY_CONTRACT_ID) throw new HttpError(503,"Agreement treasury and finalized-split registry must be configured explicitly");
   return { treasuryAddress: env.AGREEMENT_TREASURY_ADDRESS, contractId: env.ROYALTY_REGISTRY_CONTRACT_ID,networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE };
@@ -31,7 +31,7 @@ export const agreementsChain = {
   config: agreementChainConfig,
   async treasuryEvidence() {
     const config = agreementChainConfig();
-    const response = await fetch(`${env.STELLAR_HORIZON_URL}/accounts/${config.treasuryAddress}`);
+    const response = await fetch(`${env.STELLAR_HORIZON_URL}/accounts/${config.treasuryAddress}`,{signal:AbortSignal.timeout(15000)});
     if (!response.ok) throw new HttpError(502,"Unable to verify the agreement treasury account");
     const account = await response.json() as TreasuryAccount;
     const signers = verifyTreasuryConfiguration(account,config.treasuryAddress);

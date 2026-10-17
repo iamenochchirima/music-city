@@ -271,6 +271,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
         </Link>
       </Button>
       <StudioPageHeader
+        actions={<Button asChild variant="outline"><Link href={`/account/agreements/new?track=${track.id}`}>Royalty agreement</Link></Button>}
         title={track.title}
         eyebrow="Track"
         description={[

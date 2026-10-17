@@ -26,7 +26,7 @@ test("agreement admin HTTP routes enforce admin read and super-admin operation r
   finalizationService.reconcile = async (_id,_attempt,actor) => { calls.push({ method: "reconcile",actor }); return {} as never; };
   finalizationService.resolveDispute = async (_id,actor) => { calls.push({ method: "resolution",actor }); return {} as never; };
   async function request(path: string,token?: string,method = "GET") {
-    return fetch(base+path,{ method,headers: token ? { Authorization: `Bearer ${token}`,"Content-Type": "application/json" } : {},body: method === "POST" ? JSON.stringify({ signedTransaction: "xdr",actor: "forged-actor" }) : undefined });
+    return fetch(base+path,{ method,headers: token ? { Authorization: `Bearer ${token}`,"Content-Type": "application/json" } : {},body: method === "POST" ? JSON.stringify(path.endsWith("/resolutions")?{resolution:"Reviewed correction",expectedVersion:1,expectedHash:"a".repeat(64)}:path.endsWith("/finalizations")?{expectedVersion:1,expectedHash:"a".repeat(64)}:{ signedTransaction: "xdr",actor: "forged-actor" }) : undefined });
   }
   try {
     assert.equal((await request("")).status,401);

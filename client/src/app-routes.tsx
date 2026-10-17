@@ -278,6 +278,8 @@ export const AppRoutes = () => (
     <Route path="/account/referrals" element={<PageContainer><div className="py-10"><ReferralsOverview /></div></PageContainer>} />
     <Route path="/account/playlists" element={<AccountPlaylistsPage />} />
     <Route path="/account/agreements" element={<PageContainer><div className="py-10"><AgreementsOverview /></div></PageContainer>} />
+    <Route path="/account/agreements/new" element={<PageContainer><div className="py-10"><AgreementsOverview /></div></PageContainer>} />
+    <Route path="/account/agreements/:agreementId" element={<PageContainer><div className="py-10"><AgreementsOverview /></div></PageContainer>} />
     <Route
       path="/account/playlists/:playlistId"
       element={<AccountPlaylistManagePage />}

@@ -32,10 +32,11 @@ const buildError = (payload: ErrorPayload, status: number) =>
   );
 
 export const httpClient = {
-  async get<T>(path: string, token?: string) {
+  async get<T>(path: string, token?: string, signal?: AbortSignal) {
     const response = await fetch(`${adminEnv.apiBaseUrl}${path}`, {
       credentials: "include",
       cache: "no-store",
+      signal,
       headers: authHeaders(token),
     });
 

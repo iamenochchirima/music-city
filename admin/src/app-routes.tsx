@@ -1763,6 +1763,7 @@ export const AppRoutes = () => {
       <Route path="/console/support" element={<ProtectedRoute><SidebarLayout><AdminSupportPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/settlements" element={<ProtectedRoute><SidebarLayout><AdminSettlementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/agreements" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
+      <Route path="/console/agreements/:agreementId" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route
         path="/console/treasury"
         element={

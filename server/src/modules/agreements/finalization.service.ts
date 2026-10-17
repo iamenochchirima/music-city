@@ -36,9 +36,10 @@ async function verifyConsent(client: PoolClient, version: AgreementVersion) {
   if (verified.state !== "ready") throw new HttpError(409,"Every required contributor must accept this exact undisputed proposal before finalization");
 }
 export const finalizationService = {
-  async resolveDispute(id: string,actor: string,input: unknown) {
+  async resolveDispute(id: string,actor: string,input: unknown,expectedVersion?:number,expectedHash?:string) {
     const request = z.object({ resolution: z.string().trim().min(1).max(1000) }).strict().parse(input);
     return agreementsRepository.locked(id,actor,async (client,_root,current) => {
+      if((expectedVersion!==undefined&&expectedVersion!==current.proposal.version)||(expectedHash!==undefined&&expectedHash!==current.proposalHash)) throw new HttpError(409,"The agreement changed. Review the latest version");
       if (!["disputed","rejected"].includes(current.state)) throw new HttpError(409,"Only disputed or rejected versions can be resolved");
       // Resolution creates an owner-controlled draft. It does not alter the blocked
       // version or authorize any acceptance, submission or effective-version change.
@@ -64,8 +65,9 @@ export const finalizationService = {
       return { id,currentVersion: root.current_version,effectiveVersion: root.effective_version,versions: versions.rows.map(r => r.payload),finalizations: attempts.rows.map(r => agreementFinalizationSchema.parse(r.payload)),events: events.rows,context:await agreementContext(client,versions.rows.map(r=>r.payload)) };
     },true);
   },
-  async prepare(id: string,actor: string) {
+  async prepare(id: string,actor: string,expectedVersion?:number,expectedHash?:string) {
     return agreementsRepository.locked(id,actor,async (client,root,current) => {
+      if((expectedVersion!==undefined&&expectedVersion!==current.proposal.version)||(expectedHash!==undefined&&expectedHash!==current.proposalHash)) throw new HttpError(409,"The agreement changed. Review the latest version");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('music-city-agreement-treasury'))");
       const existing = await client.query("SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 AND version=$2 AND status IN ('awaiting_signatures','submitting','submitted','confirmed')",[id,current.proposal.version]);
       if (existing.rows[0]) return agreementFinalizationSchema.parse(existing.rows[0].payload);
