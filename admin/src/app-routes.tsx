@@ -11,6 +11,8 @@ import {
   Eye,
   EyeOff,
   LayoutDashboard,
+  Menu,
+  X,
   LogOut,
   Megaphone,
   Percent,
@@ -452,13 +454,14 @@ const EmptyState = ({
 
 const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
   const { admin, logout } = useAdminAuth();
+  const [navigationOpen, setNavigationOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#0a1120] text-slate-100">
-      <div className="grid min-h-screen lg:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="grid min-h-screen grid-rows-[auto_1fr] lg:grid-cols-[240px_minmax(0,1fr)] lg:grid-rows-none">
         <aside className="border-b border-white/8 bg-[#0c1424] lg:border-b-0 lg:border-r">
           <div className="flex h-full flex-col">
-            <div className="border-b border-white/8 px-5 py-5">
+            <div className="flex items-center justify-between border-b border-white/8 px-5 py-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center bg-emerald-400/12 text-emerald-300">
                   <ShieldCheck className="h-4 w-4" />
@@ -470,8 +473,11 @@ const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                   <p className="text-sm font-semibold text-white">Admin</p>
                 </div>
               </div>
+              <Button type="button" variant="ghost" size="icon" className="lg:hidden" aria-label={navigationOpen ? "Close navigation" : "Open navigation"} aria-expanded={navigationOpen} aria-controls="admin-navigation" onClick={() => setNavigationOpen(!navigationOpen)}>
+                {navigationOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </Button>
             </div>
-
+            <div id="admin-navigation" className={cn("flex-1 flex-col", navigationOpen ? "flex" : "hidden", "lg:flex")}>
             <nav className="flex-1 px-3 py-4">
               <div className="space-y-1">
                 {navItems.map((item) => {
@@ -481,6 +487,7 @@ const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                     <NavLink
                       key={item.href}
                       to={item.href}
+                      onClick={() => setNavigationOpen(false)}
                       end={item.href === "/console"}
                       className={({ isActive }) =>
                         cn(
@@ -523,6 +530,7 @@ const SidebarLayout = ({ children }: { children: React.ReactNode }) => {
                 <LogOut className="h-4 w-4" />
                 Sign out
               </Button>
+            </div>
             </div>
           </div>
         </aside>
