@@ -8,7 +8,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
-import { useAuth } from "@/hooks/use-auth";
 import { TrackTable } from "@/features/music/components/track-table";
 import {
   DropdownMenu,
@@ -24,7 +23,6 @@ export const TrackGrid = ({
   tracks?: TrackSummary[];
   onTrackSynced?: (track: TrackSummary) => void;
 }) => {
-  const { session } = useAuth();
   const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
   const [syncingTrackId, setSyncingTrackId] = useState<string | null>(null);
   const safeTracks = Array.isArray(tracks) ? tracks : [];
@@ -54,8 +52,7 @@ export const TrackGrid = ({
       isRowClickable={(track) =>
         Boolean(
           track.playbackReady &&
-          track.visibility === "published" &&
-          session?.token,
+          track.visibility === "published",
         )
       }
       renderAction={(track) =>
@@ -67,7 +64,6 @@ export const TrackGrid = ({
                 ? "bg-emerald-400 px-3 text-slate-950 hover:bg-emerald-300"
                 : "border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
             }
-            disabled={!session?.token}
             onClick={(event) => {
               event.stopPropagation();
               void handleTrackAction(track);
