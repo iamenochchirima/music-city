@@ -8,6 +8,7 @@ const { engagementRepository } = await import("../engagement/engagement.reposito
 const { tracksService } = await import("../tracks/tracks.service.js");
 const { playbackRepository } = await import("./playback.repository.js");
 const { storageService } = await import("../../services/storage.service.js");
+const { tokenService } = await import("../../services/token.service.js");
 const { guestPlaybackRepository } = await import("./guest-playback.repository.js");
 
 const restore = <T extends object, K extends keyof T>(
@@ -275,6 +276,72 @@ test("guest Mux manifests expose no segments after the remaining allowance", asy
     assert.match(manifest, /manifest-oci-us-phoenix-1-vop1\.fastly\.mux\.com/);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("guest Mux segment proxy preserves Fastly signed chunk URLs", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  const session = {
+    id: "ply_guest_mux_segment",
+    trackId: "trk_guest_mux_segment",
+    artistId: "artist-1",
+    provider: "mux" as const,
+    streamUrl: "https://stream.mux.com/mux-playback-id.m3u8?token=private-mux-token",
+    playbackId: "mux-playback-id",
+    token: "api-playback-token",
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    createdAt: new Date().toISOString(),
+    maxPositionSeconds: 0,
+    listenedSeconds: 0,
+    lastPlaybackEventAt: new Date().toISOString(),
+    guestIdHash: "guest-hash",
+    isGuest: true,
+    guestSlot: "first" as const,
+    guestRemainingSeconds: 16,
+    guestTrackDurationSeconds: 16,
+  };
+  const apiToken = tokenService.issuePlaybackToken({
+    playbackSessionId: session.id,
+    trackId: session.trackId,
+    guestIdHash: session.guestIdHash,
+  });
+  const cleanup = [
+    restore(playbackRepository, "findById", (async () => session) as typeof playbackRepository.findById),
+  ];
+  globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+    const url = String(input);
+    requestedUrls.push(url);
+    if (url.includes("mux-playback-id.m3u8")) {
+      return new Response(
+        "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=128000\nhttps://manifest-oci-us-phoenix-1-vop1.fastly.mux.com/K17/rendition.m3u8?cdn=fastly&expires=123&signature=signed\n",
+        { status: 200 },
+      );
+    }
+    if (url.includes("rendition.m3u8")) {
+      return new Response([
+        "#EXTM3U",
+        "#EXT-X-TARGETDURATION:4",
+        "#EXTINF:4.0,",
+        "https://chunk-oci-us-phoenix-1-vop1.fastly.mux.com/v1/chunk/signed-chunk/0.ts?signature=signed&zone=phx",
+        "#EXT-X-ENDLIST",
+      ].join("\n"), { status: 200 });
+    }
+    return new Response(new Uint8Array([71, 64, 0, 48]), {
+      status: 200,
+      headers: { "Content-Type": "video/MP2T" },
+    });
+  }) as typeof fetch;
+
+  try {
+    const chunkUrl = "https://chunk-oci-us-phoenix-1-vop1.fastly.mux.com/v1/chunk/signed-chunk/0.ts?signature=signed&zone=phx";
+    const response = await playbackService.getMuxSegment(session.id, apiToken, chunkUrl);
+    assert.equal(response.status, 200);
+    assert.ok(requestedUrls.at(-1)?.includes("signature=signed"));
+    assert.ok(!requestedUrls.at(-1)?.includes("private-mux-token"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    cleanup.reverse().forEach((fn) => fn());
   }
 });
 

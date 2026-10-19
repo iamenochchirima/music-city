@@ -331,7 +331,7 @@ export const playbackService = {
       throw new HttpError(403, "Media segment is outside the guest allowance");
     }
     const muxToken = source.searchParams.get("token");
-    if (muxToken && !requested.searchParams.has("token")) {
+    if (muxToken && requested.hostname === "stream.mux.com" && !requested.searchParams.has("token")) {
       requested.searchParams.set("token", muxToken);
     }
     const response = await fetch(requested);
