@@ -225,8 +225,11 @@ test("guest Mux manifests expose no segments after the remaining allowance", asy
   globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes(".m3u8") && !url.includes("audio.m3u8")) {
-      return new Response("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=128000\naudio.m3u8\n", { status: 200 });
+    if (url.includes("mux-playback-id.m3u8")) {
+      return new Response(
+        "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=128000\nhttps://manifest-oci-us-phoenix-1-vop1.fastly.mux.com/K17/rendition.m3u8?cdn=fastly&expires=123&signature=signed\n",
+        { status: 200 },
+      );
     }
     return new Response([
       "#EXTM3U",
@@ -267,7 +270,9 @@ test("guest Mux manifests expose no segments after the remaining allowance", asy
     assert.match(manifest, /segment-2\.ts/);
     assert.doesNotMatch(manifest, /segment-3\.ts|segment-4\.ts/);
     assert.doesNotMatch(manifest, /private-mux-token/);
-    assert.ok(requestedUrls.some((url) => url.includes("token=private-mux-token")));
+    assert.ok(requestedUrls.some((url) => url.includes("signature=signed")));
+    assert.ok(!requestedUrls[1]?.includes("private-mux-token"));
+    assert.match(manifest, /manifest-oci-us-phoenix-1-vop1\.fastly\.mux\.com/);
   } finally {
     globalThis.fetch = originalFetch;
   }

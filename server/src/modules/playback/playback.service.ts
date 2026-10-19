@@ -239,6 +239,9 @@ export const playbackService = {
     const session = await this.getSession(sessionId, token);
 
     if (session.provider === "mux") {
+      if (session.guestIdHash) {
+        throw new HttpError(403, "Guest media must use the bounded playback manifest");
+      }
       return session.streamUrl;
     }
     throw new HttpError(404, "Media redirect is not available for this session");
@@ -268,7 +271,6 @@ export const playbackService = {
     const hasVariants = masterText.includes("#EXT-X-STREAM-INF:");
     const playlist = hasVariants && firstUri ? new URL(firstUri, session.streamUrl) : new URL(session.streamUrl);
     const muxToken = new URL(session.streamUrl).searchParams.get("token");
-    if (muxToken) playlist.searchParams.set("token", muxToken);
     const playlistUrl = playlist.toString();
     const playlistResponse = hasVariants ? await fetch(playlistUrl) : null;
     if (playlistResponse && !playlistResponse.ok) throw new HttpError(502, "Media provider could not load the track playlist");
@@ -291,14 +293,18 @@ export const playbackService = {
       } else if (row && !row.startsWith("#")) {
         if (position + currentDuration > maximumSeconds) break;
         const segment = new URL(row, playlistUrl);
-        segment.searchParams.delete("token");
+        if (muxToken && segment.searchParams.get("token") === muxToken) {
+          segment.searchParams.delete("token");
+        }
         output.push(`${env.APP_BASE_URL}/api/v1/playback/sessions/${encodeURIComponent(session.id)}/segment?token=${encodeURIComponent(token)}&resource=${encodeURIComponent(segment.toString())}`);
         position += currentDuration;
         currentDuration = 0;
       } else if (row.startsWith("#") && row.includes("URI=\"")) {
         output.push(row.replace(/URI="([^"]+)"/g, (_match, uri: string) => {
           const mediaResource = new URL(uri, playlistUrl);
-          mediaResource.searchParams.delete("token");
+          if (muxToken && mediaResource.searchParams.get("token") === muxToken) {
+            mediaResource.searchParams.delete("token");
+          }
           const resource = mediaResource.toString();
           return `URI="${env.APP_BASE_URL}/api/v1/playback/sessions/${encodeURIComponent(session.id)}/segment?token=${encodeURIComponent(token)}&resource=${encodeURIComponent(resource)}"`;
         }));
@@ -317,8 +323,7 @@ export const playbackService = {
     if (session.provider !== "mux") throw new HttpError(404, "Media not found");
     const requested = new URL(resource);
     const source = new URL(session.streamUrl);
-    const playbackId = source.pathname.split("/").filter(Boolean)[0]?.replace(/\.m3u8$/, "");
-    if (requested.hostname !== "stream.mux.com" || !playbackId || !requested.pathname.startsWith(`/${playbackId}/`)) {
+    if (requested.protocol !== "https:" || !requested.hostname.endsWith(".mux.com")) {
       throw new HttpError(404, "Media not found");
     }
     const manifest = await this.getMuxManifest(session, token);
@@ -326,7 +331,9 @@ export const playbackService = {
       throw new HttpError(403, "Media segment is outside the guest allowance");
     }
     const muxToken = source.searchParams.get("token");
-    if (muxToken) requested.searchParams.set("token", muxToken);
+    if (muxToken && !requested.searchParams.has("token")) {
+      requested.searchParams.set("token", muxToken);
+    }
     const response = await fetch(requested);
     if (!response.ok || !response.body) throw new HttpError(502, "Media provider could not load this segment");
     return response;
