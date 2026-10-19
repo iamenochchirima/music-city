@@ -28,8 +28,10 @@ test("public media route rejects traversal and still serves valid byte ranges", 
   const mediaRoot = resolve(process.cwd(), env.LOCAL_MEDIA_ROOT);
   const outsidePath = resolve(process.cwd(), "music-city-path-traversal-sentinel.txt");
   const outsideKey = relative(mediaRoot, outsidePath).split("\\").join("/");
-  const validKey = "beta-hardening-tests/valid-audio.mp3";
+  const validKey = "beta-hardening-tests/valid-object.bin";
   const validPath = storageService.getLocalPath(validKey);
+  const audioKey = "beta-hardening-tests/valid-audio.mp3";
+  const audioPath = storageService.getLocalPath(audioKey);
   const validCoverKey = "beta-hardening-tests/valid-cover.webp";
   const validCoverPath = storageService.getLocalPath(validCoverKey);
 
@@ -37,6 +39,7 @@ test("public media route rejects traversal and still serves valid byte ranges", 
   await mkdir(dirname(validPath), { recursive: true });
   await writeFile(outsidePath, "outside-media-secret-sentinel");
   await writeFile(validPath, "abcdef");
+  await writeFile(audioPath, "audio-bytes");
   const coverBytes = Buffer.from("RIFF0000WEBP");
   await writeFile(validCoverPath, coverBytes);
 
@@ -79,6 +82,9 @@ test("public media route rejects traversal and still serves valid byte ranges", 
     assert.equal(validResponse.status, 206);
     assert.equal(validResponse.headers.get("content-range"), "bytes 1-3/6");
     assert.equal(await validResponse.text(), "bcd");
+
+    const audioResponse = await fetch(`${base}/content/${encodeURIComponent(audioKey)}`);
+    assert.equal(audioResponse.status, 403);
 
     const coverResponse = await fetch(`${base}/content/${encodeURIComponent(validCoverKey)}`);
     assert.equal(coverResponse.status, 200);

@@ -8,7 +8,7 @@ import {
   rmSync,
 } from "node:fs";
 import { stat } from "node:fs/promises";
-import type { Readable } from "node:stream";
+import { Readable, type Readable as ReadableType } from "node:stream";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { UploadSession } from "@music-city/shared";
 
@@ -309,6 +309,26 @@ export const storageService = {
       start,
       end,
     });
+  },
+
+  async openStoredObjectRange(storageKey: string, start: number, end: number): Promise<{ stream: ReadableType; contentType: string; sizeBytes: number }> {
+    if (env.STORAGE_PROVIDER === "local") {
+      const metadata = await this.getObjectMetadata(storageKey);
+      return {
+        stream: this.createReadStream(storageKey, start, end),
+        contentType: metadata.contentType,
+        sizeBytes: metadata.sizeBytes,
+      };
+    }
+    const metadata = await this.getStoredObjectMetadata(storageKey);
+    const url = buildS3PresignedUrl({ method: "GET", storageKey, expiresInSeconds: 300 });
+    const response = await fetch(url, { headers: { Range: `bytes=${start}-${end}` } });
+    if (response.status !== 206 || !response.body) throw new HttpError(502, "Storage did not return the requested media range");
+    return {
+      stream: Readable.fromWeb(response.body as import("node:stream/web").ReadableStream),
+      contentType: response.headers.get("content-type")?.split(";")[0]?.trim() || metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+    };
   },
 
   readObject(storageKey: string) {

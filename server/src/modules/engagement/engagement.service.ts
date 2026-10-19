@@ -399,6 +399,7 @@ export const engagementService = {
     }
 
     const qualifies =
+      !session.guestIdHash &&
       !updatedSession.qualifiedStreamCountedAt &&
       shouldCountQualifiedStream(listenedSeconds, getTrackDurationSeconds(track.runtime));
 

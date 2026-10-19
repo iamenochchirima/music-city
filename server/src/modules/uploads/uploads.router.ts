@@ -230,6 +230,10 @@ uploadsRouter.get(
       throw error;
     }
 
+    if (metadata.contentType.startsWith("audio/") || storageKey.startsWith("masters/")) {
+      throw new HttpError(403, "Start a playback session to access audio media");
+    }
+
     const size = metadata.sizeBytes;
     const rangeHeader = request.headers.range;
 

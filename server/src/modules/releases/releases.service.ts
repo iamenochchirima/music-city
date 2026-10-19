@@ -77,6 +77,18 @@ const hydrateTrackUrls = <
   return nextTrack;
 };
 
+const publicTrackMediaView = <T extends TrackSummary>(track: T): T => ({
+  ...track,
+  playbackUrl: undefined,
+  streamManifestUrl: undefined,
+  streamMediaUrl: undefined,
+  masterStorageKey: undefined,
+  streamManifestKey: undefined,
+  muxUploadId: undefined,
+  muxAssetId: undefined,
+  muxPlaybackId: undefined,
+});
+
 const toReleaseDetail = async (
   release: StoredRelease,
   includePrivateTracks: boolean,
@@ -95,9 +107,9 @@ const toReleaseDetail = async (
             const current = await tracksRepository.findById(item.trackId);
             return {
               ...item,
-              track: hydrateTrackUrls(
+              track: publicTrackMediaView(hydrateTrackUrls(
                 current ? liveRecording(current, item.track) : item.track,
-              ),
+              )),
             };
           }),
       ),
@@ -131,7 +143,9 @@ const toReleaseDetail = async (
         trackNumber: assignment.track_number,
         discNumber: assignment.disc_number,
         isFocusTrack: assignment.is_focus_track,
-        track: hydrateTrackUrls(viewTrack),
+        track: includePrivateTracks
+          ? hydrateTrackUrls(viewTrack)
+          : publicTrackMediaView(hydrateTrackUrls(viewTrack)),
       };
     }),
   );

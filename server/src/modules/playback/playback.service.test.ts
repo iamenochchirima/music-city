@@ -8,6 +8,7 @@ const { engagementRepository } = await import("../engagement/engagement.reposito
 const { tracksService } = await import("../tracks/tracks.service.js");
 const { playbackRepository } = await import("./playback.repository.js");
 const { storageService } = await import("../../services/storage.service.js");
+const { guestPlaybackRepository } = await import("./guest-playback.repository.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -21,7 +22,7 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
-test("createSession returns the direct local media URL for local playback", async () => {
+test("createSession returns a tokenized local media proxy URL", async () => {
   let capturedSession:
     | Awaited<ReturnType<typeof playbackRepository.upsert>>
     | undefined;
@@ -85,10 +86,8 @@ test("createSession returns the direct local media URL for local playback", asyn
   try {
     const session = await playbackService.createSession("trk_local", "usr_listener");
 
-    assert.equal(
-      session.streamUrl,
-      "http://localhost:4319/api/v1/uploads/content/tracks%2Ftrk_local%2Faudio.mp3",
-    );
+    assert.match(session.streamUrl, /\/api\/v1\/playback\/sessions\/ply_/);
+    assert.match(session.streamUrl, /\/media\?token=/);
     assert.equal(session.provider, "local");
     assert.ok(session.token.length > 0);
     assert.equal(capturedSession?.streamUrl, session.streamUrl);
@@ -99,7 +98,7 @@ test("createSession returns the direct local media URL for local playback", asyn
   }
 });
 
-test("createSession refreshes signed local media URLs from storage keys", async () => {
+test("createSession keeps signed storage URLs behind the local media proxy", async () => {
   let capturedSession:
     | Awaited<ReturnType<typeof playbackRepository.upsert>>
     | undefined;
@@ -159,14 +158,118 @@ test("createSession refreshes signed local media URLs from storage keys", async 
   try {
     const session = await playbackService.createSession("trk_signed", "usr_listener");
 
-    assert.equal(
-      session.streamUrl,
-      "https://fresh.example.com/masters%2Ftrk_signed%2Faudio.mp3",
-    );
+    assert.match(session.streamUrl, /\/api\/v1\/playback\/sessions\/ply_/);
+    assert.match(session.streamUrl, /\/media\?token=/);
     assert.equal(capturedSession?.streamUrl, session.streamUrl);
     assert.deepEqual(analyticsEvents, ["track_playback_started"]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("guest sessions are bound to their reserved allowance slot", async () => {
+  const cleanup = [
+    restore(
+      tracksService,
+      "getTrackForPlayback",
+      (async () => ({
+        id: "trk_guest",
+        title: "Guest track",
+        artistId: "artist-1",
+        artistName: "Artist",
+        genre: "Pop",
+        runtime: "3:15",
+        priceLabel: "Public",
+        status: "published" as const,
+        access: "public" as const,
+        plays: 0,
+        likes: 0,
+        mediaProvider: "local" as const,
+        playbackReady: true,
+        masterStorageKey: "masters/trk_guest/audio.mp3",
+      })) as typeof tracksService.getTrackForPlayback,
+    ),
+    restore(guestPlaybackRepository, "claimTrack", (async () => ({
+      allowance: {
+        guestIdHash: "hash",
+        windowStartedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        firstTrackId: "trk_guest",
+        firstListenedSeconds: 0,
+        secondTrackId: null,
+        secondListenedSeconds: 0,
+      },
+      slot: "first" as const,
+      maximumSeconds: 195,
+      remainingSeconds: 195,
+    })) as typeof guestPlaybackRepository.claimTrack),
+    restore(playbackRepository, "upsert", (async (session) => session) as typeof playbackRepository.upsert),
+    restore(engagementRepository, "insertPlaybackEvent", (async () => undefined) as typeof engagementRepository.insertPlaybackEvent),
+    restore(engagementRepository, "insertAnalyticsEvent", (async () => undefined) as typeof engagementRepository.insertAnalyticsEvent),
+  ];
+  try {
+    const session = await playbackService.createSession("trk_guest", undefined, "guest-identity");
+    assert.equal(session.isGuest, true);
+    assert.equal(session.guestSlot, "first");
+    assert.equal(session.listenerUserId, undefined);
+    assert.match(session.streamUrl, /\/media\?token=/);
+    assert.doesNotMatch(session.streamUrl, /masters\/trk_guest/);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("guest Mux manifests expose no segments after the remaining allowance", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+    const url = String(input);
+    requestedUrls.push(url);
+    if (url.includes(".m3u8") && !url.includes("audio.m3u8")) {
+      return new Response("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=128000\naudio.m3u8\n", { status: 200 });
+    }
+    return new Response([
+      "#EXTM3U",
+      "#EXT-X-VERSION:3",
+      "#EXT-X-TARGETDURATION:4",
+      "#EXT-X-MEDIA-SEQUENCE:0",
+      "#EXTINF:4.0,",
+      "segment-1.ts",
+      "#EXTINF:4.0,",
+      "segment-2.ts",
+      "#EXTINF:4.0,",
+      "segment-3.ts",
+      "#EXTINF:4.0,",
+      "segment-4.ts",
+      "#EXT-X-ENDLIST",
+    ].join("\n"), { status: 200 });
+  }) as typeof fetch;
+
+  try {
+    const manifest = await playbackService.getMuxManifest({
+      id: "ply_guest",
+      trackId: "trk_guest",
+      artistId: "artist-1",
+      provider: "mux",
+      playbackId: "mux-playback-id",
+      streamUrl: "https://stream.mux.com/mux-playback-id.m3u8?token=private-mux-token",
+      token: "api-playback-token",
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      guestIdHash: "guest-hash",
+      isGuest: true,
+      guestSlot: "second",
+      guestRemainingSeconds: 8,
+      guestTrackDurationSeconds: 16,
+    }, "api-playback-token");
+
+    assert.equal((manifest.match(/#EXTINF:/g) ?? []).length, 2);
+    assert.match(manifest, /segment-1\.ts/);
+    assert.match(manifest, /segment-2\.ts/);
+    assert.doesNotMatch(manifest, /segment-3\.ts|segment-4\.ts/);
+    assert.doesNotMatch(manifest, /private-mux-token/);
+    assert.ok(requestedUrls.some((url) => url.includes("token=private-mux-token")));
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });
 

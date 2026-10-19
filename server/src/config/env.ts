@@ -66,6 +66,7 @@ export const envSchema = z
       .default("data/media")
       .transform(normalizeLocalRoot),
     PLAYBACK_TOKEN_SECRET: z.string().default("music-city-playback-secret"),
+    GUEST_PLAYBACK_ENABLED: z.string().optional().transform((value) => value !== "false"),
     DYNAMIC_ENVIRONMENT_ID: z.string().optional(),
     DYNAMIC_JWKS_URL: z.string().optional(),
     STELLAR_HORIZON_URL: z.string().default("https://horizon-testnet.stellar.org"),

@@ -73,6 +73,21 @@ const hydrateTrackForView = (
     priceLabel: isPublic ? "Published" : "Unpublished",
   }) as TrackSummary;
 
+const publicTrackView = (track: TrackSummary): TrackSummary => {
+  const publicTrack = hydrateTrackForView(track, true);
+  return {
+    ...publicTrack,
+    playbackUrl: undefined,
+    streamManifestUrl: undefined,
+    streamMediaUrl: undefined,
+    masterStorageKey: undefined,
+    streamManifestKey: undefined,
+    muxUploadId: undefined,
+    muxAssetId: undefined,
+    muxPlaybackId: undefined,
+  } as TrackSummary;
+};
+
 const validateCreditProfiles = async (credits: TrackSummary["credits"]) => {
   for (const artistId of new Set(
     (credits ?? []).flatMap((credit) =>
@@ -113,7 +128,7 @@ export const tracksService = {
     );
     return tracks
       .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
-      .map((track) => hydrateTrackForView(track, true));
+      .map(publicTrackView);
   },
 
   async listMyTracks(walletAddress: string) {
@@ -148,7 +163,7 @@ export const tracksService = {
 
     return tracks
       .filter((track) => track.playbackReady && publicTrackIds.has(track.id))
-      .map((track) => hydrateTrackForView(track, true));
+      .map(publicTrackView);
   },
 
   async getTrack(trackId: string) {
@@ -167,7 +182,7 @@ export const tracksService = {
       return null;
     }
 
-    return hydrateTrackForView(track, true);
+    return publicTrackView(track);
   },
 
   async getTrackForPlayback(trackId: string) {

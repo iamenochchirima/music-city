@@ -97,7 +97,7 @@ export const muxService = {
 
     const token = await requireClient().jwt.signPlaybackId(playbackId, {
       type: "video",
-      expiration: "15m",
+      expiration: "24h",
     });
 
     return `https://stream.mux.com/${playbackId}.m3u8?token=${encodeURIComponent(token)}`;

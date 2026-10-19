@@ -8,6 +8,7 @@ import { Pool, type PoolClient } from "pg";
 import { agreementSchemaStatements } from "../modules/agreements/agreement-schema.js";
 import { finalizationSchemaStatements, finalizationIntegrityStatements, agreementRecoveryStatements } from "../modules/agreements/finalization-schema.js";
 import { sponsorshipCapacityMigrationStatements, sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
+import { guestPlaybackSchemaStatements } from "../modules/playback/guest-playback-schema.js";
 
 import { liveRecording } from "../modules/releases/live-recording.js";
 import { env } from "../config/env.js";
@@ -408,6 +409,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
   { name: "2026-10-15-direct-support", statements: supportSchemaStatements },
   { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
@@ -900,6 +902,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-19-guest-playback", migrationName: "2026-10-19-guest-playback", relations: ["guest_playback_allowances"], indexes: ["guest_playback_allowances_expires_idx"], statements: guestPlaybackSchemaStatements },
   { name: "2026-10-17-agreement-recovery", migrationName: "2026-10-17-agreement-recovery", relations: ["agreement_finalizations"], indexes: ["agreement_finalization_recovery"], statements: agreementRecoveryStatements },
   { name: "2026-10-15-direct-support", migrationName: "2026-10-15-direct-support", relations: ["support_payments", "support_events"], indexes: ["support_one_active_sender", "support_recipient_idx", "support_reconcile_idx"], statements: supportSchemaStatements },
   {

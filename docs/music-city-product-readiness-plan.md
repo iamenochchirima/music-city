@@ -72,7 +72,7 @@ These items protect the first impression and prevent incorrect product behavior.
 ### 1.1 Public access and first listen
 
 - [ ] Let an unauthenticated visitor browse the public catalog.
-- [ ] Let an unauthenticated visitor play a safe preview or public track.
+- [ ] Let an unauthenticated visitor play the first public track in full and half of a second track per rolling 24-hour window. See the [guest playback implementation plan](guest-playback-implementation-plan.md).
 - [ ] Preserve authentication requirements for likes, saves, follows, playlists, purchases, and artist tools.
 - [ ] Show a clear login prompt only when an authenticated action is attempted.
 - [ ] Confirm that playback works after a page refresh.
@@ -112,7 +112,7 @@ These items protect the first impression and prevent incorrect product behavior.
 
 ### 1.4 Playback quality
 
-- [ ] Define public preview length and enforcement rules.
+- [ ] Define and enforce the public guest listening allowance in the [guest playback implementation plan](guest-playback-implementation-plan.md).
 - [ ] Define qualified-stream rules for public, purchased, and subscriber playback.
 - [ ] Add playback-session refresh or a graceful renewal path.
 - [ ] Add retry for failed media URLs and expired sessions.

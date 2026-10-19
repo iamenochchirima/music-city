@@ -31,4 +31,10 @@ export interface PlaybackSession {
   lastPlaybackEventAt?: string;
   qualifiedStreamCountedAt?: string;
   completedAt?: string;
+  guestIdHash?: string;
+  isGuest?: boolean;
+  guestSlot?: "first" | "second";
+  guestLimitSeconds?: number;
+  guestRemainingSeconds?: number;
+  guestTrackDurationSeconds?: number;
 }

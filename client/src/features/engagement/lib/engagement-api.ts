@@ -8,6 +8,7 @@ import type {
 } from "@music-city/shared";
 
 import { httpClient } from "@/lib/api/http-client";
+import { playbackApi } from "@/features/playback/lib/playback-api";
 
 export const engagementApi = {
   async getArtistFollowState(token: string, artistId: string) {
@@ -108,10 +109,11 @@ export const engagementApi = {
   },
 
   async recordPlaybackEvent(
-    token: string,
+    token: string | undefined,
     playbackSession: PlaybackSession,
     input: RecordPlaybackEventInput,
   ) {
+    const guestToken = token ? null : playbackApi.getGuestIdentityToken();
     const response = await httpClient.post<{ playbackSession: PlaybackSession }>(
       `/playback/sessions/${playbackSession.id}/events`,
       {
@@ -119,6 +121,7 @@ export const engagementApi = {
         token: playbackSession.token,
       },
       token,
+      guestToken ? { "X-Guest-Playback": guestToken } : {},
     );
 
     return response.playbackSession;

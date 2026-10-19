@@ -50,13 +50,14 @@ export const httpClient = {
     return (await response.json()) as T;
   },
 
-  async post<T>(path: string, body: unknown, token?: string): Promise<T> {
+  async post<T>(path: string, body: unknown, token?: string, extraHeaders: Record<string, string> = {}): Promise<T> {
     const response = await fetch(`${clientEnv.apiBaseUrl}${path}`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...authHeaders(token),
+        ...extraHeaders,
       },
       body: JSON.stringify(body),
     });
