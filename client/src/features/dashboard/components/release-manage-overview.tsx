@@ -100,6 +100,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const router = useRouter();
   const [audioBusy, setAudioBusy] = useState(false);
   const [replaceAudioId, setReplaceAudioId] = useState<string | undefined>();
+  const [selectedAudioFiles, setSelectedAudioFiles] = useState<File[]>();
 
   const [params, setParams] = useSearchParams();
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
@@ -465,9 +466,10 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       applyTracks(updated);
     }
   };
-  const uploadNewTrack = async () => {
-    if (await saveWorkspace()) {
+  const uploadNewTrack = async (files: File[]) => {
+    if (files.length && await saveWorkspace()) {
       setReplaceAudioId(undefined);
+      setSelectedAudioFiles(files);
       setIsAudioOpen(true);
     }
   };
@@ -1260,7 +1262,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             audioOpen={isAudioOpen}
             onSetup={() => selectStep("basics")}
             onAdd={(id) => void addTrack(id)}
-            onUpload={() => void uploadNewTrack()}
+            onUpload={(files) => void uploadNewTrack(files)}
             onChange={updateTrackOrder}
             onMove={moveTrack}
             onRemove={(id) => void removeTrack(id)}
@@ -1273,6 +1275,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               <ReleaseAudioUploader
                 release={release}
                 token={session.token}
+                initialFiles={replaceAudioId ? undefined : selectedAudioFiles}
                 onSaved={(track) =>
                   setMyTracks((current) => [
                     ...current.filter((item) => item.id !== track.id),
@@ -1294,6 +1297,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                 onClose={() => {
                   setIsAudioOpen(false);
                   setReplaceAudioId(undefined);
+                  setSelectedAudioFiles(undefined);
                 }}
                 onAdded={(updated, track) => {
                   applyTracks(updated, true);

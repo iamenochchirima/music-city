@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { recordingDuration } from "../lib/recording-duration";
 import {
   ArrowDown,
@@ -38,7 +38,7 @@ export function ReleaseTracklistEditor({
   busy: boolean;
   audioOpen: boolean;
   onAdd: (id: string) => void;
-  onUpload: () => void;
+  onUpload: (files: File[]) => void;
   onChange: (id: string, patch: Partial<ReleaseTrack>) => void;
   onMove: (index: number, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
@@ -46,8 +46,10 @@ export function ReleaseTracklistEditor({
   onSetup: () => void;
   children?: ReactNode;
 }) {
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectionError, setSelectionError] = useState("");
   const planned = release.type === "single" ? 1 : release.expectedTrackCount;
   const remaining = planned
     ? Math.max(0, planned - release.tracks.length)
@@ -235,7 +237,29 @@ export function ReleaseTracklistEditor({
       )}
       {canAdd && !audioOpen && (
         <div className="flex flex-wrap gap-3 border-t border-border pt-5">
-          <Button disabled={busy} onClick={onUpload}>
+          <input
+            ref={audioInputRef}
+            type="file"
+            aria-label="Choose audio files to upload"
+            accept="audio/*,.flac,.m4a"
+            multiple={remaining === undefined || remaining > 1}
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(event) => {
+              const files = Array.from(event.currentTarget.files ?? []);
+              event.currentTarget.value = "";
+              if (!files.length) return;
+              if (remaining !== undefined && files.length > remaining) {
+                setSelectionError(
+                  `Choose up to ${remaining} ${remaining === 1 ? "song" : "songs"}.`,
+                );
+                return;
+              }
+              setSelectionError("");
+              onUpload(files);
+            }}
+          />
+          <Button disabled={busy} onClick={() => audioInputRef.current?.click()}>
             <Plus className="size-4" />
             {release.tracks.length ? "Upload more songs" : "Upload audio"}
           </Button>
@@ -249,6 +273,7 @@ export function ReleaseTracklistEditor({
           </Button>
         </div>
       )}
+      {selectionError && <p role="alert" className="text-sm text-destructive">{selectionError}</p>}
       {canAdd && !audioOpen && libraryOpen && (
         <div
           className="space-y-3 rounded-lg border border-border p-4"

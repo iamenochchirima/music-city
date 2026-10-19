@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { releasesApi } from "@/features/music/lib/releases-api";
@@ -24,6 +24,7 @@ export function ReleaseAudioUploader({
   onClose,
   maxFiles,
   replaceId,
+  initialFiles,
 }: {
   release: ReleaseDetail;
   token: string;
@@ -33,14 +34,16 @@ export function ReleaseAudioUploader({
   onClose: () => void;
   maxFiles?: number;
   replaceId?: string;
+  initialFiles?: File[];
 }) {
   const [items, setItems] = useState<Upload[]>([]);
   const [busy, setBusy] = useState(false);
   const [selectionError, setSelectionError] = useState("");
   const running = useRef(false);
-  const callbacks = useRef({ onAdded, onSaved, onBusy });
-  callbacks.current = { onAdded, onSaved, onBusy };
-  async function run(batch: Upload[]) {
+  const initialFilesStarted = useRef(false);
+  const callbacks = useRef({ onAdded, onSaved, onBusy, onClose });
+  callbacks.current = { onAdded, onSaved, onBusy, onClose };
+  const run = useCallback(async (batch: Upload[]) => {
     if (running.current) return;
     running.current = true;
     setBusy(true);
@@ -125,8 +128,11 @@ export function ReleaseAudioUploader({
     running.current = false;
     setBusy(false);
     callbacks.current.onBusy(false);
-  }
-  const choose = (files: File[]) => {
+    if (initialFilesStarted.current && batch.every((item) => item.state === "done")) {
+      callbacks.current.onClose();
+    }
+  }, [release]);
+  const choose = useCallback((files: File[]) => {
     const limit = replaceId ? 1 : maxFiles;
     if (limit !== undefined && files.length > limit) {
       setSelectionError(
@@ -145,10 +151,15 @@ export function ReleaseAudioUploader({
     }));
     setItems((current) => [...current, ...batch]);
     void run(batch);
-  };
+  }, [maxFiles, replaceId, run]);
+  useEffect(() => {
+    if (!initialFiles?.length || initialFilesStarted.current) return;
+    initialFilesStarted.current = true;
+    choose(initialFiles);
+  }, [choose, initialFiles]);
   return (
     <div className="space-y-4">
-      {(replaceId || maxFiles === undefined || maxFiles > 0) && (
+      {(replaceId || maxFiles === undefined || maxFiles > 0) && !initialFiles?.length && (
         <>
           <label className="block space-y-2">
             <span className="block font-semibold">
