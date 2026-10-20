@@ -58,6 +58,7 @@ export const TrackGrid = ({
       renderAction={(track) =>
         track.playbackReady && track.visibility === "published" ? (
           <Button
+            data-playback-preload={track.id}
             variant={activeTrackId === track.id ? "default" : "outline"}
             className={
               activeTrackId === track.id

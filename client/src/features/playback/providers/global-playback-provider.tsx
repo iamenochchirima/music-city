@@ -455,6 +455,8 @@ const GlobalPlaybackBar = ({
 export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) => {
   const { session, logout, connectWallet } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackActorRef = useRef(session?.walletAddress ?? "guest");
+  playbackActorRef.current = session?.walletAddress ?? "guest";
   const hlsRef = useRef<Hls | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [activeTrack, setActiveTrack] = useState<TrackSummary | null>(null);
@@ -619,10 +621,12 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const startTrackSession = useCallback(
     async (track: TrackSummary, resumeAt = 0) => {
       try {
+        const actor = playbackActorRef.current;
         const nextPlaybackSession = await playbackApi.createSession(
           session?.token,
           track.id,
         );
+        if (playbackActorRef.current !== actor) return;
         setGuestLimitReached(false);
         guestPromptOpenedRef.current = false;
         resumePositionRef.current = resumeAt > 0 ? resumeAt : null;
@@ -948,6 +952,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   }, [currentTime, recordPlaybackEvent]);
 
   const playTrack = useCallback(async (track: TrackSummary) => {
+    const actor = playbackActorRef.current;
     if (track.id === activeTrack?.id && audioRef.current) {
       try {
         if (audioRef.current.paused) {
@@ -988,6 +993,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
     try {
       const decision = await adsApi.getPlaybackDecision(session.token, track.id);
+      if (playbackActorRef.current !== actor) return;
 
       if (!decision.serveAd || !decision.ad || !decision.impressionId) {
         trackEvent("track_played");
@@ -1032,6 +1038,47 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     session?.token,
     startTrackSession,
   ]);
+
+  useEffect(() => {
+    playbackApi.preloadTracks(session?.token, playbackQueue);
+  }, [playbackQueue, session?.token]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const observed = new WeakSet<Element>();
+    const observer = new IntersectionObserver((entries) => {
+      const ids = entries.filter(entry => entry.isIntersecting)
+        .map(entry => (entry.target as HTMLElement).dataset.playbackPreload)
+        .filter((id): id is string => Boolean(id));
+      if (ids.length) playbackApi.preloadTrackIds(session?.token, ids);
+    }, { rootMargin: "200px" });
+    const scan = () => {
+      document.querySelectorAll("[data-playback-preload]").forEach(element => {
+        if (!observed.has(element)) { observed.add(element); observer.observe(element); }
+      });
+    };
+    scan();
+    const mutations = new MutationObserver(scan);
+    mutations.observe(document.body, {childList:true,subtree:true,attributes:true,attributeFilter:["data-playback-preload"]});
+    return () => {observer.disconnect();mutations.disconnect();};
+  }, [session?.token]);
+
+  const previousPlaybackWallet = useRef(session?.walletAddress);
+  useEffect(() => {
+    if (previousPlaybackWallet.current && previousPlaybackWallet.current !== session?.walletAddress) {
+      audioRef.current?.pause();
+      audioRef.current?.removeAttribute("src");
+      audioRef.current?.load();
+      setStreamUrl(null);
+      setPlaybackSession(null);
+      setActiveTrack(null);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      clearActiveAdState();
+    }
+    previousPlaybackWallet.current = session?.walletAddress;
+  }, [session?.walletAddress, clearActiveAdState]);
 
   const activeTrackIndex = playbackQueue.findIndex(
     (track) => track.id === activeTrack?.id,
@@ -1201,7 +1248,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   return (
     <GlobalPlaybackContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} preload="metadata" />
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
       <GlobalPlaybackBar
       activeTrack={activeTrack}
       isPlaying={isPlaying}

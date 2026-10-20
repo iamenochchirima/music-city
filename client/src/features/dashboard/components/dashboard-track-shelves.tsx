@@ -118,6 +118,7 @@ const TrackLibrarySection = ({
                     <Button
                       variant={isActive ? "default" : "outline"}
                       aria-label={`Play ${track.title}`}
+                      data-playback-preload={canPlayTrack(track) ? track.id : undefined}
                       disabled={!canPlayTrack(track)}
                       onClick={(event) => {
                         event.stopPropagation();

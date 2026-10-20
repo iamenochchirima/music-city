@@ -19,6 +19,8 @@ import { storageService } from "../../services/storage.service.js";
 import { guestPlaybackRepository } from "./guest-playback.repository.js";
 import { env } from "../../config/env.js";
 
+import { playbackPreload } from "./playback-preload.js";
+
 const playbackRouter = Router();
 const playbackEventRateLimit = createRateLimit({
   bucketName: "playback-events",
@@ -50,6 +52,23 @@ playbackRouter.get("/guest-identity", playbackGuestRateLimit, (_request, respons
   if (!env.GUEST_PLAYBACK_ENABLED) throw new HttpError(503, "Guest playback is unavailable");
   response.json({ guestIdentityToken: tokenService.createGuestIdentity().token });
 });
+
+const preloadRateLimit = createRateLimit({bucketName:"playback-preload",maxRequests:120,windowMs:60_000});
+playbackRouter.post("/preload", optionalSession, preloadRateLimit, asyncHandler(async(request,response)=>{
+  const input=createPlaybackSessionSchema.parse(request.body);
+  const track=await tracksService.getTrackForPlayback(input.trackId);
+  if(!track?.playbackReady)throw new HttpError(404,"Track not found");
+  let actor:string;
+  if(request.session){
+    if(!await entitlementsService.canPlayTrack(request.session.walletAddress,track.id))throw new HttpError(403,"You do not have access to this track");
+    actor=`wallet:${request.session.walletAddress}`;
+  }else{
+    if(!env.GUEST_PLAYBACK_ENABLED||!await tracksService.isTrackPublic(track.id))throw new HttpError(403,"Sign in to listen to this track");
+    actor=`guest:${tokenService.verifyGuestIdentity(String(request.headers["x-guest-playback"]??""))}`;
+  }
+  response.setHeader("Cache-Control","no-store");
+  response.json(await playbackPreload.prepare(track,actor));
+}));
 
 playbackRouter.post(
   "/sessions",
@@ -101,8 +120,11 @@ playbackRouter.post(
         }
       : playbackSession;
 
+    const preloadKey=input.preloadTicket ? playbackPreload.unlock(input.preloadTicket,track,request.session ? `wallet:${request.session.walletAddress}` : `guest:${guestId}`) : null;
+    response.setHeader("Cache-Control","no-store");
     response.status(201).json({
       playbackSession: clientSession,
+      ...(preloadKey ? {preloadKey} : {}),
       ...(guestIdentityToken ? { guestIdentityToken } : {}),
     });
   }),

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { ArtistPublicProfile, TrackSummary } from "@music-city/shared";
 
 import { Button } from "@/components/ui/button";
+import { playbackApi } from "@/features/playback/lib/playback-api";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checkout";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
@@ -36,6 +37,9 @@ export const TrackCommerceActions = ({
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
   const buyButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!hidePlay && track.playbackReady) playbackApi.preloadTracks(session?.token, [track]);
+  }, [hidePlay, track.id, track.playbackReady, session?.token]);
   const [purchased, setPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(false);
   useEffect(() => {
