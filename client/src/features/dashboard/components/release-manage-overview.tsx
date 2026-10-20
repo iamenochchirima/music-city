@@ -889,6 +889,45 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     );
   }
 
+  const deleteControls = (
+    <div className="border-t border-border pt-4">
+      <Button
+        variant="ghost"
+        className="text-destructive hover:text-destructive"
+        disabled={isDeleting || isSaving || audioBusy}
+        onClick={() => setIsDeleteConfirmOpen(true)}
+      >
+        Delete release
+      </Button>
+      {isDeleteConfirmOpen ? (
+        <Dialog
+          title={`Delete "${release.title}"?`}
+          description="This removes the release page and detaches its tracks. Your tracks and audio stay in your library."
+          busy={isDeleting}
+          onClose={() => setIsDeleteConfirmOpen(false)}
+        >
+          <div className="flex justify-end gap-3">
+            <Button
+              autoFocus
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => void deleteRelease()}
+            >
+              {isDeleting ? "Deleting..." : "Delete release"}
+            </Button>
+          </div>
+        </Dialog>
+      ) : null}
+    </div>
+  );
+
   if (
     ["published", "scheduled"].includes(release.status) &&
     !release.hasRevision
@@ -938,6 +977,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             </Button>
           </div>
         </div>
+        {deleteControls}
       </div>
     );
 
@@ -1452,32 +1492,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
           ) : null}
         </div>
       </ActionBar>
-      {isDeleteConfirmOpen ? (
-        <Dialog
-          title={`Delete "${release.title}"?`}
-          description="This removes the release page and detaches its tracks. Your tracks and audio stay in your library."
-          busy={isDeleting}
-          onClose={() => setIsDeleteConfirmOpen(false)}
-        >
-          <div className="flex justify-end gap-3">
-            <Button
-              autoFocus
-              variant="outline"
-              disabled={isDeleting}
-              onClick={() => setIsDeleteConfirmOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={() => void deleteRelease()}
-            >
-              {isDeleting ? "Deleting..." : "Delete release"}
-            </Button>
-          </div>
-        </Dialog>
-      ) : null}
+      {deleteControls}
     </div>
   );
 };

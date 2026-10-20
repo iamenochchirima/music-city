@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { ReleaseManageOverview } from "./release-manage-overview";
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   complete: vi.fn(),
   upload: vi.fn(),
   revision: vi.fn(),
+  delete: vi.fn(),
 }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ session: { token: "token" } }),
@@ -29,6 +30,7 @@ vi.mock("@/features/music/lib/releases-api", () => ({
     publish: mocks.publish,
     cancelPublication: mocks.cancel,
     beginRevision: mocks.revision,
+    deleteRelease: mocks.delete,
   },
 }));
 vi.mock("@/features/uploads/lib/uploads-api", () => ({
@@ -237,4 +239,26 @@ it("blocks an incomplete planned tracklist before song details", async () => {
   await user.click(screen.getByRole("button", { name: "Continue" }));
   expect(screen.getByRole("alert").textContent).toContain("Add all your songs");
   expect(mocks.update).not.toHaveBeenCalled();
+});
+
+it.each(["draft", "published", "scheduled"])("exposes deletion for a %s release and cancellation sends no request", async (status) => {
+  mocks.load.mockResolvedValue({...base, status});
+  const user = userEvent.setup();
+  await open();
+  await user.click(screen.getByRole("button", {name:"Delete release"}));
+  const dialog = screen.getByRole("dialog");
+  expect(dialog.textContent).toContain("Your tracks and audio stay in your library.");
+  await user.click(screen.getByRole("button", {name:"Cancel"}));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(mocks.delete).not.toHaveBeenCalled();
+});
+it("requires confirmation before deleting and returns to the release library", async () => {
+  mocks.delete.mockResolvedValue(undefined);
+  const user = userEvent.setup();
+  await open();
+  await user.click(screen.getByRole("button", {name:"Delete release"}));
+  expect(mocks.delete).not.toHaveBeenCalled();
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", {name:"Delete release"}));
+  await waitFor(() => expect(mocks.delete).toHaveBeenCalledWith("token","release"));
+  await waitFor(() => expect(screen.getByLabelText("Destination").textContent).toBe("/dashboard/releases"));
 });
