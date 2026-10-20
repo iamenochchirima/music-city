@@ -146,7 +146,7 @@ Source section 4.2 includes $1,300 for provider integration readiness. Sections 
 
 Provider readiness checklist:
 
-- [ ] Specify and implement the off-ramp payout adapter.
+- [ ] Specify and implement the off-ramp payout adapter. Start with the [creator cash-out implementation plan](#creator-cash-out-implementation-plan).
 - [ ] Specify and implement the on-ramp payment adapter.
 - [ ] Map provider payments and payouts to internal records.
 - [ ] Handle provider status and failure transitions.
@@ -548,3 +548,138 @@ Started 17 October 2026 at `9cd39f0`. Verify the core music-to-earnings journey 
 - [x] CORE-07 Packaged E8 screenshots, browser results, independent chain checks, interruption evidence and a recoverable working-tree checkpoint at base `9cd39f0`. Workspace tests, typecheck and builds pass. Real PostgreSQL checkout and financial regression suites passed 44 checks with no skips. Parent D3 technical evidence is updated below. Production rollout, its commit/deployment package and reviewer acceptance remain open.
 
 The goal was created successfully. The connected Linear search still returns no Music City project or issue; no external ticket update is claimed. Track completion in this existing canonical document as explicitly requested by the project owner.
+
+## Creator cash-out implementation plan
+
+Planned 17 October 2026 against `9cd39f0`, following the provider research in this conversation. This is the first implementation chunk for the separately scoped fiat provider readiness work in section 4.2. The outcome is one complete cash-out journey for one confirmed country, currency, payout method, and provider.
+
+This chunk covers the off-ramp adapter, transaction mapping, status and failure handling, and sandbox evidence. On-ramp payments remain a later chunk. Production activation, real-money testing, and broader SOW acceptance remain separate decisions. Complete functional acceptance locally with Dynamic Sandbox, Stellar Testnet, and the selected provider's sandbox. Live admin setup from the agreement chunk is not a prerequisite.
+
+### Confirm the provider and first payout market
+
+The launch market and payout method are still undecided. Use these researched options to make the decision:
+
+| Candidate | Relevant evidence | Decision condition |
+| --- | --- | --- |
+| MoneyGram Ramps | Its current non-custodial Stellar integration uses server-created sessions, a hosted widget, and wallet-signed USDC transfers. New partners use the widget and API-key path. | Prefer for cash pickup if the exact country, payout currency, user eligibility, and Music City use case are supported. Obtain partner sandbox keys and an approved browser origin. |
+| Yellow Card | Its channel documentation lists South African bank-transfer and EFT payouts. Its direct-settlement API describes crypto-funded local payouts. | Consider for South African bank payouts only after verifying the enabled Stellar USDC funding route, KYC responsibilities, and account-specific channels. Its current restrictions explicitly exclude Zimbabwe. |
+
+Provider-wide country coverage does not establish support for the required asset, network, payout method, or customer. Confirm that complete combination through the selected provider. Record fees, exchange-rate spread, minimums, limits, quote lifetime, and refund behavior for representative artist payout amounts. Do not promise a settlement time from a general marketing page.
+
+Research sources checked on 17 October 2026:
+
+- [MoneyGram Stellar web integration](https://xramps.moneygram.com/ops/developer/guides/web-stellar).
+- [MoneyGram partner access and environments](https://xramps.moneygram.com/ops/developer/getting-started).
+- [MoneyGram transaction status and webhooks](https://xramps.moneygram.com/ops/developer/reference/transaction-status-webhooks).
+- [Yellow Card channels](https://docs.yellowcard.engineering/docs/channels-api).
+- [Yellow Card country restrictions](https://help.yellowcard.io/articles/6362178041-countries-and-regions-we-do-not-support).
+- [Yellow Card crypto-funded local payouts](https://docs.yellowcard.engineering/docs/direct-settlement).
+- [Yellow Card sandbox testing](https://docs.yellowcard.engineering/v1.0.36/docs/sandbox-testing-api).
+
+Recheck these sources and enabled account capabilities when selecting the provider. Sandbox availability and commercial approval are not established by this plan.
+
+### Follow the ownership and payout lifecycle
+
+The existing settlement contract pays a claim to its beneficiary wallet. Keep that authorization and fixed destination. A subsequent cash-out transfers wallet USDC to the selected provider with the user's authorization. A provider payment failure cannot undo a valid earnings claim or mark that claim unpaid.
+
+The user journey is:
+
+1. The creator opens Revenue and sees claimable earnings separately from spendable wallet USDC.
+2. If earnings remain in escrow, the creator uses the existing claim flow. After confirmation, those funds become available in the wallet.
+3. The creator selects **Cash out**, chooses an eligible destination or pickup location, and enters an amount.
+4. The provider completes required identity checks and supplies a quote. The creator sees the USDC amount, all quoted fees, the local amount to receive, and the expiry before authorizing payment.
+5. The creator authorizes the exact Stellar transfer through their linked Dynamic wallet. Cancelling this prompt sends no payment.
+6. The app follows the transfer and provider status in the background. Closing the page does not lose the transaction.
+7. For cash pickup, show the pickup reference and instructions only when the provider confirms readiness. Show collection separately from readiness. For bank payouts, show payment completion only after provider confirmation.
+8. If the provider returns funds, show a confirmed refund separately from a request for a refund. Keep unresolved outcomes visible and recoverable.
+
+Use concise copy and one primary action per stage. Reuse the provider's hosted identity flow where available. If the chosen integration requires Music City to supply identity data, settle the verification and data-handling requirements before implementing that path.
+
+### Implementation order and checklist
+
+Keep every item unchecked until its implementation or decision has evidence. Record the source commit and verification result as work completes.
+
+#### Phase 1. Validate access and prove one real provider flow
+
+- [ ] CO-01 Confirm the first country, payout currency, payout method, and eligible customer group with the project owner.
+- [ ] CO-02 Select one provider using verified corridor coverage, Stellar USDC support, pricing, limits, identity requirements, refund behavior, and partner eligibility. Record unresolved commercial conditions.
+- [ ] CO-03 Obtain legitimate sandbox access and approve a local development origin or provider-supported development URL. Keep sandbox and production credentials separate. Do not create accounts, accept agreements, or contact providers without the required user authorization.
+- [ ] CO-04 Complete a small feasibility integration using the current supported API. For MoneyGram, use the non-custodial widget and API-key path, not its legacy direct SEP integration. Prove that Dynamic can authorize the required Stellar transaction and memo.
+- [ ] CO-05 Capture a genuine provider sandbox transaction, its Stellar Testnet evidence where supported, its provider reference, and its actual status progression. Record which outcomes the provider simulates. Proceed to the full implementation after the corridor and integration are proven.
+
+If access is unavailable, finish applicable design and automated failure checks, record the exact missing access, and leave CO-03 through CO-05 open. A local simulator does not establish provider sandbox completion. Public provider documentation and local test results can support progress without production onboarding.
+
+#### Phase 2. Define and persist the cash-out transaction
+
+- [x] CO-06 Define shared request, quote, transaction, and status contracts. Include the authenticated wallet, environment, provider, country, currency, payout method, amount, fees, quote expiry, provider IDs, and chain attempt IDs. Keep money in exact integer units or validated decimal strings. Implemented in `packages/shared/src/cashout.ts`; see the 17 October implementation checkpoint below.
+- [ ] CO-07 Add additive migrations for cash-out transactions, chain attempts, and immutable events. Keep provider records separate from earnings allocations and existing claim records. Link a cash-out to its source wallet and any associated claim without rewriting settled earnings.
+- [ ] CO-08 Implement one provider integration behind a small cash-out interface. Validate active capabilities and limits before creating a request. Keep provider-specific IDs and original statuses alongside normalized app states.
+- [ ] CO-09 Create provider sessions server-side and bind them to the authenticated user's wallet. Authorize all quote, detail, resume, and status routes. Verify that a session for one wallet cannot open another wallet's transaction.
+- [ ] CO-10 Persist quotes and user intent before requesting a signature. Serialize duplicate create and submit requests. Recover a saved transaction after a lost HTTP response. Requote expired terms and require renewed confirmation when the amount or destination changes.
+
+#### Phase 3. Authorize the transfer and recover its outcome
+
+- [ ] CO-11 Build or validate the exact transfer against trusted server-side provider instructions. Check the source wallet, Stellar network, USDC issuer, destination, memo type and value, amount, allowed operations, fee bounds, and time bounds. Treat widget messages as untrusted input and validate their origin and active session.
+- [ ] CO-12 Reuse scoped Dynamic wallet authorization. Keep the provider prompt visible and preserve the user's place when signing is cancelled. Check the wallet balance and network fee readiness without suggesting an unsupported payout.
+- [ ] CO-13 Persist the signed envelope, hash, and submission intent before sending. Recover the original hash after a timeout or restart. Do not create another transfer while the prior outcome is uncertain. Prove terminal expiry or failure before permitting a replacement.
+- [ ] CO-14 Add cash-out reconciliation to the financial worker. Poll within provider rate limits, retry transient errors with backoff, and isolate failures between transactions. Keep progress independent of the browser.
+- [ ] CO-15 Verify provider callbacks using the supported authentication mechanism and raw payload rules. Deduplicate events, reject unrelated transactions, and confirm authoritative provider status before changing financial outcomes. Reconcile missed or out-of-order callbacks through the status API.
+- [ ] CO-16 Implement the selected provider's full state map, including required identity action, expired quote, transfer pending, provider processing, pickup readiness or bank payout, collected or paid, failure, refund pending, refunded, and refund failure. Preserve unknown statuses for investigation without reporting success.
+- [ ] CO-17 Verify refunds to the approved user wallet and distinguish a refund request from confirmed return of funds. Preserve the original transfer, payout, and refund references. Define recovery for each supported point of failure before exposing the flow to users.
+
+#### Phase 4. Complete creator and admin interfaces
+
+- [ ] CO-18 Add **Cash out** to Revenue for eligible spendable wallet funds. Keep claimable earnings and wallet funds distinct. Display supported payout options openly and explain an unavailable option with one actionable reason.
+- [ ] CO-19 Build a compact amount, quote, review, and authorization flow. Display the amount the user receives, total fees, destination, expiry, and required identity action before payment. Keep technical transaction details in a disclosure.
+- [ ] CO-20 Show automatic progress, pickup instructions or payout receipt, and recoverable failures. Restore the same transaction from a detail URL after reload or sign-in. Keep the user from signing again when a transfer was already submitted.
+- [ ] CO-21 Add an authorized admin cash-out list and detail view with provider status, chain receipt, event history, and reconciliation exceptions. Keep ordinary admins read-only. Add no server-held user signing key or single-admin override for protected treasury actions.
+- [ ] CO-22 Inspect creator and admin screens through computer use at desktop and 390-pixel widths. Verify keyboard access, provider overlay visibility, focus return, concise copy, empty states, validation, and slow or interrupted requests.
+
+#### Phase 5. Verify and package local acceptance
+
+- [ ] CO-23 Add contract-validation and provider-mapping tests for amounts, limits, stale quotes, unsupported markets, altered transfer instructions, callbacks, and complete status transitions. Use explicit provider fixtures for simulated transport cases.
+- [ ] CO-24 Add isolated PostgreSQL checks for duplicate requests, lost responses, concurrent submissions, immutable audit events, worker restarts, cross-user access, and preserved earnings and claim history.
+- [ ] CO-25 Run the browser matrix below against the actual local client, API, admin, and worker. Use real Dynamic Sandbox signing and the real provider sandbox for integration acceptance. Keep synthetic identities and funds out of production.
+- [ ] CO-26 Run affected suites, workspace typecheck, production builds, and fresh-database migrations. Verify that agreements, claims, settlements, and direct support retain their existing behavior.
+- [ ] CO-27 Package the provider decision, capability evidence, dated test results, browser screenshots, transaction references, Testnet receipts where applicable, and remaining provider conditions. Update the parent provider-readiness checklist only for requirements actually covered.
+
+Local acceptance completes this implementation chunk. Production enablement requires a separate rollout decision covering provider approval, credentials, country eligibility, and deployment. This plan does not require live admin setup or real-money transactions to pass local acceptance.
+
+### Required local browser and failure matrix
+
+| ID | Scenario | Required result |
+| --- | --- | --- |
+| CASH-01 | Open Revenue with unclaimed earnings, then claim through the existing flow. | Escrow earnings and spendable wallet funds remain distinct. The confirmed claim pays only its beneficiary and appears once. |
+| CASH-02 | Open cash-out for a supported market and an unsupported market. | Eligible methods and limits match provider capabilities. Unsupported combinations cannot create a payable request. |
+| CASH-03 | Enter an amount below the minimum, above the limit, above the wallet balance, and with excess precision. | Clear inline correction. No invalid quote or transfer persists. Valid corrections retain the user's other fields. |
+| CASH-04 | Complete the provider's identity and quote flow. Let the quote expire, then request another quote. | Review shows current fees, local proceeds, destination, and expiry. Changed terms require fresh confirmation. |
+| CASH-05 | Open the real Dynamic prompt, cancel, then retry. | Cancellation records no payment. Retry uses a valid quote and restores keyboard focus correctly. |
+| CASH-06 | Authorize a genuine sandbox cash-out through the selected provider. | Exact wallet, asset, network, destination, memo, amount, and receipt match the approved request. Record provider simulations separately from chain confirmation. |
+| CASH-07 | Close the browser after submission, restart the local API and worker, and reopen the transaction. | The original transaction resumes by its existing identity. No duplicate transfer or payout request appears. |
+| CASH-08 | Lose an HTTP response and deliver duplicate or out-of-order provider notifications. | One authoritative transaction and event history remain. Missed notifications recover through reconciliation. |
+| CASH-09 | Observe provider processing, readiness, and completion. | MoneyGram pickup readiness remains distinct from cash collection. A bank payout is paid only after the provider confirms payment. A chain transfer alone does not complete the payout. |
+| CASH-10 | Exercise provider failure after funding and its supported refund process. | No replacement payment starts while the outcome is unknown. Refund pending, confirmed return, and refund failure remain distinct. Earnings claim history stays unchanged. |
+| CASH-11 | Open another user's detail URL or send an unauthorized mutation. Send forged widget messages and callbacks. | Both interfaces and server checks reject the action. No unauthorized transfer, session disclosure, or financial status change occurs. |
+| CASH-12 | Complete representative actions on mobile and by keyboard. Reload a detail URL and use browser Back. | Controls remain reachable, overlays fit, focus returns, and the same transaction is recoverable. |
+
+Use local fault injection for interrupted network calls, forged payloads, pruned chain history, and restart races. Label those results separately from actual provider sandbox behavior. A provider sandbox may simulate cash collection or bank settlement. Record that limit rather than claiming physical collection or a real bank receipt.
+
+### Completion evidence
+
+For each CO item and CASH scenario, record the date, source commit, environment, actor, expected result, observed result, and evidence location. Include provider transaction IDs, chain hashes, event counts, and refund references where applicable. Keep private keys, session tokens, identity documents, bank details, and credentials out of public evidence.
+
+This chunk is complete when CO-01 through CO-27 pass, every applicable CASH scenario has evidence, and all provider-specific gaps are explicit. An unavailable sandbox, mocked provider response, ready deployment, or completed Stellar transfer alone does not prove the cash-out journey. Reviewer acceptance, the on-ramp implementation, and production activation remain separate.
+
+### Implementation checkpoint, 17 October 2026
+
+The working tree on `main` at `9cd39f0` contains the first cash-out implementation slice. Fetching `origin` confirmed no newer commits. These changes are not committed or deployed.
+
+CO-06 is complete. Shared schemas define strict create inputs, wallet-bound session records, exact quote amounts and fees, provider and correlation references, separate claim and chain references, normalized states, and transfer instructions. A create input cannot supply a wallet, user, provider, environment, or status. Session creation and route authorization remain CO-09 work.
+
+`server/src/modules/cashout/cashout-transfer.ts` also implements part of CO-11: one USDC payment bound to a quote, cash-out identity, wallet, network, issuer, memo, amount, fee ceiling, and a lifetime of at most five minutes. Signed envelopes must match the prepared hash and satisfy the source account's signer threshold. The module does not fetch provider instructions, persist attempts, submit transactions, or expose an API. Provider response authentication and widget validation remain open, so CO-11 is unchecked.
+
+Verification passed 12 cash-out domain tests, 133 server tests, 106 client tests, and 18 admin tests. Nine existing database-dependent server tests were skipped by the default suite. Workspace typecheck and production builds passed. The cash-out fixtures are local test data and do not establish an approved country, available provider, signed Dynamic flow, or provider sandbox transaction.
+
+CO-01 through CO-05 remain open pending the owner's first-market decision and legitimate provider sandbox access. No provider environment variable names were found in the repository's environment files or the local Music City verification environment files. No Music City Linear project was found through connected search. The goal tool rejected a new goal because the earlier agreement goal remains unfinished; that goal was not marked complete to bypass the restriction.
+
+The owner supplied the public developer-reference OAuth example for a direct sandbox check. On 17 October, the exact GET request returned HTTP 401 without an access token. GET and POST with canonical Base64 padding also returned HTTP 401, with gateway code `G900` and message `AccessControl_voilation`. This establishes that these requests did not obtain access; it does not distinguish credential rejection from gateway access restrictions. No token or credential was saved. The authorization value matches the example in the [OAuth reference](https://developer.moneygram.com/moneygram-developer/reference/getaccesstoken). The [current Stellar Ramps setup](https://xramps.moneygram.com/ops/developer/getting-started) separately requires partner sandbox keys and an allowed browser origin. CO-03 remains open.
