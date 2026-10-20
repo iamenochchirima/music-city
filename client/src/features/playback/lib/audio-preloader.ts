@@ -155,7 +155,6 @@ export class AudioPreloader {
       );
       if (resource.url === "media") {
         if (session.isGuest) {
-          const slotFraction = session.guestSlot === "second" ? 0.5 : 1;
           const remainingFraction = session.guestTrackDurationSeconds
             ? (session.guestRemainingSeconds ?? 0) /
               session.guestTrackDurationSeconds
@@ -166,7 +165,7 @@ export class AudioPreloader {
               bytes.byteLength,
               Math.floor(
                 (resource.totalBytes ?? 0) *
-                  Math.min(slotFraction, remainingFraction),
+                  Math.min(1, remainingFraction),
               ),
             ),
           );

@@ -528,11 +528,8 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     const fullDuration = declaredRuntime
       ? Number(declaredRuntime[1]) * 60 + Number(declaredRuntime[2])
       : audio.duration;
-    const guestSlotMaximum = currentPlaybackSession?.guestSlot === "second"
-      ? fullDuration * 0.5
-      : fullDuration;
-    const guestLimit = currentPlaybackSession?.isGuest && fullDuration > 0
-      ? Math.min(guestSlotMaximum, currentPlaybackSession.guestRemainingSeconds ?? guestSlotMaximum)
+    const guestLimit = currentPlaybackSession?.isGuest && fullDuration > 0 && (currentPlaybackSession.guestBudgetRemainingSeconds ?? Infinity) <= fullDuration
+      ? Math.min(fullDuration, currentPlaybackSession.guestRemainingSeconds ?? fullDuration)
       : Number.POSITIVE_INFINITY;
     if (currentPlaybackSession?.isGuest && nextPosition >= guestLimit && !guestPromptOpenedRef.current) {
       guestPromptOpenedRef.current = true;
@@ -663,7 +660,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const handleAudioEnded = useCallback(async () => {
     stopAnimationLoop();
     setIsPlaying(false);
-    if (playbackSession?.isGuest && playbackSession.guestSlot === "second" && !session?.token) {
+    if (playbackSession?.isGuest && (playbackSession.guestBudgetRemainingSeconds ?? Infinity) <= (playbackSession.guestTrackDurationSeconds ?? 0) && !session?.token) {
       setGuestLimitReached(true);
       guestPromptOpenedRef.current = true;
       return;
@@ -1274,10 +1271,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
             aria-labelledby="guest-playback-limit-title"
             className="w-full max-w-md rounded-2xl border border-white/10 bg-[#101625] p-6 text-white shadow-2xl"
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Keep listening</p>
-            <h2 id="guest-playback-limit-title" className="mt-3 text-xl font-semibold">Sign in to hear the rest</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Free listening</p>
+            <h2 id="guest-playback-limit-title" className="mt-3 text-xl font-semibold">Keep listening</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              You’ve reached the guest listening limit. Sign in for full songs and unlimited playback.
+              You’ve used your 25 free minutes. Sign in to keep listening.
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <button

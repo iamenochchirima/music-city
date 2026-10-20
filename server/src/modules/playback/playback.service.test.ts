@@ -168,7 +168,7 @@ test("createSession keeps signed storage URLs behind the local media proxy", asy
   }
 });
 
-test("guest sessions are bound to their reserved allowance slot", async () => {
+test("guest sessions are bound to their remaining listening time", async () => {
   const cleanup = [
     restore(
       tracksService,
@@ -190,20 +190,11 @@ test("guest sessions are bound to their reserved allowance slot", async () => {
         masterStorageKey: "masters/trk_guest/audio.mp3",
       })) as typeof tracksService.getTrackForPlayback,
     ),
-    restore(guestPlaybackRepository, "claimTrack", (async () => ({
-      allowance: {
-        guestIdHash: "hash",
-        windowStartedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
-        firstTrackId: "trk_guest",
-        firstListenedSeconds: 0,
-        secondTrackId: null,
-        secondListenedSeconds: 0,
-      },
-      slot: "first" as const,
+    restore(guestPlaybackRepository, "claimTime", (async () => ({
       maximumSeconds: 195,
+      budgetRemainingSeconds: 1500,
       remainingSeconds: 195,
-    })) as typeof guestPlaybackRepository.claimTrack),
+    })) as typeof guestPlaybackRepository.claimTime),
     restore(playbackRepository, "upsert", (async (session) => session) as typeof playbackRepository.upsert),
     restore(engagementRepository, "insertPlaybackEvent", (async () => undefined) as typeof engagementRepository.insertPlaybackEvent),
     restore(engagementRepository, "insertAnalyticsEvent", (async () => undefined) as typeof engagementRepository.insertAnalyticsEvent),
@@ -211,7 +202,6 @@ test("guest sessions are bound to their reserved allowance slot", async () => {
   try {
     const session = await playbackService.createSession("trk_guest", undefined, "guest-identity");
     assert.equal(session.isGuest, true);
-    assert.equal(session.guestSlot, "first");
     assert.equal(session.listenerUserId, undefined);
     assert.match(session.streamUrl, /\/media\?token=/);
     assert.doesNotMatch(session.streamUrl, /masters\/trk_guest/);
@@ -261,7 +251,6 @@ test("guest Mux manifests expose no segments after the remaining allowance", asy
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
       guestIdHash: "guest-hash",
       isGuest: true,
-      guestSlot: "second",
       guestRemainingSeconds: 8,
       guestTrackDurationSeconds: 16,
     }, "api-playback-token");
@@ -297,7 +286,6 @@ test("guest Mux segment proxy preserves Fastly signed chunk URLs", async () => {
     lastPlaybackEventAt: new Date().toISOString(),
     guestIdHash: "guest-hash",
     isGuest: true,
-    guestSlot: "first" as const,
     guestRemainingSeconds: 16,
     guestTrackDurationSeconds: 16,
   };

@@ -127,7 +127,6 @@ it("only unlocks bytes after activation and clamps a guest prefix to the authori
     {
       streamUrl: "https://api/media?token=bound",
       isGuest: true,
-      guestSlot: "second",
       guestRemainingSeconds: 2,
       guestTrackDurationSeconds: 8,
     } as never,

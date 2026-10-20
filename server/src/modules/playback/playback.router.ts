@@ -156,15 +156,11 @@ playbackRouter.post(
     );
     if (
       session.guestIdHash &&
-      session.guestSlot &&
       session.guestTrackDurationSeconds
     ) {
       await guestPlaybackRepository.addListenedSeconds(
         session.guestIdHash,
-        session.guestSlot,
-        session.trackId,
         Math.max(0, (playbackSession.listenedSeconds ?? 0) - (session.listenedSeconds ?? 0)),
-        session.guestTrackDurationSeconds,
       );
     }
 

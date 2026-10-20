@@ -9,7 +9,7 @@ import { Pool, type PoolClient } from "pg";
 import { agreementSchemaStatements } from "../modules/agreements/agreement-schema.js";
 import { finalizationSchemaStatements, finalizationIntegrityStatements, agreementRecoveryStatements } from "../modules/agreements/finalization-schema.js";
 import { sponsorshipCapacityMigrationStatements, sponsorshipSchemaStatements } from "../modules/sponsorships/sponsorship-schema.js";
-import { guestPlaybackSchemaStatements } from "../modules/playback/guest-playback-schema.js";
+import { guestPlaybackSchemaStatements, expandedGuestPlaybackSchemaStatements } from "../modules/playback/guest-playback-schema.js";
 
 import { liveRecording } from "../modules/releases/live-recording.js";
 import { env } from "../config/env.js";
@@ -411,6 +411,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 
 const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
+  { name: "2026-10-20-guest-listening-time", statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", statements: checkoutSchemaStatements },
   { name: "2026-10-15-direct-support", statements: supportSchemaStatements },
   { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
@@ -905,6 +906,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
   { name: "2026-10-19-guest-playback", migrationName: "2026-10-19-guest-playback", relations: ["guest_playback_allowances"], indexes: ["guest_playback_allowances_expires_idx"], statements: guestPlaybackSchemaStatements },
+  { name: "2026-10-20-guest-listening-time", migrationName: "2026-10-20-guest-listening-time", relations: ["guest_playback_allowances"], indexes: [], statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", migrationName: "2026-10-17-durable-checkout", relations: ["payment_checkouts", "checkout_events"], indexes: ["checkout_one_active_wallet", "checkout_reconcile_idx"], statements: checkoutSchemaStatements },
   { name: "2026-10-17-agreement-recovery", migrationName: "2026-10-17-agreement-recovery", relations: ["agreement_finalizations"], indexes: ["agreement_finalization_recovery"], statements: agreementRecoveryStatements },
   { name: "2026-10-15-direct-support", migrationName: "2026-10-15-direct-support", relations: ["support_payments", "support_events"], indexes: ["support_one_active_sender", "support_recipient_idx", "support_reconcile_idx"], statements: supportSchemaStatements },

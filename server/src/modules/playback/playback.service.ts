@@ -51,9 +51,9 @@ export const playbackService = {
     const guestIdHash = guestId ? guestHash(guestId) : undefined;
     const guestTrackDurationSeconds = guestIdHash ? runtimeSeconds(track.runtime) : undefined;
     const guestAllowance = guestIdHash
-      ? await guestPlaybackRepository.claimTrack(guestIdHash, trackId, guestTrackDurationSeconds!)
+      ? await guestPlaybackRepository.claimTime(guestIdHash, guestTrackDurationSeconds!)
       : undefined;
-    if (guestAllowance && (!guestAllowance.slot || guestAllowance.remainingSeconds <= 0)) {
+    if (guestAllowance && guestAllowance.remainingSeconds <= 0) {
       throw new HttpError(429, "Guest listening limit reached. Sign in to keep listening.");
     }
     const token = tokenService.issuePlaybackToken({ playbackSessionId: id, trackId, guestIdHash });
@@ -80,9 +80,9 @@ export const playbackService = {
         ...(guestIdHash ? {
           guestIdHash,
           isGuest: true,
-          guestSlot: guestAllowance!.slot!,
           guestLimitSeconds: guestAllowance?.maximumSeconds,
           guestRemainingSeconds: guestAllowance?.remainingSeconds,
+          guestBudgetRemainingSeconds: guestAllowance?.budgetRemainingSeconds,
           guestTrackDurationSeconds,
         } : {}),
       };
@@ -111,9 +111,9 @@ export const playbackService = {
         ...(guestIdHash ? {
           guestIdHash,
           isGuest: true,
-          guestSlot: guestAllowance!.slot!,
           guestLimitSeconds: guestAllowance?.maximumSeconds,
           guestRemainingSeconds: guestAllowance?.remainingSeconds,
+          guestBudgetRemainingSeconds: guestAllowance?.budgetRemainingSeconds,
           guestTrackDurationSeconds,
         } : {}),
       };
@@ -256,11 +256,10 @@ export const playbackService = {
     if (session.guestIdHash && !(await tracksService.isTrackPublic(track.id))) {
       throw new HttpError(404, "Media not found");
     }
-    const slotFraction = session.guestSlot === "second" ? 0.5 : 1;
     const remainingFraction = session.guestRemainingSeconds !== undefined && session.guestTrackDurationSeconds
       ? session.guestRemainingSeconds / session.guestTrackDurationSeconds
-      : slotFraction;
-    return { session, track, maxFraction: Math.min(slotFraction, remainingFraction) };
+      : 1;
+    return { session, track, maxFraction: Math.min(1, remainingFraction) };
   },
 
   async getMuxManifest(session: PlaybackSession, token: string) {
@@ -280,8 +279,7 @@ export const playbackService = {
       ? [Number(row.slice(8).split(",")[0])]
       : []);
     const playlistDuration = durations.reduce((total, item) => total + item, 0);
-    const slotMaximum = session.guestSlot === "second" ? playlistDuration * 0.5 : playlistDuration;
-    const maximumSeconds = Math.min(slotMaximum, session.guestRemainingSeconds ?? Number.POSITIVE_INFINITY);
+    const maximumSeconds = Math.min(playlistDuration, session.guestRemainingSeconds ?? Number.POSITIVE_INFINITY);
     let position = 0;
     let currentDuration = 0;
     const output: string[] = [];

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const GUEST_PLAYBACK_SECONDS = 25 * 60;
+
 export const createPlaybackSessionSchema = z.object({
   trackId: z.string().min(1),
   preloadTicket: z.string().max(4096).optional(),
@@ -34,9 +36,9 @@ export interface PlaybackSession {
   completedAt?: string;
   guestIdHash?: string;
   isGuest?: boolean;
-  guestSlot?: "first" | "second";
   guestLimitSeconds?: number;
   guestRemainingSeconds?: number;
+  guestBudgetRemainingSeconds?: number;
   guestTrackDurationSeconds?: number;
 }
 
