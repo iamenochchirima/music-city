@@ -111,15 +111,16 @@ export const DashboardReleasesOverview = () => {
           Loading your releases...
         </p>
       ) : visible.length ? (
-        <ul className="divide-y divide-border">
+        <ul className="space-y-4">
           {visible.map((release) => (
             <LibraryRow
               key={release.id}
+              variant="card"
               title={release.title}
               href={`/dashboard/releases/${release.id}`}
               description={
                 <>
-                  {release.type.toUpperCase()} · {release.trackCount} tracks
+                  {release.type.toUpperCase()} · {release.trackCount} {release.trackCount === 1 ? "track" : "tracks"}
                   {release.releaseDate ? (
                     <>
                       <br />
