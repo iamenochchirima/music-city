@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-17T19:48:42.234Z",
+  "environment": "Local API, Dynamic Sandbox, Stellar Testnet only",
+  "checkoutId": "0aa45549-3505-44a5-972a-ca927224449e",
+  "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71",
+  "upstreamStatus": 200,
+  "action": "Dropped successful authorization response after committed signature; killed the local API before submission; financial worker was stopped",
+  "requestPayloadRetained": false
+}

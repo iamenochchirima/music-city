@@ -45,6 +45,7 @@ export const paymentIntentSchema = z.object({
   productType: paymentProductTypeSchema,
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
+  royaltySplitId: z.string().optional(),
   amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
@@ -66,6 +67,7 @@ export const paymentRecordSchema = z.object({
   productType: paymentProductTypeSchema,
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
+  royaltySplitId: z.string().optional(),
   txHash: z.string(),
   amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
@@ -77,6 +79,26 @@ export const paymentRecordSchema = z.object({
   createdAt: z.string(),
 });
 export type PaymentRecord = z.infer<typeof paymentRecordSchema>;
+
+export const checkoutAttemptSchema = z.object({
+  id: z.string(),
+  intentId: z.string(),
+  walletAddress: stellarWalletAddressSchema,
+  networkPassphrase: z.string(),
+  transaction: z.string(),
+  transactionHash: z.string().regex(/^[a-f0-9]{64}$/),
+  status: z.enum(["prepared", "submitting", "confirmed", "failed", "expired"]),
+  preparedLedger: z.number().int().positive(),
+  expiresAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  submissionCount: z.number().int().nonnegative(),
+  lastSubmittedAt: z.string().datetime().optional(),
+  ledger: z.number().int().positive().optional(),
+  feeCharged: z.string().regex(/^\d+$/).optional(),
+  error: z.string().optional(),
+});
+export type CheckoutAttempt = z.infer<typeof checkoutAttemptSchema>;
 
 export const subscriptionRecordSchema = z.object({
   id: z.string(),
@@ -121,3 +143,14 @@ export const confirmPaymentSchema = z.object({
   txHash: z.string().min(1),
 });
 export type ConfirmPaymentInput = z.infer<typeof confirmPaymentSchema>;
+
+export interface TrackSale {
+  id: string;
+  trackId: string;
+  trackTitle: string;
+  networkPassphrase: string | null;
+  amount: string;
+  assetCode: string;
+  confirmedAt: string;
+  txHash: string;
+}

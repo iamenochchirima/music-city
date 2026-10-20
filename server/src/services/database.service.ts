@@ -1,4 +1,5 @@
 import { supportSchemaStatements } from "../modules/support/support-schema.js";
+import { checkoutSchemaStatements } from "../modules/payments/checkout-schema.js";
 import { settlementChainEventSchemaStatements } from "../modules/settlements/chain-event-schema.js";
 import { settlementSchemaStatements } from "../modules/settlements/settlement-schema.js";
 import { publicationSchemaStatements } from "../modules/publication/publication-schema.js";
@@ -410,6 +411,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 
 const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
+  { name: "2026-10-17-durable-checkout", statements: checkoutSchemaStatements },
   { name: "2026-10-15-direct-support", statements: supportSchemaStatements },
   { name: "2026-10-14-background-publication", statements: publicationSchemaStatements },
   { name: "2026-10-09-early-user-sponsorship", statements: sponsorshipSchemaStatements },
@@ -903,6 +905,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
   { name: "2026-10-19-guest-playback", migrationName: "2026-10-19-guest-playback", relations: ["guest_playback_allowances"], indexes: ["guest_playback_allowances_expires_idx"], statements: guestPlaybackSchemaStatements },
+  { name: "2026-10-17-durable-checkout", migrationName: "2026-10-17-durable-checkout", relations: ["payment_checkouts", "checkout_events"], indexes: ["checkout_one_active_wallet", "checkout_reconcile_idx"], statements: checkoutSchemaStatements },
   { name: "2026-10-17-agreement-recovery", migrationName: "2026-10-17-agreement-recovery", relations: ["agreement_finalizations"], indexes: ["agreement_finalization_recovery"], statements: agreementRecoveryStatements },
   { name: "2026-10-15-direct-support", migrationName: "2026-10-15-direct-support", relations: ["support_payments", "support_events"], indexes: ["support_one_active_sender", "support_recipient_idx", "support_reconcile_idx"], statements: supportSchemaStatements },
   {

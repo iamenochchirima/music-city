@@ -24,23 +24,13 @@ import { subscriptionsService } from "../subscriptions/subscriptions.service.js"
 import { adminService } from "../admin/admin.service.js";
 import { royaltiesService } from "../royalties/royalties.service.js";
 import { sponsorshipsService } from "../sponsorships/sponsorships.service.js";
+import { finalizedSplitsRepository } from "../agreements/effective-split.js";
+import { amountUnits, formatUnits } from "../settlements/settlement-domain.js";
+import { checkoutService } from "./checkout.service.js";
 
 const INTENT_TTL_MS = 15 * 60 * 1000;
 
-const normalizeAmount = (value: string) =>
-  Number(normalizePositiveAmount(value, "Payment amount")).toFixed(7);
-
-const withIntentPrecision = (amount: string, intentId: string) => {
-  const baseUnits = Math.round(
-    Number(normalizePositiveAmount(amount, "Payment amount")) * 10_000_000,
-  );
-  const nonce = [...intentId].reduce(
-    (sum, char, index) => (sum + char.charCodeAt(0) * (index + 1)) % 100_000,
-    0,
-  );
-
-  return ((baseUnits + nonce) / 10_000_000).toFixed(7);
-};
+const normalizeAmount = (value: string) => formatUnits(amountUnits(value));
 
 const settlementAsset = (): StellarAssetDescriptor => ({
   ...normalizeStellarAsset(
@@ -57,12 +47,18 @@ const createIntentRecord = async (input: {
   productType: PaymentProductType;
   subscriptionScope?: SubscriptionScope;
   trackId?: string;
+  royaltySplitId?: string;
   amount: string;
   asset: StellarAssetDescriptor;
 }) => {
+  const existing = await checkoutService.activeIntent(input.walletAddress);
+  if (existing) {
+    if (existing.productType === input.productType && existing.trackId === input.trackId) return existing;
+    throw new HttpError(409, "Finish your pending payment before starting another");
+  }
   const timestamp = new Date().toISOString();
   const id = createId("payi");
-  const preciseAmount = withIntentPrecision(input.amount, id);
+  const preciseAmount = normalizeAmount(input.amount);
   const destinationAddress = await adminService.getTreasuryWalletAddress();
 
   return paymentIntentSchema.parse({
@@ -71,11 +67,12 @@ const createIntentRecord = async (input: {
     productType: input.productType,
     subscriptionScope: input.subscriptionScope,
     trackId: input.trackId,
+    royaltySplitId: input.royaltySplitId,
     amount: preciseAmount,
     assetCode: input.asset.code,
     assetIssuer: input.asset.issuer,
     destinationAddress,
-    memo: `${input.productType}:${id}`,
+    memo: id,
     status: "pending",
     expiresAt: new Date(Date.now() + INTENT_TTL_MS).toISOString(),
     createdAt: timestamp,
@@ -89,6 +86,14 @@ const paymentResultFromExistingRecord = async (
   intent: PaymentIntentRecord,
   payment: PaymentRecord,
 ) => {
+  if (payment.intentId !== intent.id || payment.walletAddress !== walletAddress ||
+    payment.productType !== intent.productType || payment.trackId !== intent.trackId ||
+    normalizeAmount(payment.amount) !== normalizeAmount(intent.amount)) {
+    throw new HttpError(409, "Payment confirmation does not match this order");
+  }
+  if (intent.status !== "confirmed") {
+    await paymentsRepository.upsertIntent({ ...intent, status: "confirmed", txHash: payment.txHash, updatedAt: new Date().toISOString() });
+  }
   if (intent.productType === "track_purchase" && intent.trackId) {
     await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
 
@@ -132,6 +137,7 @@ type HorizonTransaction = {
   memo?: string;
   memo_type?: string;
   hash?: string;
+  created_at?: string;
 };
 
 type HorizonOperation = {
@@ -202,13 +208,16 @@ const verifyTransactionAgainstIntent = async (
   if (!transaction.successful) {
     throw new HttpError(400, "Stellar payment transaction was not successful");
   }
+  const confirmedAt = Date.parse(transaction.created_at ?? "");
+  if (!Number.isFinite(confirmedAt) || confirmedAt < Math.floor(Date.parse(intent.createdAt) / 1000) * 1000 || confirmedAt > Date.parse(intent.expiresAt)) {
+    throw new HttpError(400, "Stellar payment was not confirmed within this order's payment window");
+  }
 
   if (transaction.source_account !== walletAddress) {
     throw new HttpError(403, "Stellar payment source account does not match session wallet");
   }
 
   if (
-    transaction.memo &&
     (transaction.memo_type !== "text" || transaction.memo !== intent.memo)
   ) {
     throw new HttpError(400, "Stellar payment memo does not match payment intent");
@@ -218,6 +227,7 @@ const verifyTransactionAgainstIntent = async (
   const paymentOperation = operations.find(
     (operation) =>
       operation.type === "payment" &&
+      operation.from === walletAddress &&
       operation.to === intent.destinationAddress &&
       operationMatchesAsset(operation, intent) &&
       normalizeAmount(operation.amount ?? "0") === normalizeAmount(intent.amount),
@@ -234,6 +244,9 @@ const verifyTransactionAgainstIntent = async (
 };
 
 export const paymentsService = {
+  async listTrackSales(walletAddress: string) {
+    return paymentsRepository.listTrackSales(walletAddress);
+  },
   async listMine(walletAddress: string) {
     return (await paymentsRepository.listPaymentsByWallet(walletAddress)).filter(
       (payment) =>
@@ -264,10 +277,23 @@ export const paymentsService = {
       throw new HttpError(400, "Track is already unlocked for this wallet");
     }
 
+    const pending = await checkoutService.activeIntent(walletAddress);
+    if (pending) {
+      if (pending.productType === "track_purchase" && pending.trackId === trackId) return pending;
+      throw new HttpError(409, "Finish your pending payment before starting another");
+    }
+    const split = await finalizedSplitsRepository.effective(trackId);
+    if (!split) throw new HttpError(409, "This song is not ready for purchases yet");
+    if (track.purchaseAssetCode !== env.STELLAR_SETTLEMENT_ASSET_CODE ||
+      track.purchaseAssetIssuer !== env.STELLAR_SETTLEMENT_ASSET_ISSUER) {
+      throw new HttpError(409, "This song must be priced in the supported USDC asset");
+    }
+
     const intent = await createIntentRecord({
       walletAddress,
       productType: "track_purchase",
       trackId,
+      royaltySplitId: split.id,
       amount: normalizePositiveAmount(track.purchasePrice, "Track purchase price"),
       asset: normalizeStellarAsset(
         {
@@ -379,15 +405,6 @@ export const paymentsService = {
       throw new HttpError(400, "Payment intent is no longer pending");
     }
 
-    if (Date.parse(intent.expiresAt) < Date.now()) {
-      await paymentsRepository.upsertIntent({
-        ...intent,
-        status: "expired",
-        updatedAt: new Date().toISOString(),
-      });
-      throw new HttpError(400, "Payment intent has expired");
-    }
-
     const existingPayment = await paymentsRepository.findPaymentByTxHash(
       parsed.txHash,
     );
@@ -400,7 +417,7 @@ export const paymentsService = {
       throw new HttpError(400, "Transaction has already been used");
     }
 
-    await verifyTransactionAgainstIntent(walletAddress, parsed.txHash, intent);
+    const { transaction } = await verifyTransactionAgainstIntent(walletAddress, parsed.txHash, intent);
 
     const timestamp = new Date().toISOString();
     const payment: PaymentRecord = {
@@ -410,13 +427,14 @@ export const paymentsService = {
       productType: intent.productType,
       subscriptionScope: intent.subscriptionScope,
       trackId: intent.trackId,
+      royaltySplitId: intent.royaltySplitId,
       txHash: parsed.txHash,
       amount: intent.amount,
       assetCode: intent.assetCode,
       assetIssuer: intent.assetIssuer,
       status: "confirmed",
       networkPassphrase: intent.networkPassphrase ?? "unknown",
-      confirmedAt: timestamp,
+      confirmedAt: transaction.created_at!,
       createdAt: timestamp,
     };
 

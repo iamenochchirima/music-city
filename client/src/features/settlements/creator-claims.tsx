@@ -222,17 +222,15 @@ export function CreatorClaims() {
                   <p className="text-lg font-semibold">
                     {money(a.amountUnits)} USDC
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {a.status === "claimed"
-                      ? "Received"
-                      : a.status === "reclaimed"
+                  {a.status !== "claimed" && <p className="mt-1 text-sm text-muted-foreground">
+                    {a.status === "reclaimed"
                         ? "Claim period ended"
                         : expired
                           ? "Claim expired"
                           : a.status === "pending"
                             ? "Payment pending"
                             : `Claim by ${new Date(batch.expiresAt).toLocaleString()}`}
-                  </p>
+                  </p>}
                 </div>
                 {attempt ? (
                   <span

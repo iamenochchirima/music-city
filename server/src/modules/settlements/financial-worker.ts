@@ -1,5 +1,6 @@
 import { reconcileAgreementFinalizations } from "../agreements/agreement-worker.js";
 import { supportService } from "../support/support.service.js";
+import { checkoutService } from "../payments/checkout.service.js";
 import { indexSettlementEvents } from "./chain-events.js";
 import { databaseService } from "../../services/database.service.js";
 import { settlementService } from "./settlement.service.js";
@@ -7,6 +8,7 @@ import { logger } from "../../utils/logger.js";
 export async function financialCycle() {
   await reconcileAgreementFinalizations();
   await supportService.cycle();
+  await checkoutService.cycle();
   // A transaction advisory lock prevents overlapping scans across worker replicas.
   return databaseService.transaction(async (client) => {
     const lock = await client.query(

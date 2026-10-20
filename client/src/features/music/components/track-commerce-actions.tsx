@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { LoaderCircle, Play, ShoppingBag } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, LoaderCircle, Play, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ArtistPublicProfile, TrackSummary } from "@music-city/shared";
@@ -35,6 +35,35 @@ export const TrackCommerceActions = ({
   const { activeTrackId, playTrack } = useGlobalPlayback();
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
+  const buyButton = useRef<HTMLButtonElement>(null);
+  const [purchased, setPurchased] = useState(false);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
+  useEffect(() => {
+    let current = true;
+    setPurchased(false);
+    if (!session?.token || !track.purchaseEnabled) return;
+    setCheckingPurchase(true);
+    void paymentsApi
+      .listMine(session.token)
+      .then((items) => {
+        if (current)
+          setPurchased(
+            items.some(
+              (payment) =>
+                payment.trackId === track.id &&
+                payment.productType === "track_purchase" &&
+                payment.status === "confirmed",
+            ),
+          );
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (current) setCheckingPurchase(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [session?.token, track.id, track.purchaseEnabled]);
 
   const purchaseLabel = useMemo(
     () => formatAmountLabel(track.purchasePrice, track.purchaseAssetCode),
@@ -59,12 +88,16 @@ export const TrackCommerceActions = ({
 
     try {
       setIsBuying(true);
-      const intent = await paymentsApi.createTrackPurchaseIntent(token, track.id);
+      const intent = await paymentsApi.createTrackPurchaseIntent(
+        token,
+        track.id,
+      );
       const txHash = await runCheckout(intent);
       await paymentsApi.confirm(token, {
         intentId: intent.id,
         txHash,
       });
+      setPurchased(true);
       toast.success("Track unlocked.");
       await onUnlocked?.();
       await playTrack(track);
@@ -74,6 +107,7 @@ export const TrackCommerceActions = ({
       );
     } finally {
       setIsBuying(false);
+      requestAnimationFrame(() => buyButton.current?.focus());
     }
   };
 
@@ -100,10 +134,16 @@ export const TrackCommerceActions = ({
         </Button>
       ) : null}
 
-      {track.purchaseEnabled ? (
+      {track.purchaseEnabled && purchased ? (
+        <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
+          <Check className="h-4 w-4" />
+          Purchased
+        </span>
+      ) : track.purchaseEnabled ? (
         <Button
+          ref={buyButton}
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          disabled={isBuying}
+          disabled={isBuying || checkingPurchase}
           onClick={() => void handleBuyTrack()}
         >
           {isBuying ? (
@@ -114,7 +154,6 @@ export const TrackCommerceActions = ({
           {purchaseLabel ? `Buy ${purchaseLabel}` : "Buy track"}
         </Button>
       ) : null}
-
     </div>
   );
 };

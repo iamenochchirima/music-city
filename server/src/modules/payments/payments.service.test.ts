@@ -14,6 +14,8 @@ const { royaltiesService } = await import("../royalties/royalties.service.js");
 const { usersService } = await import("../users/users.service.js");
 const { referralsService } = await import("../referrals/referrals.service.js");
 const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
+const { adminService } = await import("../admin/admin.service.js");
+const { checkoutService } = await import("./checkout.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -26,6 +28,25 @@ const restore = <T extends object, K extends keyof T>(
     target[key] = original;
   };
 };
+
+test("new checkout intents charge the exact listed price and use an order memo within Stellar's limit", async () => {
+  const cleanup = [
+    restore(checkoutService, "activeIntent", async () => null),
+    restore(subscriptionsService, "getPlatformPlan", async () => ({ enabled: true, name: "Pass", description: "Pass", price: "0.0000001", assetCode: "XLM", periodDays: 30 })),
+    restore(subscriptionsService, "hasActivePlatformSubscription", async () => false),
+    restore(adminService, "getTreasuryWalletAddress", async () => process.env.STELLAR_TREASURY_ADDRESS!),
+    restore(paymentsRepository, "upsertIntent", async (intent) => intent),
+  ];
+  try {
+    const first = await paymentsService.createPlatformSubscriptionIntent(walletAddress);
+    const second = await paymentsService.createPlatformSubscriptionIntent(walletAddress);
+    assert.equal(first.amount, "0.0000001");
+    assert.equal(second.amount, "0.0000001");
+    assert.equal(first.memo, first.id);
+    assert.ok(Buffer.byteLength(first.memo) <= 28);
+    assert.notEqual(first.memo, second.memo);
+  } finally { cleanup.reverse().forEach((fn) => fn()); }
+});
 
 test("createPlatformSubscriptionIntent rejects wallets that already have an active platform subscription", async () => {
   const cleanup = [
@@ -98,6 +119,7 @@ test("confirm returns the existing purchase result when the same transaction is 
   };
 
   const cleanup = [
+    restore(paymentsRepository, "upsertIntent", async (value) => { assert.equal(value.status, "confirmed"); assert.equal(value.txHash, payment.txHash); return value; }),
     restore(
       paymentsRepository,
       "findIntentById",

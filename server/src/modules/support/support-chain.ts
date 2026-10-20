@@ -188,7 +188,7 @@ export function buildSupportTransaction(
   };
 }
 export function verifySupportSignature(
-  payment: SupportPayment,
+  payment: Pick<SupportPayment, "networkPassphrase" | "sender" | "transactionHash">,
   signedXdr: string,
   account: SupportAccount,
 ) {

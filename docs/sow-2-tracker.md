@@ -40,7 +40,7 @@ Implementation rules:
 | --- | --- | --- |
 | D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Record reviewer acceptance. Real Dynamic wallet journeys passed in E5. |
 | D2. Contributor agreements and treasury controls | Implemented. E7 verifies the current creator/admin agreement lifecycle through real Dynamic Sandbox and Stellar Testnet. E5 covers protected settlement operations; E6 covers direct support. | Complete authenticated production admin setup in E7 and obtain reviewer acceptance. |
-| D3. Product integration, operations, reconciliation, and verification | Partial. Creator and admin agreement screens, release flows, API migrations, and deployment evidence exist. | Settlement integration, failure recovery, deployment, and evidence are complete in E5. Direct support integration passed in E6. Its rollout is verified. Complete authenticated live admin setup in E7 and obtain SOW acceptance. |
+| D3. Product integration, operations, reconciliation, and verification | Core creator-to-earnings journey verified locally in E8, including actual purchase, recovery, two-signer funding and both claims. Earlier deployments are documented in E5 through E7. | Settlement integration, failure recovery, deployment, and evidence are complete in E5. Direct support integration passed in E6. Its rollout is verified. Complete authenticated live admin setup in E7 and obtain SOW acceptance. |
 
 ## D1. Soroban earnings settlement engine
 
@@ -120,10 +120,12 @@ Source: sections 4.1 D3, 5.1 Week 4, and 6.1 D3. D3 integrates the two technical
 
 D3 acceptance checklist:
 
-- [ ] Demonstrate the complete creator and admin journeys using real wallets and confirmed Testnet transactions.
-- [ ] Verify readiness, status, history, and recovery at each signing and payment boundary.
-- [ ] Reconcile all new financial records to their exact chain outcomes.
-- [ ] Complete the security and failure test matrix below.
+Local core verification is complete in E8. The completed checkout changes have a local Git checkpoint. Their production rollout remains open. The two rollout/package items and reviewer acceptance below remain open.
+
+- [x] Demonstrate the complete creator and admin journeys using real wallets and confirmed Testnet transactions. E8 connects actual release publication and purchase to two-signer funding and both beneficiary claims.
+- [x] Verify readiness, status, history, and recovery at each signing and payment boundary. E5 through E8 record the separate agreement, support, checkout and settlement results. E8 discloses the provider OTP dismissal limitation.
+- [x] Reconcile all new financial records to their exact chain outcomes. E8 verifies one payment, one entitlement, two paid allocations, exact fees, both claims and unchanged older escrow obligations.
+- [x] Complete the security and failure test matrix below. E5 through E8 cover the listed groups, with current automated regression results and explicit transport limits.
 - [ ] Publish deployment instructions and a repeatable demonstration with no private keys in evidence.
 - [ ] Package deployed contract IDs, repository commit, test results, hashes, balance IDs, explorer links, screenshots, and reconciliation records.
 - [ ] Record reviewer acceptance of D3.
@@ -318,6 +320,7 @@ The chunk is functionally complete when that demonstration and all applicable te
 | E5 | [Settlement lifecycle evidence](settlement-evidence/README.md) | Final contract binaries, funded USDC claims, expiry recovery, immutable event index, tests, admin browser signatures, and explicit real-wallet gaps. |
 | E6 | [Direct support evidence](support-evidence/README.md) | Exact artist and contributor payments through Dynamic Sandbox, cancelled signing, immutable history, PostgreSQL concurrency, and independent Testnet reconciliation. |
 | E7 | [Current agreement lifecycle evidence](contributor-agreements-evidence/lifecycle-review/README.md) | Real creator/admin Testnet lifecycle, independent signatures and registry checks, original-hash restart recovery, lost response, real expiry, historical entitlement comparison, responsive UI, and rollout. Live first-admin setup remains open; early migration exception disclosed. |
+| E8 | [Core music-to-earnings evidence](core-lifecycle-evidence/README.md) | Local release publication, actual Dynamic purchase, captured agreement, lost-response/API-restart recovery, two-signer funding, both beneficiary claims, exact reconciliation and corrected artist sales. No new production rollout or SOW acceptance. |
 | E4 | [Release-flow evidence](release-flow-evidence/README.md) | Current release creation, editing, upload, publication choices, and visible processing. Supporting product work, not a substitute for financial-flow verification. |
 
 Historical baseline findings from 14 October 2026, superseded for settlement by E5:
@@ -528,3 +531,20 @@ Railway API, financial worker, and media worker report successful deployments of
 E7 now records all CU-01 through CU-14 checks, including the exact observations and transport limits. The final UI suites passed 106 client and 18 admin tests. Real provider cancellation returns keyboard focus to the agreement heading (`11c38a4`). The XDR download capture timeout was investigated: the actual file exists in Downloads and matches the prepared 1,900-byte transaction exactly. This supersedes the earlier uncertainty about download completion.
 
 AGR-27 remains open as a rollout exception: the early additive migration occurred before the fresh backup; the earlier 15 October backup and unchanged-record audit are retained. Deployment and runtime checks passed. AGR-28 remains open because the live admin service requires first-admin setup. An existing Live listener signed in normally and reached the deployed inbox. No synthetic production agreement or financial transaction was created. AGR-29 packages these results and explicitly leaves reviewer acceptance and broader SOW completion open.
+
+
+## Core D3 lifecycle closure
+
+Started 17 October 2026 at `9cd39f0`. Verify the core music-to-earnings journey locally with Dynamic Sandbox and Stellar Testnet. Provider onboarding, fiat cash-out, production changes, and external reviewer acceptance are outside this goal. Preserve the separate cash-out working tree.
+
+- [x] CORE-01 Inspect E4 through E7, identify remaining integration evidence, and confirm the isolated client, admin, API and financial worker are running. Earlier settlement funding used synthetic earnings sources; a real listener purchase through recording publication, ledger recognition, settlement and claim remains to be demonstrated together. Existing consent, support, amendment and recovery evidence remains supporting evidence with its original date.
+- [x] CORE-02 Create or publish a local verification release through the creator UI with playable audio, sale settings and a valid finalized agreement. The actual admin UI confirmed publication hash `8a5a6860e54c615cb8ac5973a97ff8b0953c1fd473626d219ab576bd61ddfa21` after two independent external signatures. The owner enabled sales at exactly 0.001 USDC through the new track sales form. Browser purchase remains CORE-03.
+  - [x] CORE-02a Publish `Core Journey` through the actual five-step creator flow using a synthetic WAV and existing repository artwork. Release `rel_f8f84266f7314b02`, recording `trk_810ef0432acc4b44`; screenshot `docs/core-lifecycle-evidence/release-published.png`.
+  - [x] CORE-02b Obtain independent real Dynamic Sandbox consent from Ngoni and Kwame for nonbinding 70/30 agreement `7186e534-47db-4d05-9c2f-1bee561cc67e`. The ordinary admin sees read-only consent. One treasury signature left finalization disabled; two enabled it and confirmed the exact Testnet publication.
+- [x] CORE-03 Completed actual Dynamic Sandbox purchase `pay_58803ad973d64988`, exact 0.001 USDC, hash `a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71`. The backend retained authorization before an injected API crash and lost response. With the buyer tab closed, the restarted financial worker submitted the original hash once and recorded 0.0007/0.0003 USDC against the captured agreement. Review cancellation and abandoned provider authentication sent nothing; the unsigned attempt expired after chain-history verification. Reopening shows Purchased. Exact balances and receipts are being packaged under CORE-07.
+- [x] CORE-04 Verify that direct artist and contributor support remains separate from purchases and royalty settlement. Current contributor history and admin support screens retain E6's actual artist receipt `564e96041b61f166496014fd188b70d9371b9fc0e502e2a11e90f3a98dd497f8` and contributor receipt `4fba178c9ba2f838fff5752925e9bdcb146795bebb9f63eba222974d911c1fcd`. Their amounts remain 0.001 USDC each. Screenshots are in `docs/core-lifecycle-evidence/`. This reuses E6's real transfers, not new support transactions. Generated-key transport fixtures in the same disposable database are not actual chain receipts.
+- [x] CORE-05 Admin preview and two-signer funding used the actual purchase source. Both real Dynamic beneficiaries claimed 0.0007 and 0.0003 USDC. Independent SDK and Horizon checks verified receipt hashes, sources, fees, wallet deltas, captured agreement, both paid entries and the closed batch. The separate 0.01 USDC escrow obligation remains intact. E8 records every hash and contract claim identifier.
+- [x] CORE-06 Verified review cancellation, abandoned authentication, lost committed authorization response, API restart and worker completion with the browser closed. Automated checks reject changed envelopes, other wallets, wrong networks and signers, duplicate preparation, unverifiable expiry and replay. Fixed durable checkout, exact price and memo, captured royalty agreement, purchase ownership display, incoming artist sales and release context preservation. E8 discloses the provider OTP dismissal limitation. E5 through E7 retain their original separate results.
+- [x] CORE-07 Packaged E8 screenshots, browser results, independent chain checks, interruption evidence and a recoverable working-tree checkpoint at base `9cd39f0`. Workspace tests, typecheck and builds pass. Real PostgreSQL checkout and financial regression suites passed 44 checks with no skips. Parent D3 technical evidence is updated below. Production rollout, its commit/deployment package and reviewer acceptance remain open.
+
+The goal was created successfully. The connected Linear search still returns no Music City project or issue; no external ticket update is claimed. Track completion in this existing canonical document as explicitly requested by the project owner.

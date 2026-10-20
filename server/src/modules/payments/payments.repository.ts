@@ -1,11 +1,27 @@
 import type {
   PaymentIntentRecord,
   PaymentRecord,
+  TrackSale,
 } from "@music-city/shared";
 
 import { databaseService } from "../../services/database.service.js";
 
 export const paymentsRepository = {
+  async listTrackSales(walletAddress: string) {
+    return databaseService.transaction(async (client) => {
+      const result = await client.query<TrackSale>(
+        `
+        SELECT p.id, p.track_id AS "trackId", t.payload->>'title' AS "trackTitle",
+          p.payload->>'amount' AS amount, p.payload->>'assetCode' AS "assetCode",
+          p.payload->>'networkPassphrase' AS "networkPassphrase", p.payload->>'confirmedAt' AS "confirmedAt", p.payload->>'txHash' AS "txHash"
+        FROM payments p JOIN tracks t ON t.id=p.track_id JOIN users u ON u.id=t.artist_id
+        WHERE u.wallet_address=$1 AND p.product_type='track_purchase' AND p.payload->>'status'='confirmed'
+        ORDER BY p.confirmed_at DESC, p.id DESC`,
+        [walletAddress],
+      );
+      return result.rows;
+    });
+  },
   async findIntentById(id: string) {
     return databaseService.findPayloadById<PaymentIntentRecord>(
       "payment_intents",

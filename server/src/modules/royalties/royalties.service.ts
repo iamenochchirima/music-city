@@ -260,9 +260,9 @@ export const royaltiesService = {
       "track_purchase",
       payment.id,
       async () => {
-        const activeSplit = await finalizedSplitsRepository.effective(
-          payment.trackId!,
-        );
+        const activeSplit = payment.royaltySplitId
+          ? (await finalizedSplitsRepository.list(payment.trackId!)).find((split) => split.id === payment.royaltySplitId)
+          : null;
 
         if (!activeSplit)
           throw new HttpError(

@@ -20,6 +20,8 @@ import {
 } from "../../utils/commerce.js";
 import { usersService } from "../users/users.service.js";
 import { tracksRepository } from "./tracks.repository.js";
+import { HttpError } from "../../utils/http-error.js";
+import { amountUnits, formatUnits } from "../settlements/settlement-domain.js";
 
 const formatRuntime = (seconds?: number) => {
   if (!seconds || Number.isNaN(seconds)) {
@@ -304,10 +306,10 @@ export const tracksService = {
     await validateCreditProfiles(parsed.credits);
     const purchaseEnabled = parsed.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
-      ? normalizePositiveAmount(
+      ? formatUnits(amountUnits(normalizePositiveAmount(
           parsed.purchasePrice ?? env.TRACK_PURCHASE_DEFAULT_PRICE,
           "Track purchase price",
-        )
+        )))
       : undefined;
     const purchaseAsset = purchaseEnabled
       ? normalizeStellarAsset(
@@ -406,27 +408,27 @@ export const tracksService = {
 
     const parsed = trackMonetizationUpdateSchema.parse(input);
 
+    if ((parsed.purchaseEnabled ?? existing.purchaseEnabled) &&
+      ((parsed.purchaseAssetCode && parsed.purchaseAssetCode !== env.STELLAR_SETTLEMENT_ASSET_CODE) ||
+        (parsed.purchaseAssetIssuer && parsed.purchaseAssetIssuer !== env.STELLAR_SETTLEMENT_ASSET_ISSUER))) {
+      throw new HttpError(400, "Price this song in the supported USDC asset");
+    }
+
     const purchaseEnabled =
       parsed.purchaseEnabled ?? existing.purchaseEnabled ?? false;
     const purchasePrice = purchaseEnabled
-      ? normalizePositiveAmount(
+      ? formatUnits(amountUnits(normalizePositiveAmount(
           parsed.purchasePrice ||
             existing.purchasePrice ||
             env.TRACK_PURCHASE_DEFAULT_PRICE,
           "Track purchase price",
-        )
+        )))
       : existing.purchasePrice;
     const purchaseAsset = purchaseEnabled
       ? normalizeStellarAsset(
           {
-            code:
-              parsed.purchaseAssetCode ||
-              existing.purchaseAssetCode ||
-              env.STELLAR_SETTLEMENT_ASSET_CODE,
-            issuer:
-              parsed.purchaseAssetIssuer ||
-              existing.purchaseAssetIssuer ||
-              env.STELLAR_SETTLEMENT_ASSET_ISSUER,
+            code: env.STELLAR_SETTLEMENT_ASSET_CODE,
+            issuer: env.STELLAR_SETTLEMENT_ASSET_ISSUER,
           },
           "Track purchase",
         )

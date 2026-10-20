@@ -1,0 +1,327 @@
+{
+  "at": "2026-10-17T19:59:53.878Z",
+  "environment": "isolated local PostgreSQL, Dynamic Sandbox, real Stellar Testnet",
+  "trackId": "trk_810ef0432acc4b44",
+  "batchId": "1a2a5316398b2339fe568ebc1a618103177e6712bd6e58c10f7910acf2ce44b6",
+  "receipts": [
+    {
+      "kind": "purchase",
+      "hash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71",
+      "ledger": 5248624,
+      "feeCharged": "100",
+      "source": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "createdAt": "2026-10-17T19:51:47Z",
+      "successful": true,
+      "hashMatchesEnvelope": true
+    },
+    {
+      "kind": "settle",
+      "hash": "9793fe60dc2730aafa0d2d52ce19060bbaea75aee6b1f9df137ee83979b3d82e",
+      "ledger": 5248659,
+      "feeCharged": "984361",
+      "source": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "createdAt": "2026-10-17T19:54:42Z",
+      "successful": true,
+      "hashMatchesEnvelope": true
+    },
+    {
+      "kind": "claim",
+      "hash": "98ce4e5dc1045520812b550355f342d9bd6c1b61b92651598c73dfcaaa08d1eb",
+      "ledger": 5248692,
+      "feeCharged": "10212",
+      "source": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "createdAt": "2026-10-17T19:57:27Z",
+      "successful": true,
+      "hashMatchesEnvelope": true
+    },
+    {
+      "kind": "claim",
+      "hash": "6ba87a43d9408b8627ecff5d570f3545d30ebcd6e2533549a884365705eb17cd",
+      "ledger": 5248675,
+      "feeCharged": "10213",
+      "source": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "createdAt": "2026-10-17T19:56:02Z",
+      "successful": true,
+      "hashMatchesEnvelope": true
+    }
+  ],
+  "onChainBatch": {
+    "claimed": "10000",
+    "claims": [
+      {
+        "amount": "7000",
+        "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "status": [
+          "Claimed"
+        ],
+        "updated_ledger": 5248692
+      },
+      {
+        "amount": "3000",
+        "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "status": [
+          "Claimed"
+        ],
+        "updated_ledger": 5248675
+      }
+    ],
+    "funded": "10000",
+    "funded_ledger": 5248659,
+    "reclaimed": "0",
+    "request": {
+      "agreement_id": "7186e534-47db-4d05-9c2f-1bee561cc67e",
+      "batch_id": {
+        "type": "Buffer",
+        "data": [
+          26,
+          42,
+          83,
+          22,
+          57,
+          139,
+          35,
+          57,
+          254,
+          86,
+          142,
+          188,
+          26,
+          97,
+          129,
+          3,
+          23,
+          126,
+          103,
+          18,
+          189,
+          110,
+          88,
+          193,
+          15,
+          121,
+          16,
+          172,
+          242,
+          206,
+          68,
+          182
+        ]
+      },
+      "expires_at": "1792353120",
+      "fee_bps": 0,
+      "gross_amount": "10000",
+      "proposal_hash": {
+        "type": "Buffer",
+        "data": [
+          170,
+          158,
+          126,
+          221,
+          205,
+          101,
+          73,
+          170,
+          164,
+          227,
+          63,
+          251,
+          205,
+          237,
+          221,
+          97,
+          208,
+          199,
+          132,
+          127,
+          216,
+          69,
+          184,
+          227,
+          24,
+          43,
+          149,
+          188,
+          135,
+          33,
+          187,
+          13
+        ]
+      },
+      "source_id": {
+        "type": "Buffer",
+        "data": [
+          160,
+          91,
+          200,
+          116,
+          212,
+          179,
+          11,
+          215,
+          134,
+          184,
+          240,
+          127,
+          247,
+          50,
+          25,
+          226,
+          156,
+          245,
+          44,
+          217,
+          47,
+          171,
+          120,
+          221,
+          73,
+          161,
+          66,
+          97,
+          179,
+          36,
+          90,
+          7
+        ]
+      },
+      "track_id": "trk_810ef0432acc4b44",
+      "version": 1
+    }
+  },
+  "escrowUnits": "100000",
+  "existingObligationPreserved": true,
+  "deltasUnits": {
+    "owner": {
+      "USDC": "7000",
+      "XLM": "-10212"
+    },
+    "contributor": {
+      "USDC": "-7000",
+      "XLM": "-10313"
+    },
+    "treasury": {
+      "USDC": "0",
+      "XLM": "-984361"
+    }
+  },
+  "sourceConservation": {
+    "purchaseUnits": "10000",
+    "artistUnits": "7000",
+    "producerUnits": "3000",
+    "platformFeeUnits": "0",
+    "unclaimedUnits": "0"
+  },
+  "counts": {
+    "payments": 1,
+    "entitlements": 1,
+    "allocations": 2,
+    "paid": 2
+  },
+  "salesPrivacy": {
+    "ownerSeesOwnSale": true,
+    "buyerNotAttributedSale": true,
+    "noBuyerWalletOrIntentInArtistSales": true
+  },
+  "before": {
+    "at": "2026-10-17T19:39:38.563Z",
+    "network": "Stellar Testnet",
+    "wallets": {
+      "owner": {
+        "address": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "sequence": "22372622083817475",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "0.0080000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9999.9999700"
+          }
+        ]
+      },
+      "contributor": {
+        "address": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "sequence": "22357508093902851",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "0.0080000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9999.9979448"
+          }
+        ]
+      },
+      "treasury": {
+        "address": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "sequence": "22352878119157788",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "29.9600000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9667.8631764"
+          }
+        ]
+      }
+    }
+  },
+  "after": {
+    "at": "2026-10-17T19:58:30.703Z",
+    "network": "Stellar Testnet",
+    "wallets": {
+      "owner": {
+        "address": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "sequence": "22372622083817476",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "0.0087000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9999.9989488"
+          }
+        ]
+      },
+      "contributor": {
+        "address": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "sequence": "22357508093902853",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "0.0073000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9999.9969135"
+          }
+        ]
+      },
+      "treasury": {
+        "address": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "sequence": "22352878119157789",
+        "balances": [
+          {
+            "asset": "USDC",
+            "amount": "29.9600000",
+            "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          },
+          {
+            "asset": "XLM",
+            "amount": "9667.7647403"
+          }
+        ]
+      }
+    }
+  }
+}

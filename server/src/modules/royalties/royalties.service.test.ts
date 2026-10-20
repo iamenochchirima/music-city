@@ -39,7 +39,7 @@ const restore = <T extends object, K extends keyof T>(
   };
 };
 
-test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve entries", async () => {
+test("track purchases retain their captured agreement after amendment and apply exact fees", async () => {
   const insertedEntries: Array<{
     walletAddress: string;
     amount: string;
@@ -76,11 +76,12 @@ test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve
       finalizedSplitsRepository,
       "list",
       (async () => [
+        { id: "rsplit_new", trackId: "trk_3", version: 2, status: "active", recipients: [{walletAddress:"wrong-recipient",shareBps:10000}] },
         {
           id: "rsplit_active",
           trackId: "trk_3",
           version: 1,
-          status: "active" as const,
+          status: "superseded" as const,
           historical: false,
           registryKind: "soroban" as const,
           registryChain: "stellar" as const,
@@ -129,6 +130,7 @@ test("ensureTrackPurchaseLedgerEntries applies fee settings and can auto-approve
       intentId: "payi_track_1",
       walletAddress: "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
       productType: "track_purchase",
+      royaltySplitId: "rsplit_active",
       trackId: "trk_3",
       txHash: "stellar-track-tx-1",
       amount: "10.0000000",

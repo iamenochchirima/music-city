@@ -111,7 +111,8 @@ test("PostgreSQL finalization transaction lifecycle (network boundary mocked)", 
       const history = await royaltiesService.listTrackSplits(v.proposal.trackId);
       assert.equal(history.items.find(split => split.id === historicalId)?.historical,true);
       assert.equal(history.items.find(split => split.id === historicalId)?.status,"active");
-      const entries = await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
+      const capturedPayment = { ...payment, royaltySplitId: effective!.id };
+      const entries = await royaltiesService.ensureTrackPurchaseLedgerEntries(capturedPayment);
       assert.equal(entries.length,2);
       assert.ok(entries.every(entry => entry.splitId === effective!.id));
       assert.equal(entries.find(entry => entry.recipientWalletAddress === owner.publicKey())?.grossAmount,"70.0000000");
@@ -132,7 +133,7 @@ test("PostgreSQL finalization transaction lifecycle (network boundary mocked)", 
       assert.equal(newDisplay.track.title,'Published track');
       assert.deepEqual(await finalizedSplitsRepository.effective(v.proposal.trackId), effective);
       const ledgerSnapshot = (items: typeof entries) => items.map(item => JSON.parse(JSON.stringify(item))).sort((a, b) => a.id.localeCompare(b.id));
-      assert.deepEqual(ledgerSnapshot(await royaltiesService.ensureTrackPurchaseLedgerEntries(payment)), ledgerSnapshot(entries));
+      assert.deepEqual(ledgerSnapshot(await royaltiesService.ensureTrackPurchaseLedgerEntries(capturedPayment)), ledgerSnapshot(entries));
       await assert.rejects(db.transaction(client => client.query("UPDATE agreement_finalizations SET payload=jsonb_set(payload,'{ledger}','999') WHERE id=$1",[attempt.id])));
       await assert.rejects(db.transaction(client => client.query("DELETE FROM agreement_finalizations WHERE id=$1",[attempt.id])));
       await assert.rejects(db.transaction(client => client.query("UPDATE contributor_agreements SET effective_version=NULL WHERE id=$1",[id])));
@@ -159,7 +160,7 @@ test("PostgreSQL finalization transaction lifecycle (network boundary mocked)", 
       assert.equal(amended.versions[0]!.state,"finalized");
       assert.equal(amended.versions[1]!.state,"finalized");
       assert.equal((await finalizedSplitsRepository.effective(v.proposal.trackId))?.version,2);
-      const preservedEntries = await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
+      const preservedEntries = await royaltiesService.ensureTrackPurchaseLedgerEntries(capturedPayment);
       assert.ok(preservedEntries.every(entry => entry.splitId === effective!.id));
       resetNetwork();
     });

@@ -1,0 +1,401 @@
+{
+  "attempts": [
+    {
+      "id": "a1dc689b-7126-4cb6-aa29-1b4beb9466cf",
+      "kind": "settle",
+      "actor": "admin:adm_1bda4d56f3a541eb",
+      "ledger": 5248659,
+      "status": "confirmed",
+      "batchId": "1a2a5316398b2339fe568ebc1a618103177e6712bd6e58c10f7910acf2ce44b6",
+      "signers": [
+        "GACQXEBDWTAJ3Z6CDQRQV3PC4ZCYLNXCIDXNJJMT5TGAIGEGKTOU3DIT",
+        "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+      ],
+      "signedBy": [
+        "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+      ],
+      "createdAt": "2026-10-17T19:53:14.872Z",
+      "expiresAt": "2026-10-17T20:03:14.000Z",
+      "updatedAt": "2026-10-17T19:54:42.882Z",
+      "feeCharged": "984361",
+      "lastSubmittedAt": "2026-10-17T19:54:36.074Z",
+      "submissionCount": 1,
+      "transactionHash": "9793fe60dc2730aafa0d2d52ce19060bbaea75aee6b1f9df137ee83979b3d82e",
+      "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    },
+    {
+      "id": "b8afc296-66bf-410c-95d3-cb0704893fc1",
+      "kind": "claim",
+      "actor": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "ledger": 5248692,
+      "status": "confirmed",
+      "batchId": "1a2a5316398b2339fe568ebc1a618103177e6712bd6e58c10f7910acf2ce44b6",
+      "signers": [
+        "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U"
+      ],
+      "signedBy": [
+        "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U"
+      ],
+      "createdAt": "2026-10-17T19:57:07.320Z",
+      "expiresAt": "2026-10-17T20:07:06.000Z",
+      "updatedAt": "2026-10-17T19:57:44.913Z",
+      "claimIndex": 0,
+      "feeCharged": "10212",
+      "lastSubmittedAt": "2026-10-17T19:57:24.886Z",
+      "submissionCount": 1,
+      "transactionHash": "98ce4e5dc1045520812b550355f342d9bd6c1b61b92651598c73dfcaaa08d1eb",
+      "treasuryAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    },
+    {
+      "id": "c9e830bf-d772-4702-9386-92618bd4114e",
+      "kind": "claim",
+      "actor": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "ledger": 5248675,
+      "status": "confirmed",
+      "batchId": "1a2a5316398b2339fe568ebc1a618103177e6712bd6e58c10f7910acf2ce44b6",
+      "signers": [
+        "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL"
+      ],
+      "signedBy": [
+        "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL"
+      ],
+      "createdAt": "2026-10-17T19:55:45.387Z",
+      "expiresAt": "2026-10-17T20:05:44.000Z",
+      "updatedAt": "2026-10-17T19:56:05.033Z",
+      "claimIndex": 1,
+      "feeCharged": "10213",
+      "lastSubmittedAt": "2026-10-17T19:56:00.290Z",
+      "submissionCount": 1,
+      "transactionHash": "6ba87a43d9408b8627ecff5d570f3545d30ebcd6e2533549a884365705eb17cd",
+      "treasuryAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    }
+  ],
+  "entitlements": [
+    {
+      "id": "ent_4b8a1cec3dc7470e",
+      "source": "purchase",
+      "trackId": "trk_810ef0432acc4b44",
+      "startsAt": "2026-10-17T19:51:49.072Z",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL"
+    }
+  ],
+  "at": "2026-10-17T20:00:56.654Z",
+  "track": {
+    "id": "trk_810ef0432acc4b44",
+    "title": "Core Journey",
+    "status": "published",
+    "purchasePrice": "0.001",
+    "purchaseEnabled": true
+  },
+  "agreements": [
+    {
+      "version": 1,
+      "state": "finalized",
+      "proposalHash": "aa9e7eddcd6549aaa4e33ffbcdeddd61d0c7847fd845b8e3182b95bc8721bb0d",
+      "responses": [
+        {
+          "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "action": "accept"
+        },
+        {
+          "wallet": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "action": "accept"
+        }
+      ]
+    }
+  ],
+  "publications": [
+    {
+      "id": "e9232156-4637-475a-9140-79021aee08ab",
+      "status": "confirmed",
+      "hash": "8a5a6860e54c615cb8ac5973a97ff8b0953c1fd473626d219ab576bd61ddfa21",
+      "signedBy": [
+        "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+      ],
+      "ledger": 5248435
+    }
+  ],
+  "orders": [
+    {
+      "id": "payi_7f48dffb81f84512",
+      "memo": "payi_7f48dffb81f84512",
+      "amount": "0.0010000",
+      "status": "confirmed",
+      "txHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71",
+      "trackId": "trk_810ef0432acc4b44",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T19:47:48.727Z",
+      "expiresAt": "2026-10-17T20:02:48.727Z",
+      "updatedAt": "2026-10-17T19:51:49.047Z",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "productType": "track_purchase",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "royaltySplitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1",
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "destinationAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+    },
+    {
+      "id": "payi_ef551aaad14f4ea4",
+      "memo": "payi_ef551aaad14f4ea4",
+      "amount": "0.0010000",
+      "status": "pending",
+      "trackId": "trk_810ef0432acc4b44",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T19:42:14.618Z",
+      "expiresAt": "2026-10-17T19:57:14.619Z",
+      "updatedAt": "2026-10-17T19:42:14.618Z",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "productType": "track_purchase",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "royaltySplitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1",
+      "networkPassphrase": "Test SDF Network ; September 2015",
+      "destinationAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5"
+    }
+  ],
+  "purchases": [
+    {
+      "id": "pay_58803ad973d64988",
+      "amount": "0.0010000",
+      "status": "confirmed",
+      "txHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71",
+      "trackId": "trk_810ef0432acc4b44",
+      "intentId": "payi_7f48dffb81f84512",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T19:51:49.040Z",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "confirmedAt": "2026-10-17T19:51:47Z",
+      "productType": "track_purchase",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "royaltySplitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    }
+  ],
+  "checkouts": [
+    {
+      "id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "ledger": 5248624,
+      "status": "confirmed",
+      "intentId": "payi_7f48dffb81f84512",
+      "createdAt": "2026-10-17T19:47:49.500Z",
+      "expiresAt": "2026-10-17T19:52:49.000Z",
+      "updatedAt": "2026-10-17T19:51:49.075Z",
+      "feeCharged": "100",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "preparedLedger": 5248576,
+      "lastSubmittedAt": "2026-10-17T19:51:45.819Z",
+      "submissionCount": 1,
+      "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    },
+    {
+      "id": "9100408b-6423-4c61-95e4-e483e9836a73",
+      "error": "Payment expired. No matching transaction was found.",
+      "status": "expired",
+      "intentId": "payi_ef551aaad14f4ea4",
+      "createdAt": "2026-10-17T19:42:15.670Z",
+      "expiresAt": "2026-10-17T19:47:15.000Z",
+      "updatedAt": "2026-10-17T19:47:48.712Z",
+      "walletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "preparedLedger": 5248509,
+      "submissionCount": 0,
+      "transactionHash": "de3a4fff9a1cc27c3af5b3626856a287815338424f8f2aa30276ddf47f9cbeeb",
+      "networkPassphrase": "Test SDF Network ; September 2015"
+    }
+  ],
+  "events": [
+    {
+      "checkout_id": "9100408b-6423-4c61-95e4-e483e9836a73",
+      "action": "prepared",
+      "payload": {
+        "status": "prepared",
+        "submissionCount": 0,
+        "transactionHash": "de3a4fff9a1cc27c3af5b3626856a287815338424f8f2aa30276ddf47f9cbeeb"
+      }
+    },
+    {
+      "checkout_id": "9100408b-6423-4c61-95e4-e483e9836a73",
+      "action": "expired",
+      "payload": {
+        "status": "expired",
+        "submissionCount": 0,
+        "transactionHash": "de3a4fff9a1cc27c3af5b3626856a287815338424f8f2aa30276ddf47f9cbeeb"
+      }
+    },
+    {
+      "checkout_id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "action": "prepared",
+      "payload": {
+        "status": "prepared",
+        "submissionCount": 0,
+        "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71"
+      }
+    },
+    {
+      "checkout_id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "action": "authorized",
+      "payload": {
+        "status": "submitting",
+        "submissionCount": 0,
+        "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71"
+      }
+    },
+    {
+      "checkout_id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "action": "submit_attempt",
+      "payload": {
+        "status": "submitting",
+        "submissionCount": 1,
+        "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71"
+      }
+    },
+    {
+      "checkout_id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "action": "chain_confirmed",
+      "payload": {
+        "ledger": 5248624,
+        "status": "submitting",
+        "feeCharged": "100",
+        "submissionCount": 1,
+        "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71"
+      }
+    },
+    {
+      "checkout_id": "0aa45549-3505-44a5-972a-ca927224449e",
+      "action": "confirmed",
+      "payload": {
+        "ledger": 5248624,
+        "status": "confirmed",
+        "feeCharged": "100",
+        "submissionCount": 1,
+        "transactionHash": "a28b10da421be9242492416cf8eadc2345807fb7cf647ee7291d67190fbbfc71"
+      }
+    }
+  ],
+  "ledger": [
+    {
+      "id": "rled_a0602d65d2794b2e",
+      "feeBps": 0,
+      "status": "paid",
+      "splitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1",
+      "trackId": "trk_810ef0432acc4b44",
+      "sourceId": "pay_58803ad973d64988",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T19:51:49.069Z",
+      "netAmount": "0.0003000",
+      "updatedAt": "2026-10-17T19:56:05.326Z",
+      "sourceType": "track_purchase",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "grossAmount": "0.0003000",
+      "recipientRole": "producer",
+      "recipientChain": "stellar",
+      "recipientWalletAddress": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL"
+    },
+    {
+      "id": "rled_c06e4c5077844911",
+      "feeBps": 0,
+      "status": "paid",
+      "splitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1",
+      "trackId": "trk_810ef0432acc4b44",
+      "sourceId": "pay_58803ad973d64988",
+      "assetCode": "USDC",
+      "createdAt": "2026-10-17T19:51:49.069Z",
+      "netAmount": "0.0007000",
+      "updatedAt": "2026-10-17T19:57:45.197Z",
+      "sourceType": "track_purchase",
+      "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "grossAmount": "0.0007000",
+      "recipientRole": "artist",
+      "recipientChain": "stellar",
+      "recipientWalletAddress": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U"
+    }
+  ],
+  "batches": [
+    {
+      "id": "1a2a5316398b2339fe568ebc1a618103177e6712bd6e58c10f7910acf2ce44b6",
+      "state": "closed",
+      "config": {
+        "assetCode": "USDC",
+        "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+        "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015"
+      },
+      "feeBps": 0,
+      "trackId": "trk_810ef0432acc4b44",
+      "version": 1,
+      "sourceId": "pay_58803ad973d64988",
+      "createdAt": "2026-10-17T19:52:50.262Z",
+      "expiresAt": "2026-10-18T19:52:00.000Z",
+      "sourceKey": "a05bc874d4b30bd786b8f07ff73219e29cf52cd92fab78dd49a14261b3245a07",
+      "updatedAt": "2026-10-17T19:57:45.197Z",
+      "grossUnits": "10000",
+      "sourceType": "track_purchase",
+      "agreementId": "7186e534-47db-4d05-9c2f-1bee561cc67e",
+      "allocations": [
+        {
+          "index": 0,
+          "status": "claimed",
+          "feeUnits": "0",
+          "grossUnits": "7000",
+          "amountUnits": "7000",
+          "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "updatedLedger": 5248692,
+          "ledgerEntryIds": [
+            "rled_c06e4c5077844911"
+          ],
+          "transactionHash": "98ce4e5dc1045520812b550355f342d9bd6c1b61b92651598c73dfcaaa08d1eb"
+        },
+        {
+          "index": 1,
+          "status": "claimed",
+          "feeUnits": "0",
+          "grossUnits": "3000",
+          "amountUnits": "3000",
+          "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "updatedLedger": 5248675,
+          "ledgerEntryIds": [
+            "rled_a0602d65d2794b2e"
+          ],
+          "transactionHash": "6ba87a43d9408b8627ecff5d570f3545d30ebcd6e2533549a884365705eb17cd"
+        }
+      ],
+      "fundedUnits": "10000",
+      "fundingHash": "9793fe60dc2730aafa0d2d52ce19060bbaea75aee6b1f9df137ee83979b3d82e",
+      "fundedLedger": 5248659,
+      "proposalHash": "aa9e7eddcd6549aaa4e33ffbcdeddd61d0c7847fd845b8e3182b95bc8721bb0d"
+    }
+  ],
+  "browserChecks": {
+    "actualCreatorPublication": true,
+    "actualDynamicConsent": true,
+    "ordinaryAdminReadOnly": true,
+    "oneTreasurySignatureDisabled": true,
+    "twoTreasurySignaturesConfirmedFunding": true,
+    "actualDynamicPurchase": true,
+    "buyerTabClosedBeforeWorkerCompletion": true,
+    "reopenedTrackPurchased": true,
+    "producerClaimReceipt": true,
+    "artistClaimReceipt": true,
+    "artistIncomingSaleReceipt": true,
+    "purchaseReviewKeyboardDetails": true,
+    "cancelReturnsFocusToBuy": true,
+    "mobileCheckout": {
+      "viewport": 390,
+      "documentWidth": 390
+    },
+    "mobileEarnings": {
+      "viewport": 390,
+      "documentWidth": 375,
+      "horizontalOverflow": false
+    },
+    "providerOtpDismissal": "Backdrop and Escape did not dismiss the provider OTP. Review cancellation and reload interruption were verified instead."
+  }
+}

@@ -27,6 +27,7 @@ import {
   validateTrackMetadata,
 } from "./track-metadata-editor";
 import { ApiClientError } from "@/lib/api/http-client";
+import { TrackSalesSettings } from "./track-sales-settings";
 
 export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
   const router = useRouter();
@@ -379,6 +380,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </Button>
         </ActionBar>
       </form>
+      {session?.token && <TrackSalesSettings key={track.id} track={track} token={session.token} onSaved={(updated) => setTrack((current) => current ? { ...current, ...updated } : updated)} />}
       <section className="max-w-[720px] space-y-3 border-t border-border pt-6">
         <h3 className="text-lg font-semibold text-foreground">
           Release publication
