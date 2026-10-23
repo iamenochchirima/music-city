@@ -130,7 +130,7 @@ export const TrackCommerceActions = ({
       {!hidePlay ? (
         <Button
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-          disabled={!track.playbackReady || !session?.token}
+          disabled={!track.playbackReady}
           onClick={() => void handlePlay()}
         >
           <Play className="mr-2 h-4 w-4 fill-current" />
