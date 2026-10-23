@@ -230,10 +230,6 @@ export const DashboardTrackShelves = ({
   const pipelineTracks = tracks.filter((track) => !track.playbackReady);
 
   useEffect(() => {
-    setPlaybackQueue(readyTracks);
-  }, [readyTracks, setPlaybackQueue]);
-
-  useEffect(() => {
     if (!session?.token || !pipelineTracks.some((t) => t.status !== "failed"))
       return;
     let active = true;
@@ -445,7 +441,7 @@ export const DashboardTrackShelves = ({
         selectionMode={selectionMode}
         selectedTrackIds={selectedTrackIds}
         canPlayTrack={canPlayTrack}
-        onPlay={playTrack}
+        onPlay={async (track) => { setPlaybackQueue(readyTracks); await playTrack(track); }}
         onDelete={deleteTrack}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}
@@ -459,7 +455,7 @@ export const DashboardTrackShelves = ({
         selectionMode={selectionMode}
         selectedTrackIds={selectedTrackIds}
         canPlayTrack={canPlayTrack}
-        onPlay={playTrack}
+        onPlay={async (track) => { setPlaybackQueue(readyTracks); await playTrack(track); }}
         onDelete={deleteTrack}
         onToggleSelectionMode={toggleSelectionMode}
         onToggleTrackSelected={toggleTrackSelected}

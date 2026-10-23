@@ -33,7 +33,7 @@ export const TrackCommerceActions = ({
   hidePlay?: boolean;
 }) => {
   const { session } = useAuth();
-  const { activeTrackId, playTrack } = useGlobalPlayback();
+  const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
   const buyButton = useRef<HTMLButtonElement>(null);
@@ -104,6 +104,7 @@ export const TrackCommerceActions = ({
       setPurchased(true);
       toast.success("Track unlocked.");
       await onUnlocked?.();
+      if (activeTrackId !== track.id) setPlaybackQueue([track]);
       await playTrack(track);
     } catch (error) {
       toast.error(
@@ -117,6 +118,7 @@ export const TrackCommerceActions = ({
 
   const handlePlay = async () => {
     try {
+      if (activeTrackId !== track.id) setPlaybackQueue([track]);
       await playTrack(track);
     } catch (error) {
       toast.error(

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
+import { ReleasePlayButton, orderedReleaseTracks } from "./release-play-button";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { useAuth } from "@/hooks/use-auth";
@@ -242,6 +243,7 @@ export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
             </div>
           ) : null}
 
+          {release.status === "published" ? <ReleasePlayButton releaseId={release.id} title={release.title} release={release} /> : null}
           {release.description ? (
             <p className="max-w-3xl text-base leading-7 text-slate-300">
               {release.description}
@@ -274,7 +276,7 @@ export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
             </div>
           </div>
         ) : (
-          <TrackGrid tracks={release.tracks.map((item) => item.track)} />
+          <TrackGrid tracks={orderedReleaseTracks(release)} />
         )}
       </div>
     </div>

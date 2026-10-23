@@ -14,7 +14,7 @@ vi.mock("@/features/payments/hooks/use-stellar-checkout", () => ({
   useStellarCheckout: () => m.checkout,
 }));
 vi.mock("@/features/playback/providers/global-playback-provider", () => ({
-  useGlobalPlayback: () => ({ playTrack: m.play }),
+  useGlobalPlayback: () => ({ playTrack: m.play, setPlaybackQueue: vi.fn() }),
 }));
 vi.mock("@/features/playback/lib/playback-api", () => ({ playbackApi: { preloadTracks: m.preload } }));
 const track = {

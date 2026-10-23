@@ -3,6 +3,8 @@
 import Link from "next/link";
 import type { ReleaseSummary } from "@music-city/shared";
 
+import { ReleasePlayButton } from "./release-play-button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formatReleaseType = (value: ReleaseSummary["type"]) =>
@@ -133,8 +135,7 @@ export const ReleaseGrid = ({
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {releases.map((release) => (
-        <Link key={release.id} href={hrefBuilder ? hrefBuilder(release) : `/releases/${release.id}`}>
-          <Card className="h-full overflow-hidden rounded-xl border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
+          <Card key={release.id} className="relative h-full overflow-hidden rounded-xl border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
             <div className="overflow-hidden border-b border-white/10">
               {release.coverImageUrl ? (
                 <div
@@ -156,12 +157,14 @@ export const ReleaseGrid = ({
                   {getStatusLabel(release)}
                 </span>
               </div>
-              <CardTitle className="text-xl">{release.title}</CardTitle>
+              <CardTitle className="text-xl">
+                <Link className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-emerald-400" href={hrefBuilder ? hrefBuilder(release) : `/releases/${release.id}`}>{release.title}</Link>
+              </CardTitle>
               {showArtist ? <p className="text-sm text-slate-400">{release.artistName}</p> : null}
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-300">
               <div className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-950/70 px-3 py-2">
-                <span>{release.trackCount} tracks</span>
+                <span>{release.trackCount} {release.trackCount === 1 ? "track" : "tracks"}</span>
                 <span>{release.genre}</span>
               </div>
               <div className="rounded-lg border border-white/10 bg-slate-950/40 px-3 py-3">
@@ -173,6 +176,7 @@ export const ReleaseGrid = ({
                 </p>
                 <p className="mt-1 text-xs text-slate-400">{getTimingCopy(release).detail}</p>
               </div>
+              {release.status === "published" && release.trackCount > 0 ? <ReleasePlayButton releaseId={release.id} title={release.title} /> : null}
               {release.description ? (
                 <p className="line-clamp-3 leading-6 text-slate-400">
                   {release.description}
@@ -180,7 +184,6 @@ export const ReleaseGrid = ({
               ) : null}
             </CardContent>
           </Card>
-        </Link>
       ))}
     </div>
   );

@@ -13,12 +13,10 @@ import { SaveToPlaylistButton } from "@/features/music/components/save-to-playli
 import { TrackCommerceActions } from "@/features/music/components/track-commerce-actions";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { usersApi } from "@/features/users/lib/users-api";
-import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
 import { useAuth } from "@/hooks/use-auth";
 
 export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
   const { session } = useAuth();
-  const { setPlaybackQueue } = useGlobalPlayback();
   const [track, setTrack] = useState<TrackSummary | null>(null);
   const [artistProfile, setArtistProfile] = useState<ArtistPublicProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,10 +59,6 @@ export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
       cancelled = true;
     };
   }, [trackId]);
-
-  useEffect(() => {
-    setPlaybackQueue(track ? [track] : []);
-  }, [track, setPlaybackQueue]);
 
   useEffect(() => {
     let cancelled = false;

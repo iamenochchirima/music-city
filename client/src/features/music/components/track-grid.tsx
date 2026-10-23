@@ -6,6 +6,8 @@ import type { TrackSummary } from "@music-city/shared";
 import { Ellipsis, LoaderCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/hooks/use-auth";
+import { playbackApi } from "@/features/playback/lib/playback-api";
 import { Button } from "@/components/ui/button";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
 import { TrackTable } from "@/features/music/components/track-table";
@@ -23,17 +25,19 @@ export const TrackGrid = ({
   tracks?: TrackSummary[];
   onTrackSynced?: (track: TrackSummary) => void;
 }) => {
+  const { session } = useAuth();
   const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
   const [syncingTrackId, setSyncingTrackId] = useState<string | null>(null);
   const safeTracks = Array.isArray(tracks) ? tracks : [];
 
   const handleTrackAction = async (track: TrackSummary) => {
+    setPlaybackQueue(safeTracks);
     await playTrack(track);
   };
 
   useEffect(() => {
-    setPlaybackQueue(safeTracks);
-  }, [safeTracks, setPlaybackQueue]);
+    playbackApi.preloadTracks(session?.token, safeTracks);
+  }, [safeTracks, session?.token]);
 
   if (safeTracks.length === 0) {
     return (

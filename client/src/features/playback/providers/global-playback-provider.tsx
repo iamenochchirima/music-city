@@ -476,6 +476,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const completionReportedRef = useRef(false);
   const guestPromptOpenedRef = useRef(false);
   const resumePositionRef = useRef<number | null>(null);
+  const advanceQueueRef = useRef<() => Promise<void>>(async () => {});
 
   const setPlaybackQueue = useCallback((tracks: TrackSummary[]) => {
     const nextQueue = tracks.filter((track) => track.playbackReady);
@@ -654,7 +655,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       guestPromptOpenedRef.current = true;
       return;
     }
-    setCurrentTime(0);
+    setCurrentTime(audioRef.current?.currentTime ?? 0);
 
     if (activeAd && pendingTrackAfterAd) {
       const impressionId = activeAdImpressionId;
@@ -668,7 +669,9 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       }
 
       await startTrackSession(nextTrack);
+      return;
     }
+    await advanceQueueRef.current();
   }, [
     activeAd,
     activeAdImpressionId,
@@ -1023,6 +1026,14 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     session?.token,
     startTrackSession,
   ]);
+
+  advanceQueueRef.current = async () => {
+    const index = playbackQueue.findIndex((track) => track.id === activeTrackRef.current?.id);
+    const next = index >= 0 ? playbackQueue[index + 1] : undefined;
+    if (!next) return;
+    await recordPlaybackEvent("completed", audioRef.current?.currentTime ?? currentTime, true);
+    await playTrack(next);
+  };
 
   useEffect(() => {
     playbackApi.preloadTracks(session?.token, playbackQueue);
