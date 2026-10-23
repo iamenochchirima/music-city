@@ -20,12 +20,13 @@ import {
   Play,
   SkipBack,
   SkipForward,
-  Volume2,
-  VolumeX,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+
+import { usePlaybackVolume } from "@/features/playback/hooks/use-playback-volume";
+import { VolumeControl } from "@/features/playback/components/volume-control";
 
 import { adsApi } from "@/features/ads/lib/ads-api";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
@@ -58,6 +59,7 @@ type GlobalPlaybackContextValue = {
   seekTo: (value: number) => void;
   skipBy: (delta: number) => void;
   setVolumeLevel: (value: number) => void;
+  toggleMute: () => void;
   setPlaybackQueue: (tracks: TrackSummary[]) => void;
 };
 
@@ -131,6 +133,7 @@ const GlobalPlaybackBar = ({
   dismissPlayback,
   seekTo,
   setVolumeLevel,
+  toggleMute,
 }: Omit<
   GlobalPlaybackContextValue,
   "activeTrackId" | "playTrack" | "skipBy" | "setPlaybackQueue"
@@ -290,6 +293,9 @@ const GlobalPlaybackBar = ({
                   Sponsored{activeAd?.brandName ? ` · ${activeAd.brandName}` : ""}
                 </p>
               ) : null}
+              <div className="mx-auto w-full max-w-xs">
+                <VolumeControl volume={volume} onChange={setVolumeLevel} onToggleMute={toggleMute} />
+              </div>
             </div>
           </div>
         </section>
@@ -428,24 +434,7 @@ const GlobalPlaybackBar = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {volume === 0 ? (
-              <VolumeX className="h-4 w-4 shrink-0 text-slate-400" />
-            ) : (
-              <Volume2 className="h-4 w-4 shrink-0 text-slate-400" />
-            )}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={volume}
-              onChange={(event) => setVolumeLevel(Number(event.target.value))}
-              aria-label="Volume"
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
-              style={{ background: buildRangeBackground(volume, 1, "#34d399") }}
-            />
-          </div>
+          <VolumeControl volume={volume} onChange={setVolumeLevel} onToggleMute={toggleMute} />
         </div>
       </div>
     </>
@@ -472,7 +461,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const [guestLimitReached, setGuestLimitReached] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.85);
+  const { volume, setVolumeLevel, toggleMute } = usePlaybackVolume(audioRef);
   const [playbackQueue, setPlaybackQueueState] = useState<TrackSummary[]>([]);
   const [activeAd, setActiveAd] = useState<AdRecord | null>(null);
   const [activeAdImpressionId, setActiveAdImpressionId] = useState<string | null>(
@@ -723,7 +712,6 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       void handleAudioEnded();
     };
 
-    audio.volume = volume;
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("durationchange", handleDurationChange);
@@ -742,7 +730,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeEventListener("ended", handleEnded);
       stopAnimationLoop();
     };
-  }, [handleAudioEnded, volume]);
+  }, [handleAudioEnded]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -1152,12 +1140,6 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     setCurrentTime(nextTime);
   };
 
-  const setVolumeLevel = (value: number) => {
-    setVolume(value);
-    if (audioRef.current) {
-      audioRef.current.volume = value;
-    }
-  };
 
   const dismissPlayback = useCallback(async () => {
     const audio = audioRef.current;
@@ -1223,6 +1205,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       seekTo,
       skipBy,
       setVolumeLevel,
+      toggleMute,
       setPlaybackQueue,
     }),
     [
@@ -1262,6 +1245,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       dismissPlayback={dismissPlayback}
         seekTo={seekTo}
         setVolumeLevel={setVolumeLevel}
+        toggleMute={toggleMute}
       />
       {guestLimitReached ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
