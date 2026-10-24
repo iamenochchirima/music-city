@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { ReleaseSummary } from "@music-city/shared";
 
 import { ReleasePlayButton } from "./release-play-button";
@@ -138,10 +139,7 @@ export const ReleaseGrid = ({
           <Card key={release.id} className="relative h-full overflow-hidden rounded-xl border-white/10 bg-white/5 text-white shadow-none transition hover:border-emerald-400/30 hover:bg-white/[0.07]">
             <div className="overflow-hidden border-b border-white/10">
               {release.coverImageUrl ? (
-                <div
-                  className="aspect-square bg-cover bg-center"
-                  style={{ backgroundImage: `url(${release.coverImageUrl})` }}
-                />
+                <Image src={release.coverImageUrl} alt="" width={768} height={768} sizes="(min-width: 1280px) 380px, (min-width: 768px) 46vw, 92vw" maxWidth={1200} className="aspect-square h-auto w-full object-cover" />
               ) : (
                 <div className="aspect-square bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
               )}

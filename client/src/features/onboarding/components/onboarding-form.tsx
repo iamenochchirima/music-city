@@ -1,5 +1,7 @@
 "use client";
 
+import AppImage from "next/image";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -1418,8 +1420,9 @@ export const OnboardingForm = ({
             <div className="grid items-start gap-6 sm:grid-cols-2">
               <div className="space-y-4">
                 {profileImagePreview ? (
-                  <img
+                  <AppImage
                     src={profileImagePreview}
+                    sizes="96px" maxWidth={384}
                     alt="Profile preview"
                     className="h-24 w-24 rounded-full object-cover"
                   />
@@ -1467,8 +1470,9 @@ export const OnboardingForm = ({
               {isArtistIntent(primaryIntent) ? (
                 <div className="space-y-4">
                   {headerImagePreview ? (
-                    <img
+                    <AppImage
                       src={headerImagePreview}
+                      sizes="(min-width: 640px) 480px, 92vw"
                       alt="Header preview"
                       className="aspect-[8/3] w-full rounded-md object-cover"
                     />

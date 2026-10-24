@@ -7,7 +7,8 @@ import {
   readFileSync,
   rmSync,
 } from "node:fs";
-import { stat } from "node:fs/promises";
+import { stat, readFile } from "node:fs/promises";
+import { storedImageUrl } from "../modules/images/image-url.js";
 import { Readable, type Readable as ReadableType } from "node:stream";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { UploadSession } from "@music-city/shared";
@@ -166,6 +167,52 @@ const buildS3PresignedUrl = ({
 };
 
 export const storageService = {
+  getImageUrl(storageKey: string) {
+    return storedImageUrl(storageKey);
+  },
+
+  async readStoredObject(storageKey: string, maximumBytes = 20 * 1024 * 1024): Promise<Buffer> {
+    if (env.STORAGE_PROVIDER === "local") {
+      let metadata: Awaited<ReturnType<typeof this.getObjectMetadata>>;
+      try { metadata = await this.getObjectMetadata(storageKey); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new HttpError(404, "Image not found");
+        throw error;
+      }
+      if (metadata.sizeBytes > maximumBytes) throw new HttpError(413, "Image exceeds the processing limit");
+      return readFile(metadata.filePath);
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const url = buildS3PresignedUrl({ method: "GET", storageKey, expiresInSeconds: 300 });
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.status === 404) throw new HttpError(404, "Image not found");
+      if (!response.ok || !response.body) throw new HttpError(502, "Could not read image storage");
+      if (Number(response.headers.get("content-length")) > maximumBytes) {
+        await response.body.cancel();
+        throw new HttpError(413, "Image exceeds the processing limit");
+      }
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of Readable.fromWeb(response.body as import("node:stream/web").ReadableStream)) {
+        size += chunk.length;
+        if (size > maximumBytes) { controller.abort(); throw new HttpError(413, "Image exceeds the processing limit"); }
+        chunks.push(Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    } finally { clearTimeout(timeout); }
+  },
+
+  async putStoredObject(storageKey: string, body: Buffer, contentType: string) {
+    if (env.STORAGE_PROVIDER === "local") {
+      await this.saveLocalObject(storageKey, Readable.from(body));
+      return;
+    }
+    const target = this.createUploadTarget(storageKey);
+    await this.uploadRemoteObject(target.uploadUrl, "PUT", body, { "Content-Type": contentType });
+  },
+
   createUploadTarget(storageKey: string): Pick<
     UploadSession,
     "uploadUrl" | "method" | "headers" | "provider"

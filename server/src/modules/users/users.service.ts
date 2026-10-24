@@ -219,10 +219,10 @@ const withMediaUrls = (profile: UserProfile | null) => {
       x: profile.socialLinks?.x ?? "",
     },
     profileImageUrl: profile.profileImageStorageKey
-      ? storageService.getDownloadUrl(profile.profileImageStorageKey)
+      ? storageService.getImageUrl(profile.profileImageStorageKey)
       : profile.profileImageUrl,
     headerImageUrl: profile.headerImageStorageKey
-      ? storageService.getDownloadUrl(profile.headerImageStorageKey)
+      ? storageService.getImageUrl(profile.headerImageStorageKey)
       : profile.headerImageUrl,
   };
 };

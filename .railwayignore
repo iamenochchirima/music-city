@@ -7,3 +7,5 @@ server/server/data
 docs
 contracts
 env import
+
+client/src/assets/optimized

@@ -3,6 +3,8 @@
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
+import { imageSources } from "@/lib/images/image-sources";
+
 import { cn } from "@/lib/utils"
 
 const Avatar = React.forwardRef<
@@ -23,11 +25,13 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
+>(({ className, src, sizes = "40px", ...props }, ref) => (
   <AvatarPrimitive.Image
     ref={ref}
     className={cn("aspect-square h-full w-full", className)}
     {...props}
+    {...(src ? imageSources(src, sizes, 192) : {})}
+    decoding="async"
   />
 ))
 AvatarImage.displayName = AvatarPrimitive.Image.displayName

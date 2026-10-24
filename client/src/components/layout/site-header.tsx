@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import Link from "next/link";
 import {
   ChevronDown,
@@ -132,8 +134,9 @@ export const SiteHeader = () => {
                   >
                     {session.profileImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={session.profileImageUrl}
+                        sizes="24px" maxWidth={96}
                         alt=""
                         className="size-6 rounded-full object-cover"
                       />

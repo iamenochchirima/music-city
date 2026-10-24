@@ -45,3 +45,6 @@ lib/ic/idl.js
 
 
 /env\ import
+
+# Bundled responsive images are generated during development and builds.
+client/src/assets/optimized/

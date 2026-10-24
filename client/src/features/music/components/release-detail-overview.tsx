@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { ReleaseDetail } from "@music-city/shared";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -186,10 +187,7 @@ export const ReleaseDetailOverview = ({ releaseId }: { releaseId: string }) => {
       <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.04]">
           {release.coverImageUrl ? (
-            <div
-              className="aspect-square bg-cover bg-center"
-              style={{ backgroundImage: `url(${release.coverImageUrl})` }}
-            />
+            <Image src={release.coverImageUrl} alt="" width={768} height={768} sizes="(min-width: 1024px) 320px, 92vw" maxWidth={1200} className="aspect-square h-auto w-full object-cover" />
           ) : (
             <div className="aspect-square bg-[radial-gradient(circle_at_top,_rgba(52,211,153,0.28),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.15),_rgba(15,23,42,0.94))]" />
           )}

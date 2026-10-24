@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig(({ mode }) => {
-  const env = {
+  const env: Record<string, string> = {
     ...loadEnv(mode, process.cwd(), ["VITE_", "NEXT_PUBLIC_"]),
     NODE_ENV: mode === "production" ? "production" : "development",
   };
@@ -43,6 +43,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 4317,
+      proxy: {
+        "/media/images": {
+          target: new URL(process.env.VITE_API_BASE_URL || env.VITE_API_BASE_URL || "http://localhost:4319/api/v1").origin,
+          changeOrigin: true,
+          rewrite: (url) => url.replace(/^\/media\/images/, "/api/v1/images"),
+        },
+      },
       allowedHosts: [".ngrok-free.app"],
     },
     preview: {

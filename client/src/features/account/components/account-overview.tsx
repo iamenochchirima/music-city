@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type {
@@ -176,8 +178,9 @@ export const AccountOverview = () => {
         {profile?.headerImageUrl ? (
           <div className="h-40 overflow-hidden rounded-t-xl border-b border-white/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={profile.headerImageUrl}
+              sizes="(min-width: 1024px) 640px, 92vw"
               alt=""
               className="h-full w-full object-cover"
             />
@@ -187,8 +190,9 @@ export const AccountOverview = () => {
           <div className="flex items-center gap-4">
             {profile?.profileImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={profile.profileImageUrl}
+                sizes="64px" maxWidth={192}
                 alt=""
                 className="size-16 rounded-full object-cover ring-2 ring-emerald-300/40"
               />

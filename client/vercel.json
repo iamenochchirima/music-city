@@ -2,8 +2,23 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/media/images/:path*",
+      "destination": "https://server-production-d758.up.railway.app/api/v1/images/:path*"
+    },
+    {
       "source": "/((?!_vercel/insights|[a-f0-9]{16}/).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/media/images/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "1"
+        }
+      ]
     }
   ]
 }

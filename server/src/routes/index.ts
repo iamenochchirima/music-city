@@ -26,7 +26,10 @@ import { uploadsRouter } from "../modules/uploads/uploads.router.js";
 import { usersRouter } from "../modules/users/users.router.js";
 import { walletRouter } from "../modules/wallet/wallet.router.js";
 
+import { imagesRouter } from "../modules/images/images.router.js";
+
 const apiRouter = Router();
+apiRouter.use("/images", imagesRouter);
 
 apiRouter.use("/health", healthRouter);
 apiRouter.use("/referrals", referralsRouter);

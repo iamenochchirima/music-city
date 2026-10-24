@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -32,8 +33,9 @@ export function ReleaseArtworkEditor({
       >
         <div className="grid items-start gap-6 sm:grid-cols-[200px_minmax(0,1fr)]">
           {preview || image ? (
-            <img
-              src={preview ?? image}
+            <Image
+              src={(preview ?? image)!}
+              sizes="200px" maxWidth={768}
               alt={
                 preview
                   ? "Selected release artwork preview"

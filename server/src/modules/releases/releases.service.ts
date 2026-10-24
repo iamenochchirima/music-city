@@ -47,7 +47,7 @@ const hydrateReleaseUrls = <
 ) => ({
   ...release,
   coverImageUrl: release.coverStorageKey
-    ? storageService.getDownloadUrl(release.coverStorageKey)
+    ? storageService.getImageUrl(release.coverStorageKey)
     : release.coverImageUrl,
 });
 
@@ -59,7 +59,7 @@ const hydrateTrackUrls = <
   const nextTrack = {
     ...track,
     coverImageUrl: track.coverStorageKey
-      ? storageService.getDownloadUrl(track.coverStorageKey)
+      ? storageService.getImageUrl(track.coverStorageKey)
       : track.coverImageUrl,
   } as T & {
     masterStorageKey?: string;
@@ -820,7 +820,7 @@ export const releasesService = {
     const updated = await releasesRepository.upsert({
       ...existing,
       coverStorageKey: payload.coverStorageKey,
-      coverImageUrl: storageService.getDownloadUrl(payload.coverStorageKey),
+      coverImageUrl: storageService.getImageUrl(payload.coverStorageKey),
       updatedAt: new Date().toISOString(),
     });
 

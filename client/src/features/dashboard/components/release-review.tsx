@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { CircleCheck, CircleAlert, LoaderCircle } from "lucide-react";
 import type { ReleaseDetail } from "@music-city/shared";
 import { Button } from "@/components/ui/button";
@@ -72,8 +73,9 @@ export function ReleaseReview({
       <div className="space-y-3 border-y border-border py-4">
         <div className="flex items-start gap-4">
           {release.coverImageUrl && (
-            <img
+            <Image
               src={release.coverImageUrl}
+              sizes="96px" maxWidth={384}
               alt="Release artwork"
               className="h-16 w-16 rounded-md object-cover"
             />

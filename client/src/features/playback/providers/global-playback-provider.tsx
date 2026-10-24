@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 
 import { usePlaybackVolume } from "@/features/playback/hooks/use-playback-volume";
 import { VolumeControl } from "@/features/playback/components/volume-control";
@@ -95,10 +96,7 @@ const describePlaybackError = (error: unknown) =>
 const TrackArt = ({ track }: { track: TrackSummary }) => {
   if (track.coverImageUrl) {
     return (
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${track.coverImageUrl})` }}
-      />
+      <Image src={track.coverImageUrl} alt="" fill priority sizes="(min-width: 640px) 80px, 78vw" maxWidth={768} className="object-cover" />
     );
   }
 

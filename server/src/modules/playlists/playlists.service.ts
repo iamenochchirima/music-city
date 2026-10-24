@@ -22,7 +22,7 @@ const hydrateTrackUrls = <T extends { coverStorageKey?: string; coverImageUrl?: 
   const nextTrack = {
     ...track,
     coverImageUrl: track.coverStorageKey
-      ? storageService.getDownloadUrl(track.coverStorageKey)
+      ? storageService.getImageUrl(track.coverStorageKey)
       : track.coverImageUrl,
   } as T & {
     masterStorageKey?: string;
