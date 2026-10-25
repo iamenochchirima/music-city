@@ -150,6 +150,9 @@ export const TrackTable = ({
                         {track.title}
                       </h3>
                     )}
+                    <p className="text-xs text-slate-400">
+                      {track.plays.toLocaleString()} {track.plays === 1 ? "stream" : "streams"}
+                    </p>
                   </div>
                 </div>
               </td>

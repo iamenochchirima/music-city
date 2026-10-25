@@ -252,6 +252,12 @@ export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.22em] text-slate-500">
+                Streams
+              </p>
+              <p className="mt-2 text-base text-white">{track.plays.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500">
                 Likes
               </p>
               <p className="mt-2 text-base text-white">{track.likes}</p>

@@ -12,7 +12,7 @@ vi.mock("@/hooks/use-auth", () => ({ useAuth: () => ({ session: null, logout: vi
 vi.mock("@/features/playback/lib/playback-api", () => ({ playbackApi: { createSession: m.create, preloadTracks: m.preload, preloadTrackIds: vi.fn() } }));
 vi.mock("@/features/engagement/lib/engagement-api", () => ({ engagementApi: { recordPlaybackEvent: m.record } }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
-const song = (id: string, ready = true) => ({ id, title: id, artistName: "Artist", playbackReady: ready, runtime: "2:00" }) as TrackSummary;
+const song = (id: string, ready = true) => ({ id, title: id, artistName: "Artist", playbackReady: ready, runtime: "2:00", plays: 0 }) as TrackSummary;
 const queue = [song("one"), song("processing", false), song("two")];
 function Controls() {
   const player = useGlobalPlayback();
