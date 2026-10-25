@@ -774,7 +774,12 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
   }
 });
 
-test("recordPlaybackEvent counts a qualified stream once when the threshold is first met", async () => {
+for (const scenario of [
+  { name: "signed-in threshold", guest: false, previous: 12, reported: 18, elapsed: 20 },
+  { name: "guest threshold", guest: true, previous: 12, reported: 18, elapsed: 20 },
+  { name: "delayed background report", guest: true, previous: 0, reported: 45, elapsed: 50 },
+  { name: "two-minute background report", guest: true, previous: 0, reported: 120, elapsed: 125 },
+]) test(`recordPlaybackEvent counts one stream for ${scenario.name}`, async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   const trackUpserts: unknown[] = [];
@@ -861,20 +866,20 @@ test("recordPlaybackEvent counts a qualified stream once when the threshold is f
         id: "ply-1",
         trackId: "trk-1",
         artistId: "usr-artist",
-        listenerUserId: "usr-listener",
+        ...(scenario.guest ? { guestIdHash: "guest-hash", isGuest: true } : { listenerUserId: "usr-listener" }),
         provider: "local",
         streamUrl: "https://example.com/audio.mp3",
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
-        listenedSeconds: 12,
-        lastPlaybackEventAt: new Date(Date.now() - 20_000).toISOString(),
+        listenedSeconds: scenario.previous,
+        lastPlaybackEventAt: new Date(Date.now() - scenario.elapsed * 1000).toISOString(),
       },
       {
         eventType: "progress",
         positionSeconds: 31,
         durationSeconds: 180,
-        listenedSeconds: 18,
+        listenedSeconds: scenario.reported,
       },
     );
 
@@ -884,6 +889,8 @@ test("recordPlaybackEvent counts a qualified stream once when the threshold is f
       "track_playback_qualified",
     ]);
     assert.ok(session.qualifiedStreamCountedAt);
+    assert.equal(session.streamCount, 3);
+    assert.equal(session.listenedSeconds, scenario.previous + scenario.reported);
     assert.equal(trackUpserts.length, 1);
     assert.equal((trackUpserts[0] as { plays: number }).plays, 3);
   } finally {
@@ -897,6 +904,7 @@ test("recordPlaybackEvent preserves the original qualified timestamp when a dupl
   const trackUpserts: unknown[] = [];
 
   const cleanup = [
+    restore(engagementRepository, "countQualifiedStreamsByTrack", async () => 3),
     restore(
       tracksRepository,
       "findById",

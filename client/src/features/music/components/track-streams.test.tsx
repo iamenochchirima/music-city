@@ -1,9 +1,10 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { TrackSummary } from "@music-city/shared";
 import { TrackTable } from "./track-table";
 import { TrackDetailOverview } from "./track-detail-overview";
+import { publishStreamCount } from "@/features/playback/lib/stream-counts";
 
 const api = vi.hoisted(() => ({ getTrack: vi.fn(), getArtistProfile: vi.fn() }));
 vi.mock("@/features/music/lib/tracks-api", () => ({ tracksApi: { getTrack: api.getTrack } }));
@@ -33,4 +34,14 @@ it("shows the API stream total in song details, including zero", async () => {
   render(<MemoryRouter><TrackDetailOverview trackId="song" /></MemoryRouter>);
   const label = await screen.findByText("Streams");
   expect(label.parentElement?.textContent).toBe("Streams0");
+});
+
+it("updates all visible copies after a server-confirmed stream and ignores stale totals", () => {
+  const song = { ...track(0), id: "live-count-song" };
+  render(<><TrackTable tracks={[song]} renderAction={() => null} /><TrackTable tracks={[song]} renderAction={() => null} /></>);
+  expect(screen.getAllByText("0 streams")).toHaveLength(2);
+  act(() => publishStreamCount(song.id, 1));
+  expect(screen.getAllByText("1 stream")).toHaveLength(2);
+  act(() => publishStreamCount(song.id, 0));
+  expect(screen.getAllByText("1 stream")).toHaveLength(2);
 });

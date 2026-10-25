@@ -48,3 +48,21 @@ Worker variables reference the corresponding `server` variables through Railway.
 Local development starts it with `pnpm dev:worker`; `scripts/run_local_stack.sh` now includes its terminal tab. Restarting the worker resumes leased jobs. Failure outcomes remain visible in Studio, and uncertain asset creation is reconciled without a second blind creation request.
 
 See [creation verification](music-creation-ux-evidence/README.md) for local and actual S3/Mux evidence.
+
+## Stream count reconciliation
+
+Public streams include guest and signed-in sessions after 30 seconds of recorded listening, or half the recording for shorter songs. Pausing resumes the same session. Replaying a completed song starts a new session. Qualified events remain unique per playback session. These events do not create payments or settlements.
+
+After deploying the stream-count fix, preview historical corrections in the API container:
+
+```sh
+railway ssh --service server node /app/server/dist/scripts/reconcile-stream-counts.js
+```
+
+The default run only reports eligible sessions and mismatched track totals. It uses persisted listening time, not playback starts or seek positions. After taking the private database backup described above, apply the corrections:
+
+```sh
+railway ssh --service server node /app/server/dist/scripts/reconcile-stream-counts.js --apply
+```
+
+The command inserts missing qualified events at their recorded report time, marks those sessions, and recalculates track totals in one transaction. The unique session index prevents duplicates on repeat runs. It does not estimate listens for which no qualifying time was recorded. A second run should report zero eligible sessions and zero mismatched totals.

@@ -19,7 +19,7 @@ import { engagementRepository } from "./engagement.repository.js";
 
 const QUALIFIED_STREAM_MIN_SECONDS = 30;
 const QUALIFIED_STREAM_FRACTION = 0.5;
-const MAX_LISTEN_SECONDS_PER_EVENT = 30;
+const MAX_LISTEN_SECONDS_PER_EVENT = 3600;
 const LISTEN_TIME_CLOCK_TOLERANCE_SECONDS = 2;
 const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
@@ -398,8 +398,8 @@ export const engagementService = {
       };
     }
 
+    let streamCount = track.plays;
     const qualifies =
-      !session.guestIdHash &&
       !updatedSession.qualifiedStreamCountedAt &&
       shouldCountQualifiedStream(listenedSeconds, getTrackDurationSeconds(track.runtime));
 
@@ -442,7 +442,7 @@ export const engagementService = {
           listenedSeconds,
           qualifiedBy: input.eventType,
         });
-        await syncTrackPlayCount(track);
+        streamCount = await syncTrackPlayCount(track);
       } else {
         updatedSession = {
           ...updatedSession,
@@ -450,12 +450,13 @@ export const engagementService = {
             (await engagementRepository.findQualifiedStreamCountedAt(session.id)) ??
             updatedSession.qualifiedStreamCountedAt,
         };
+        streamCount = await engagementRepository.countQualifiedStreamsByTrack(track.id);
       }
     }
 
     await playbackRepository.upsert(updatedSession);
 
-    return updatedSession;
+    return { ...updatedSession, streamCount };
   },
 
   async getArtistAnalytics(

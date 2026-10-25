@@ -15,6 +15,7 @@ import { TrackCommerceActions } from "@/features/music/components/track-commerce
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { usersApi } from "@/features/users/lib/users-api";
 import { useAuth } from "@/hooks/use-auth";
+import { TrackStreamCount } from "./track-stream-count";
 
 export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
   const { session } = useAuth();
@@ -254,7 +255,7 @@ export const TrackDetailOverview = ({ trackId }: { trackId: string }) => {
               <p className="text-sm uppercase tracking-[0.22em] text-slate-500">
                 Streams
               </p>
-              <p className="mt-2 text-base text-white">{track.plays.toLocaleString()}</p>
+              <p className="mt-2 text-base text-white"><TrackStreamCount track={track} showLabel={false} /></p>
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.22em] text-slate-500">
