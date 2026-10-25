@@ -562,6 +562,7 @@ The launch market and payout method are still undecided. Use these researched op
 | Candidate | Relevant evidence | Decision condition |
 | --- | --- | --- |
 | MoneyGram Ramps | Its current non-custodial Stellar integration uses server-created sessions, a hosted widget, and wallet-signed USDC transfers. New partners use the widget and API-key path. | Prefer for cash pickup if the exact country, payout currency, user eligibility, and Music City use case are supported. Obtain partner sandbox keys and an approved browser origin. |
+| MoonPay | Local test public, secret, and webhook keys are configured. Its hosted buy and sell flows support test-mode integration. | Verify account-enabled Stellar USDC support, the selected country, payout currency and method, allowed local origin, and sandbox network before choosing a flow. Credentials alone do not establish these capabilities. |
 | Yellow Card | Its channel documentation lists South African bank-transfer and EFT payouts. Its direct-settlement API describes crypto-funded local payouts. | Consider for South African bank payouts only after verifying the enabled Stellar USDC funding route, KYC responsibilities, and account-specific channels. Its current restrictions explicitly exclude Zimbabwe. |
 
 Provider-wide country coverage does not establish support for the required asset, network, payout method, or customer. Confirm that complete combination through the selected provider. Record fees, exchange-rate spread, minimums, limits, quote lifetime, and refund behavior for representative artist payout amounts. Do not promise a settlement time from a general marketing page.
@@ -683,3 +684,23 @@ Verification passed 12 cash-out domain tests, 133 server tests, 106 client tests
 CO-01 through CO-05 remain open pending the owner's first-market decision and legitimate provider sandbox access. No provider environment variable names were found in the repository's environment files or the local Music City verification environment files. No Music City Linear project was found through connected search. The goal tool rejected a new goal because the earlier agreement goal remains unfinished; that goal was not marked complete to bypass the restriction.
 
 The owner supplied the public developer-reference OAuth example for a direct sandbox check. On 17 October, the exact GET request returned HTTP 401 without an access token. GET and POST with canonical Base64 padding also returned HTTP 401, with gateway code `G900` and message `AccessControl_voilation`. This establishes that these requests did not obtain access; it does not distinguish credential rejection from gateway access restrictions. No token or credential was saved. The authorization value matches the example in the [OAuth reference](https://developer.moneygram.com/moneygram-developer/reference/getaccesstoken). The [current Stellar Ramps setup](https://xramps.moneygram.com/ops/developer/getting-started) separately requires partner sandbox keys and an allowed browser origin. CO-03 remains open.
+
+### Provider readiness checkpoint, 25 October 2026
+
+Reviewed against `6da3cab`. The earlier statement that provider keys were unavailable is superseded by this checkpoint. The root local environment contains MoneyGram sandbox public and secret keys and MoonPay test public, secret, and webhook keys. Their values remain outside version control. The server does not yet load these variables into an implemented ramp adapter.
+
+The authenticated MoneyGram sandbox `GET https://playground.xramps.moneygram.com/api/v1/transactions` returned HTTP 200 using the partner secret key. The check only read the endpoint and recorded the HTTP status. It did not create a session or transaction, send funds, or save provider history. This confirms authentication to that sandbox endpoint. It does not establish widget-origin approval, country eligibility, available quotes, successful KYC, or a completed cash-out. MoonPay account capabilities have not been tested.
+
+CO-06 remains the completed implementation item. The transfer validator covers part of CO-11. CO-03 has verified credentials but remains unchecked until the development origin and usable sandbox flow are confirmed. CO-01, CO-02, CO-04, and CO-05 remain open. The first payout country and currency have been requested from the owner.
+
+Resume the provider-readiness work in this order:
+
+1. Confirm the first country, currency, and payout method. Start with the authenticated MoneyGram sandbox if it supports that combination.
+2. Prove server-created, authenticated-wallet-bound Stellar sessions and the hosted widget on an allowed local origin. Confirm the provider's sandbox asset and network.
+3. Complete one provider sandbox cash-out with real Dynamic Sandbox authorization and retain the provider and chain evidence. Do not classify pickup readiness as collection.
+4. Implement durable cash-out records, exact quote confirmation, original-hash recovery, provider notifications, worker reconciliation, and creator and admin views using CO-07 through CO-27.
+5. Implement the on-ramp funding journey as the next provider chunk. MoneyGram and MoonPay remain separate adapters with verified capabilities. Do not expose an unverified provider as an automatic fallback.
+
+Provider readiness remains the separately budgeted SOW section 4.2 work. It does not reopen the completed core settlement implementation or establish production fiat approval. Test locally with sandbox accounts and funds before a separate production enablement decision.
+
+Current references: [MoneyGram sandbox access](https://xramps.moneygram.com/ops/developer/getting-started), [Stellar widget quickstart](https://xramps.moneygram.com/ops/developer/quickstarts/web-stellar), [MoonPay test keys and allowed domains](https://support.moonpay.com/en/articles/694414-managing-your-api-keys-domains-and-webhooks), and [MoonPay off-ramp quickstart](https://moonpay.readme.io/docs/off-ramp-quickstart).
