@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const GUEST_PLAYBACK_SECONDS = 25 * 60;
+export const STREAM_QUALIFICATION_SECONDS = 5;
 
 export const createPlaybackSessionSchema = z.object({
   trackId: z.string().min(1),

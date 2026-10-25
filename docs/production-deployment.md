@@ -51,7 +51,7 @@ See [creation verification](music-creation-ux-evidence/README.md) for local and 
 
 ## Stream count reconciliation
 
-Public streams include guest and signed-in sessions after 30 seconds of recorded listening, or half the recording for shorter songs. Pausing resumes the same session. Replaying a completed song starts a new session. Qualified events remain unique per playback session. These events do not create payments or settlements.
+Public streams include guest and signed-in sessions after five seconds of recorded listening, or half the recording when that is shorter. Playback reporting and historical reconciliation use the same shared threshold. Pausing resumes the same session. Replaying a completed song starts a new session. Qualified events remain unique per playback session. These events do not create payments or settlements.
 
 After deploying the stream-count fix, preview historical corrections in the API container:
 

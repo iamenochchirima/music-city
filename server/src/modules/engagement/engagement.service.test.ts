@@ -683,7 +683,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
   }
 });
 
-test("recordPlaybackEvent does not qualify a seek or client-supplied duration", async () => {
+for (const reported of [undefined, 4.99]) test(`recordPlaybackEvent rejects seeks and listening below five seconds (${reported ?? 0})`, async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   let savedSession: unknown;
@@ -756,11 +756,13 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
+        lastPlaybackEventAt: new Date(Date.now() - 10_000).toISOString(),
       },
       {
         eventType: "progress",
         positionSeconds: 179,
         durationSeconds: 1,
+        listenedSeconds: reported,
       },
     );
 
@@ -775,8 +777,8 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
 });
 
 for (const scenario of [
-  { name: "signed-in threshold", guest: false, previous: 12, reported: 18, elapsed: 20 },
-  { name: "guest threshold", guest: true, previous: 12, reported: 18, elapsed: 20 },
+  { name: "signed-in five-second threshold", guest: false, previous: 0, reported: 5, elapsed: 10 },
+  { name: "guest five-second threshold", guest: true, previous: 0, reported: 5, elapsed: 10 },
   { name: "delayed background report", guest: true, previous: 0, reported: 45, elapsed: 50 },
   { name: "two-minute background report", guest: true, previous: 0, reported: 120, elapsed: 125 },
 ]) test(`recordPlaybackEvent counts one stream for ${scenario.name}`, async () => {

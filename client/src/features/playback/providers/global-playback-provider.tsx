@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { AdRecord, PlaybackSession, TrackSummary } from "@music-city/shared";
+import { STREAM_QUALIFICATION_SECONDS, type AdRecord, type PlaybackSession, type TrackSummary } from "@music-city/shared";
 import Hls from "hls.js";
 import {
   ChevronDown,
@@ -860,7 +860,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
       const listenedSeconds = Math.min(unreportedListenSecondsRef.current, 3600);
 
-      if (!force && listenedSeconds < 15) {
+      if (!force && listenedSeconds < STREAM_QUALIFICATION_SECONDS) {
         return;
       }
 
@@ -916,7 +916,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   }, [activeTrack, currentTime, playbackSession, recordPlaybackEvent, session?.token, startTrackSession]);
 
   useEffect(() => {
-    if (!playbackSession || !isPlaying || unreportedListenSecondsRef.current < 15) {
+    if (!playbackSession || !isPlaying || unreportedListenSecondsRef.current < STREAM_QUALIFICATION_SECONDS) {
       return;
     }
 

@@ -1,5 +1,6 @@
 import { databaseService } from "../services/database.service.js";
 import { createId } from "../services/id.service.js";
+import { STREAM_QUALIFICATION_SECONDS } from "@music-city/shared";
 
 const apply = process.argv.includes("--apply");
 if (process.argv.slice(2).some((argument) => argument !== "--apply")) {
@@ -22,13 +23,13 @@ try {
         CASE WHEN t.payload->>'runtime' ~ '^[0-9]+:[0-5][0-9]$'
         THEN CASE WHEN split_part(t.payload->>'runtime', ':', 1)::integer * 60
             + split_part(t.payload->>'runtime', ':', 2)::integer > 0
-        THEN LEAST(30, (split_part(t.payload->>'runtime', ':', 1)::integer * 60
+        THEN LEAST($1::double precision, (split_part(t.payload->>'runtime', ':', 1)::integer * 60
             + split_part(t.payload->>'runtime', ':', 2)::integer) * 0.5)
-        ELSE 30 END ELSE 30 END
+        ELSE $1::double precision END ELSE $1::double precision END
       AND COALESCE(s.payload->>'lastPlaybackEventAt', s.payload->>'createdAt') IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM playback_events e
         WHERE e.playback_session_id = s.id AND e.event_type = 'qualified_stream')
-    `);
+    `, [STREAM_QUALIFICATION_SECONDS]);
     let inserted = 0;
     if (apply) for (const row of candidates.rows) {
       const result = await client.query(`

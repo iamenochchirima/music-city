@@ -1,4 +1,5 @@
 import {
+  STREAM_QUALIFICATION_SECONDS,
   artistAnalyticsSummarySchema,
   artistFollowStateSchema,
   trackLikeStateSchema,
@@ -17,7 +18,6 @@ import { tracksRepository } from "../tracks/tracks.repository.js";
 import { usersService } from "../users/users.service.js";
 import { engagementRepository } from "./engagement.repository.js";
 
-const QUALIFIED_STREAM_MIN_SECONDS = 30;
 const QUALIFIED_STREAM_FRACTION = 0.5;
 const MAX_LISTEN_SECONDS_PER_EVENT = 3600;
 const LISTEN_TIME_CLOCK_TOLERANCE_SECONDS = 2;
@@ -85,7 +85,7 @@ const shouldCountQualifiedStream = (
       : Number.POSITIVE_INFINITY;
 
   return (
-    listenedSeconds >= QUALIFIED_STREAM_MIN_SECONDS ||
+    listenedSeconds >= STREAM_QUALIFICATION_SECONDS ||
     listenedSeconds >= fractionThreshold
   );
 };

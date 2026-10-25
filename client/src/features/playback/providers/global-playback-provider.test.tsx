@@ -118,6 +118,26 @@ it("does not credit a seek as listening time", async () => {
   expect(m.record.mock.calls[0][2].listenedSeconds).toBeCloseTo(1, 0);
 });
 
+it("sends the first progress report at five seconds, not before", async () => {
+  vi.spyOn(window, "requestAnimationFrame").mockReturnValue(1);
+  let clockOffset = 0;
+  const realNow = performance.now.bind(performance);
+  vi.spyOn(performance, "now").mockImplementation(() => realNow() + clockOffset);
+  const { container } = render(<GlobalPlaybackProvider><Controls /></GlobalPlaybackProvider>);
+  await userEvent.click(screen.getByRole("button", { name: "Start release" }));
+  const audio = container.querySelector("audio")!;
+  Object.defineProperty(audio, "paused", { configurable: true, value: false });
+  clockOffset = 4900;
+  audio.currentTime = 4.9;
+  act(() => { fireEvent.timeUpdate(audio); });
+  expect(m.record).not.toHaveBeenCalled();
+  clockOffset = 5000;
+  audio.currentTime = 5;
+  act(() => { fireEvent.timeUpdate(audio); });
+  await vi.waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+  expect(m.record.mock.calls[0][2].listenedSeconds).toBeCloseTo(5, 1);
+});
+
 it("waits for an in-flight progress report before switching sessions", async () => {
   let clockOffset = 0;
   const realNow = performance.now.bind(performance);
