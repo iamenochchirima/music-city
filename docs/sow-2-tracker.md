@@ -146,8 +146,8 @@ Source section 4.2 includes $1,300 for provider integration readiness. Sections 
 
 Provider readiness checklist:
 
-- [ ] Specify and implement the off-ramp payout adapter. Start with the [creator cash-out implementation plan](#creator-cash-out-implementation-plan).
-- [ ] Specify and implement the on-ramp payment adapter.
+- [ ] Specify and implement the off-ramp payout adapters for MoonPay and MoneyGram. Follow the [combined sandbox implementation plan](ramp-sandbox-implementation-plan.md) and the detailed CO requirements below.
+- [ ] Specify and implement the on-ramp payment adapters for MoonPay and MoneyGram using the same combined plan.
 - [ ] Map provider payments and payouts to internal records.
 - [ ] Handle provider status and failure transitions.
 - [ ] Capture sandbox verification and document any unavailable provider access.
@@ -551,6 +551,8 @@ The goal was created successfully. The connected Linear search still returns no 
 
 ## Creator cash-out implementation plan
 
+Current work order: the [MoneyGram and MoonPay sandbox implementation plan](ramp-sandbox-implementation-plan.md), agreed 26 October 2026, now covers both directions for both providers. Prioritize MoonPay's online flows and retain MoneyGram's physical cash flows at lower priority. The CO checklist below remains the detailed withdrawal requirements. Earlier checkpoints describe their dated state.
+
 Planned 17 October 2026 against `9cd39f0`, following the provider research in this conversation. This is the first implementation chunk for the separately scoped fiat provider readiness work in section 4.2. The outcome is one complete cash-out journey for one confirmed country, currency, payout method, and provider.
 
 This chunk covers the off-ramp adapter, transaction mapping, status and failure handling, and sandbox evidence. On-ramp payments remain a later chunk. Production activation, real-money testing, and broader SOW acceptance remain separate decisions. Complete functional acceptance locally with Dynamic Sandbox, Stellar Testnet, and the selected provider's sandbox. Live admin setup from the agreement chunk is not a prerequisite.
@@ -704,3 +706,9 @@ Resume the provider-readiness work in this order:
 Provider readiness remains the separately budgeted SOW section 4.2 work. It does not reopen the completed core settlement implementation or establish production fiat approval. Test locally with sandbox accounts and funds before a separate production enablement decision.
 
 Current references: [MoneyGram sandbox access](https://xramps.moneygram.com/ops/developer/getting-started), [Stellar widget quickstart](https://xramps.moneygram.com/ops/developer/quickstarts/web-stellar), [MoonPay test keys and allowed domains](https://support.moonpay.com/en/articles/694414-managing-your-api-keys-domains-and-webhooks), and [MoonPay off-ramp quickstart](https://moonpay.readme.io/docs/off-ramp-quickstart).
+
+### Combined ramp plan checkpoint, 26 October 2026
+
+The owner requested end-to-end sandbox implementation of both MoneyGram and MoonPay. The [combined plan](ramp-sandbox-implementation-plan.md) defines all four journeys, implementation checklists, shared persistence and recovery, and local computer-use acceptance tests. MoonPay's online buy and sell flows take priority. MoneyGram cash-in and cash-out remain in scope for physical cash users.
+
+This is a planning checkpoint against `5190cd9`. No new provider sessions, quotes, transactions, signatures, or capability checks were executed for this update. MoneyGram authentication remains the dated 25 October result. MoonPay's account-specific Stellar USDC support remains unverified. No additional integration checklist item is complete merely because the plan exists.
