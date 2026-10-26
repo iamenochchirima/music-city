@@ -14,6 +14,19 @@ export function decimalAmount(units: string, decimals: number): string {
     ? `${digits.slice(0, -decimals)}.${digits.slice(-decimals)}`
     : digits;
 }
+
+function providerAmountUnits(value: unknown, decimals: number): bigint {
+  if (typeof value !== "string" && typeof value !== "number")
+    throw new HttpError(502, "The provider returned an invalid amount");
+  const text = String(value);
+  if (text.length > 80 || !/^\d+(\.\d+)?$/.test(text))
+    throw new HttpError(502, "The provider returned an invalid amount");
+  const [whole, rawFraction = ""] = text.split(".");
+  const fraction = rawFraction.replace(/0+$/, "");
+  if (fraction.length > decimals)
+    throw new HttpError(502, "The provider returned an invalid amount");
+  return BigInt(whole + fraction.padEnd(decimals, "0"));
+}
 const currency = z.object({
   code: z.string(),
   type: z.string(),
@@ -282,18 +295,20 @@ export class MoonpaySandbox {
         409,
         "The provider wallet or currency changed. Payment is on hold.",
       );
-    const actual = row.baseCurrencyAmount;
-    if (
-      (typeof actual !== "string" && typeof actual !== "number") ||
-      !/^\d+(\.\d+)?$/.test(String(actual))
-    )
-      throw new HttpError(502, "The provider returned an invalid amount");
-    const [whole, fraction = ""] = String(actual).split(".");
-    if (
-      fraction.length > terms.amount.decimals ||
-      BigInt(whole + fraction.padEnd(terms.amount.decimals, "0")) !==
-        BigInt(terms.amount.units)
-    )
+    const parts =
+      terms.direction === "buy"
+        ? [
+            row.baseCurrencyAmount,
+            row.feeAmount,
+            row.extraFeeAmount,
+            row.networkFeeAmount,
+          ]
+        : [row.baseCurrencyAmount];
+    const actualUnits = parts.reduce<bigint>(
+      (sum, part) => sum + providerAmountUnits(part, terms.amount.decimals),
+      0n,
+    );
+    if (actualUnits !== BigInt(terms.amount.units))
       throw new HttpError(
         409,
         "The provider amount changed. Review is required.",
@@ -304,6 +319,7 @@ export class MoonpaySandbox {
         {
           waitingForDeposit: "awaiting_user",
           waitingPayment: "awaiting_user",
+          waitingAuthorization: "processing",
           pending: "processing",
           completed: "completed",
           failed: "failed",

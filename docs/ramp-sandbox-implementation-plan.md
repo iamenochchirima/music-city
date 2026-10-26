@@ -168,3 +168,9 @@ With owner approval, temporarily allowed `http://localhost:4352` in the MoonPay 
 ## Widget failure resolved, 26 October 2026
 
 The earlier unresolved signing checkpoint is superseded by the [root-cause audit](ramp-sandbox-evidence/moonpay-ip-binding-audit.md). The exact provider rejection was `5_PARTNERS_IP_MISSING`, not a mismatched key or invalid HMAC. Added canonical customer-IP hashing to the signed query for both directions. Real verification now returns HTTP 200 for buy and sell; negative requests still reject missing, mismatched, or tampered IP bindings. Both sandbox widgets load normally. The full payment lifecycle and protected application routes remain open.
+
+## First XLM sandbox buy attempt, 26 October 2026
+
+The owner confirmed control of the bound Testnet wallet. MoonPay created a sandbox buy order, then returned `failed` with `Payment authorization declined` for the published test card. No chain delivery has been confirmed. The failure screen is recorded in [the sandbox evidence](ramp-sandbox-evidence/moonpay-buy-card-declined.jpg). Do not treat the wallet prompt, card confirmation, or order creation as successful payment.
+
+The real response reported a USD 100.00 total as USD 95.81 base, USD 3.99 processing fee, and USD 0.20 network fee. The lookup now compares the sum of all four documented components in exact currency units; it rejects missing or invalid components and mismatched totals. Sell still compares the crypto base amount. `waitingAuthorization` remains processing. The authenticated lookup now returns the real attempt as `failed`. MoonPay documents the [buy transaction amount and fee fields](https://dev.moonpay.com/api-reference/widget/getbuytransaction).

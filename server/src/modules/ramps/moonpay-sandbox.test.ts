@@ -76,6 +76,9 @@ function providerRow(o: RampOrder) {
     baseCurrency: { code: o.terms.direction === "buy" ? "usd" : "xlm" },
     quoteCurrency: { code: "usd" },
     baseCurrencyAmount: o.terms.direction === "buy" ? 100 : 250,
+    feeAmount: 0,
+    extraFeeAmount: 0,
+    networkFeeAmount: 0,
     status: "completed",
     updatedAt: new Date().toISOString(),
     cryptoTransactionId: "a".repeat(64),
@@ -139,6 +142,34 @@ test("buy and sell URLs lock the approved amount, wallet, asset and correlation 
       /existing transaction/,
     );
   }
+});
+
+test("buy lookup verifies the total charge including provider fees in exact fiat units", async () => {
+  const o = order();
+  const row = {
+    ...providerRow(o),
+    status: "failed",
+    baseCurrencyAmount: 95.81,
+    feeAmount: 3.99,
+    extraFeeAmount: 0,
+    networkFeeAmount: 0.2,
+  };
+  const lookup = (data: Record<string, unknown>) =>
+    new MoonpaySandbox(config(), (async () =>
+      Response.json([data])) as typeof fetch).lookup(o);
+  assert.equal((await lookup(row))?.state, "failed");
+  assert.equal(
+    (await lookup({ ...row, status: "waitingAuthorization" }))?.state,
+    "processing",
+  );
+  for (const patch of [
+    { baseCurrencyAmount: 95.82 },
+    { feeAmount: 4 },
+    { extraFeeAmount: null },
+    { networkFeeAmount: -0.2 },
+    { networkFeeAmount: 0.201 },
+  ])
+    await assert.rejects(lookup({ ...row, ...patch }));
 });
 
 test("widget creation refuses unsupported test assets, countries, precision and limits", () => {

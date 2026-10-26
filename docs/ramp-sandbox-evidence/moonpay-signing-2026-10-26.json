@@ -36,7 +36,7 @@
     "Stellar USDC test mode enablement"
   ],
   "acceptance": {
-    "checkoutReached": false,
+    "checkoutReached": true,
     "buyCompleted": false,
     "sellCompleted": false,
     "fundsMoved": false,
@@ -98,5 +98,17 @@
       "success": false
     }
   ],
-  "audit": "moonpay-ip-binding-audit.md"
+  "audit": "moonpay-ip-binding-audit.md",
+  "sandboxBuyAttempt": {
+    "customerConfirmedWalletControl": true,
+    "paymentMethod": "published sandbox test card",
+    "displayedTotalUsd": "100.00",
+    "providerStatus": "failed",
+    "providerFailureReason": "Payment authorization declined",
+    "providerFiatAmountUsd": "95.81",
+    "providerFeeUsd": "3.99",
+    "providerNetworkFeeUsd": "0.20",
+    "providerExtraFeeUsd": "0.00",
+    "onChainDeliveryConfirmed": false
+  }
 }
