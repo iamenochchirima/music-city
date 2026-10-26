@@ -152,7 +152,8 @@ Completed local components for the separately authorized XLM demonstration:
 - [x] Verify V2 notification HMACs over the timestamp and exact raw body, with a five-minute replay window.
 - [x] Persist launch issuance and provider observations. Test concurrent launch rejection, stale update handling, notification deduplication, and exclusive reconciliation leases in isolated PostgreSQL.
 - [x] Compare signatures with the official Node SDK and launch the official browser SDK. Compare all three configured keys with the signed-in dashboard without recording their values.
-- [ ] Resolve the real Test Mode widget failure and reach checkout.
+- [x] Resolve the real Test Mode widget failure. Both adapter-generated XLM URLs pass provider verification and reach normal sign-in. See the [IP-binding audit](ramp-sandbox-evidence/moonpay-ip-binding-audit.md).
+- [ ] Complete sandbox authentication and reach the payment or payout confirmation.
 - [ ] Connect protected routes, notification handling, worker execution, and the client and admin views. Repository and adapter methods alone do not complete these items.
 - [ ] Complete real sandbox buy and sell, verify any Testnet delivery, and exercise recovery and failure paths.
 
@@ -163,3 +164,7 @@ The adapter's real buy and sell external-ID lookups authenticate successfully an
 Fifteen focused tests pass without skips, including real PostgreSQL persistence checks. Fresh full database initialization and workspace typechecks pass. The full server suite passes 174 tests with 13 database-dependent skips; the ramp database test runs separately without a skip. Provider completion never changes chain confirmation or creates an application balance. All end-to-end acceptance items above remain open.
 
 With owner approval, temporarily allowed `http://localhost:4352` in the MoonPay dashboard and verified persistence after reloading. Both the signed wallet-bound SDK example and the basic example still displayed `Signature check failed`. Removed the diagnostic origin and verified its absence after another reload. No keys or live-payment settings changed. The test did not resolve the widget failure; the required propagation interval is unknown. Independent browser comparison and provider diagnostics remain open.
+
+## Widget failure resolved, 26 October 2026
+
+The earlier unresolved signing checkpoint is superseded by the [root-cause audit](ramp-sandbox-evidence/moonpay-ip-binding-audit.md). The exact provider rejection was `5_PARTNERS_IP_MISSING`, not a mismatched key or invalid HMAC. Added canonical customer-IP hashing to the signed query for both directions. Real verification now returns HTTP 200 for buy and sell; negative requests still reject missing, mismatched, or tampered IP bindings. Both sandbox widgets load normally. The full payment lifecycle and protected application routes remain open.

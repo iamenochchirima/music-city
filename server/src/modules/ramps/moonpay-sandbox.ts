@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { rampOrderSchema, type RampOrder } from "@music-city/shared";
+import { moonpayIpBinding } from "./moonpay-ip.js";
 import { HttpError } from "../../utils/http-error.js";
 import {
   rampSandboxConfigSchema,
@@ -169,7 +170,11 @@ export class MoonpaySandbox {
     )
       throw new HttpError(400, "Enter an amount within MoonPay's limits");
   }
-  widgetUrl(rawOrder: RampOrder, catalog: MoonpayCatalog): string {
+  widgetUrl(
+    rawOrder: RampOrder,
+    catalog: MoonpayCatalog,
+    customerIps: readonly string[],
+  ): string {
     this.validateTerms(rawOrder, catalog);
     const order = rampOrderSchema.parse(rawOrder);
     const terms = order.terms;
@@ -214,6 +219,10 @@ export class MoonpaySandbox {
         decimalAmount(terms.amount.units, terms.amount.decimals),
       );
     }
+    q.set(
+      "allowedIpAddress",
+      moonpayIpBinding(this.config.MOONPAY_SK!, customerIps),
+    );
     const signature = createHmac("sha256", this.config.MOONPAY_SK!)
       .update(url.search)
       .digest("base64");

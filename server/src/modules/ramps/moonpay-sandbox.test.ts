@@ -6,6 +6,7 @@ import { type RampOrder } from "@music-city/shared";
 import { MoonpaySandbox, type MoonpayCatalog } from "./moonpay-sandbox.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 
+const customerIps = ["203.0.113.42"];
 const config = () =>
   rampSandboxConfigSchema.parse({
     NODE_ENV: "test",
@@ -86,13 +87,20 @@ test("buy and sell URLs lock the approved amount, wallet, asset and correlation 
   const client = new MoonpaySandbox(config());
   for (const direction of ["buy", "sell"] as const) {
     const o = order(direction);
-    const url = new URL(client.widgetUrl(o, catalog));
+    const url = new URL(client.widgetUrl(o, catalog, customerIps));
     assert.equal(
       url.origin,
       direction === "buy"
         ? "https://buy-sandbox.moonpay.com"
         : "https://sell-sandbox.moonpay.com",
     );
+    assert.equal(
+      url.searchParams.get("allowedIpAddress"),
+      createHmac("sha256", "sk_test_fixture")
+        .update(customerIps[0])
+        .digest("base64"),
+    );
+    assert.ok(!url.href.includes(customerIps[0]));
     const signature = url.searchParams.get("signature");
     url.searchParams.delete("signature");
     assert.equal(
@@ -126,6 +134,7 @@ test("buy and sell URLs lock the approved amount, wallet, asset and correlation 
         client.widgetUrl(
           { ...o, providerTransactionId: "already-created" },
           catalog,
+          customerIps,
         ),
       /existing transaction/,
     );
@@ -137,13 +146,17 @@ test("widget creation refuses unsupported test assets, countries, precision and 
   const o = order();
   assert.throws(
     () =>
-      client.widgetUrl(o, {
-        ...catalog,
-        currencies: catalog.currencies.map((c) => ({
-          ...c,
-          supportsTestMode: false,
-        })),
-      }),
+      client.widgetUrl(
+        o,
+        {
+          ...catalog,
+          currencies: catalog.currencies.map((c) => ({
+            ...c,
+            supportsTestMode: false,
+          })),
+        },
+        customerIps,
+      ),
     /unavailable/,
   );
   assert.throws(
@@ -154,6 +167,7 @@ test("widget creation refuses unsupported test assets, countries, precision and 
           terms: { ...o.terms, market: { ...o.terms.market, country: "ZW" } },
         },
         catalog,
+        customerIps,
       ),
     /country/,
   );
@@ -165,6 +179,7 @@ test("widget creation refuses unsupported test assets, countries, precision and 
           terms: { ...o.terms, amount: { ...o.terms.amount, units: "100" } },
         },
         catalog,
+        customerIps,
       ),
     /limits/,
   );
@@ -176,12 +191,13 @@ test("widget creation refuses unsupported test assets, countries, precision and 
           terms: { ...o.terms, amount: { ...o.terms.amount, decimals: 3 } },
         },
         catalog,
+        customerIps,
       ),
     /precision/,
   );
   const usdc = new MoonpaySandbox({ ...config(), RAMPS_SANDBOX_ASSET: "USDC" });
   assert.throws(
-    () => usdc.widgetUrl(o, catalog),
+    () => usdc.widgetUrl(o, catalog, customerIps),
     /different sandbox configuration/,
   );
 });
@@ -262,4 +278,24 @@ test("webhooks require the exact raw payload, valid HMAC and a fresh timestamp",
     [body, `t=${timestamp},s=bad`, now],
   ] as const)
     assert.equal(client.verifyWebhook(raw, h, time), false);
+});
+
+test("widget signing requires an IP binding and signs it with the rest of the terms", () => {
+  const client = new MoonpaySandbox(config());
+  const o = order();
+  for (const ips of [[], undefined])
+    assert.throws(
+      () => client.widgetUrl(o, catalog, ips as unknown as string[]),
+      /verify your connection/,
+    );
+  const first = new URL(client.widgetUrl(o, catalog, ["203.0.113.42"]));
+  const second = new URL(client.widgetUrl(o, catalog, ["203.0.113.43"]));
+  assert.notEqual(
+    first.searchParams.get("allowedIpAddress"),
+    second.searchParams.get("allowedIpAddress"),
+  );
+  assert.notEqual(
+    first.searchParams.get("signature"),
+    second.searchParams.get("signature"),
+  );
 });

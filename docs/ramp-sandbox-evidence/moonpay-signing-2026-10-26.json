@@ -28,17 +28,21 @@
     "sellExternalIdLookup": "authenticated; no provider order found",
     "authentication": "publishable apiKey query parameter"
   },
-  "conclusion": "Matching keys and official signing have been verified. The widget failure is reproduced outside the app, including a basic unsigned SDK example. Its root cause remains unresolved.",
+  "conclusion": "Resolved locally: the signed URLs were missing the account-enforced allowedIpAddress HMAC. Correct IP-bound buy and sell URLs pass verification and load the sandbox widget.",
   "remainingChecks": [
-    "Independent browser comparison when another browser is connected",
-    "MoonPay integration configuration or provider diagnostics"
+    "Protected launch routes with trusted customer IP capture",
+    "Full real sandbox buy and sell lifecycle",
+    "Client, worker and admin integration",
+    "Stellar USDC test mode enablement"
   ],
   "acceptance": {
     "checkoutReached": false,
     "buyCompleted": false,
     "sellCompleted": false,
     "fundsMoved": false,
-    "stellarUsdcTestModeAvailable": false
+    "stellarUsdcTestModeAvailable": false,
+    "buyWidgetLoaded": true,
+    "sellWidgetLoaded": true
   },
   "standaloneSellWidget": "Signature check failed in Test Mode",
   "originCheck": {
@@ -50,5 +54,49 @@
     "temporaryOriginRemoved": true,
     "removalVerifiedAfterReload": true,
     "interpretation": "The saved temporary origin did not resolve either SDK example during this test. No propagation interval was established, so this does not prove an origin-related issue is impossible."
-  }
+  },
+  "rootCause": {
+    "code": "5_PARTNERS_IP_MISSING",
+    "status": 400,
+    "message": "Missing allowedIpAddress on signed URL",
+    "resolved": true,
+    "scope": "Widget loading only; full payment lifecycle remains incomplete"
+  },
+  "verificationAfterFix": [
+    {
+      "label": "buy-ip-bound",
+      "status": 200,
+      "success": true,
+      "errorCode": null,
+      "message": null
+    },
+    {
+      "label": "buy-missing-ip",
+      "status": 400,
+      "success": false,
+      "errorCode": "5_PARTNERS_IP_MISSING",
+      "message": "Missing allowedIpAddress on signed URL"
+    },
+    {
+      "label": "buy-tampered-ip",
+      "status": 400,
+      "success": false,
+      "errorCode": "1_SYS_UNKNOWN",
+      "message": "Invalid signature"
+    },
+    {
+      "label": "sell-ip-bound",
+      "status": 200,
+      "success": true,
+      "errorCode": null,
+      "message": null
+    },
+    {
+      "label": "buy-wrong-ip-valid-signature",
+      "status": 400,
+      "errorCode": "5_PARTNERS_IP_MISMATCH",
+      "success": false
+    }
+  ],
+  "audit": "moonpay-ip-binding-audit.md"
 }
