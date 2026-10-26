@@ -35,8 +35,8 @@ export const rampOrderTermsSchema = z
     direction: rampDirectionSchema,
     environment: z.literal("sandbox"),
     network: z.literal("stellar:testnet"),
-    assetCode: z.literal("USDC"),
-    assetIssuer: stellarWalletAddressSchema,
+    assetCode: z.enum(["USDC", "XLM"]),
+    assetIssuer: stellarWalletAddressSchema.optional(),
     market: z
       .object({
         country: z.string().regex(/^[A-Z]{2}$/),
@@ -58,6 +58,13 @@ export const rampOrderTermsSchema = z
   .superRefine((value, context) => {
     const issue = (path: string[], message: string) =>
       context.addIssue({ code: "custom", path, message });
+    if (value.assetCode === "USDC" && !value.assetIssuer)
+      issue(["assetIssuer"], "USDC requires its exact issuer");
+    if (value.assetCode === "XLM" && value.assetIssuer)
+      issue(["assetIssuer"], "Native XLM has no issuer");
+    if (value.provider === "moneygram" && value.assetCode !== "USDC")
+      issue(["assetCode"], "MoneyGram uses USDC");
+
     if (value.amount.units === "0")
       issue(["amount", "units"], "Enter an amount above zero");
     if (
@@ -67,11 +74,11 @@ export const rampOrderTermsSchema = z
       issue(["amount"], "Funding terms must use the selected fiat currency");
     if (
       value.direction === "sell" &&
-      (value.amount.currency !== "USDC" ||
+      (value.amount.currency !== value.assetCode ||
         value.amount.decimals !== 7 ||
         !cashOutUnitsSchema.safeParse(value.amount.units).success)
     )
-      issue(["amount"], "Withdrawal terms must use exact Stellar USDC units");
+      issue(["amount"], "Withdrawal terms must use exact Stellar asset units");
     if (
       value.provider === "moneygram" &&
       value.market.method !==
@@ -93,11 +100,27 @@ export const rampOrderTermsSchema = z
       issue(["market", "method"], "This method is only supported for funding");
   });
 export type RampOrderTerms = z.infer<typeof rampOrderTermsSchema>;
+export const rampProviderObservationSchema = z
+  .object({
+    id: z.string().min(1).max(200),
+    externalId: z.string().min(1).max(200),
+    state: rampProviderStateSchema,
+    originalStatus: z.string().min(1).max(120),
+    updatedAt: z.string().datetime(),
+    chainHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    assetUnits: cashOutUnitsSchema.optional(),
+  })
+  .strict();
 export const rampOrderSchema = z
   .object({
     id: z.string().min(1),
     terms: rampOrderTermsSchema,
     providerState: rampProviderStateSchema,
+    providerObservation: rampProviderObservationSchema.optional(),
+    launchIssuedAt: z.string().datetime().optional(),
     chainState: rampChainStateSchema,
     providerTransactionId: z.string().min(1).max(200).optional(),
     createdAt: z.string().datetime(),
@@ -105,3 +128,17 @@ export const rampOrderSchema = z
   })
   .strict();
 export type RampOrder = z.infer<typeof rampOrderSchema>;
+
+export const createMoonpayOrderSchema = z
+  .object({
+    requestId: z.string().uuid().toLowerCase(),
+    direction: rampDirectionSchema,
+    country: z.string().regex(/^[A-Z]{2}$/),
+    currency: z.string().regex(/^[A-Z]{3}$/),
+    amount: z
+      .string()
+      .max(40)
+      .regex(/^[0-9]+(\.[0-9]+)?$/),
+  })
+  .strict();
+export type CreateMoonpayOrder = z.infer<typeof createMoonpayOrderSchema>;

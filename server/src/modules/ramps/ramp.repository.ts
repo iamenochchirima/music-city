@@ -5,6 +5,7 @@ import {
   rampOrderTermsSchema,
   type RampOrder,
   type RampOrderTerms,
+  rampProviderObservationSchema,
 } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 
@@ -19,6 +20,10 @@ function hydrate(row: Record<string, unknown>): RampOrder {
     id: row.id,
     terms: row.terms,
     providerState: row.provider_state,
+    providerObservation: row.provider_observation ?? undefined,
+    launchIssuedAt: row.launch_issued_at
+      ? new Date(row.launch_issued_at as string).toISOString()
+      : undefined,
     chainState: row.chain_state,
     providerTransactionId: row.provider_transaction_id ?? undefined,
     createdAt: new Date(row.created_at as string).toISOString(),
@@ -27,6 +32,148 @@ function hydrate(row: Record<string, unknown>): RampOrder {
 }
 export function createRampRepository(db: Database) {
   return {
+    async list(userId?: string, walletAddress?: string): Promise<RampOrder[]> {
+      return db.transaction(async (c) => {
+        const rows = await c.query(
+          userId
+            ? "SELECT * FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 ORDER BY created_at DESC LIMIT 100"
+            : "SELECT * FROM ramp_orders ORDER BY created_at DESC LIMIT 100",
+          userId ? [userId, walletAddress] : [],
+        );
+        return rows.rows.map(hydrate);
+      });
+    },
+    async get(id: string): Promise<RampOrder | null> {
+      return db.transaction(async (c) => {
+        const row = (
+          await c.query("SELECT * FROM ramp_orders WHERE id=$1", [id])
+        ).rows[0];
+        return row ? hydrate(row) : null;
+      });
+    },
+    async issueLaunch(
+      id: string,
+      userId: string,
+      wallet: string,
+    ): Promise<RampOrder> {
+      return db.transaction(async (c) => {
+        const row = (
+          await c.query(
+            "UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1 AND user_id=$2 AND wallet_address=$3 AND launch_issued_at IS NULL AND provider_transaction_id IS NULL RETURNING *",
+            [id, userId, wallet],
+          )
+        ).rows[0];
+        if (!row)
+          throw new HttpError(
+            409,
+            "This payment was already opened. Check its saved status before starting again.",
+          );
+        await c.query(
+          "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app','launch','widget_open_requested','{}')",
+          [id],
+        );
+        return hydrate(row);
+      });
+    },
+    async observe(id: string, raw: unknown) {
+      const observation = rampProviderObservationSchema.parse(raw);
+      return db.transaction(async (c) => {
+        const row = (
+          await c.query("SELECT * FROM ramp_orders WHERE id=$1 FOR UPDATE", [
+            id,
+          ])
+        ).rows[0];
+        if (!row || observation.externalId !== id)
+          throw new HttpError(409, "Unknown provider transaction");
+        if (
+          row.provider_transaction_id &&
+          row.provider_transaction_id !== observation.id
+        )
+          throw new HttpError(409, "Conflicting provider reference");
+        const previous = row.provider_observation;
+        if (
+          previous &&
+          Date.parse(observation.updatedAt) < Date.parse(previous.updatedAt)
+        )
+          return;
+        if (
+          previous &&
+          observation.updatedAt === previous.updatedAt &&
+          JSON.stringify(rampProviderObservationSchema.parse(previous)) !==
+            JSON.stringify(observation)
+        )
+          throw new HttpError(409, "Conflicting provider observation");
+        const eventKey = createHash("sha256")
+          .update(JSON.stringify(observation))
+          .digest("hex");
+        const inserted = await c.query(
+          "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'provider_api',$2,'status_observed',$3) ON CONFLICT DO NOTHING RETURNING id",
+          [id, eventKey, JSON.stringify(observation)],
+        );
+        if (inserted.rowCount)
+          await c.query(
+            "UPDATE ramp_orders SET provider_transaction_id=$2,provider_state=$3,provider_observation=$4,updated_at=NOW() WHERE id=$1",
+            [
+              id,
+              observation.id,
+              observation.state,
+              JSON.stringify(observation),
+            ],
+          );
+      });
+    },
+    async recordWebhook(id: string, key: string, kind: string) {
+      return db.transaction(async (c) => {
+        await c.query(
+          "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'verified_webhook',$2,$3,'{}') ON CONFLICT DO NOTHING",
+          [id, key, kind],
+        );
+        await c.query(
+          "UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1",
+          [id],
+        );
+      });
+    },
+    async lease(): Promise<RampOrder | null> {
+      return db.transaction(async (c) => {
+        const job = (
+          await c.query(
+            "SELECT order_id FROM ramp_reconciliation_jobs WHERE due_at<=NOW() AND (leased_until IS NULL OR leased_until<NOW()) AND EXISTS(SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND o.provider='moonpay') ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1",
+          )
+        ).rows[0];
+        if (!job) return null;
+        await c.query(
+          "UPDATE ramp_reconciliation_jobs SET leased_until=NOW()+INTERVAL '2 minutes' WHERE order_id=$1",
+          [job.order_id],
+        );
+        return hydrate(
+          (
+            await c.query("SELECT * FROM ramp_orders WHERE id=$1", [
+              job.order_id,
+            ])
+          ).rows[0],
+        );
+      });
+    },
+    async release(id: string, failed: boolean) {
+      return db.transaction(async (c) => {
+        await c.query(
+          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,attempts=CASE WHEN $2 THEN LEAST(attempts+1,8) ELSE 0 END,due_at=NOW()+CASE WHEN $2 THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END,last_error_code=CASE WHEN $2 THEN 'provider_check_failed' ELSE NULL END WHERE order_id=$1",
+          [id, failed],
+        );
+      });
+    },
+    async events(id: string) {
+      return db.transaction(
+        async (c) =>
+          (
+            await c.query(
+              "SELECT source,kind,event_key,data,created_at FROM ramp_events WHERE order_id=$1 ORDER BY id",
+              [id],
+            )
+          ).rows,
+      );
+    },
     async reserve(
       rawTerms: RampOrderTerms,
     ): Promise<{ order: RampOrder; created: boolean }> {
@@ -100,7 +247,7 @@ export function createRampRepository(db: Database) {
       if (!reference.trim() || reference.length > 200)
         throw new HttpError(400, "Invalid provider reference");
       return db.transaction(async (client) => {
-        const row = (
+        let row = (
           await client.query(
             "SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE",
             [id, userId, walletAddress],
@@ -117,10 +264,12 @@ export function createRampRepository(db: Database) {
           );
         if (!row.provider_transaction_id) {
           row.provider_transaction_id = reference;
-          await client.query(
-            "UPDATE ramp_orders SET provider_transaction_id=$2,updated_at=NOW() WHERE id=$1",
-            [id, reference],
-          );
+          row = (
+            await client.query(
+              "UPDATE ramp_orders SET provider_transaction_id=$2,updated_at=NOW() WHERE id=$1 RETURNING *",
+              [id, reference],
+            )
+          ).rows[0];
           await client.query(
             "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app','provider_bound','provider_reference_bound',$2) ON CONFLICT DO NOTHING",
             [id, JSON.stringify({ providerTransactionId: reference })],

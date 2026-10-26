@@ -5,6 +5,7 @@ import { Pool, type PoolClient } from "pg";
 import { Keypair } from "@stellar/stellar-sdk";
 import { rampOrderTermsSchema, type RampOrderTerms } from "@music-city/shared";
 import { createRampRepository } from "./ramp.repository.js";
+import { rampProgressStatements } from "./ramp-progress-migration.js";
 import { rampSchemaStatements } from "./ramp-migration.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
@@ -91,8 +92,10 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of rampSchemaStatements) await c.query(sql);
-        for (const sql of rampSchemaStatements) await c.query(sql);
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements])
+          await c.query(sql);
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements])
+          await c.query(sql);
       });
       const repo = createRampRepository(db);
       const input = terms();
@@ -228,6 +231,87 @@ test(
         }),
         /foreign key/,
       );
+      const launchOrder = (
+        await repo.reserve({ ...input, requestId: randomUUID() })
+      ).order;
+      const launchResults = await Promise.allSettled(
+        Array.from({ length: 8 }, () =>
+          repo.issueLaunch(launchOrder.id, "artist", input.walletAddress),
+        ),
+      );
+      assert.equal(
+        launchResults.filter((r) => r.status === "fulfilled").length,
+        1,
+      );
+      assert.ok((await repo.get(launchOrder.id))?.launchIssuedAt);
+      assert.equal((await repo.list("other", input.walletAddress)).length, 0);
+      assert.equal((await repo.list("artist", input.walletAddress)).length, 3);
+      const observed = {
+        id: "reference",
+        externalId: id,
+        state: "processing",
+        originalStatus: "pending",
+        updatedAt: "2026-10-26T12:00:00.000Z",
+      };
+      await repo.observe(id, observed);
+      await repo.observe(id, observed);
+      await repo.observe(id, {
+        ...observed,
+        state: "awaiting_user",
+        updatedAt: "2026-10-26T11:00:00.000Z",
+      });
+      assert.equal((await repo.get(id))?.providerState, "processing");
+      assert.equal(
+        (await repo.events(id)).filter((e) => e.source === "provider_api")
+          .length,
+        1,
+      );
+      await assert.rejects(
+        repo.observe(id, { ...observed, state: "completed" }),
+        /Conflicting provider observation/,
+      );
+      await assert.rejects(
+        repo.observe(id, { ...observed, externalId: other.order.id }),
+        /Unknown provider/,
+      );
+      await assert.rejects(
+        repo.observe(id, { ...observed, id: "replacement" }),
+        /Conflicting provider reference/,
+      );
+      await repo.observe(id, {
+        ...observed,
+        state: "completed",
+        originalStatus: "completed",
+        updatedAt: "2026-10-26T12:01:00.000Z",
+      });
+      assert.equal((await repo.get(id))?.chainState, "unobserved");
+      await repo.recordWebhook(id, "notification-1", "updated");
+      await repo.recordWebhook(id, "notification-1", "updated");
+      assert.equal(
+        (await repo.events(id)).filter((e) => e.source === "verified_webhook")
+          .length,
+        1,
+      );
+      const leases = await Promise.all(
+        Array.from({ length: 8 }, () => repo.lease()),
+      );
+      const leased = leases.filter((x) => x !== null);
+      assert.equal(leased.length, 3);
+      assert.equal(new Set(leased.map((x) => x.id)).size, 3);
+      await repo.release(id, true);
+      const job = await db.transaction(
+        async (c) =>
+          (
+            await c.query(
+              "SELECT attempts, leased_until, last_error_code, due_at>NOW() delayed FROM ramp_reconciliation_jobs WHERE order_id=$1",
+              [id],
+            )
+          ).rows[0],
+      );
+      assert.equal(job.attempts, 1);
+      assert.equal(job.leased_until, null);
+      assert.equal(job.last_error_code, "provider_check_failed");
+      assert.equal(job.delayed, true);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();

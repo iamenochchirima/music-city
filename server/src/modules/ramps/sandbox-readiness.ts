@@ -82,10 +82,12 @@ export async function checkRampSandboxReadiness(
   stellarWalletAddressSchema.parse(walletAddress);
   if (config.RAMPS_SANDBOX_ENABLED !== "true")
     throw new Error("Explicitly enable the isolated sandbox ramp check");
-  const providers = await Promise.all([
-    checkMoonpay(config, fetcher),
-    checkMoneygram(config, walletAddress, fetcher),
-  ]);
+  const checks: Array<Promise<RampReadiness["providers"][number]>> = [];
+  if (config.RAMPS_SANDBOX_PROVIDERS !== "moneygram")
+    checks.push(checkMoonpay(config, fetcher));
+  if (config.RAMPS_SANDBOX_PROVIDERS !== "moonpay")
+    checks.push(checkMoneygram(config, walletAddress, fetcher));
+  const providers = await Promise.all(checks);
   return {
     environment: "sandbox",
     network: "stellar:testnet",
@@ -125,9 +127,12 @@ async function checkMoonpay(
     const asset = catalog.find(
       (c) =>
         c.type === "crypto" &&
-        c.code === "usdc_xlm" &&
+        c.code ===
+          (config.RAMPS_SANDBOX_ASSET === "XLM" ? "xlm" : "usdc_xlm") &&
         c.metadata?.networkCode === "stellar",
     );
+    const assetLabel =
+      config.RAMPS_SANDBOX_ASSET === "XLM" ? "stellar_xlm" : "stellar_usdc";
     const countriesReport = markets.map((c) => ({
       code: c.alpha2,
       buyAllowed: c.isBuyAllowed,
@@ -138,7 +143,7 @@ async function checkMoonpay(
         ...base,
         connection: "verified",
         countries: countriesReport,
-        flows: pending("stellar_usdc_not_enabled"),
+        flows: pending(`${assetLabel}_not_enabled`),
       };
     const assetReport = {
       code: asset.code,
@@ -147,9 +152,9 @@ async function checkMoonpay(
       suspended: asset.isSuspended !== false,
     };
     const reason = !assetReport.testMode
-      ? "stellar_usdc_test_mode_unavailable"
+      ? `${assetLabel}_test_mode_unavailable`
       : assetReport.suspended
-        ? "stellar_usdc_suspended"
+        ? `${assetLabel}_suspended`
         : undefined;
     const flows: Flow[] = (["buy", "sell"] as const).map((direction) => {
       if (reason) return { direction, status: "blocked", reason };
@@ -157,7 +162,7 @@ async function checkMoonpay(
         return {
           direction,
           status: "blocked",
-          reason: "stellar_usdc_sell_unavailable",
+          reason: `${assetLabel}_sell_unavailable`,
         };
       return {
         direction,

@@ -19,6 +19,8 @@ if (!wallet || !output || !args.includes("--sandbox"))
 const config = rampSandboxConfigSchema.parse({
   ...process.env,
   RAMPS_SANDBOX_ENABLED: "true",
+  RAMPS_SANDBOX_ASSET: option("--asset") ?? "USDC",
+  RAMPS_SANDBOX_PROVIDERS: option("--provider") ?? "moonpay",
 });
 const report = await checkRampSandboxReadiness(config, wallet);
 await writeFile(output, JSON.stringify(report, null, 2) + "\n");

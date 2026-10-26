@@ -1,0 +1,46 @@
+{
+  "checkedOn": "2026-10-26",
+  "environment": "MoonPay Test Mode",
+  "asset": "XLM",
+  "dashboardAccount": "Music City",
+  "credentialComparison": {
+    "publishableMatchesRootEnv": true,
+    "secretMatchesRootEnv": true,
+    "webhookMatchesRootEnv": true,
+    "credentialsChanged": false
+  },
+  "nodeSdk": {
+    "package": "@moonpay/moonpay-node",
+    "version": "0.2.13",
+    "signatureMatchesImplementation": true,
+    "sdkValidatesGeneratedUrl": true,
+    "widgetResult": "Signature check failed"
+  },
+  "browserSdk": {
+    "version": "1.10.10",
+    "environment": "sandbox",
+    "variant": "overlay",
+    "walletBoundSignedExample": "Signature check failed",
+    "basicExampleWithoutWalletOrSignature": "Signature check failed"
+  },
+  "apiSmoke": {
+    "buyExternalIdLookup": "authenticated; no provider order found",
+    "sellExternalIdLookup": "authenticated; no provider order found",
+    "authentication": "publishable apiKey query parameter"
+  },
+  "conclusion": "Matching keys and official signing have been verified. The widget failure is reproduced outside the app, including a basic unsigned SDK example. Its root cause remains unresolved.",
+  "remainingChecks": [
+    "Allowed origin requirement for an embedded local widget; standalone signed URL also fails",
+    "Independent browser comparison when another browser is connected",
+    "MoonPay integration configuration or provider diagnostics"
+  ],
+  "acceptance": {
+    "checkoutReached": false,
+    "buyCompleted": false,
+    "sellCompleted": false,
+    "fundsMoved": false,
+    "stellarUsdcTestModeAvailable": false
+  },
+  "standaloneSellWidget": "Signature check failed in Test Mode",
+  "originCheck": "No configured allowed website domains; temporary localhost origin prepared but not saved, awaiting owner approval"
+}

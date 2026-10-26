@@ -141,3 +141,23 @@ Verification passed nine focused tests, including a real isolated PostgreSQL lif
 Reproduce readiness from the server workspace with `pnpm ramps:check --sandbox --wallet GADDRESS --output /private/path/report.json`. The command reads local credentials, prints only normalized outcomes, and exits with code 2 while a provider prerequisite remains unmet. Run PostgreSQL checks with `RAMP_TEST_DATABASE_URL` set to an isolated loopback database whose name ends in `_test`.
 
 Next: implement the separately authorized MoonPay XLM demonstration, including wallet-bound signed URLs, protected order routes, authenticated provider lookup and notifications, and local browser verification. Keep the Stellar USDC capability gate in place.
+
+## MoonPay signing and progress checkpoint, 26 October 2026
+
+Completed local components for the separately authorized XLM demonstration:
+
+- [x] Add explicit XLM and provider selection flags. Keep USDC as the default asset and sandbox payment controls disabled by default.
+- [x] Build wallet-bound buy and sell URLs with exact amounts and stable local order identifiers. Validate enabled test assets and country eligibility before producing a URL.
+- [x] Authenticate provider lookups with the documented publishable `apiKey`. Verify the provider reference, wallet, currencies, correlation identifiers, and original amount before accepting an observation.
+- [x] Verify V2 notification HMACs over the timestamp and exact raw body, with a five-minute replay window.
+- [x] Persist launch issuance and provider observations. Test concurrent launch rejection, stale update handling, notification deduplication, and exclusive reconciliation leases in isolated PostgreSQL.
+- [x] Compare signatures with the official Node SDK and launch the official browser SDK. Compare all three configured keys with the signed-in dashboard without recording their values.
+- [ ] Resolve the real Test Mode widget failure and reach checkout.
+- [ ] Connect protected routes, notification handling, worker execution, and the client and admin views. Repository and adapter methods alone do not complete these items.
+- [ ] Complete real sandbox buy and sell, verify any Testnet delivery, and exercise recovery and failure paths.
+
+The dashboard keys match the root `.env`. The implementation's signature equals the official `@moonpay/moonpay-node@0.2.13` result, which that SDK validates. Both its URL and the official browser SDK reach Test Mode but display `Signature check failed`. The basic browser SDK example also shows that error without a wallet or signature. This does not establish a credential mismatch. No provider order was created. See the [sanitized diagnostic report](ramp-sandbox-evidence/moonpay-signing-2026-10-26.json) and [browser evidence](ramp-sandbox-evidence/moonpay-official-sdk-error.jpg).
+
+The adapter's real buy and sell external-ID lookups authenticate successfully and return no matching order. A previous attempt used a secret key in that endpoint's query; the implementation now uses the documented publishable key. This fixes lookup authentication and does not resolve the widget error.
+
+Fifteen focused tests pass without skips, including real PostgreSQL persistence checks. Fresh full database initialization and workspace typechecks pass. The full server suite passes 174 tests with 13 database-dependent skips; the ramp database test runs separately without a skip. Provider completion never changes chain confirmation or creates an application balance. All end-to-end acceptance items above remain open.

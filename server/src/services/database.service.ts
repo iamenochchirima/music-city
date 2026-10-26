@@ -1,3 +1,4 @@
+import { rampProgressStatements } from "../modules/ramps/ramp-progress-migration.js";
 import { rampSchemaStatements } from "../modules/ramps/ramp-migration.js";
 import { onboardingFeedbackMigrationStatements } from "../modules/users/onboarding-feedback-migration.js";
 import { supportSchemaStatements } from "../modules/support/support-schema.js";
@@ -413,6 +414,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 
 const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-26-ramp-orders", statements: rampSchemaStatements },
+  { name: "2026-10-26-ramp-progress", statements: rampProgressStatements },
   { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
   { name: "2026-10-20-guest-listening-time", statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", statements: checkoutSchemaStatements },
@@ -909,6 +911,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-26-ramp-progress", migrationName: "2026-10-26-ramp-progress", relations: ["ramp_orders"], columns: ["ramp_orders.provider_observation", "ramp_orders.launch_issued_at"], statements: rampProgressStatements },
   { name: "2026-10-26-ramp-orders", migrationName: "2026-10-26-ramp-orders", relations: ["ramp_orders", "ramp_quotes", "ramp_chain_attempts", "ramp_events", "ramp_reconciliation_jobs"], indexes: ["ramp_orders_owner_history", "ramp_one_uncertain_transfer", "ramp_reconciliation_due"], statements: rampSchemaStatements },
   { name: "2026-10-19-guest-playback", migrationName: "2026-10-19-guest-playback", relations: ["guest_playback_allowances"], indexes: ["guest_playback_allowances_expires_idx"], statements: guestPlaybackSchemaStatements },
   { name: "2026-10-20-guest-listening-time", migrationName: "2026-10-20-guest-listening-time", relations: ["guest_playback_allowances"], indexes: [], statements: expandedGuestPlaybackSchemaStatements },

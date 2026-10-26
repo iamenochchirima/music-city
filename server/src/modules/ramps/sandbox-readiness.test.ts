@@ -8,6 +8,7 @@ const wallet = Keypair.random().publicKey();
 const configuration = () =>
   rampSandboxConfigSchema.parse({
     NODE_ENV: "test",
+    RAMPS_SANDBOX_PROVIDERS: "both",
     RAMPS_SANDBOX_ENABLED: "true",
     MOONPAY_PK: "pk_test_fixture",
     MOONPAY_SK: "sk_test_fixture",
@@ -170,6 +171,7 @@ test("provider transport errors do not leak credential-bearing URLs or errors", 
 test("unconfigured providers do not make HTTP calls", async () => {
   const config = rampSandboxConfigSchema.parse({
     NODE_ENV: "test",
+    RAMPS_SANDBOX_PROVIDERS: "both",
     RAMPS_SANDBOX_ENABLED: "true",
   });
   const fail = (async () => {
