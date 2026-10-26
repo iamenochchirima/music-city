@@ -47,7 +47,7 @@ test("legacy free artist access remains readable without creating a synthetic pa
       website: "",
       instagram: "",
       youtube: "",
-      soundcloud: "",
+      facebook: "",
       x: "",
     },
     verified: false,
@@ -126,7 +126,7 @@ const createProfile = (
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   },
   hasReleasedMusic: undefined,
@@ -174,7 +174,7 @@ test("saving the required intent advances a profile created by the welcome step"
     assert.equal(profile.primaryIntent, "listener");
     assert.equal(profile.displayName, "New Listener");
     assert.equal(profile.onboardingStatus, "in_progress");
-    assert.equal(profile.onboardingStep, "personalize");
+    assert.equal(profile.onboardingStep, "visuals");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -310,17 +310,6 @@ test("both intent persists listener and artist personalization without role ambi
     await usersService.saveOnboardingStep(walletAddress, {
       step: "artist_activation",
     });
-    await usersService.saveOnboardingStep(walletAddress, {
-      step: "personalize",
-      genres: ["Afrobeats", "House"],
-      favoriteArtistIds: [],
-      interestedInLocalMusic: true,
-      notificationPreferences: {
-        releaseNotifications: true,
-        artistUpdates: false,
-        productUpdates: false,
-      },
-    });
     const profile = await usersService.saveOnboardingStep(walletAddress, {
       step: "artist_identity",
       bio: "A sound from both sides of the city.",
@@ -329,16 +318,31 @@ test("both intent persists listener and artist personalization without role ambi
         website: "https://example.com",
         instagram: "",
         youtube: "",
-        soundcloud: "",
+        facebook: "",
         x: "",
       },
       hasReleasedMusic: true,
     });
 
+    await usersService.saveOnboardingStep(walletAddress, { step: "visuals", removeProfileImage: false, removeHeaderImage: false });
+    const personalized = await usersService.saveOnboardingStep(walletAddress, {
+      step: "personalize",
+      genres: [],
+      favoriteArtistIds: [],
+      interestedInLocalMusic: true,
+      notificationPreferences: {
+        releaseNotifications: true,
+        artistUpdates: false,
+        productUpdates: false,
+      },
+    });
+    assert.equal(personalized?.onboardingStep, "complete");
+    assert.equal(personalized?.interestedInLocalMusic, true);
+    assert.deepEqual(personalized?.genres, ["Afrobeats", "House"]);
     assert.ok(profile);
     assert.equal(profile.primaryIntent, "both");
     assert.deepEqual(profile.genres, ["Afrobeats", "House"]);
-    assert.equal(profile.interestedInLocalMusic, true);
+    assert.equal(profile.interestedInLocalMusic, false);
     assert.equal(profile.bio, "A sound from both sides of the city.");
     assert.equal(profile.hasReleasedMusic, true);
     assert.equal(profile.onboardingStep, "visuals");

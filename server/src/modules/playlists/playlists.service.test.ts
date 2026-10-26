@@ -29,7 +29,7 @@ const createProfile = () => ({
   interestedInLocalMusic: false,
   notificationPreferences: { releaseNotifications: true, artistUpdates: true, productUpdates: false },
   bio: "",
-  socialLinks: { website: "", instagram: "", youtube: "", soundcloud: "", x: "" },
+  socialLinks: { website: "", instagram: "", youtube: "", facebook: "", x: "" },
   profileImageUrl: undefined,
   profileImageStorageKey: undefined,
   headerImageUrl: undefined,

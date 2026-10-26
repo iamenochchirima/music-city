@@ -38,7 +38,7 @@ const baseProfile = {
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   },
   verified: false,
@@ -118,7 +118,7 @@ test("personalization contracts reject unknown genres and invalid social URLs", 
         website: "not-a-url",
         instagram: "",
         youtube: "",
-        soundcloud: "",
+        facebook: "",
         x: "",
       },
     }),
@@ -167,4 +167,21 @@ test("a pre-onboarding session may have no display name yet", () => {
   });
 
   assert.equal(session.displayName, "");
+});
+
+test("all registration branches end with discovery and share the genre catalogue", async () => {
+  const { onboardingSteps, nextOnboardingStep, MUSIC_GENRES, FEATURED_MUSIC_GENRES, socialLinksSchema } = await import("@music-city/shared");
+  for (const intent of ["artist", "both", "listener"] as const) {
+    const steps = onboardingSteps(intent);
+    assert.deepEqual(steps.slice(-3), ["visuals", "personalize", "complete"]);
+    for (let index=0;index<steps.length-1;index++) assert.equal(nextOnboardingStep(intent,steps[index]!),steps[index+1]);
+  }
+  for (const genre of ["Traditional","Dance","Kwaito","Amapiano","Maskandi","R&B / Soul"]) {
+    assert.ok((MUSIC_GENRES as readonly string[]).includes(genre));
+    assert.ok((FEATURED_MUSIC_GENRES as readonly string[]).includes(genre));
+  }
+  assert.ok(!(MUSIC_GENRES as readonly string[]).includes("Soul"));
+  assert.ok(!(MUSIC_GENRES as readonly string[]).includes("R&B"));
+  assert.equal(socialLinksSchema.parse({facebook:"https://facebook.com/artist"}).facebook,"https://facebook.com/artist");
+  assert.throws(()=>socialLinksSchema.parse({facebook:"not-a-url"}));
 });

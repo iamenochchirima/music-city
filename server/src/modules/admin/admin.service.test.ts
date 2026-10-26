@@ -26,7 +26,7 @@ const profileDefaults = {
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   },
   profileImageUrl: undefined,

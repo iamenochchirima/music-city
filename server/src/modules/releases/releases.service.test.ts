@@ -31,7 +31,7 @@ const artistProfile = {
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   },
   profileImageUrl: undefined,

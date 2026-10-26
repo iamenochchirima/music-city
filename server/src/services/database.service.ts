@@ -1,3 +1,4 @@
+import { onboardingFeedbackMigrationStatements } from "../modules/users/onboarding-feedback-migration.js";
 import { supportSchemaStatements } from "../modules/support/support-schema.js";
 import { checkoutSchemaStatements } from "../modules/payments/checkout-schema.js";
 import { settlementChainEventSchemaStatements } from "../modules/settlements/chain-event-schema.js";
@@ -899,6 +900,7 @@ const schemaMigrations: SchemaMigration[] = [
        )`,
     ],
   },
+  { name: "2026-10-26-onboarding-feedback", statements: onboardingFeedbackMigrationStatements },
 ];
 
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>

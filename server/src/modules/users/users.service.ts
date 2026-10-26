@@ -1,3 +1,4 @@
+import { nextOnboardingStep } from "@music-city/shared";
 import {
   artistPublicProfileSchema,
   completeOnboardingSchema,
@@ -43,46 +44,15 @@ const isPublicArtist = (profile: UserProfile) =>
 const isListenerIntent = (primaryIntent: PrimaryIntent) =>
   primaryIntent === "listener" || primaryIntent === "both";
 
-const nextStepFor = (
-  primaryIntent: PrimaryIntent,
-  step: OnboardingStep,
-): OnboardingStep => {
-  if (step === "intent") {
-    return isArtistIntent(primaryIntent)
-      ? "artist_activation"
-      : "personalize";
-  }
-
-  if (step === "artist_activation") {
-    return isListenerIntent(primaryIntent) ? "personalize" : "artist_identity";
-  }
-
-  if (step === "identity") {
-    return "intent";
-  }
-
-  if (step === "personalize") {
-    return isArtistIntent(primaryIntent) ? "artist_identity" : "visuals";
-  }
-
-  if (step === "artist_identity") {
-    return "visuals";
-  }
-
-  if (step === "visuals") {
-    return "complete";
-  }
-
-  return "complete";
-};
+const nextStepFor = nextOnboardingStep;
 
 const onboardingStepOrder: Record<OnboardingStep, number> = {
   identity: 0,
   intent: 1,
   artist_activation: 2,
-  personalize: 3,
-  artist_identity: 4,
-  visuals: 5,
+  artist_identity: 3,
+  visuals: 4,
+  personalize: 5,
   complete: 6,
 };
 
@@ -215,7 +185,7 @@ const withMediaUrls = (profile: UserProfile | null) => {
       website: profile.socialLinks?.website ?? "",
       instagram: profile.socialLinks?.instagram ?? "",
       youtube: profile.socialLinks?.youtube ?? "",
-      soundcloud: profile.socialLinks?.soundcloud ?? "",
+      facebook: profile.socialLinks?.facebook ?? "",
       x: profile.socialLinks?.x ?? "",
     },
     profileImageUrl: profile.profileImageStorageKey
@@ -397,7 +367,7 @@ export const usersService = {
             website: "",
             instagram: "",
             youtube: "",
-            soundcloud: "",
+            facebook: "",
             x: "",
           },
           profileImageUrl: undefined,
@@ -433,11 +403,8 @@ export const usersService = {
         nextProfile.onboardingStep = "intent";
         break;
       case "personalize":
-        if (!isListenerIntent(nextProfile.primaryIntent)) {
-          throw new HttpError(400, "Listener personalization is not available for this account");
-        }
         await ensureFavoriteArtistIds(parsed.favoriteArtistIds);
-        nextProfile.genres = parsed.genres;
+        if (!isArtistIntent(nextProfile.primaryIntent)) nextProfile.genres = parsed.genres;
         nextProfile.favoriteArtistIds = parsed.favoriteArtistIds;
         nextProfile.interestedInLocalMusic = parsed.interestedInLocalMusic;
         nextProfile.notificationPreferences = parsed.notificationPreferences;
@@ -484,7 +451,7 @@ export const usersService = {
             parsed.headerImageStorageKey,
           ) ?? nextProfile.headerImageStorageKey;
         }
-        nextProfile.onboardingStep = "complete";
+        nextProfile.onboardingStep = nextStepFor(nextProfile.primaryIntent, parsed.step);
         break;
     }
 
