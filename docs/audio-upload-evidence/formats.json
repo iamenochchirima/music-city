@@ -1,0 +1,107 @@
+{
+  "environment": "local API, real configured storage and media providers",
+  "createdAt": "2026-10-26T08:15:08.853Z",
+  "releaseId": "rel_1f76f7d95d694dfd",
+  "files": [
+    {
+      "file": "cbr.mp3",
+      "bytes": 145492,
+      "contentType": "audio/mpeg",
+      "trackId": "trk_bf74a0f4b02e44c6",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "encoded.aac",
+      "bytes": 98140,
+      "contentType": "audio/aac",
+      "trackId": "trk_c4f3f698023a45e4",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "encoded.m4a",
+      "bytes": 98166,
+      "contentType": "audio/mp4",
+      "trackId": "trk_48ed8a05e51749cd",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "float.wav",
+      "bytes": 2116892,
+      "contentType": "audio/wav",
+      "trackId": "trk_f07748314b584c41",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "lossless.flac",
+      "bytes": 82474,
+      "contentType": "audio/flac",
+      "trackId": "trk_2c6387ede986432a",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "pcm16.wav",
+      "bytes": 1058478,
+      "contentType": "audio/wav",
+      "trackId": "trk_72b7fdc45be34e36",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "pcm24.wav",
+      "bytes": 1587702,
+      "contentType": "audio/wav",
+      "trackId": "trk_da8dd7b8d0e246a2",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "rf64.wav",
+      "bytes": 1058514,
+      "contentType": "audio/wav",
+      "trackId": "trk_726b9133448a4e8c",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "vbr.mp3",
+      "bytes": 30338,
+      "contentType": "audio/mpeg",
+      "trackId": "trk_c980636aeb234594",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    },
+    {
+      "file": "vorbis.ogg",
+      "bytes": 19571,
+      "contentType": "audio/ogg",
+      "trackId": "trk_acb5d9563ceb46d4",
+      "uploadAccepted": true,
+      "ready": true,
+      "playbackDecoded": true,
+      "runtime": "0:06"
+    }
+  ]
+}

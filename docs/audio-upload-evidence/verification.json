@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-26",
+  "scope": "Local audio upload and format verification",
+  "pipeline": [
+    "Local API and isolated PostgreSQL database",
+    "Authenticated artist fixture with normal sponsorship activation",
+    "Real S3 relay upload",
+    "Real Mux processing by local worker",
+    "Authorized playback session",
+    "HLS playlists and segments fetched and decoded with FFmpeg"
+  ],
+  "browser": {
+    "environment": "Local component harness mounting the production ReleaseTracklistEditor and ReleaseAudioUploader with a fixture session; real API and providers",
+    "files": [
+      "pcm24.wav",
+      "lossless.flac",
+      "cbr.mp3"
+    ],
+    "result": "All three persisted in the release and displayed Audio ready after reload",
+    "invalidFile": "PNG bytes renamed not-audio.mp3 rejected by API; error visible; temporary track/session cleaned up",
+    "viewport": "390 x 844"
+  },
+  "checks": {
+    "clientSuite": {
+      "passed": 162
+    },
+    "serverSuite": {
+      "passed": 159,
+      "skipped": 11,
+      "failed": 0
+    },
+    "workspaceTypecheck": "passed",
+    "clientProductionBuild": "passed",
+    "focusedClientTests": {
+      "passed": 7
+    }
+  },
+  "limitations": [
+    "Physical iOS and Android native picker menus were not tested. Browser and OS control their source options; removing audio/* cannot guarantee these menus omit Photo Library or camera.",
+    "Dynamic login was not exercised in the component harness.",
+    "Samples were six-second synthetic recordings; long recordings and the 500 MB boundary were not exercised end to end.",
+    "Signed HLS was fetched through Node and the delivered segments decoded in FFmpeg; the bundled FFmpeg direct-URL TLS path timed out."
+  ],
+  "cleanup": {
+    "deletedTestMuxAssets": 13,
+    "deletedTestStorageObjects": 13,
+    "temporaryHarnessRemoved": true,
+    "isolatedServicesStopped": true,
+    "productionDatabaseModified": false
+  },
+  "deployed": false
+}

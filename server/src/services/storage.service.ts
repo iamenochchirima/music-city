@@ -11,7 +11,7 @@ import { stat, readFile } from "node:fs/promises";
 import { storedImageUrl } from "../modules/images/image-url.js";
 import { Readable, type Readable as ReadableType } from "node:stream";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import type { UploadSession } from "@music-city/shared";
+import { audioContentTypeForFileName, type UploadSession } from "@music-city/shared";
 
 import { env } from "../config/env.js";
 import { HttpError } from "../utils/http-error.js";
@@ -63,17 +63,11 @@ const localMediaPath = (storageKey: string) => {
 };
 
 const inferMimeType = (fileName: string) => {
+  const audioType = audioContentTypeForFileName(fileName);
+  if (audioType) return audioType;
   const extension = fileName.split(".").pop()?.toLowerCase();
 
   switch (extension) {
-    case "mp3":
-      return "audio/mpeg";
-    case "wav":
-      return "audio/wav";
-    case "m4a":
-      return "audio/mp4";
-    case "flac":
-      return "audio/flac";
     case "png":
       return "image/png";
     case "jpg":

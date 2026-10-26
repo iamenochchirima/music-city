@@ -3,7 +3,11 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReleaseDetail } from "@music-city/shared";
 import { ReleaseAudioUploader } from "./release-audio-uploader";
-const mocks = vi.hoisted(() => ({ create: vi.fn(), add: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  create: vi.fn(),
+  add: vi.fn(),
+  session: vi.fn(async () => ({ id: "upload" })),
+}));
 vi.mock("@/features/music/lib/tracks-api", () => ({
   tracksApi: { createTrack: mocks.create, deleteTrack: vi.fn() },
 }));
@@ -12,7 +16,7 @@ vi.mock("@/features/music/lib/releases-api", () => ({
 }));
 vi.mock("@/features/uploads/lib/uploads-api", () => ({
   uploadsApi: {
-    createSession: async () => ({ id: "upload" }),
+    createSession: mocks.session,
     uploadFile: async () => "etag",
     completeSession: async () => ({
       track: { id: "song", title: "Morning Light" },
@@ -84,3 +88,38 @@ it("rejects excess files before creating or uploading any song", async () => {
   );
   expect(mocks.create).not.toHaveBeenCalled();
 });
+
+it.each([
+  ["song.wav", "application/octet-stream", "audio/wav"],
+  ["song.flac", "", "audio/flac"],
+  ["song.mp3", "", "audio/mpeg"],
+])(
+  "normalizes %s despite missing or generic mobile MIME metadata",
+  async (name, type, expected) => {
+    mocks.create.mockResolvedValue({ id: "song" });
+    mocks.add.mockResolvedValue({ ...release, tracks: [{ trackId: "song" }] });
+    render(
+      <ReleaseAudioUploader
+        release={release}
+        token="token"
+        maxFiles={1}
+        onAdded={vi.fn()}
+        onSaved={vi.fn()}
+        onBusy={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    const input = screen.getByLabelText("Audio files");
+    expect(input.getAttribute("accept")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Upload audio from device" }),
+    ).toBeTruthy();
+    await userEvent.upload(input, new File(["audio"], name, { type }));
+    await waitFor(() =>
+      expect(mocks.session).toHaveBeenCalledWith(
+        "token",
+        expect.objectContaining({ contentType: expected }),
+      ),
+    );
+  },
+);

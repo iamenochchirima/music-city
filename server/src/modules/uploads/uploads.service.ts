@@ -40,10 +40,12 @@ const detectedContentType = (body: Buffer) => {
     return "image/webp";
   if (body.subarray(0, 4).toString("ascii") === "fLaC") return "audio/flac";
   if (
-    body.subarray(0, 4).toString("ascii") === "RIFF" &&
+    ["RIFF", "RF64", "BW64"].includes(body.subarray(0, 4).toString("ascii")) &&
     body.subarray(8, 12).toString("ascii") === "WAVE"
   )
     return "audio/wav";
+  if (body.subarray(0, 4).toString("ascii") === "OggS") return "audio/ogg";
+  if (body[0] === 0xff && (body[1] & 0xf6) === 0xf0) return "audio/aac";
   if (body.subarray(4, 8).toString("ascii") === "ftyp") return "audio/mp4";
   if (
     body.subarray(0, 3).toString("ascii") === "ID3" ||
@@ -56,9 +58,11 @@ const detectedContentType = (body: Buffer) => {
 const contentTypesMatch = (declared: string, detected: string) => {
   const aliases: Record<string, string[]> = {
     "audio/mpeg": ["audio/mpeg", "audio/mp3", "audio/x-mp3"],
-    "audio/wav": ["audio/wav", "audio/x-wav", "audio/wave"],
+    "audio/wav": ["audio/wav", "audio/x-wav", "audio/wave", "audio/vnd.wave", "audio/x-pn-wav"],
     "audio/mp4": ["audio/mp4", "audio/m4a", "audio/x-m4a"],
     "audio/flac": ["audio/flac", "audio/x-flac"],
+    "audio/aac": ["audio/aac", "audio/x-aac", "audio/aacp"],
+    "audio/ogg": ["audio/ogg", "application/ogg"],
     "image/jpeg": ["image/jpeg", "image/jpg"],
     "image/png": ["image/png"],
     "image/webp": ["image/webp"],

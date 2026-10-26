@@ -38,10 +38,7 @@ export const uploadsApi = {
         });
 
         upload.on("progress", (event) => {
-          const percent = Math.max(
-            0,
-            Math.min(100, Math.round(event.detail)),
-          );
+          const percent = Math.max(0, Math.min(100, Math.round(event.detail)));
           onProgress?.(percent);
         });
 
@@ -60,25 +57,45 @@ export const uploadsApi = {
 
     onProgress?.(0);
 
-    // Upload through the API relay. The direct S3-compatible URL points at
-    // Backblaze and requires a bucket CORS preflight from every web origin.
-    // The relay keeps storage-provider CORS out of the browser path while
-    // preserving the same presigned upload on the server.
-    const response = await fetch(uploadSession.uploadUrl, {
-      method: uploadSession.method,
-      headers: {
+    return new Promise<string | undefined>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open(uploadSession.method, uploadSession.uploadUrl);
+      for (const [name, value] of Object.entries({
         ...uploadSession.headers,
         Authorization: `Bearer ${token}`,
-      },
-      body: file,
+        "Content-Type": uploadSession.contentType,
+      })) {
+        request.setRequestHeader(name, value);
+      }
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable)
+          onProgress?.(
+            Math.min(99, Math.round((event.loaded / event.total) * 100)),
+          );
+      };
+      request.onerror = () =>
+        reject(
+          new Error("Upload interrupted. Check your connection and try again."),
+        );
+      request.onabort = () =>
+        reject(new Error("Upload cancelled. Choose the file again to retry."));
+      request.onload = () => {
+        if (request.status < 200 || request.status >= 300) {
+          let message = "Couldn't upload this file. Please try again.";
+          try {
+            const body = JSON.parse(request.responseText);
+            if (typeof body.error === "string") message = body.error;
+          } catch {
+            /* A proxy may return a non-JSON error response. */
+          }
+          reject(new Error(message));
+          return;
+        }
+        onProgress?.(100);
+        resolve(request.getResponseHeader("etag") ?? undefined);
+      };
+      request.send(file);
     });
-
-    if (!response.ok) {
-      throw new Error("File upload failed");
-    }
-
-    onProgress?.(100);
-    return response.headers.get("etag") ?? undefined;
   },
 
   async cancelSession(token: string, uploadSessionId: string) {
@@ -93,11 +110,7 @@ export const uploadsApi = {
     const response = await httpClient.post<{
       track?: TrackSummary;
       release?: ReleaseDetail;
-    }>(
-      `/uploads/sessions/${uploadSessionId}/complete`,
-      input,
-      token,
-    );
+    }>(`/uploads/sessions/${uploadSessionId}/complete`, input, token);
 
     return response;
   },
