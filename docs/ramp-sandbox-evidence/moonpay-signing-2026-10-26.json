@@ -30,7 +30,6 @@
   },
   "conclusion": "Matching keys and official signing have been verified. The widget failure is reproduced outside the app, including a basic unsigned SDK example. Its root cause remains unresolved.",
   "remainingChecks": [
-    "Allowed origin requirement for an embedded local widget; standalone signed URL also fails",
     "Independent browser comparison when another browser is connected",
     "MoonPay integration configuration or provider diagnostics"
   ],
@@ -42,5 +41,14 @@
     "stellarUsdcTestModeAvailable": false
   },
   "standaloneSellWidget": "Signature check failed in Test Mode",
-  "originCheck": "No configured allowed website domains; temporary localhost origin prepared but not saved, awaiting owner approval"
+  "originCheck": {
+    "origin": "http://localhost:4352",
+    "ownerApproved": true,
+    "savedAndVerifiedAfterReload": true,
+    "signedSdkResult": "Signature check failed",
+    "basicSdkResult": "Signature check failed",
+    "temporaryOriginRemoved": true,
+    "removalVerifiedAfterReload": true,
+    "interpretation": "The saved temporary origin did not resolve either SDK example during this test. No propagation interval was established, so this does not prove an origin-related issue is impossible."
+  }
 }
