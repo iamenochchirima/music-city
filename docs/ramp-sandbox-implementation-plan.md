@@ -6,6 +6,10 @@ Deliver four working journeys through the local Music City client, API, database
 
 This plan supplies the implementation detail for the provider-readiness work in [the SOW 2 tracker](sow-2-tracker.md#separately-scoped-provider-readiness-and-budget). It replaces the earlier MoneyGram-first, cash-out-only work order. It does not change the submitted SOW or record its acceptance. Keep the existing CO checklist as the detailed cash-out requirements and link its evidence to this plan.
 
+## Current execution decision
+
+The owner deferred MoneyGram until its partner mode is resolved. Focus current execution on MoonPay. The owner also approved a separate native XLM sandbox buy and sell demonstration because MoonPay reports `supportsTestMode: false` for `usdc_xlm` and `true` for `xlm`. This does not complete Stellar USDC acceptance or authorize a production asset change. Keep the MoneyGram requirements below for resumption.
+
 ## Deliver the four journeys
 
 | Journey | User experience | Acceptance boundary |
@@ -32,9 +36,9 @@ If an account cannot support a required Stellar USDC journey, keep that journey 
 
 ## Build the shared backend and persistence
 
-- [ ] R-09 Add validated sandbox configuration for both providers. Keep secret and webhook keys server-side. Permit only the intended provider hosts and callback destinations. Reject sandbox credentials in production fiat mode.
+- [x] R-09 Add validated sandbox configuration for both providers. Keep secret and webhook keys server-side. Permit only the intended provider hosts and callback destinations. Reject sandbox credentials in production fiat mode.
 - [ ] R-10 Extend shared contracts for funding and withdrawals. Include direction, provider, environment, market, exact money amounts, wallet, quote expiry, provider references, chain attempts, and independent provider and chain statuses. Preserve the completed CO-06 contracts where they fit.
-- [ ] R-11 Add migrations for ramp transactions, quote snapshots, chain attempts, provider events, and reconciliation jobs. Use unique request and provider identifiers. Keep existing earnings, claims, entitlements, and payments intact.
+- [x] R-11 Add migrations for ramp transactions, quote snapshots, chain attempts, provider events, and reconciliation jobs. Use unique request and provider identifiers. Keep existing earnings, claims, entitlements, and payments intact.
 - [ ] R-12 Define provider adapters for capabilities, session creation, order lookup, status normalization, and notification verification. Implement distinct MoneyGram and MoonPay behavior behind those operations. Do not add unimplemented provider stubs or automatic provider substitution.
 - [ ] R-13 Add authorized capability, create, detail, resume, and history endpoints. Derive user and wallet from the authenticated session. Enforce ownership on every endpoint and bind each provider order to its intended direction and environment.
 - [ ] R-14 Persist the request and correlation identifier before opening the provider. Serialize duplicate creates. Recover an existing order after a lost response. If the provider outcome is unknown, reconcile it before permitting another order.
@@ -125,3 +129,15 @@ No production activation, real-money transaction, new chain, bridge, treasury cu
 - [MoonPay sell quickstart](https://moonpay.readme.io/docs/off-ramp-quickstart) describes the sandbox sell widget and test payout procedure.
 - [MoonPay keys, domains, and webhooks](https://support.moonpay.com/en/articles/694414-managing-your-api-keys-domains-and-webhooks) describes separate test configuration and notification verification keys.
 - [MoonPay payment methods](https://support.moonpay.com/en/articles/380823-moonpay-s-supported-payment-methods) lists method availability by direction and region. Recheck the account and exact asset before enabling an option.
+
+## Implementation checkpoint, 26 October 2026
+
+The first implementation slice adds sandbox configuration validation, a repeatable readiness command, strict server-resolved order terms, and a transactional order repository. Additive migrations create orders, quotes, chain attempts, append-only events, and reconciliation jobs. They do not enable payment controls or process provider transactions.
+
+Fresh MoonPay requests to the enabled currency catalogue and country endpoint returned HTTP 200. Stellar USDC is listed but unavailable in test mode. South Africa, the UK, and the US report buy and sell country eligibility; Zimbabwe reports neither. These country flags do not establish available payment methods. MoneyGram session creation returned HTTP 400 requiring `customerIdentifier` for a custodial partner, including when the request explicitly selected non-custodial mode. See [the redacted readiness report](ramp-sandbox-evidence/readiness-2026-10-26.json).
+
+Verification passed nine focused tests, including a real isolated PostgreSQL lifecycle test with eight concurrent reservations, changed-term rejection, owner isolation, unique provider references, append-only event enforcement, and duplicate-transfer constraints. Fresh full-schema initialization reported ready. Workspace typechecks passed. The default server suite passed 168 tests and skipped 13 database-dependent tests. The ramp PostgreSQL test ran separately without a skip. No funds moved and no provider payment order was created.
+
+Reproduce readiness from the server workspace with `pnpm ramps:check --sandbox --wallet GADDRESS --output /private/path/report.json`. The command reads local credentials, prints only normalized outcomes, and exits with code 2 while a provider prerequisite remains unmet. Run PostgreSQL checks with `RAMP_TEST_DATABASE_URL` set to an isolated loopback database whose name ends in `_test`.
+
+Next: implement the separately authorized MoonPay XLM demonstration, including wallet-bound signed URLs, protected order routes, authenticated provider lookup and notifications, and local browser verification. Keep the Stellar USDC capability gate in place.

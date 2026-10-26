@@ -23,7 +23,8 @@
     "worker:financial": "node dist/financial-worker.js",
     "dev:financial-worker": "tsx src/financial-worker.ts",
     "settlements:demo:testnet": "tsx src/scripts/demo-settlements-testnet.ts",
-    "settlements:deploy:testnet": "tsx src/scripts/deploy-settlement-testnet.ts"
+    "settlements:deploy:testnet": "tsx src/scripts/deploy-settlement-testnet.ts",
+    "ramps:check": "tsx src/scripts/check-ramp-sandbox-readiness.ts"
   },
   "dependencies": {
     "@music-city/shared": "workspace:*",

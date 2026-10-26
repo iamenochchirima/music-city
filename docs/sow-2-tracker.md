@@ -712,3 +712,9 @@ Current references: [MoneyGram sandbox access](https://xramps.moneygram.com/ops/
 The owner requested end-to-end sandbox implementation of both MoneyGram and MoonPay. The [combined plan](ramp-sandbox-implementation-plan.md) defines all four journeys, implementation checklists, shared persistence and recovery, and local computer-use acceptance tests. MoonPay's online buy and sell flows take priority. MoneyGram cash-in and cash-out remain in scope for physical cash users.
 
 This is a planning checkpoint against `5190cd9`. No new provider sessions, quotes, transactions, signatures, or capability checks were executed for this update. MoneyGram authentication remains the dated 25 October result. MoonPay's account-specific Stellar USDC support remains unverified. No additional integration checklist item is complete merely because the plan exists.
+
+### Ramp foundations checkpoint, 26 October 2026
+
+The [combined plan](ramp-sandbox-implementation-plan.md#current-execution-decision) records the owner's later instruction to defer MoneyGram and test MoonPay with native XLM separately. The USDC flow remains open. Fresh provider checks found MoonPay Stellar USDC unavailable in test mode and the MoneyGram key configured for custodial sessions.
+
+Sandbox guards, provider-readiness checks, order contracts, and additive ramp persistence are implemented locally. CO-07 now has schema and repository evidence, but its complete claim linkage and chain-submission lifecycle remain open. The new readiness report and focused PostgreSQL tests do not establish any completed ramp journey. No production changes or payment transfers occurred.
