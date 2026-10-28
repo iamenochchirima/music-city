@@ -247,3 +247,9 @@ Started the current local API and frontends against an isolated clone, with Dyna
 The reconciliation worker now selects jobs by its configured provider and uses the shared observation contract. A future adapter can be passed to the same reconciliation flow without a MoonPay worker leasing another provider's jobs. Only MoonPay is configured in the running worker; this change does not enable MoneyGram or claim its status mapping is verified.
 
 Worker tests passed, including provider selection. An isolated PostgreSQL test created simulated jobs for both providers and confirmed the MoonPay lease ignored a due MoneyGram job. Server typecheck passed. B2 and R5 remain open for provider-specific behavior and full state coverage.
+
+### 29 October 2026: cash-out provider-state recheck
+
+The worker now locks and rechecks the persisted provider state before claiming a signed cash-out for submission. A failed, cancelled, refunded, completed or unknown provider state prevents a new submission claim; the retained attempt remains eligible for receipt and expiry reconciliation because an earlier submission may already have succeeded. A provider update can still arrive after the claim and before the network request, so adapter-specific cancellation guarantees and recovery remain necessary.
+
+The isolated PostgreSQL test covered each blocked state, recovery when the provider is ready, and recording a chain receipt even after provider failure. Server typecheck passed. This is a simulated-provider check, not a completed provider cash-out; R6 and R8 remain open.

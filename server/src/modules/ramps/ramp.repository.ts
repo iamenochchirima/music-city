@@ -501,6 +501,13 @@ export function createRampRepository(db: Database) {
     },
     async claimCashOutSubmission(id: string, token: string): Promise<boolean> {
       return db.transaction(async (c) => {
+        // Serialize provider observations with the decision to submit. A retained
+        // envelope may already have reached Stellar, so reconciliation continues
+        // even when the provider no longer permits a new submission.
+        const current = (await c.query(`SELECT o.provider_state FROM ramp_chain_attempts a
+          JOIN ramp_orders o ON o.id=a.order_id WHERE a.id=$1 AND a.lease_token=$2
+          AND a.leased_until>NOW() FOR UPDATE OF a,o`, [id, token])).rows[0];
+        if (!current || !["created", "awaiting_user", "processing"].includes(current.provider_state)) return false;
         const row = (await c.query(`UPDATE ramp_chain_attempts SET state='submitting',submission_count=submission_count+1,last_submitted_at=NOW(),updated_at=NOW()
           WHERE id=$1 AND lease_token=$2 AND leased_until>NOW() AND state IN ('submitting','unknown')
           AND signed_envelope_encrypted IS NOT NULL AND expires_at>NOW() AND submission_count<5

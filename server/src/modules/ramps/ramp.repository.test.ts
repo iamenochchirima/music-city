@@ -652,6 +652,21 @@ test(
       const chain = { async ledger() { return { sequence: 50, closed_at: liveNow.toISOString() }; }, async historyCoverage() { return { start: 1, latest: 50, latestClosedAt: liveNow.toISOString() }; },
         async receipt(hash: string) { assert.equal(hash, liveAttempt.transactionHash); return found ? { hash, successful: true, envelope_xdr: liveTx.toXDR(), ledger: 51, fee_charged: "100" } : null; },
         async submit(xdr: string) { submissions++; assert.equal(xdr, liveTx.toXDR()); throw new Error("lost response"); } };
+      // Provider failure after authorization must prevent a fresh submission,
+      // but keep the signed attempt unresolved for receipt and expiry checks.
+      for (const providerState of ["failed", "unknown", "cancelled", "refunded", "completed"]) {
+        await db.transaction(async (c) => {
+          await c.query("UPDATE ramp_orders SET provider_state=$2 WHERE id=$1", [liveOrder.id, providerState]);
+          await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);
+        });
+        await reconcileCashOut(repo, chain, cipher);
+        assert.equal(submissions, 0);
+        assert.equal((await repo.get(liveOrder.id))?.chainState, "unknown");
+      }
+      await db.transaction(async (c) => {
+        await c.query("UPDATE ramp_orders SET provider_state='created' WHERE id=$1", [liveOrder.id]);
+        await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);
+      });
       await reconcileCashOut(repo, chain, cipher);
       assert.equal(submissions, 1);
       assert.equal((await repo.get(liveOrder.id))?.chainState, "unknown");
@@ -659,12 +674,15 @@ test(
       assert.deepEqual(pending, { state: "unknown", submission_count: 1, last_error_code: "submission_unknown" });
       assert.equal((await repo.prepareCashOutAttempt(liveInput)).transactionHash, liveAttempt.transactionHash);
       found = true;
-      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]); });
+      await db.transaction(async (c) => {
+        await c.query("UPDATE ramp_orders SET provider_state='failed' WHERE id=$1", [liveOrder.id]);
+        await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);
+      });
       await reconcileCashOut(repo, chain, cipher);
       assert.equal(submissions, 1);
       assert.equal((await repo.get(liveOrder.id))?.chainState, "confirmed");
       assert.equal((await repo.events(liveOrder.id)).filter((event) => event.kind === "cashout_transfer_confirmed").length, 1);
-      assert.equal((await repo.get(liveOrder.id))?.providerState, "created");
+      assert.equal((await repo.get(liveOrder.id))?.providerState, "failed");
 
       // A closed ledger alone is insufficient when the server has pruned relevant history.
       await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [secondAttempt.id]); });
