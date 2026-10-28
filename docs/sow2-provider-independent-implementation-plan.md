@@ -199,3 +199,9 @@ Fresh and repeated migration initialization passed on a disposable database. A s
 Wallet funding now presents verified available routes as visible choices, accepts an amount within the route limits, creates an owner-scoped order and offers the validated provider link. A failed or lost launch response leaves the user directed to transaction history rather than retrying the launch. The server advertises only routes whose verified provider and local direct-ingress configuration are both available. No provider route is verified today, so the entry point remains disabled; cash-out creation is also still unavailable.
 
 Focused client and server tests passed for route configuration, supported amounts, authentication and uncertain launch. Server and client typechecks passed. A local browser preview of the component used simulated routes and responses at desktop and 375-pixel widths; selecting a route and reaching the simulated handoff worked. It did not contact a provider or prove an end-to-end payment. The selected country and payment method still need provider-specific verification through checkout; U1, U2 and U4 remain open.
+
+### 29 October 2026: resume saved funding orders
+
+The owner-scoped history response now distinguishes an unlaunched order from a requested launch or an established provider reference without exposing the reference. Wallet history can continue an unlaunched MoonPay order using its existing ID. An unresolved launch is labelled as checking and blocks another funding request while history is loaded or unavailable. The server remains the authority for rejecting conflicting launches.
+
+Local component and HTTP tests passed for resuming the same order, blocking an unresolved launch and account-scoped responses. Client and server typechecks passed. The resume screen has not yet been exercised in the full local application or with a real provider; MoonPay's safe-resume behavior remains unverified.

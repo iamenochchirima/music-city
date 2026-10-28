@@ -39,6 +39,8 @@ test("ramp history and detail require a session and enforce user and wallet owne
     assert.equal(result.items.length, 1);
     assert.equal(result.items[0].providerState, "completed");
     assert.equal(result.items[0].chainState, "unobserved");
+    assert.equal(result.items[0].launchRequested, false);
+    assert.equal(result.items[0].providerStarted, true);
     assert.equal("providerTransactionId" in result.items[0], false);
     assert.equal("terms" in result.items[0], false);
     assert.equal((await request("/order-1", token(wallet))).status, 200);

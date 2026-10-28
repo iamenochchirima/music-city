@@ -24,6 +24,8 @@ export function publicOrder(order: RampOrder) {
     amount: order.terms.amount,
     providerState: order.providerState,
     chainState: order.chainState,
+    launchRequested: Boolean(order.launchIssuedAt),
+    providerStarted: Boolean(order.providerTransactionId),
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   };
