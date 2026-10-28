@@ -29,3 +29,21 @@ it("shows empty history", async () => {
   render(<AdminRampsPage />);
   expect(await screen.findByText("No transactions yet.")).toBeTruthy();
 });
+it("shows a clear warning for the latest conflicting provider status", async () => {
+  const order = { id: "one", userId: "user", walletAddress: "wallet", provider: "moonpay", direction: "buy", environment: "sandbox", network: "stellar:testnet", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amount: { units: "10000", decimals: 2, currency: "GBP" }, providerState: "unknown", chainState: "confirmed", providerTransactionId: "ref", createdAt: "2026-10-28T00:00:00Z", updatedAt: "2026-10-28T00:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps" ? { items: [order] } : { order, events: [{ source: "provider_api", kind: "status_conflict", created_at: order.updatedAt }], attempts: [], deliveries: [], receipts: [], job: { attempts: 1, last_error_code: "provider_status_conflict" } });
+  const user = userEvent.setup();
+  render(<AdminRampsPage />);
+  await user.click(await screen.findByRole("button", { name: /100.00 GBP/ }));
+  expect(await screen.findByText("Provider statuses conflict. Check with the provider before taking further action.")).toBeTruthy();
+  expect(screen.queryByText(/Reconciliation needs attention/)).toBeNull();
+});
+it("does not display an old conflict after a newer provider observation", async () => {
+  const order = { id: "one", userId: "user", walletAddress: "wallet", provider: "moonpay", direction: "buy", environment: "sandbox", network: "stellar:testnet", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amount: { units: "10000", decimals: 2, currency: "GBP" }, providerState: "unknown", chainState: "unobserved", providerTransactionId: "ref", createdAt: "2026-10-28T00:00:00Z", updatedAt: "2026-10-28T00:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps" ? { items: [order] } : { order, events: [{ source: "provider_api", kind: "status_observed", created_at: order.updatedAt }, { source: "provider_api", kind: "status_conflict", created_at: order.createdAt }], attempts: [], deliveries: [], receipts: [], job: null });
+  const user = userEvent.setup();
+  render(<AdminRampsPage />);
+  await user.click(await screen.findByRole("button", { name: /100.00 GBP/ }));
+  await screen.findByText("Provider status");
+  expect(screen.queryByText(/Provider statuses conflict/)).toBeNull();
+});

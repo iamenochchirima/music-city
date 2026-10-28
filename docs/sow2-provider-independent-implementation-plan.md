@@ -223,3 +223,9 @@ The isolated PostgreSQL tests covered a completed-to-processing conflict, duplic
 An owner can cancel a saved funding order before it has a provider launch, provider reference or chain activity. Cancellation keeps the order and an append-only event. It shares the launch lock, so concurrent cancellation and launch cannot both succeed. Orders with an uncertain or established provider transaction cannot use this cancellation path.
 
 Local PostgreSQL, HTTP and component tests passed, including the launch-versus-cancellation race and owner checks. Client and server typechecks passed. A local browser preview using simulated data showed the cancellation and the resulting history label; it did not contact a provider. R8 remains open for provider-specific cancellation and refunds.
+
+### 29 October 2026: local admin conflict review
+
+Started the actual local admin and API against a disposable clone of the settlement test database. A simulated order with conflicting provider observations appeared in transaction history and its detail page. The detail page now displays a clear conflict warning rather than relying on the activity list alone. The admin component tests and typecheck passed. The temporary app processes, fixture script and cloned database were removed after the check.
+
+This was a local browser check with simulated provider data. It did not verify a real provider transaction, the creator wallet journey, mobile layout or SOW reviewer acceptance; U4 and V3 remain open.
