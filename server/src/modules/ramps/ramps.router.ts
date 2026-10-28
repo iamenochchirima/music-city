@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { RampOrder, UserProfile } from "@music-city/shared";
+import { z } from "zod";
 import { requireSession } from "../../middleware/require-session.js";
 import { databaseService } from "../../services/database.service.js";
 import { asyncHandler } from "../../utils/async-handler.js";
@@ -8,7 +9,7 @@ import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "./ramp.repository.js";
 import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
 
-type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner">;
+type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner" | "cancelUnlaunchedFunding">;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
 
 // Provider state and chain state are deliberately separate: neither implies the other.
@@ -54,6 +55,13 @@ export function createRampsRouter(repository: Repository, findUser: FindUser, se
     const userId = await owner(walletAddress);
     const result = await service.create({ userId, walletAddress }, req.body);
     res.set("Cache-Control", "no-store").status(result.created ? 201 : 200).json({ order: publicOrder(result.order) });
+  }));
+  router.post("/:id/cancel", asyncHandler(async (req, res) => {
+    z.object({}).strict().parse(req.body);
+    const wallet = req.session!.walletAddress;
+    const userId = await owner(wallet);
+    const order = await repository.cancelUnlaunchedFunding(String(req.params.id), userId, wallet);
+    res.set("Cache-Control", "no-store").json({ order: publicOrder(order) });
   }));
   router.get("/:id", asyncHandler(async (req, res) => {
     const wallet = req.session!.walletAddress;

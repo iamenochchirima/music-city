@@ -41,6 +41,7 @@ it("resumes an unlaunched saved order without creating another", async () => {
   mock.post.mockResolvedValue({ url: "https://buy-sandbox.moonpay.com/?signature=test" });
   const user = userEvent.setup();
   render(<WalletRampActivity token="session" />);
+  expect(await screen.findByText("Not started")).toBeTruthy();
   await user.click(await screen.findByRole("button", { name: "Continue" }));
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Continue" }));
   expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
@@ -62,4 +63,16 @@ it("does not reopen an order with an existing provider reference", async () => {
   render(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Checking status · Transfer unconfirmed")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Continue" })).toBeNull();
+});
+it("cancels an unlaunched funding request without opening the provider", async () => {
+  const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: false, providerStarted: false, providerState: "created", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
+  mock.post.mockResolvedValue({});
+  const user = userEvent.setup();
+  render(<WalletRampActivity token="session" />);
+  await user.click(await screen.findByRole("button", { name: "Continue" }));
+  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel funding" }));
+  expect(await screen.findByText("Funding request cancelled.")).toBeTruthy();
+  expect(mock.post).toHaveBeenCalledTimes(1);
+  expect(mock.post).toHaveBeenCalledWith("/ramps/saved/cancel", {}, "session");
 });

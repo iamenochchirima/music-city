@@ -108,7 +108,7 @@ export function createRampRepository(db: Database) {
         if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
         const row = (
           await c.query(
-            "UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1 AND user_id=$2 AND wallet_address=$3 AND launch_issued_at IS NULL AND provider_transaction_id IS NULL RETURNING *",
+            "UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1 AND user_id=$2 AND wallet_address=$3 AND launch_issued_at IS NULL AND provider_transaction_id IS NULL AND provider_state='created' RETURNING *",
             [id, userId, wallet],
           )
         ).rows[0];
@@ -122,6 +122,20 @@ export function createRampRepository(db: Database) {
           [id],
         );
         return hydrate(row);
+      });
+    },
+    async cancelUnlaunchedFunding(id: string, userId: string, wallet: string): Promise<RampOrder> {
+      return db.transaction(async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`ramp-launch:${wallet}`]);
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE", [id, userId, wallet])).rows[0];
+        if (!row) throw new HttpError(404, "Ramp transaction not found");
+        if (row.direction !== "buy" || row.launch_issued_at || row.provider_transaction_id || row.chain_state !== "unobserved")
+          throw new HttpError(409, "Check the existing transaction before cancelling");
+        if (row.provider_state === "cancelled") return hydrate(row);
+        if (row.provider_state !== "created") throw new HttpError(409, "Check the existing transaction before cancelling");
+        const updated = (await c.query("UPDATE ramp_orders SET provider_state='cancelled',updated_at=NOW() WHERE id=$1 RETURNING *", [id])).rows[0];
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app','cancel_unlaunched','funding_cancelled','{}')", [id]);
+        return hydrate(updated);
       });
     },
     async getLaunchSession(id: string, userId: string, wallet: string) {

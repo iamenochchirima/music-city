@@ -217,3 +217,9 @@ The isolated PostgreSQL test covered prompt checks before delivery, slower check
 After a provider observation reaches completed, failed, cancelled or refunded, a later different status is retained as a conflict and the order moves to checking. The original terminal observation and any confirmed chain receipt remain in the audit history. A new transaction is blocked while the status is unknown. A later, newer observation matching the original terminal status can clear the conflict. A stale observation cannot change the order or trigger delivery verification. The worker records a provider-status conflict for administrator review.
 
 The isolated PostgreSQL tests covered a completed-to-processing conflict, duplicate conflict, stale update, blocked replacement and later matching observation. Worker tests confirmed that stale or conflicting observations cannot confirm delivery. Server typecheck passed. This conservative policy does not implement a provider refund transition; documented and verified refund behavior still needs an explicit integration. R5 and R8 remain open.
+
+### 29 October 2026: cancel unlaunched funding
+
+An owner can cancel a saved funding order before it has a provider launch, provider reference or chain activity. Cancellation keeps the order and an append-only event. It shares the launch lock, so concurrent cancellation and launch cannot both succeed. Orders with an uncertain or established provider transaction cannot use this cancellation path.
+
+Local PostgreSQL, HTTP and component tests passed, including the launch-versus-cancellation race and owner checks. Client and server typechecks passed. A local browser preview using simulated data showed the cancellation and the resulting history label; it did not contact a provider. R8 remains open for provider-specific cancellation and refunds.
