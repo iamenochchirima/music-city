@@ -112,7 +112,7 @@ export function createRampRepository(db: Database) {
         return hydrate(row);
       });
     },
-    async observe(id: string, raw: unknown) {
+    async observe(id: string, raw: unknown, leaseToken?: string) {
       const observation = rampProviderObservationSchema.parse(raw);
       return db.transaction(async (c) => {
         const row = (
@@ -120,6 +120,13 @@ export function createRampRepository(db: Database) {
             id,
           ])
         ).rows[0];
+        if (leaseToken) {
+          const lease = (await c.query(
+            "SELECT 1 FROM ramp_reconciliation_jobs WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW() FOR UPDATE",
+            [id, leaseToken],
+          )).rows[0];
+          if (!lease) throw new HttpError(409, "Reconciliation lease expired");
+        }
         if (!row || observation.externalId !== id)
           throw new HttpError(409, "Unknown provider transaction");
         if (
@@ -171,7 +178,7 @@ export function createRampRepository(db: Database) {
         );
       });
     },
-    async lease(): Promise<RampOrder | null> {
+    async lease(): Promise<{ order: RampOrder; token: string } | null> {
       return db.transaction(async (c) => {
         const job = (
           await c.query(
@@ -179,24 +186,22 @@ export function createRampRepository(db: Database) {
           )
         ).rows[0];
         if (!job) return null;
+        const token = randomUUID();
         await c.query(
-          "UPDATE ramp_reconciliation_jobs SET leased_until=NOW()+INTERVAL '2 minutes' WHERE order_id=$1",
-          [job.order_id],
+          "UPDATE ramp_reconciliation_jobs SET leased_until=NOW()+INTERVAL '2 minutes',due_at=NOW()+INTERVAL '2 minutes',lease_token=$2 WHERE order_id=$1",
+          [job.order_id, token],
         );
-        return hydrate(
-          (
-            await c.query("SELECT * FROM ramp_orders WHERE id=$1", [
-              job.order_id,
-            ])
-          ).rows[0],
+        const order = hydrate(
+          (await c.query("SELECT * FROM ramp_orders WHERE id=$1", [job.order_id])).rows[0],
         );
+        return { order, token };
       });
     },
-    async release(id: string, failed: boolean) {
+    async release(id: string, token: string, failed: boolean) {
       return db.transaction(async (c) => {
         await c.query(
-          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,attempts=CASE WHEN $2 THEN LEAST(attempts+1,8) ELSE 0 END,due_at=NOW()+CASE WHEN $2 THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END,last_error_code=CASE WHEN $2 THEN 'provider_check_failed' ELSE NULL END WHERE order_id=$1",
-          [id, failed],
+          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,attempts=CASE WHEN $3 THEN LEAST(attempts+1,8) ELSE 0 END,due_at=CASE WHEN due_at<leased_until THEN NOW() ELSE NOW()+CASE WHEN $3 THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END END,last_error_code=CASE WHEN $3 THEN 'provider_check_failed' ELSE NULL END WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()",
+          [id, token, failed],
         );
       });
     },

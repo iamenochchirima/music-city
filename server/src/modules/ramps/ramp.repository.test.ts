@@ -7,6 +7,7 @@ import { rampOrderTermsSchema, type RampOrderTerms } from "@music-city/shared";
 import { createRampRepository } from "./ramp.repository.js";
 import { rampProgressStatements } from "./ramp-progress-migration.js";
 import { rampSchemaStatements } from "./ramp-migration.js";
+import { rampLeaseStatements } from "./ramp-lease-migration.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -92,9 +93,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -304,8 +305,17 @@ test(
       );
       const leased = leases.filter((x) => x !== null);
       assert.equal(leased.length, 2);
-      assert.deepEqual(new Set(leased.map((x) => x.id)), new Set([id, launchOrder.id]));
-      await repo.release(id, true);
+      assert.deepEqual(new Set(leased.map((x) => x.order.id)), new Set([id, launchOrder.id]));
+      const oldLease = leased.find((x) => x.order.id === id)!;
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET leased_until=NOW()-INTERVAL '1 second',due_at=NOW()-INTERVAL '1 second' WHERE order_id=$1", [id]); });
+      const freshLease = await repo.lease();
+      assert.equal(freshLease?.order.id, id);
+      assert.notEqual(freshLease?.token, oldLease.token);
+      await assert.rejects(repo.observe(id, { ...observed, updatedAt: "2026-10-26T12:02:00.000Z" }, oldLease.token), /lease expired/);
+      await repo.release(id, oldLease.token, true);
+      const stillLeased = await db.transaction(async (c) => (await c.query("SELECT lease_token FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
+      assert.equal(stillLeased.lease_token, freshLease?.token);
+      await repo.release(id, freshLease!.token, true);
       const job = await db.transaction(
         async (c) =>
           (
@@ -319,10 +329,17 @@ test(
       assert.equal(job.leased_until, null);
       assert.equal(job.last_error_code, "provider_check_failed");
       assert.equal(job.delayed, true);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [id]); });
+      const notifiedLease = await repo.lease();
+      assert.equal(notifiedLease?.order.id, id);
+      await repo.recordWebhook(id, "during-lease", "updated");
+      await repo.release(id, notifiedLease!.token, false);
+      const afterNotice = await db.transaction(async (c) => (await c.query("SELECT due_at<=NOW() due FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
+      assert.equal(afterNotice.due, true);
       const adminDetail = await repo.detailForAdmin(id);
       assert.ok(adminDetail);
       assert.equal(adminDetail.order.id, id);
-      assert.equal(adminDetail.job?.last_error_code, "provider_check_failed");
+      assert.equal(adminDetail.job?.last_error_code, null);
       assert.equal(adminDetail.attempts[0].transaction_hash, "a".repeat(64));
       assert.equal("prepared_envelope" in adminDetail.attempts[0], false);
       assert.equal("data" in adminDetail.events[0], false);

@@ -6,9 +6,9 @@ import { databaseService } from "../../services/database.service.js";
 import { logger } from "../../utils/logger.js";
 
 type Repository = {
-  lease(): Promise<RampOrder | null>;
-  observe(id: string, observation: MoonpayObservation): Promise<void>;
-  release(id: string, failed: boolean): Promise<void>;
+  lease(): Promise<{ order: RampOrder; token: string } | null>;
+  observe(id: string, observation: MoonpayObservation, token: string): Promise<void>;
+  release(id: string, token: string, failed: boolean): Promise<void>;
 };
 type Provider = { lookup(order: RampOrder): Promise<MoonpayObservation | null> };
 
@@ -19,17 +19,18 @@ export async function reconcileRampOrders(
   limit = 10,
 ): Promise<void> {
   for (let i = 0; i < limit; i++) {
-    const order = await repository.lease();
-    if (!order) return;
+    const lease = await repository.lease();
+    if (!lease) return;
+    const { order, token } = lease;
     let failed = false;
     try {
       const observation = await provider.lookup(order);
-      if (observation) await repository.observe(order.id, observation);
+      if (observation) await repository.observe(order.id, observation, token);
     } catch {
       // Provider responses can contain private data; retain only a stable error code.
       failed = true;
     } finally {
-      await repository.release(order.id, failed);
+      await repository.release(order.id, token, failed);
     }
   }
 }

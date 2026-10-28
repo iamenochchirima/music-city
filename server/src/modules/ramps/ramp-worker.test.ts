@@ -8,9 +8,9 @@ test("reconciliation isolates provider errors and never treats missing records a
   const released: Array<[string, boolean]> = [];
   const saved: string[] = [];
   const repository = {
-    async lease() { return queue.shift() ?? null; },
+    async lease() { const order = queue.shift(); return order ? { order, token: `lease-${order.id}` } : null; },
     async observe(id: string) { saved.push(id); },
-    async release(id: string, failed: boolean) { released.push([id, failed]); },
+    async release(id: string, token: string, failed: boolean) { assert.equal(token, `lease-${id}`); released.push([id, failed]); },
   };
   await reconcileRampOrders(repository, {
     async lookup(order) {
@@ -27,9 +27,9 @@ test("reconciliation bounds work per cycle and backs off on persistence errors",
   let leases = 0;
   const released: boolean[] = [];
   await reconcileRampOrders({
-    async lease() { leases++; return { id: String(leases) } as RampOrder; },
+    async lease() { leases++; return { order: { id: String(leases) } as RampOrder, token: "lease" }; },
     async observe() { throw new Error("database error"); },
-    async release(_id, failed) { released.push(failed); },
+    async release(_id, _token, failed) { released.push(failed); },
   }, {
     async lookup(order) {
       return { id: "provider", externalId: order.id, state: "processing", originalStatus: "pending", updatedAt: "2026-10-28T00:00:00.000Z" };
