@@ -1,18 +1,20 @@
 import type { RampOrder } from "@music-city/shared";
 import { createRampRepository } from "./ramp.repository.js";
-import { MoonpaySandbox, type MoonpayObservation } from "./moonpay-sandbox.js";
+import { MoonpaySandbox } from "./moonpay-sandbox.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 import { databaseService } from "../../services/database.service.js";
 import { logger } from "../../utils/logger.js";
 import { verifyIncomingDelivery, type IncomingDelivery } from "./incoming-delivery.js";
 
+type Observation = NonNullable<RampOrder["providerObservation"]>;
+type ProviderName = RampOrder["terms"]["provider"];
 type Repository = {
-  lease(): Promise<{ order: RampOrder; token: string } | null>;
-  observe(id: string, observation: MoonpayObservation, token: string): Promise<void | "stale" | "conflict">;
+  lease(provider: ProviderName): Promise<{ order: RampOrder; token: string } | null>;
+  observe(id: string, observation: Observation, token: string): Promise<void | "stale" | "conflict">;
   release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null): Promise<void>;
-  recordIncomingDelivery(id: string, observation: MoonpayObservation, delivery: IncomingDelivery, token: string): Promise<void>;
+  recordIncomingDelivery(id: string, observation: Observation, delivery: IncomingDelivery, token: string): Promise<void>;
 };
-type Provider = { lookup(order: RampOrder): Promise<MoonpayObservation | null> };
+type Provider = { lookup(order: RampOrder): Promise<Observation | null> };
 
 // A missing provider record is not a failure or evidence that a payment never started.
 export async function reconcileRampOrders(
@@ -20,9 +22,10 @@ export async function reconcileRampOrders(
   provider: Provider,
   limit = 10,
   verifyDelivery = verifyIncomingDelivery,
+  providerName: ProviderName = "moonpay",
 ): Promise<void> {
   for (let i = 0; i < limit; i++) {
-    const lease = await repository.lease();
+    const lease = await repository.lease(providerName);
     if (!lease) return;
     const { order, token } = lease;
     let errorCode: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null = null;

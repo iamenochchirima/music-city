@@ -319,6 +319,13 @@ test(
           .length,
         1,
       );
+      const otherProviderTerms = terms({ provider: "moneygram", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" } });
+      const otherProvider = await repo.reserve(otherProviderTerms);
+      await repo.bindProviderReference(otherProvider.order.id, "artist", otherProviderTerms.walletAddress, "mg-test-reference");
+      const otherProviderLease = await repo.lease("moneygram");
+      assert.equal(otherProviderLease?.order.id, otherProvider.order.id);
+      await repo.release(otherProvider.order.id, otherProviderLease!.token, null);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW()-INTERVAL '1 second' WHERE order_id=$1", [otherProvider.order.id]); });
       const leases = await Promise.all(
         Array.from({ length: 8 }, () => repo.lease()),
       );
@@ -366,7 +373,7 @@ test(
       assert.equal("prepared_envelope" in adminDetail.attempts[0], false);
       assert.equal("data" in adminDetail.events[0], false);
       assert.equal(await repo.detailForAdmin("missing"), null);
-      assert.equal((await repo.listForAdmin()).length, 3);
+      assert.equal((await repo.listForAdmin()).length, 4);
 
       // Different request IDs and providers cannot race past an unresolved launch.
       const secondWallet = Keypair.random().publicKey();

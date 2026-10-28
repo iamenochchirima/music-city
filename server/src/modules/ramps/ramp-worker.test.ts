@@ -82,3 +82,15 @@ test("conflicting and stale provider outcomes never verify or record delivery", 
     assert.equal(released, outcome === "conflict" ? "provider_status_conflict" : null);
   }
 });
+
+
+test("reconciliation requests jobs only for its configured provider", async () => {
+  let requested: string | undefined;
+  await reconcileRampOrders({
+    async lease(provider) { requested = provider; return null; },
+    async observe() { assert.fail("unexpected observation"); },
+    async recordIncomingDelivery() { assert.fail("unexpected delivery"); },
+    async release() { assert.fail("unexpected release"); },
+  }, { async lookup() { assert.fail("unexpected provider lookup"); } }, 1, undefined, "moneygram");
+  assert.equal(requested, "moneygram");
+});

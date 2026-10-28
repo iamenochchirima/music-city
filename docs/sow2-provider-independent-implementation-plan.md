@@ -241,3 +241,9 @@ The initial local configuration pointed to Dynamic Live. A disposable test email
 Read-only Testnet checks found the previously used registry and settlement contract instances present. The historical artist and contributor accounts had USDC trustlines and balances; the treasury account had USDC and a two-signature threshold. These checks do not prove current contract configuration or a new transaction.
 
 Started the current local API and frontends against an isolated clone, with Dynamic Sandbox, Testnet, local storage and local media processing. API readiness reported the current migrations applied. Before starting the workers, checked that the clone contained no pending checkout, agreement, funding or ramp attempts; removed three inherited queued publication jobs from the disposable clone so they would not run as part of this demonstration. The preflight now rejects remote media processing. The new creator-to-claim journey and its receipts have not yet been produced; C2 remains open.
+
+### 29 October 2026: provider-scoped reconciliation
+
+The reconciliation worker now selects jobs by its configured provider and uses the shared observation contract. A future adapter can be passed to the same reconciliation flow without a MoonPay worker leasing another provider's jobs. Only MoonPay is configured in the running worker; this change does not enable MoneyGram or claim its status mapping is verified.
+
+Worker tests passed, including provider selection. An isolated PostgreSQL test created simulated jobs for both providers and confirmed the MoonPay lease ignored a due MoneyGram job. Server typecheck passed. B2 and R5 remain open for provider-specific behavior and full state coverage.

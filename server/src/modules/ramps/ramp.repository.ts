@@ -6,6 +6,7 @@ import {
   type RampOrder,
   type RampOrderTerms,
   rampProviderObservationSchema,
+  rampProviderSchema,
 } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 import type { IncomingDelivery } from "./incoming-delivery.js";
@@ -281,11 +282,13 @@ export function createRampRepository(db: Database) {
         return true;
       });
     },
-    async lease(): Promise<{ order: RampOrder; token: string } | null> {
+    async lease(provider: RampOrder["terms"]["provider"] = "moonpay"): Promise<{ order: RampOrder; token: string } | null> {
+      const validatedProvider = rampProviderSchema.parse(provider);
       return db.transaction(async (c) => {
         const job = (
           await c.query(
-            "SELECT order_id FROM ramp_reconciliation_jobs WHERE due_at<=NOW() AND (leased_until IS NULL OR leased_until<NOW()) AND EXISTS(SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND o.provider='moonpay' AND (o.launch_issued_at IS NOT NULL OR o.provider_transaction_id IS NOT NULL)) ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1",
+            "SELECT order_id FROM ramp_reconciliation_jobs WHERE due_at<=NOW() AND (leased_until IS NULL OR leased_until<NOW()) AND EXISTS(SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND o.provider=$1 AND (o.launch_issued_at IS NOT NULL OR o.provider_transaction_id IS NOT NULL)) ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1",
+            [validatedProvider],
           )
         ).rows[0];
         if (!job) return null;
