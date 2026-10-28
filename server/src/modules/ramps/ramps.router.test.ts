@@ -22,7 +22,7 @@ test("ramp history and detail require a session and enforce user and wallet owne
   app.use("/ramps", createRampsRouter({
     list: async (user, address) => owned(user, address) ? [order] : [],
     getForOwner: async (id, user, address) => id === order.id && owned(user, address) ? order : null,
-    cancelUnlaunchedFunding: async (id, user, address) => { if (id !== order.id || !owned(user, address)) throw new HttpError(404, "Transaction not found"); return { ...order, providerState: "cancelled" }; },
+    cancelUnlaunchedRamp: async (id, user, address) => { if (id !== order.id || !owned(user, address)) throw new HttpError(404, "Transaction not found"); return { ...order, providerState: "cancelled" }; },
   }, async address => ({ id: address === wallet ? "user-1" : "user-2" }), { routes: async () => [], create: async (owner) => { createCalls.push(owner); return { order, created: true }; } }));
   app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => res.status(error instanceof HttpError ? error.statusCode : 500).json({ error: error.message }));
   const server = app.listen(0, "127.0.0.1");

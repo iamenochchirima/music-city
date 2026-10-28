@@ -9,7 +9,7 @@ import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "./ramp.repository.js";
 import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
 
-type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner" | "cancelUnlaunchedFunding">;
+type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner" | "cancelUnlaunchedRamp">;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
 
 // Provider state and chain state are deliberately separate: neither implies the other.
@@ -60,7 +60,7 @@ export function createRampsRouter(repository: Repository, findUser: FindUser, se
     z.object({}).strict().parse(req.body);
     const wallet = req.session!.walletAddress;
     const userId = await owner(wallet);
-    const order = await repository.cancelUnlaunchedFunding(String(req.params.id), userId, wallet);
+    const order = await repository.cancelUnlaunchedRamp(String(req.params.id), userId, wallet);
     res.set("Cache-Control", "no-store").json({ order: publicOrder(order) });
   }));
   router.get("/:id", asyncHandler(async (req, res) => {

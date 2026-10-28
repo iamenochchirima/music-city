@@ -491,20 +491,38 @@ test(
 
       const cancelWallet = Keypair.random().publicKey();
       const cancelOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cancelWallet }))).order;
-      await assert.rejects(repo.cancelUnlaunchedFunding(cancelOrder.id, "artist", cancelWallet), /not found/);
+      await assert.rejects(repo.cancelUnlaunchedRamp(cancelOrder.id, "artist", cancelWallet), /not found/);
       const cancellationRace = await Promise.allSettled([
-        repo.cancelUnlaunchedFunding(cancelOrder.id, "other", cancelWallet),
+        repo.cancelUnlaunchedRamp(cancelOrder.id, "other", cancelWallet),
         repo.saveLaunchSession(cancelOrder.id, "other", cancelWallet, Buffer.alloc(40, 1), false),
       ]);
       assert.equal(cancellationRace.filter((result) => result.status === "fulfilled").length, 1);
       const cancelState = await repo.get(cancelOrder.id);
       if (cancelState?.providerState === "cancelled") {
-        await repo.cancelUnlaunchedFunding(cancelOrder.id, "other", cancelWallet);
+        await repo.cancelUnlaunchedRamp(cancelOrder.id, "other", cancelWallet);
         await assert.rejects(repo.issueLaunch(cancelOrder.id, "other", cancelWallet), /already opened/);
         assert.equal((await repo.events(cancelOrder.id)).filter((event) => event.kind === "funding_cancelled").length, 1);
       } else {
         assert.ok(cancelState?.launchIssuedAt);
-        await assert.rejects(repo.cancelUnlaunchedFunding(cancelOrder.id, "other", cancelWallet), /existing transaction/);
+        await assert.rejects(repo.cancelUnlaunchedRamp(cancelOrder.id, "other", cancelWallet), /existing transaction/);
+      }
+
+      const cancelCashWallet = Keypair.random().publicKey();
+      const cancelCashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cancelCashWallet, direction: "sell",
+        market: { country: "GB", currency: "GBP", method: "bank" }, amount: { currency: "USDC", units: "10000000", decimals: 7 } }))).order;
+      await assert.rejects(repo.cancelUnlaunchedRamp(cancelCashOrder.id, "artist", cancelCashWallet), /not found/);
+      const cashCancelRace = await Promise.allSettled([
+        repo.cancelUnlaunchedRamp(cancelCashOrder.id, "other", cancelCashWallet),
+        repo.saveLaunchSession(cancelCashOrder.id, "other", cancelCashWallet, Buffer.alloc(40, 1), false),
+      ]);
+      assert.equal(cashCancelRace.filter((result) => result.status === "fulfilled").length, 1);
+      const cashCancelState = await repo.get(cancelCashOrder.id);
+      if (cashCancelState?.providerState === "cancelled") {
+        await repo.cancelUnlaunchedRamp(cancelCashOrder.id, "other", cancelCashWallet);
+        assert.equal((await repo.events(cancelCashOrder.id)).filter((event) => event.kind === "cashout_cancelled").length, 1);
+      } else {
+        assert.ok(cashCancelState?.launchIssuedAt);
+        await assert.rejects(repo.cancelUnlaunchedRamp(cancelCashOrder.id, "other", cancelCashWallet), /existing transaction/);
       }
 
       const sessionWallet = Keypair.random().publicKey();

@@ -14,7 +14,7 @@ The order has a provider state and a chain state. Neither state alone proves the
 
 | Provider state | Meaning for the application | Current boundary |
 | --- | --- | --- |
-| `created` | The order is saved. A launch may or may not have been requested. | An unlaunched funding order can be cancelled. After launch, a missing provider record remains unresolved. |
+| `created` | The order is saved. A launch may or may not have been requested. | An unlaunched funding or cash-out order can be cancelled. After launch, a missing provider record remains unresolved. |
 | `awaiting_user`, `processing` | The provider reports an outstanding action or processing. | Continue reconciliation. Do not start another launch for the same owner and wallet. |
 | `ready_for_pickup` | The provider reports that collection is available. | The shared state exists. No verified provider adapter currently maps and demonstrates this state. |
 | `completed` | The provider reports completion. | For funding, verify the actual chain delivery before displaying a confirmed transfer. Until then, another launch is blocked. |

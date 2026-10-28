@@ -339,3 +339,10 @@ This check covers the current desktop flow only. Mobile, a real provider transac
 Launch, cash-out quotes and cash-out authorization now use the same exact order-to-route match. The quote service checks verified capability before and after the adapter request, and the configured route also requires sandbox and cash-out encryption settings. A route that becomes unavailable during a quote request cannot save a new actionable quote. Existing quotes remain available for history and review.
 
 Focused capability and HTTP tests, the isolated PostgreSQL ramp suite and server typecheck passed. Quote adapters remain unconfigured and no cash-out route is enabled. A provider-specific session and the user-facing cash-out entry flow are still required before this can be demonstrated end to end.
+
+
+### 29 October 2026: cancel unlaunched cash-out orders
+
+The owner can now cancel a cash-out order before a provider session or chain activity exists. Cancellation uses the same wallet lock as session launch and records a separate cash-out event. It remains unavailable once a provider reference, launch or chain activity exists. This prepares the entry flow without enabling a provider.
+
+The isolated PostgreSQL test covered owner checks, idempotent cancellation and a cancellation-versus-launch race. The authenticated HTTP test and server typecheck passed. Provider cancellation and refunds remain open.
