@@ -11,7 +11,7 @@ test("reconciliation isolates provider errors and never treats missing records a
     async lease() { const order = queue.shift(); return order ? { order, token: `lease-${order.id}` } : null; },
     async observe(id: string) { saved.push(id); },
     async recordIncomingDelivery() { assert.fail("unexpected delivery"); },
-    async release(id: string, token: string, error: "provider_check_failed" | "delivery_check_failed" | null) { assert.equal(token, `lease-${id}`); released.push([id, error]); },
+    async release(id: string, token: string, error: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null) { assert.equal(token, `lease-${id}`); released.push([id, error]); },
   };
   await reconcileRampOrders(repository, {
     async lookup(order) {
@@ -67,4 +67,18 @@ test("the worker records delivery verification errors separately from provider e
   }, { async lookup() { return { id: "provider", externalId: "one", state: "completed", originalStatus: "completed", updatedAt: "2026-10-28T00:00:00.000Z", chainHash: "a".repeat(64), assetUnits: "10" }; } }, 1,
   async () => { throw new Error("Stellar unavailable"); });
   assert.equal(result, "delivery_check_failed");
+});
+
+test("conflicting and stale provider outcomes never verify or record delivery", async () => {
+  for (const outcome of ["conflict", "stale"] as const) {
+    let released: string | null = null;
+    const order = { id: "one", terms: { direction: "buy" } } as RampOrder;
+    await reconcileRampOrders({
+      async lease() { return { order, token: "lease" }; }, async observe() { return outcome; },
+      async recordIncomingDelivery() { assert.fail("unaccepted observation must not create delivery"); },
+      async release(_id, _token, error) { released = error; },
+    }, { async lookup() { return { id: "provider", externalId: "one", state: "completed", originalStatus: "completed", updatedAt: "2026-10-28T00:00:00.000Z", chainHash: "a".repeat(64), assetUnits: "10" }; } }, 1,
+    async () => { assert.fail("unaccepted observation must not verify delivery"); });
+    assert.equal(released, outcome === "conflict" ? "provider_status_conflict" : null);
+  }
 });

@@ -211,3 +211,9 @@ Local component and HTTP tests passed for resuming the same order, blocking an u
 The worker now checks fully confirmed deliveries and terminal failures less frequently, while retaining frequent checks for unconfirmed or uncertain transfers. A new verified notification makes the relevant job due immediately, including when a worker holds its lease. This reduces the chance that old completed jobs delay active orders; it does not remove the periodic check or treat provider completion as chain confirmation.
 
 The isolated PostgreSQL test covered prompt checks before delivery, slower checks after a confirmed receipt, and notification wake-up. Worker and webhook tests and server typecheck passed. Provider status regressions with newer timestamps still need an explicit policy and tests; R5 remains open.
+
+### 29 October 2026: conflicting provider statuses
+
+After a provider observation reaches completed, failed, cancelled or refunded, a later different status is retained as a conflict and the order moves to checking. The original terminal observation and any confirmed chain receipt remain in the audit history. A new transaction is blocked while the status is unknown. A later, newer observation matching the original terminal status can clear the conflict. A stale observation cannot change the order or trigger delivery verification. The worker records a provider-status conflict for administrator review.
+
+The isolated PostgreSQL tests covered a completed-to-processing conflict, duplicate conflict, stale update, blocked replacement and later matching observation. Worker tests confirmed that stale or conflicting observations cannot confirm delivery. Server typecheck passed. This conservative policy does not implement a provider refund transition; documented and verified refund behavior still needs an explicit integration. R5 and R8 remain open.

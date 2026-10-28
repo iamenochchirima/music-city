@@ -449,6 +449,17 @@ test(
       await repo.recordMoonpayNotification({ orderId: deliveryOrder.id, providerId: "delivery-provider", userId: "other", direction: "buy", key: "completed-update", kind: "transaction_updated" });
       const wokenJob = await db.transaction(async (c) => (await c.query("SELECT due_at <= NOW() AS due FROM ramp_reconciliation_jobs WHERE order_id=$1", [deliveryOrder.id])).rows[0]);
       assert.equal(wokenJob.due, true);
+      const regression = { ...deliveryObservation, state: "processing" as const, originalStatus: "pending", updatedAt: "2026-10-28T00:02:00.000Z" };
+      assert.equal(await repo.observe(deliveryOrder.id, regression), "conflict");
+      assert.equal(await repo.observe(deliveryOrder.id, regression), "conflict");
+      assert.equal((await repo.get(deliveryOrder.id))?.providerState, "unknown");
+      assert.equal((await repo.get(deliveryOrder.id))?.chainState, "confirmed");
+      assert.equal((await repo.events(deliveryOrder.id)).filter((event) => event.kind === "status_conflict").length, 1);
+      assert.equal(await repo.observe(deliveryOrder.id, deliveryObservation), "stale");
+      const anotherOrder = (await repo.reserve({ ...deliveryOrder.terms, requestId: randomUUID() })).order;
+      await assert.rejects(repo.issueLaunch(anotherOrder.id, "other", serviceWallet), /existing transaction/);
+      await repo.observe(deliveryOrder.id, { ...deliveryObservation, updatedAt: "2026-10-28T00:03:00.000Z" });
+      assert.equal((await repo.get(deliveryOrder.id))?.providerState, "completed");
       await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW()+INTERVAL '1 hour' WHERE order_id=$1", [deliveryOrder.id]); });
 
       const duplicateOrder = (await repo.reserve(terms({ userId: "other", walletAddress: Keypair.random().publicKey() }))).order;

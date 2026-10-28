@@ -8,8 +8,8 @@ import { verifyIncomingDelivery, type IncomingDelivery } from "./incoming-delive
 
 type Repository = {
   lease(): Promise<{ order: RampOrder; token: string } | null>;
-  observe(id: string, observation: MoonpayObservation, token: string): Promise<void>;
-  release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | null): Promise<void>;
+  observe(id: string, observation: MoonpayObservation, token: string): Promise<void | "stale" | "conflict">;
+  release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null): Promise<void>;
   recordIncomingDelivery(id: string, observation: MoonpayObservation, delivery: IncomingDelivery, token: string): Promise<void>;
 };
 type Provider = { lookup(order: RampOrder): Promise<MoonpayObservation | null> };
@@ -25,12 +25,13 @@ export async function reconcileRampOrders(
     const lease = await repository.lease();
     if (!lease) return;
     const { order, token } = lease;
-    let errorCode: "provider_check_failed" | "delivery_check_failed" | null = null;
+    let errorCode: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null = null;
     try {
       const observation = await provider.lookup(order);
       if (observation) {
-        await repository.observe(order.id, observation, token);
-        if (observation.state === "completed" && observation.chainHash && observation.assetUnits && order.terms.direction === "buy") {
+        const outcome = await repository.observe(order.id, observation, token);
+        if (outcome === "conflict") errorCode = "provider_status_conflict";
+        if (!outcome && observation.state === "completed" && observation.chainHash && observation.assetUnits && order.terms.direction === "buy") {
           try {
             const delivery = await verifyDelivery(order, observation);
             if (delivery) await repository.recordIncomingDelivery(order.id, observation, delivery, token);

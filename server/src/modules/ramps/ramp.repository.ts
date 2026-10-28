@@ -189,7 +189,16 @@ export function createRampRepository(db: Database) {
           previous &&
           Date.parse(observation.updatedAt) < Date.parse(previous.updatedAt)
         )
-          return;
+          return "stale" as const;
+        const terminal = (await c.query(`SELECT data->>'state' AS state FROM ramp_events
+          WHERE order_id=$1 AND source='provider_api' AND kind='status_observed'
+          AND data->>'state' IN ('completed','failed','cancelled','refunded') ORDER BY id LIMIT 1`, [id])).rows[0]?.state as string | undefined;
+        if (terminal && observation.state !== terminal) {
+          const key = `conflict:${createHash("sha256").update(JSON.stringify(observation)).digest("hex")}`;
+          await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'provider_api',$2,'status_conflict',$3) ON CONFLICT DO NOTHING", [id, key, JSON.stringify(observation)]);
+          await c.query("UPDATE ramp_orders SET provider_state='unknown',provider_observation=$2,updated_at=NOW() WHERE id=$1", [id, JSON.stringify(observation)]);
+          return "conflict" as const;
+        }
         if (previous && observation.updatedAt === previous.updatedAt) {
           const prior = rampProviderObservationSchema.parse(previous);
           // A newer parser may recover a hash or amount omitted by an earlier version.
@@ -277,7 +286,7 @@ export function createRampRepository(db: Database) {
         return { order, token };
       });
     },
-    async release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | null) {
+    async release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | "provider_status_conflict" | null) {
       return db.transaction(async (c) => {
         await c.query(
           `UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,
