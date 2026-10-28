@@ -300,3 +300,9 @@ Isolated PostgreSQL tests covered blocked provider states, a state change during
 The review re-reads the saved transfer immediately before opening the wallet and compares the attempt, quote, transaction hash, envelope, fee and expiry. If the record changed or cannot be read, it does not request a signature. The server still checks provider state when authorization is submitted. A provider update can occur after either check, so this does not replace provider-specific cancellation and reconciliation rules.
 
 Six cash-out review component tests and client typecheck passed. The checks used fixtures and did not open a real wallet or contact a provider; full cash-out browser verification remains open.
+
+### 29 October 2026: current workspace regression
+
+At revision `abc4fc6`, the workspace build and a subsequent standalone typecheck passed. The client build retained its large-bundle warning. A standalone `pnpm test` passed 210 server tests, 181 client tests and 22 admin tests. The default server run skipped 13 database-dependent tests; the ramp PostgreSQL suite was run separately after the relevant changes, as recorded above. These results do not constitute a new real-wallet or provider transaction.
+
+An earlier run started tests, typecheck and build concurrently. An onboarding test timed out and typecheck reported missing shared-package exports while the shared package was being rebuilt. The standalone reruns passed. The exact cause of the first failures was not independently proven, so future regression checks should run build, typecheck and tests sequentially.
