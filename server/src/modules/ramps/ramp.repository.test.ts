@@ -98,6 +98,8 @@ test(
           await c.query(sql);
       });
       const repo = createRampRepository(db);
+      await assert.rejects(repo.list("", ""), /User and wallet are required/);
+      await assert.rejects(repo.list("artist", ""), /User and wallet are required/);
       const input = terms();
       const outcomes = await Promise.all(
         Array.from({ length: 8 }, () => repo.reserve(input)),

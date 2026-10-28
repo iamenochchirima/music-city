@@ -32,13 +32,13 @@ function hydrate(row: Record<string, unknown>): RampOrder {
 }
 export function createRampRepository(db: Database) {
   return {
-    async list(userId?: string, walletAddress?: string): Promise<RampOrder[]> {
+    async list(userId: string, walletAddress: string): Promise<RampOrder[]> {
+      if (!userId || !walletAddress)
+        throw new HttpError(400, "User and wallet are required");
       return db.transaction(async (c) => {
         const rows = await c.query(
-          userId
-            ? "SELECT * FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 ORDER BY created_at DESC LIMIT 100"
-            : "SELECT * FROM ramp_orders ORDER BY created_at DESC LIMIT 100",
-          userId ? [userId, walletAddress] : [],
+          "SELECT * FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 ORDER BY created_at DESC LIMIT 100",
+          [userId, walletAddress],
         );
         return rows.rows.map(hydrate);
       });

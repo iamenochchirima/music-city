@@ -49,3 +49,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 ## Execution checkpoints
 
 The checklist starts unchecked. Record completed checks and commit IDs here as work proceeds. Do not mark provider or reviewer acceptance complete on fixture results.
+
+### 28 October 2026: repository ownership
+
+Removed the ramp repository's unscoped list path. Listing now requires both a user and wallet, and always filters by both. The isolated PostgreSQL repository suite passed both tests, including missing identity and cross-user checks. Server typecheck passed. This protects the repository boundary but does not complete the authenticated API or admin views.
