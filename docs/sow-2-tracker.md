@@ -96,7 +96,7 @@ D2 acceptance checklist:
 - [x] Demonstrate rejection, dispute, resolution, amendment, fresh consent, and preserved history.
 - [x] Verify three independent treasury signers, the registry treasury, and thresholds requiring two.
 - [x] Demonstrate one signer cannot finalize and two distinct signers can finalize.
-- [ ] Verify every specified protected admin action requires the required treasury authorization.
+- [x] Verify every specified protected admin action requires the required treasury authorization. See the [28 October treasury authorization audit](sow2-treasury-authorization-audit.md). Production configuration and reviewer acceptance remain open.
 - [x] Demonstrate separate fan-to-artist and fan-to-contributor support payments with transaction evidence.
 - [x] Package approval records, migrations, state transitions, support hashes, treasury evidence, screenshots, and tests.
 - [ ] Record reviewer acceptance of D2.

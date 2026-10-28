@@ -33,7 +33,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 ## Core SOW completion
 
-- [ ] C1. Audit every specified protected treasury action and verify its required threshold. Record evidence or the exact remaining gap.
+- [x] C1. Audit every specified protected treasury action and verify its required threshold. Record evidence or the exact remaining gap.
 - [ ] C2. Re-run the creator-to-purchase-to-settlement-to-claim lifecycle locally against current code with real Dynamic Sandbox and Stellar Testnet where available. Preserve the historical evidence and distinguish fixtures.
 - [ ] C3. Prepare a repeatable deployment and evidence package with tested revisions, contract IDs, transaction receipts, screenshots and results. Verify deployed versions before making live claims.
 - [ ] C4. Resolve or document the production admin setup and historical migration-before-backup exception. Do not claim reviewer acceptance without the reviewer.
@@ -103,3 +103,7 @@ The MoonPay sandbox adapter and readiness command can now query reported methods
 ### 28 October 2026: signed MoonPay notifications
 
 Added a sandbox-only webhook endpoint for the documented buy and sell transaction events. It checks [MoonPay's V2 signature](https://dev.moonpay.com/api-reference/widget/webhooks/signature) against the raw body and timestamp, verifies the saved account, direction and existing provider reference, deduplicates the notification, and schedules an authenticated provider lookup. It does not treat the notification as a payment or chain receipt. HTTP signature, expiry, unsupported-event and ownership tests passed; isolated PostgreSQL tests covered duplicate notifications and an in-flight lease. Server typecheck passed. This advances R4; real sandbox notification delivery and the MoneyGram adapter remain unverified.
+
+### 28 October 2026: protected treasury actions
+
+The [treasury authorization audit](sow2-treasury-authorization-audit.md) maps each specified action to its required authority and current enforcement. Current local signature, administrator route, PostgreSQL integration and contract tests passed. The PostgreSQL integration tests use mocked chain transport; historical real Testnet evidence remains linked separately. Production configuration and reviewer acceptance are still open.
