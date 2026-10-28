@@ -8,6 +8,7 @@ const walletAddress = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 const { usersService } = await import("./users.service.js");
 const { usersRepository } = await import("./users.repository.js");
 const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
+const { HttpError } = await import("../../utils/http-error.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -74,6 +75,41 @@ test("legacy free artist access remains readable without creating a synthetic pa
     assert.equal(access.primaryIntent, "artist");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("artist-only routes return permission and activation errors with client statuses", async () => {
+  const originalGetProfile = usersService.getProfile;
+
+  try {
+    usersService.getProfile = (async () => createProfile()) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create an artist profile first",
+        "Activate artist access first",
+        "Artist access is required",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
+
+    usersService.getProfile = (async () => ({
+      ...createProfile(),
+      primaryIntent: "artist",
+      artistAccess: false,
+    })) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(walletAddress, "Create an artist profile first", "Activate artist access first"),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
+
+    usersService.getProfile = (async () => null) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(walletAddress, "Create an artist profile first"),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
+  } finally {
+    usersService.getProfile = originalGetProfile;
   }
 });
 

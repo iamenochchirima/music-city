@@ -9,6 +9,7 @@ const { engagementService } = await import("../engagement/engagement.service.js"
 const { usersService } = await import("../users/users.service.js");
 const { tracksRepository } = await import("../tracks/tracks.repository.js");
 const { tracksService } = await import("../tracks/tracks.service.js");
+const { HttpError } = await import("../../utils/http-error.js");
 
 const baseTimestamp = new Date(0).toISOString();
 
@@ -95,6 +96,22 @@ test("createPlaylist records a playlist-created analytics event", async () => {
         playlistId: playlist.id,
       },
     ]);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("playlist reads stay empty and writes are denied until profile setup completes", async () => {
+  const cleanup = [
+    restore(usersService, "getProfile", (async () => null) as typeof usersService.getProfile),
+  ];
+
+  try {
+    assert.deepEqual(await playlistsService.listMyPlaylists("wallet-1"), []);
+    await assert.rejects(
+      playlistsService.createPlaylist("wallet-1", { title: "Test playlist" }),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }

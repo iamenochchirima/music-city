@@ -10,6 +10,7 @@ import {
 
 import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
+import { HttpError } from "../../utils/http-error.js";
 import { engagementService } from "../engagement/engagement.service.js";
 import { tracksRepository } from "../tracks/tracks.repository.js";
 import { tracksService } from "../tracks/tracks.service.js";
@@ -56,7 +57,7 @@ const ensureOwnerProfile = async (walletAddress: string) => {
   const profile = await usersService.getProfile(walletAddress);
 
   if (!profile) {
-    throw new Error("Create a profile before managing playlists");
+    throw new HttpError(403, "Complete profile setup before managing playlists");
   }
 
   return profile;
@@ -118,8 +119,8 @@ export const playlistsService = {
   },
 
   async listMyPlaylists(walletAddress: string) {
-    const profile = await ensureOwnerProfile(walletAddress);
-    return playlistsRepository.listByOwner(profile.id);
+    const profile = await usersService.getProfile(walletAddress);
+    return profile ? playlistsRepository.listByOwner(profile.id) : [];
   },
 
   async getPlaylist(playlistId: string) {

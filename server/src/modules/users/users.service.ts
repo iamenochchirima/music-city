@@ -502,15 +502,16 @@ export const usersService = {
     walletAddress: string,
     missingProfileMessage: string,
     missingFeeMessage = "Complete artist activation before accessing artist tools",
+    missingArtistIntentMessage = "Choose artist access before using artist tools",
   ) {
     const profile = await this.getProfile(walletAddress);
 
     if (!profile) {
-      throw new Error(missingProfileMessage);
+      throw new HttpError(403, missingProfileMessage);
     }
 
     if (!isArtistIntent(profile.primaryIntent)) {
-      throw new Error(missingFeeMessage);
+      throw new HttpError(403, missingArtistIntentMessage);
     }
 
     if (!profile.artistAccess) {

@@ -721,6 +721,14 @@ The account page showed MoonPay and MoneyGram as unavailable. Add funds and Cash
 
 The local admin page required an admin sign-in; bootstrap was closed and no admin credentials were available, so this run did not verify an admin browser session. The wallet's initial loading view had shown zeros and an inaccurate USDC setup prompt; it now uses placeholders until balances load, verified in the local browser. Automated tests passed, including the updated strict five-second stream threshold. The five-second fix is separate from the provider and SOW 2 ramp requirements.
 
+### Fresh Dynamic Sandbox test accounts, 29 October 2026
+
+The [test-account run](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) verified separate artist and listener onboarding against the local app. The artist published a synthetic single and completed playback counted one stream. The listener could browse it and use playlists, while the artist-only editor returned a clear 403.
+
+That test uncovered two generic server errors. A listener opening the artist editor received a 500, and the playlist request made before onboarding created a profile also received a 500. The server now returns an explicit artist-access 403 and an empty playlist list before profile creation. Twelve focused server tests and server typecheck passed.
+
+The artist's wallet received 10,000 XLM from Stellar Friendbot. Its USDC trustline stayed pending at Dynamic wallet approval, and the listener wallet remained unfunded. The ramp capability list had no routes, so Add funds and Cash out stayed disabled. No purchase, settlement, claim, provider session, quote, payment, or payout was created. C2, U2, U4, and V5 remain open.
+
 ### Ramp foundations checkpoint, 26 October 2026
 
 The [combined plan](ramp-sandbox-implementation-plan.md#current-execution-decision) records the owner's later instruction to defer MoneyGram and test MoonPay with native XLM separately. The USDC flow remains open. Fresh provider checks found MoonPay Stellar USDC unavailable in test mode and the MoneyGram key configured for custodial sessions.

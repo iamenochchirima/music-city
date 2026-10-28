@@ -378,3 +378,11 @@ The same browser check found that the wallet summary initially rendered `0` bala
 The cloned database had no audio files. Disposable synthetic tones restored playback checks without using real recordings. Playback then completed in the local app. This exposed and fixed the short-track stream fallback under commit `1e49dfd`; a one-second play did not count, and a six-second play counted once. That product fix is separate from the SOW 2 ramp scope.
 
 `pnpm test` passed 215 server, 194 client, and 22 admin tests. The default server suite skipped 13 database-backed tests. Workspace typechecks and builds passed. The browser state was inspected, but this run did not save a screenshot file. C2, C3, U2, U4, R1 through R9, and V5 remain open. No provider sandbox payment or payout was verified.
+
+### 29 October 2026: two fresh Dynamic Sandbox test accounts
+
+The [test-account run](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) used separate artist and listener identities. The artist published a synthetic single, and a completed playback increased its stream count from zero to one. The listener saw the release, opened playlists, and received an explicit 403 when opening the artist-only editor.
+
+The browser exposed a server error for an empty playlist list before onboarding finished and a 500 for a listener opening the artist editor. Playlist reads now return an empty list before profile creation. Artist-only access failures now return 403. Twelve focused server tests and server typecheck passed. Local browser retests confirmed the listener playlist page and the readable artist-access denial.
+
+The artist's XLM test wallet was funded through Friendbot, but the Dynamic wallet approval for its USDC trustline stayed pending. The test account had no USDC, and MoonPay and MoneyGram had no verified routes. No purchase, settlement, claim, provider session, quote, payment, or payout was created. C2 and U4 remain open.
