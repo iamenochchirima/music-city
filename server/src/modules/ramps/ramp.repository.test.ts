@@ -12,6 +12,7 @@ import { rampDeliveryStatements } from "./ramp-delivery-migration.js";
 import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
 import { rampCashOutRecoveryStatements } from "./ramp-cashout-recovery-migration.js";
+import { rampLaunchStatements } from "./ramp-launch-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
@@ -106,9 +107,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -445,6 +446,21 @@ test(
       await repo.observe(duplicateOrder.id, duplicateObservation, duplicateLease!.token);
       await assert.rejects(repo.recordIncomingDelivery(duplicateOrder.id, duplicateObservation, delivery, duplicateLease!.token), /unique constraint/);
       assert.equal((await repo.get(duplicateOrder.id))?.chainState, "unobserved");
+
+      const sessionWallet = Keypair.random().publicKey();
+      const sessionOrder = (await repo.reserve(terms({ userId: "other", walletAddress: sessionWallet }))).order;
+      const launchCipher = createCashOutEnvelopeCipher(Buffer.alloc(32, 8));
+      const sessions = await Promise.all(Array.from({ length: 8 }, (_, n) => repo.saveLaunchSession(sessionOrder.id, "other", sessionWallet,
+        launchCipher.encrypt(sessionOrder.id, "launch", sessionOrder.id, `https://example.test/session-${n}`), true)));
+      assert.equal(sessions.filter((entry) => entry.created).length, 1);
+      assert.equal(new Set(sessions.map((entry) => entry.encryptedSession.toString("base64"))).size, 1);
+      assert.match(launchCipher.decrypt(sessionOrder.id, "launch", sessionOrder.id, sessions[0].encryptedSession), /^https:\/\/example\.test\/session-/);
+      await assert.rejects(repo.saveLaunchSession(sessionOrder.id, "artist", sessionWallet, Buffer.alloc(40), true), /not found/);
+      await assert.rejects(repo.saveLaunchSession(sessionOrder.id, "other", sessionWallet, Buffer.alloc(40), false), /existing transaction/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_launch_sessions SET resumable=false WHERE order_id=$1", [sessionOrder.id]); }), /append-only/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("DELETE FROM ramp_launch_sessions WHERE order_id=$1", [sessionOrder.id]); }), /append-only/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='unknown' WHERE id=$1", [sessionOrder.id]); });
+      await assert.rejects(repo.saveLaunchSession(sessionOrder.id, "other", sessionWallet, Buffer.alloc(40), true), /existing transaction/);
 
       const cashKey = Keypair.random(), cashWallet = cashKey.publicKey(), cashIssuer = Keypair.random().publicKey();
       const cashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cashWallet, direction: "sell", assetIssuer: cashIssuer,

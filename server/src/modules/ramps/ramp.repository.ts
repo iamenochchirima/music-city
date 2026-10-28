@@ -124,6 +124,32 @@ export function createRampRepository(db: Database) {
         return hydrate(row);
       });
     },
+    // The adapter prepares this encrypted session without creating a provider transaction.
+    async saveLaunchSession(id: string, userId: string, wallet: string, encryptedSession: Buffer, resumable: boolean) {
+      if (!Buffer.isBuffer(encryptedSession) || encryptedSession.length < 30 || encryptedSession.length > 40000 || typeof resumable !== "boolean")
+        throw new HttpError(400, "Invalid payment session");
+      return db.transaction(async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`ramp-launch:${wallet}`]);
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE", [id, userId, wallet])).rows[0];
+        if (!row) throw new HttpError(404, "Ramp transaction not found");
+        const existing = (await c.query("SELECT encrypted_session,resumable FROM ramp_launch_sessions WHERE order_id=$1", [id])).rows[0];
+        if (existing) {
+          if (!existing.resumable || !resumable || row.provider_transaction_id || row.provider_state !== "created")
+            throw new HttpError(409, "Check your existing transaction before reopening payment.");
+          return { encryptedSession: existing.encrypted_session as Buffer, created: false };
+        }
+        if (row.launch_issued_at || row.provider_transaction_id || row.provider_state !== "created")
+          throw new HttpError(409, "Check your existing transaction before reopening payment.");
+        const uncertain = (await c.query(`SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
+          AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
+          AND (provider_state IN ('created','unknown') OR chain_state IN ('submitting','unknown')) LIMIT 1`, [userId, wallet, id])).rows[0];
+        if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
+        await c.query("INSERT INTO ramp_launch_sessions(order_id,encrypted_session,resumable) VALUES($1,$2,$3)", [id, encryptedSession, resumable]);
+        await c.query("UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1", [id]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app','launch','widget_open_requested','{}')", [id]);
+        return { encryptedSession, created: true };
+      });
+    },
     async observe(id: string, raw: unknown, leaseToken?: string) {
       const observation = rampProviderObservationSchema.parse(raw);
       return db.transaction(async (c) => {
