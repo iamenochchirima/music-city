@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
+import { WalletRampActivity } from "@/features/ramps/wallet-ramp-activity";
 import {
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
@@ -551,6 +552,8 @@ export const WalletOverviewCard = () => {
             </div>
           )}
         </div>
+
+        {session?.token && <WalletRampActivity key={session.token} token={session.token} />}
 
         {isSendModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">

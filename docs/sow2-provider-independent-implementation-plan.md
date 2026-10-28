@@ -87,3 +87,7 @@ Added an additive lease-token migration. Expired workers can no longer persist o
 ### 28 October 2026: authenticated intent creation
 
 Added authenticated capability and intent-creation endpoints with server-derived account and wallet, exact decimal handling, current route limits, and recovery by request ID. Existing orders remain retrievable after a route becomes unavailable; changed terms or wallets are rejected. The application capability registry currently exposes no verified routes, regardless of sandbox flags, and therefore cannot create new orders yet. Test capabilities exist only in the isolated PostgreSQL suite. Concurrent create, retry, unsupported and expired capability, precision, limit, and ownership tests passed along with HTTP authorization and shared/server typechecks. This advances R1 and R2; provider capability discovery, launch recovery and actual provider processing remain open.
+
+### 28 October 2026: wallet entry points and history
+
+Added disabled Add funds and Cash out controls beside spendable wallet balances, with the unavailable providers identified. The wallet loads authenticated ramp history and refreshes it automatically; provider and chain states remain separate. Component tests cover unavailable controls, an unconfirmed transfer, error recovery, and account-scoped requests; client typecheck passed. The actions remain disabled until a verified route and its complete user flow exist. Local browser verification and the complete funding/cash-out flow remain open, so U1 and U2 are not checked off yet.
