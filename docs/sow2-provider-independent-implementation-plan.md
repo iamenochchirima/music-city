@@ -259,3 +259,9 @@ The isolated PostgreSQL test covered each blocked state, recovery when the provi
 Capability discovery now checks route combinations against the actual order contract, pins Testnet USDC to Circle's issuer, excludes cash-out assets unsupported by the current transfer path, and hides ambiguous duplicate choices. Invalid provider-supplied route data is excluded before it reaches the wallet or order creation. This does not certify a provider's geographic coverage, fees or availability; those still require provider evidence.
 
 Focused capability tests, the existing isolated PostgreSQL order and recovery suite, and server typecheck passed. No payment route was enabled. B2 and U2 remain open for verified adapters and their complete user journeys.
+
+### 29 October 2026: unavailable saved funding route
+
+A saved unlaunched funding request now opens through Manage. The dialog offers cancellation but only offers provider continuation when the current capability matches the saved route and amount. This is a user-interface guard; the server still checks capability at launch.
+
+Eight client component tests and client typecheck passed. A desktop browser component preview showed the unavailable message and cancellation action, and keyboard focus moved between actions. The preview used fixture data and did not contact a provider. Mobile and full application verification remain open under U4.
