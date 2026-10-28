@@ -10,9 +10,8 @@ export async function financialCycle() {
   await reconcileAgreementFinalizations();
   await supportService.cycle();
   await checkoutService.cycle();
-  try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
   // A transaction advisory lock prevents overlapping scans across worker replicas.
-  return databaseService.transaction(async (client) => {
+  await databaseService.transaction(async (client) => {
     const lock = await client.query(
       "SELECT pg_try_advisory_xact_lock(hashtext('music-city-financial-worker')) AS acquired",
     );
@@ -54,6 +53,7 @@ export async function financialCycle() {
     }
     try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:error instanceof Error?error.message:String(error)});}
   });
+  try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
 }
 async function recordDiscrepancy(id: string, error: unknown) {
   const message =

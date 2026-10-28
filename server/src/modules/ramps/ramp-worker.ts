@@ -44,6 +44,7 @@ export async function rampCycle(): Promise<void> {
     await reconcileRampOrders(
       createRampRepository(databaseService),
       new MoonpaySandbox(config),
+      1,
     );
   } catch {
     logger.error("Ramp reconciliation needs attention", { code: "ramp_cycle_failed" });

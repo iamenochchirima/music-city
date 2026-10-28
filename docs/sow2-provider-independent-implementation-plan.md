@@ -61,3 +61,7 @@ The financial worker now runs a bounded MoonPay sandbox reconciliation cycle whe
 ### 28 October 2026: authenticated transaction history
 
 Added authenticated ramp history and detail endpoints. The account is resolved from the signed-in wallet, and both the account and wallet scope each query. Responses keep provider and chain status separate and omit provider references and internal order terms. HTTP tests cover missing or invalid credentials, cross-account access, missing orders and response privacy; server typecheck passed. This is part of R1; creation, capabilities and resume remain open.
+
+### 28 October 2026: worker scheduling
+
+Settlement reconciliation now runs before ramp polling, and each worker cycle checks at most one ramp order. This bounds the delay from a provider timeout to one request per cycle; it does not make provider polling concurrent or complete the reconciliation checklist. Ramp worker tests and server typecheck passed.
