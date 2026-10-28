@@ -36,7 +36,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 - [x] C1. Audit every specified protected treasury action and verify its required threshold. Record evidence or the exact remaining gap.
 - [ ] C2. Re-run the creator-to-purchase-to-settlement-to-claim lifecycle locally against current code with real Dynamic Sandbox and Stellar Testnet where available. Preserve the historical evidence and distinguish fixtures.
 - [ ] C3. Prepare a repeatable deployment and evidence package with tested revisions, contract IDs, transaction receipts, screenshots and results. Verify deployed versions before making live claims.
-- [ ] C4. Resolve or document the production admin setup and historical migration-before-backup exception. Do not claim reviewer acceptance without the reviewer.
+- [x] C4. Resolve or document the production admin setup and historical migration-before-backup exception. Do not claim reviewer acceptance without the reviewer.
 
 ## Verification and handoff
 
@@ -107,3 +107,9 @@ Added a sandbox-only webhook endpoint for the documented buy and sell transactio
 ### 28 October 2026: protected treasury actions
 
 The [treasury authorization audit](sow2-treasury-authorization-audit.md) maps each specified action to its required authority and current enforcement. Current local signature, administrator route, PostgreSQL integration and contract tests passed. The PostgreSQL integration tests use mocked chain transport; historical real Testnet evidence remains linked separately. Production configuration and reviewer acceptance are still open.
+
+### 28 October 2026: local regression checks and rollout gaps
+
+Workspace typechecks and builds passed. The admin suite passed 20 tests. The client suite passed all 164 tests when run independently; a concurrent workspace run first timed out in four unrelated client tests. The server suite passed 187 tests and skipped 13 database-dependent tests. Separate isolated PostgreSQL runs passed ramp, settlement, agreement finalization, checkout and support integration tests; their external chain transport is mocked. The broader verification item V2 remains open because other skipped suites and the browser matrix still need review.
+
+The [agreement lifecycle evidence](contributor-agreements-evidence/lifecycle-review/README.md) documents both unresolved production issues: legitimate first-admin setup is needed for authenticated admin checks, and an additive migration occurred before the fresh rollout backup. The SOW tracker keeps AGR-27 and AGR-28 open. This satisfies the documentation branch of C4; it does not resolve either issue or establish reviewer acceptance.
