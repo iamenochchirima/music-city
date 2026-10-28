@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Account, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
-import { createCashOutChain, verifyCashOutReceipt } from "./cashout-chain.js";
+import { createCashOutChain, verifyCashOutReceipt, verifyCashOutReadiness } from "./cashout-chain.js";
 
 test("receipt verification binds the exact Testnet transaction, source and ledger", () => {
   const wallet = Keypair.random();
@@ -42,7 +42,7 @@ test("preparation uses a validated Testnet ledger and the requested wallet accou
   const chain = createCashOutChain((async (url: URL) => {
     assert.equal(url.origin, "https://horizon-testnet.stellar.org");
     requests.push(url.pathname);
-    if (url.pathname === "/ledgers") return Response.json({ _embedded: { records: [{ sequence: 30, closed_at: "2026-10-28T12:00:00.000Z", base_fee_in_stroops: fee }] } });
+    if (url.pathname === "/ledgers") return Response.json({ _embedded: { records: [{ sequence: 30, closed_at: "2026-10-28T12:00:00.000Z", base_fee_in_stroops: fee, base_reserve_in_stroops: 5000000 }] } });
     return Response.json({ account_id: accountId, sequence: "123", thresholds: { med_threshold: 1 }, signers: [{ key: wallet, type: "ed25519_public_key", weight: 1 }] });
   }) as typeof fetch);
   assert.equal((await chain.preparationLedger()).base_fee_in_stroops, 100);
@@ -53,4 +53,22 @@ test("preparation uses a validated Testnet ledger and the requested wallet accou
   await assert.rejects(chain.account("../transactions"), /Invalid wallet/);
   fee = 10001;
   await assert.rejects(chain.preparationLedger(), /network fee/);
+});
+
+
+test("cash-out readiness checks spendable USDC and XLM reserve using exact units", () => {
+  const wallet = Keypair.random().publicKey(), issuer = Keypair.random().publicKey();
+  const native = { asset_type: "native", balance: "1.5000100", selling_liabilities: "0" };
+  const usdc = { asset_type: "credit_alphanum4", asset_code: "USDC", asset_issuer: issuer, balance: "1.2500000", selling_liabilities: "0.2500000", is_authorized: true };
+  const account = { account_id: wallet, sequence: "1", subentry_count: 1, num_sponsoring: 0, num_sponsored: 0, balances: [native, usdc], thresholds: { med_threshold: 1 }, signers: [{ key: wallet, type: "ed25519_public_key", weight: 1 }] };
+  const check = (value: unknown, fee = 100, baseFee = 100) => verifyCashOutReadiness(value, issuer, "10000000", 5000000, fee, baseFee);
+  assert.doesNotThrow(() => check(account));
+  assert.throws(() => check({ ...account, balances: [native, { ...usdc, selling_liabilities: "0.2500001" }] }), /insufficient spendable USDC/);
+  assert.throws(() => check({ ...account, balances: [native, { ...usdc, asset_issuer: Keypair.random().publicKey() }] }), /trustline/);
+  assert.throws(() => check({ ...account, balances: [native, { ...usdc, is_authorized: false }] }), /trustline/);
+  assert.throws(() => check({ ...account, balances: [native, { ...usdc, is_authorized: undefined }] }), /trustline/);
+  assert.throws(() => check({ ...account, balances: [{ ...native, balance: "1.5000099" }, usdc] }), /Add XLM/);
+  assert.throws(() => check({ ...account, balances: [native, { ...usdc, selling_liabilities: "invalid" }] }), /check your wallet balance/);
+  assert.throws(() => check({ ...account, num_sponsored: 99 }), /check your wallet balance/);
+  assert.throws(() => check(account, 100, 200), /Network fee changed/);
 });

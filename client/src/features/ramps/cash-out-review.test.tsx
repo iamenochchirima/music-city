@@ -77,3 +77,13 @@ it("does not open the wallet if the pre-sign check is unavailable", async () => 
   expect(sign).not.toHaveBeenCalled();
   expect(mock.post).not.toHaveBeenCalled();
 });
+
+
+it("explains why a fresh balance check withheld the transfer", async () => {
+  mock.get.mockResolvedValueOnce({ transfer: { ...transfer, transaction: null, unavailableReason: "Your wallet has insufficient spendable USDC." } }).mockResolvedValueOnce(quote);
+  const sign = vi.fn();
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  expect(await screen.findByText("Your wallet has insufficient spendable USDC.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Confirm cash-out" }).hasAttribute("disabled")).toBe(true);
+  expect(sign).not.toHaveBeenCalled();
+});

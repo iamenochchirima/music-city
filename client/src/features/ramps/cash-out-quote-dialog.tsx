@@ -22,8 +22,14 @@ export function CashOutQuoteDialog({ token, orderId, onClose, onChanged, onPrepa
     try {
       await httpClient.post(`${base}/transfer`, { quoteId: quote.quote.id, confirmationHash: quote.confirmationHash }, token);
       onChanged(); onPrepared();
-    } catch {
-      setUncertain(true); setError("Check this cash-out in transactions before trying again."); onChanged();
+    } catch (error) {
+      const known = error instanceof Error && (error as Error & { status?: number }).status === 409 && [
+        "Your wallet has insufficient spendable USDC.", "Your wallet needs an active USDC trustline.",
+        "Add XLM to cover the network fee.", "Network fee changed. Cancel and start again.",
+      ].includes(error.message);
+      if (known) setError(error.message);
+      else { setUncertain(true); setError("Check this cash-out in transactions before trying again."); }
+      onChanged();
     } finally { setBusy(false); locked.current = false; }
   }
   useEffect(() => {

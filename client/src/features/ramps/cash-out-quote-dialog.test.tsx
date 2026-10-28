@@ -40,3 +40,12 @@ it("does not start duplicate quote requests under React strict mode", async () =
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(mock.post).toHaveBeenCalledTimes(1);
 });
+
+
+it("shows a definite insufficient-balance response without treating it as a lost request", async () => {
+  const error = Object.assign(new Error("Your wallet has insufficient spendable USDC."), { status: 409 });
+  mock.post.mockResolvedValueOnce({ quote: { id: "quote" }, confirmationHash: "hash" }).mockRejectedValueOnce(error);
+  render(<CashOutQuoteDialog token="session" orderId="order" onClose={vi.fn()} onChanged={vi.fn()} onPrepared={vi.fn()} />);
+  expect((await screen.findByRole("alert")).textContent).toBe("Your wallet has insufficient spendable USDC.");
+  expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+});

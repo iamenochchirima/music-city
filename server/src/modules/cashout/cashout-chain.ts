@@ -1,6 +1,7 @@
 import { Networks, StrKey, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { z } from "zod";
 import { HttpError } from "../../utils/http-error.js";
+import { amountUnits } from "../settlements/settlement-domain.js";
 
 const horizon = "https://horizon-testnet.stellar.org";
 const receiptSchema = z.object({ hash: z.string().regex(/^[a-f0-9]{64}$/), successful: z.boolean(),
@@ -8,9 +9,38 @@ const receiptSchema = z.object({ hash: z.string().regex(/^[a-f0-9]{64}$/), succe
 const ledgerSchema = z.object({ sequence: z.number().int().positive().safe(), closed_at: z.string().datetime() });
 const accountSchema = z.object({ account_id: z.string(), sequence: z.string().regex(/^(0|[1-9][0-9]{0,18})$/),
   thresholds: z.object({ med_threshold: z.number().int().min(0).max(255) }),
-  signers: z.array(z.object({ key: z.string().min(1).max(128), type: z.string().min(1).max(64), weight: z.number().int().min(0).max(255) })).min(1).max(20) });
+  signers: z.array(z.object({ key: z.string().min(1).max(128), type: z.string().min(1).max(64), weight: z.number().int().min(0).max(255) })).min(1).max(20) }).passthrough();
 export type CashOutReceipt = z.infer<typeof receiptSchema>;
 export type CashOutLedger = z.infer<typeof ledgerSchema>;
+
+const amount = z.string().max(32).regex(/^(0|[1-9][0-9]*)(\.[0-9]{1,7})?$/);
+const readinessAccount = accountSchema.extend({
+  subentry_count: z.number().int().nonnegative().safe(),
+  num_sponsoring: z.number().int().nonnegative().safe(),
+  num_sponsored: z.number().int().nonnegative().safe(),
+  balances: z.array(z.object({ asset_type: z.string(), asset_code: z.string().optional(), asset_issuer: z.string().optional(),
+    balance: amount, selling_liabilities: amount, is_authorized: z.boolean().optional() })).max(10000),
+});
+export function verifyCashOutReadiness(raw: unknown, issuer: string | undefined, debitUnits: string, reserveStroops: number, feeStroops: number, currentBaseFee: number) {
+  const parsed = readinessAccount.safeParse(raw);
+  if (!parsed.success || !issuer || !/^[1-9][0-9]{0,18}$/.test(debitUnits) ||
+      !Number.isSafeInteger(reserveStroops) || reserveStroops <= 0 ||
+      !Number.isSafeInteger(feeStroops) || feeStroops < 100 || feeStroops > 10000 ||
+      !Number.isSafeInteger(currentBaseFee) || currentBaseFee < 100 || currentBaseFee > 10000)
+    throw new HttpError(502, "Could not check your wallet balance.");
+  if (feeStroops < currentBaseFee) throw new HttpError(409, "Network fee changed. Cancel and start again.");
+  const account = parsed.data, matches = account.balances.filter((balance) => balance.asset_code === "USDC" && balance.asset_issuer === issuer);
+  if (matches.length !== 1 || matches[0].is_authorized !== true) throw new HttpError(409, "Your wallet needs an active USDC trustline.");
+  if (amountUnits(matches[0].balance) - amountUnits(matches[0].selling_liabilities) < BigInt(debitUnits))
+    throw new HttpError(409, "Your wallet has insufficient spendable USDC.");
+  const native = account.balances.filter((balance) => balance.asset_type === "native");
+  const reserveEntries = 2 + account.subentry_count + account.num_sponsoring - account.num_sponsored;
+  if (native.length !== 1 || !Number.isSafeInteger(reserveEntries) || reserveEntries < 0)
+    throw new HttpError(502, "Could not check your wallet balance.");
+  const spendable = amountUnits(native[0].balance) - amountUnits(native[0].selling_liabilities) - BigInt(reserveEntries) * BigInt(reserveStroops);
+  if (spendable < BigInt(feeStroops)) throw new HttpError(409, "Add XLM to cover the network fee.");
+}
+
 
 export function verifyCashOutReceipt(expected: { transactionHash: string; walletAddress: string }, raw: unknown): CashOutReceipt {
   const parsed = receiptSchema.safeParse(raw);
@@ -57,7 +87,7 @@ export function createCashOutChain(fetcher: typeof fetch = fetch) {
     },
     async preparationLedger() {
       const body = await read("/ledgers?order=desc&limit=1");
-      const schema = z.object({ _embedded: z.object({ records: z.array(ledgerSchema.extend({ base_fee_in_stroops: z.number().int().min(100).max(10000) })).length(1) }) });
+      const schema = z.object({ _embedded: z.object({ records: z.array(ledgerSchema.extend({ base_fee_in_stroops: z.number().int().min(100).max(10000), base_reserve_in_stroops: z.number().int().positive().safe() })).length(1) }) });
       const result = schema.safeParse(body);
       if (!result.success) throw new HttpError(502, "Unable to verify the Stellar network fee");
       return result.data._embedded.records[0];

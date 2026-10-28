@@ -679,8 +679,8 @@ test(
       const liveSaved = await repo.saveCashOutQuote(liveOrder.id, "other", liveWallet, liveQuote, liveInstructions, liveNow);
       const liveInput = { orderId: liveOrder.id, quoteId: liveQuoteId, confirmationHash: liveSaved.hash, userId: "other", walletAddress: liveWallet, sequence: "11", feeStroops: 100, maxFeeStroops: 1000, preparedLedger: 42, now: liveNow };
       const authorizationService = createCashOutAuthorizationService(repo, {
-        async preparationLedger() { return { sequence: 42, base_fee_in_stroops: 100, closed_at: liveNow.toISOString() }; },
-        async account(address) { assert.equal(address, liveWallet); return { account_id: liveWallet, sequence: "11", thresholds: { med_threshold: 0 }, signers: [{ key: liveWallet, type: "ed25519_public_key", weight: 1 }] }; },
+        async preparationLedger() { return { sequence: 42, base_fee_in_stroops: 100, base_reserve_in_stroops: 5000000, closed_at: liveNow.toISOString() }; },
+        async account(address) { assert.equal(address, liveWallet); return { account_id: liveWallet, sequence: "11", subentry_count: 1, num_sponsoring: 0, num_sponsored: 0, balances: [{ asset_type: "native", balance: "10", selling_liabilities: "0" }, { asset_type: "credit_alphanum4", asset_code: "USDC", asset_issuer: liveIssuer, balance: "2", selling_liabilities: "0", is_authorized: true }], thresholds: { med_threshold: 0 }, signers: [{ key: liveWallet, type: "ed25519_public_key", weight: 1 }] }; },
       }, cipher, async () => true);
       const liveOwner = { userId: "other", walletAddress: liveWallet };
       const liveAttempt = await authorizationService.prepare(liveOrder.id, liveQuoteId, liveSaved.hash, liveOwner);
