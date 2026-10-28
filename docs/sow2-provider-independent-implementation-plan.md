@@ -253,3 +253,9 @@ Worker tests passed, including provider selection. An isolated PostgreSQL test c
 The worker now locks and rechecks the persisted provider state before claiming a signed cash-out for submission. A failed, cancelled, refunded, completed or unknown provider state prevents a new submission claim; the retained attempt remains eligible for receipt and expiry reconciliation because an earlier submission may already have succeeded. A provider update can still arrive after the claim and before the network request, so adapter-specific cancellation guarantees and recovery remain necessary.
 
 The isolated PostgreSQL test covered each blocked state, recovery when the provider is ready, and recording a chain receipt even after provider failure. Server typecheck passed. This is a simulated-provider check, not a completed provider cash-out; R6 and R8 remain open.
+
+### 29 October 2026: capability validation
+
+Capability discovery now checks route combinations against the actual order contract, pins Testnet USDC to Circle's issuer, excludes cash-out assets unsupported by the current transfer path, and hides ambiguous duplicate choices. Invalid provider-supplied route data is excluded before it reaches the wallet or order creation. This does not certify a provider's geographic coverage, fees or availability; those still require provider evidence.
+
+Focused capability tests, the existing isolated PostgreSQL order and recovery suite, and server typecheck passed. No payment route was enabled. B2 and U2 remain open for verified adapters and their complete user journeys.

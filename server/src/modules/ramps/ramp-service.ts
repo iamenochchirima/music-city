@@ -45,10 +45,31 @@ function matches(input: CreateRampOrder, terms: RampOrder["terms"]) {
 export function createRampService(repository: Repository, capabilities: RampCapabilitySource, now: () => number = Date.now) {
   async function routes() {
     const time = now();
-    const routes = z.array(verifiedRouteSchema).max(1000).parse(await capabilities.routes());
-    return routes.filter((route) => Date.parse(route.verifiedAt) <= time && Date.parse(route.expiresAt) > time &&
-      BigInt(route.minUnits) <= BigInt(route.maxUnits) &&
-      (route.direction !== "sell" || route.amountDecimals === 7));
+    const candidates = z.array(z.unknown()).max(1000).parse(await capabilities.routes());
+    const routes = candidates.flatMap((candidate) => {
+      const parsed = verifiedRouteSchema.safeParse(candidate);
+      return parsed.success ? [parsed.data] : [];
+    });
+    const eligible = routes.filter((route) => {
+      if (Date.parse(route.verifiedAt) > time || Date.parse(route.expiresAt) <= time ||
+          BigInt(route.minUnits) > BigInt(route.maxUnits) || BigInt(route.maxUnits) === 0n ||
+          (route.assetCode === "USDC" && route.assetIssuer !== "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5") ||
+          (route.direction === "sell" && (route.amountDecimals !== 7 || route.assetCode !== "USDC"))) return false;
+      // Check provider, method, asset and amount together using the actual order contract.
+      return rampOrderTermsSchema.safeParse({
+        userId: "capability-check", walletAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+        requestId: "ed39ecdf-d398-49cb-86bf-54cac8329168", provider: route.provider,
+        direction: route.direction, environment: route.environment, network: route.network,
+        assetCode: route.assetCode, assetIssuer: route.assetIssuer, market: route.market,
+        amount: { currency: route.direction === "buy" ? route.market.currency : route.assetCode,
+          units: route.maxUnits, decimals: route.amountDecimals },
+      }).success;
+    });
+    const routeKey = (route: VerifiedRampRoute) => JSON.stringify([route.provider, route.direction, route.assetCode,
+      route.market.country, route.market.currency, route.market.method]);
+    const counts = new Map<string, number>();
+    for (const route of eligible) counts.set(routeKey(route), (counts.get(routeKey(route)) ?? 0) + 1);
+    return eligible.filter((route) => counts.get(routeKey(route)) === 1);
   }
   return {
     routes,
