@@ -57,6 +57,21 @@ export function createRampRepository(db: Database) {
       wallet: string,
     ): Promise<RampOrder> {
       return db.transaction(async (c) => {
+        // Serialize launches across all providers and directions for this wallet.
+        // The lock is transactional so concurrent requests cannot both pass the check.
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`ramp-launch:${wallet}`]);
+        const owned = (await c.query(
+          "SELECT id FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3",
+          [id, userId, wallet],
+        )).rows[0];
+        if (!owned) throw new HttpError(404, "Ramp transaction not found");
+        const uncertain = (await c.query(
+          `SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
+           AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
+           AND (provider_state IN ('created','unknown') OR chain_state IN ('submitting','unknown')) LIMIT 1`,
+          [userId, wallet, id],
+        )).rows[0];
+        if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
         const row = (
           await c.query(
             "UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1 AND user_id=$2 AND wallet_address=$3 AND launch_issued_at IS NULL AND provider_transaction_id IS NULL RETURNING *",

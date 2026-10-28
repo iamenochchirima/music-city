@@ -65,3 +65,7 @@ Added authenticated ramp history and detail endpoints. The account is resolved f
 ### 28 October 2026: worker scheduling
 
 Settlement reconciliation now runs before ramp polling, and each worker cycle checks at most one ramp order. This bounds the delay from a provider timeout to one request per cycle; it does not make provider polling concurrent or complete the reconciliation checklist. Ramp worker tests and server typecheck passed.
+
+### 28 October 2026: concurrent launch protection
+
+Launches for one wallet now serialize across providers and directions. A different order cannot launch while an earlier launched or provider-bound order has an unknown provider outcome or an uncertain chain submission. The PostgreSQL test races different request IDs and providers, checks owner isolation and verifies that unknown chain state remains blocking. Server typecheck passed. This advances R2; authenticated creation, reliable recovery after a lost launch response and chain reconciliation remain open.

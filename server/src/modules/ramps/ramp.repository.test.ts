@@ -233,6 +233,11 @@ test(
         }),
         /foreign key/,
       );
+      // A known processing transaction is not an unknown outcome.
+      await repo.observe(id, {
+        id: "reference", externalId: id, state: "processing", originalStatus: "pending",
+        updatedAt: "2026-10-26T12:00:00.000Z",
+      });
       const launchOrder = (
         await repo.reserve({ ...input, requestId: randomUUID() })
       ).order;
@@ -314,6 +319,28 @@ test(
       assert.equal(job.leased_until, null);
       assert.equal(job.last_error_code, "provider_check_failed");
       assert.equal(job.delayed, true);
+
+      // Different request IDs and providers cannot race past an unresolved launch.
+      const secondWallet = Keypair.random().publicKey();
+      const first = (await repo.reserve(terms({ userId: "other", walletAddress: secondWallet }))).order;
+      const second = (await repo.reserve(terms({ userId: "other", walletAddress: secondWallet,
+        provider: "moneygram", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" } }))).order;
+      const racing = await Promise.allSettled([
+        repo.issueLaunch(first.id, "other", secondWallet),
+        repo.issueLaunch(second.id, "other", secondWallet),
+      ]);
+      assert.equal(racing.filter((r) => r.status === "fulfilled").length, 1);
+      assert.equal(racing.filter((r) => r.status === "rejected").length, 1);
+      const launched = racing[0].status === "fulfilled" ? first : second;
+      const waiting = launched.id === first.id ? second : first;
+      await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
+      await assert.rejects(repo.issueLaunch(waiting.id, "artist", secondWallet), /not found/);
+      await repo.observe(launched.id, { id: "provider-race", externalId: launched.id,
+        state: "processing", originalStatus: "pending", updatedAt: "2026-10-28T00:00:00.000Z" });
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='unknown' WHERE id=$1", [launched.id]); });
+      await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='confirmed' WHERE id=$1", [launched.id]); });
+      assert.equal((await repo.issueLaunch(waiting.id, "other", secondWallet)).id, waiting.id);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();
