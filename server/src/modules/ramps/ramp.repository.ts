@@ -124,6 +124,18 @@ export function createRampRepository(db: Database) {
         return hydrate(row);
       });
     },
+    async getLaunchSession(id: string, userId: string, wallet: string) {
+      return db.transaction(async (c) => {
+        const row = (await c.query(`SELECT o.provider_state,o.provider_transaction_id,s.encrypted_session,s.resumable
+          FROM ramp_orders o LEFT JOIN ramp_launch_sessions s ON s.order_id=o.id
+          WHERE o.id=$1 AND o.user_id=$2 AND o.wallet_address=$3`, [id, userId, wallet])).rows[0];
+        if (!row) throw new HttpError(404, "Ramp transaction not found");
+        if (!row.encrypted_session) return null;
+        if (!row.resumable || row.provider_transaction_id || row.provider_state !== "created")
+          throw new HttpError(409, "Check your existing transaction before reopening payment.");
+        return row.encrypted_session as Buffer;
+      });
+    },
     // The adapter prepares this encrypted session without creating a provider transaction.
     async saveLaunchSession(id: string, userId: string, wallet: string, encryptedSession: Buffer, resumable: boolean) {
       if (!Buffer.isBuffer(encryptedSession) || encryptedSession.length < 30 || encryptedSession.length > 40000 || typeof resumable !== "boolean")

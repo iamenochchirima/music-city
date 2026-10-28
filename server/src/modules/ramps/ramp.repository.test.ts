@@ -18,6 +18,7 @@ import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { reconcileCashOut } from "../cashout/cashout-worker.js";
 import { createCashOutAuthorizationService } from "../cashout/cashout-authorization.service.js";
+import { createRampLaunchService } from "./ramp-launch.service.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -461,6 +462,23 @@ test(
       await assert.rejects(db.transaction(async (c) => { await c.query("DELETE FROM ramp_launch_sessions WHERE order_id=$1", [sessionOrder.id]); }), /append-only/);
       await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='unknown' WHERE id=$1", [sessionOrder.id]); });
       await assert.rejects(repo.saveLaunchSession(sessionOrder.id, "other", sessionWallet, Buffer.alloc(40), true), /existing transaction/);
+
+      const adapterWallet = Keypair.random().publicKey();
+      const adapterOrder = (await repo.reserve(terms({ userId: "other", walletAddress: adapterWallet }))).order;
+      let prepareCalls = 0;
+      const adapterService = createRampLaunchService(repo, new Map([["moonpay", { safeResume: true, async prepare(order) {
+        prepareCalls++;
+        const params = new URLSearchParams({ apiKey: "pk_test_fixture", externalTransactionId: order.id, externalCustomerId: order.terms.userId, theme: "dark", lockAmount: "true", currencyCode: "usdc_xlm", walletAddress: order.terms.walletAddress, baseCurrencyCode: "zar", baseCurrencyAmount: "100.00", allowedIpAddress: "binding", signature: "test-signature" });
+        return `https://buy-sandbox.moonpay.com/?${params}`;
+      } }]]), launchCipher, async () => true);
+      const launchOwner = { userId: "other", walletAddress: adapterWallet };
+      const firstLaunch = await adapterService.launch(adapterOrder.id, launchOwner, ["203.0.113.1"]);
+      assert.equal(firstLaunch.created, true);
+      assert.deepEqual(await adapterService.launch(adapterOrder.id, launchOwner, ["203.0.113.1"]), { url: firstLaunch.url, created: false });
+      assert.equal(prepareCalls, 1);
+      const savedLaunch = await db.transaction(async (c) => (await c.query("SELECT encrypted_session FROM ramp_launch_sessions WHERE order_id=$1", [adapterOrder.id])).rows[0].encrypted_session as Buffer);
+      assert.equal(savedLaunch.includes(Buffer.from(firstLaunch.url)), false);
+      await assert.rejects(adapterService.launch(adapterOrder.id, { ...launchOwner, userId: "artist" }, ["203.0.113.1"]), /not found/);
 
       const cashKey = Keypair.random(), cashWallet = cashKey.publicKey(), cashIssuer = Keypair.random().publicKey();
       const cashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cashWallet, direction: "sell", assetIssuer: cashIssuer,

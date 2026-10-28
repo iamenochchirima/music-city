@@ -169,3 +169,9 @@ Local component and HTTP tests covered review, signing, cancellation, an unavail
 Added append-only storage for an encrypted provider session and atomically recorded the launch with the order. Concurrent attempts share the first stored session only if the adapter has explicitly established that reopening it is safe. A provider reference, unresolved state or previously launched order without a saved session blocks replacement. This is an internal persistence boundary; it is not connected to a provider adapter or browser yet. MoonPay's duplicate-session behavior still needs provider evidence before treating its link as resumable.
 
 An isolated PostgreSQL test covered concurrent saves, ownership, immutable records, unsafe retry and unresolved provider state. The migration ran twice on a fresh disposable database, and server typecheck passed. No provider transaction was created.
+
+### 28 October 2026: provider launch boundary
+
+Added an internal launch service that checks the order owner and verified route, prepares a provider link, validates its sandbox origin and exact order, amount and wallet parameters, and encrypts the link before returning it. A safe-to-resume adapter can recover the same stored link without regenerating it. The MoonPay adapter uses the existing signed URL builder and explicitly does not claim safe resume. No provider is enabled by this service, and the service is not exposed through an HTTP route yet; trusted customer IP handling and the user flow remain open.
+
+Local adapter and service tests covered tampered destinations, duplicate parameters, capability and owner rejection, encryption and safe resume. An isolated PostgreSQL test exercised the service against durable storage; MoonPay catalog responses were simulated. Server typecheck passed. These checks did not create a MoonPay transaction or demonstrate provider-level idempotency.
