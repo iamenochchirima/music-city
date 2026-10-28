@@ -265,6 +265,12 @@ export function createRampRepository(db: Database) {
         return { order: hydrate(row), created };
       });
     },
+    async getByRequest(userId: string, requestId: string): Promise<RampOrder | null> {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE user_id=$1 AND request_id=$2", [userId, requestId])).rows[0];
+        return row ? hydrate(row) : null;
+      });
+    },
     async getForOwner(
       id: string,
       userId: string,

@@ -8,6 +8,7 @@ import { createRampRepository } from "./ramp.repository.js";
 import { rampProgressStatements } from "./ramp-progress-migration.js";
 import { rampSchemaStatements } from "./ramp-migration.js";
 import { rampLeaseStatements } from "./ramp-lease-migration.js";
+import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -56,6 +57,10 @@ test("shared ramp terms reject mismatched money, modes and methods", () => {
     ).success,
     true,
   );
+});
+
+test("the configured application exposes no unverified payment routes", async () => {
+  assert.deepEqual(await verifiedRampCapabilities.routes(), []);
 });
 
 const url = process.env.RAMP_TEST_DATABASE_URL;
@@ -367,6 +372,33 @@ test(
       await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
       await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='confirmed' WHERE id=$1", [launched.id]); });
       assert.equal((await repo.issueLaunch(waiting.id, "other", secondWallet)).id, waiting.id);
+
+      const serviceWallet = Keypair.random().publicKey();
+      const serviceOwner = { userId: "other", walletAddress: serviceWallet };
+      const route: VerifiedRampRoute = {
+        provider: "moonpay", direction: "buy", environment: "sandbox", network: "stellar:testnet",
+        assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" },
+        amountDecimals: 2, minUnits: "100", maxUnits: "100000", verifiedAt: "2026-10-27T00:00:00.000Z", expiresAt: "2026-10-29T00:00:00.000Z",
+      };
+      let activeRoutes: VerifiedRampRoute[] = [];
+      const service = createRampService(repo, { async routes() { return activeRoutes; } }, () => Date.parse("2026-10-28T00:00:00.000Z"));
+      const request = { requestId: randomUUID(), provider: "moonpay", direction: "buy", assetCode: "XLM", market: route.market, amount: "100.00" };
+      await assert.rejects(service.create(serviceOwner, request), /not available/);
+      activeRoutes = [{ ...route, expiresAt: "2026-10-27T12:00:00.000Z" }];
+      await assert.rejects(service.create(serviceOwner, request), /not available/);
+      activeRoutes = [route];
+      await assert.rejects(service.create(serviceOwner, { ...request, amount: "1.001" }), /precision/);
+      await assert.rejects(service.create(serviceOwner, { ...request, amount: "0.10" }), /limits/);
+      await assert.rejects(service.create(serviceOwner, { ...request, walletAddress: input.walletAddress }));
+      const creates = await Promise.all(Array.from({ length: 8 }, () => service.create(serviceOwner, request)));
+      assert.equal(creates.filter((result) => result.created).length, 1);
+      assert.equal(new Set(creates.map((result) => result.order.id)).size, 1);
+      assert.equal(creates[0].order.terms.amount.units, "10000");
+      assert.equal(creates[0].order.terms.walletAddress, serviceWallet);
+      activeRoutes = [];
+      assert.equal((await service.create(serviceOwner, request)).order.id, creates[0].order.id);
+      await assert.rejects(service.create(serviceOwner, { ...request, amount: "101.00" }), /different terms/);
+      await assert.rejects(service.create({ ...serviceOwner, walletAddress: secondWallet }, request), /different terms/);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();

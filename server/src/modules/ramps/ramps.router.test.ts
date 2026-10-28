@@ -17,17 +17,19 @@ test("ramp history and detail require a session and enforce user and wallet owne
   };
   const owned = (user: string, address: string) => user === order.terms.userId && address === order.terms.walletAddress;
   const app = express();
+  const createCalls: Array<{ userId: string; walletAddress: string }> = [];
+  app.use(express.json());
   app.use("/ramps", createRampsRouter({
     list: async (user, address) => owned(user, address) ? [order] : [],
     getForOwner: async (id, user, address) => id === order.id && owned(user, address) ? order : null,
-  }, async address => ({ id: address === wallet ? "user-1" : "user-2" })));
+  }, async address => ({ id: address === wallet ? "user-1" : "user-2" }), { routes: async () => [], create: async (owner) => { createCalls.push(owner); return { order, created: true }; } }));
   app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => res.status(error instanceof HttpError ? error.statusCode : 500).json({ error: error.message }));
   const server = app.listen(0, "127.0.0.1");
   await new Promise<void>(resolve => server.once("listening", resolve));
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   const token = (walletAddress: string) => tokenService.issueSession({ walletAddress, displayName: "Fan", artistAccess: false, primaryIntent: "listener", onboardingStatus: "complete", onboardingStep: "complete", onboardingVersion: 1, profileCompletion: { percentage: 100, completed: [], missing: [], requiredComplete: true } });
-  const request = (path: string, credential?: string) => fetch(`http://127.0.0.1:${address.port}/ramps${path}`, { headers: credential ? { Authorization: `Bearer ${credential}` } : {} });
+  const request = (path: string, credential?: string, method = "GET") => fetch(`http://127.0.0.1:${address.port}/ramps${path}`, { method, headers: { ...(credential ? { Authorization: `Bearer ${credential}` } : {}), ...(method === "POST" ? { "Content-Type": "application/json" } : {}) }, ...(method === "POST" ? { body: "{}" } : {}) });
   try {
     assert.equal((await request("/")).status, 401);
     assert.equal((await request("/", "invalid")).status, 401);
@@ -43,6 +45,10 @@ test("ramp history and detail require a session and enforce user and wallet owne
     assert.deepEqual(await (await request("/", token(otherWallet))).json(), { items: [] });
     assert.equal((await request("/order-1", token(otherWallet))).status, 404);
     assert.equal((await request("/missing", token(wallet))).status, 404);
+    assert.equal((await request("/", undefined, "POST")).status, 401);
+    assert.deepEqual(await (await request("/capabilities", token(wallet))).json(), { routes: [] });
+    assert.equal((await request("/", token(wallet), "POST")).status, 201);
+    assert.deepEqual(createCalls, [{ userId: "user-1", walletAddress: wallet }]);
   } finally {
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));

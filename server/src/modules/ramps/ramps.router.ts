@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "./ramp.repository.js";
+import { createRampService, verifiedRampCapabilities } from "./ramp-service.js";
 
 type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner">;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
@@ -28,7 +29,8 @@ export function publicOrder(order: RampOrder) {
   };
 }
 
-export function createRampsRouter(repository: Repository, findUser: FindUser) {
+type Service = ReturnType<typeof createRampService>;
+export function createRampsRouter(repository: Repository, findUser: FindUser, service: Service) {
   const router = Router();
   router.use(requireSession);
   async function owner(wallet: string) {
@@ -41,6 +43,16 @@ export function createRampsRouter(repository: Repository, findUser: FindUser) {
     const userId = await owner(wallet);
     res.set("Cache-Control", "no-store").json({ items: (await repository.list(userId, wallet)).map(publicOrder) });
   }));
+  router.get("/capabilities", asyncHandler(async (req, res) => {
+    await owner(req.session!.walletAddress);
+    res.set("Cache-Control", "no-store").json({ routes: await service.routes() });
+  }));
+  router.post("/", asyncHandler(async (req, res) => {
+    const walletAddress = req.session!.walletAddress;
+    const userId = await owner(walletAddress);
+    const result = await service.create({ userId, walletAddress }, req.body);
+    res.set("Cache-Control", "no-store").status(result.created ? 201 : 200).json({ order: publicOrder(result.order) });
+  }));
   router.get("/:id", asyncHandler(async (req, res) => {
     const wallet = req.session!.walletAddress;
     const userId = await owner(wallet);
@@ -51,4 +63,5 @@ export function createRampsRouter(repository: Repository, findUser: FindUser) {
   return router;
 }
 
-export const rampsRouter = createRampsRouter(createRampRepository(databaseService), usersRepository.findByWallet);
+const repository = createRampRepository(databaseService);
+export const rampsRouter = createRampsRouter(repository, usersRepository.findByWallet, createRampService(repository, verifiedRampCapabilities));

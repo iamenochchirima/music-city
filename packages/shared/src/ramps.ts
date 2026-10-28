@@ -25,6 +25,22 @@ export const rampChainStateSchema = z.enum([
   "unknown",
 ]);
 
+export const rampMarketSchema = z.object({
+  country: z.string().regex(/^[A-Z]{2}$/),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  method: z.enum(["card", "bank", "apple_pay", "google_pay", "cash_pickup", "cash_deposit", "mobile_money"]),
+}).strict();
+
+export const createRampOrderSchema = z.object({
+  requestId: z.string().uuid().toLowerCase(),
+  provider: rampProviderSchema,
+  direction: rampDirectionSchema,
+  assetCode: z.enum(["USDC", "XLM"]),
+  market: rampMarketSchema,
+  amount: z.string().max(40).regex(/^(0|[1-9][0-9]*)(\.[0-9]+)?$/),
+}).strict();
+export type CreateRampOrder = z.infer<typeof createRampOrderSchema>;
+
 // These are server-resolved terms, not an authorization to create a provider order.
 export const rampOrderTermsSchema = z
   .object({
@@ -37,21 +53,7 @@ export const rampOrderTermsSchema = z
     network: z.literal("stellar:testnet"),
     assetCode: z.enum(["USDC", "XLM"]),
     assetIssuer: stellarWalletAddressSchema.optional(),
-    market: z
-      .object({
-        country: z.string().regex(/^[A-Z]{2}$/),
-        currency: z.string().regex(/^[A-Z]{3}$/),
-        method: z.enum([
-          "card",
-          "bank",
-          "apple_pay",
-          "google_pay",
-          "cash_pickup",
-          "cash_deposit",
-          "mobile_money",
-        ]),
-      })
-      .strict(),
+    market: rampMarketSchema,
     amount: cashOutMoneySchema,
   })
   .strict()
@@ -129,16 +131,3 @@ export const rampOrderSchema = z
   .strict();
 export type RampOrder = z.infer<typeof rampOrderSchema>;
 
-export const createMoonpayOrderSchema = z
-  .object({
-    requestId: z.string().uuid().toLowerCase(),
-    direction: rampDirectionSchema,
-    country: z.string().regex(/^[A-Z]{2}$/),
-    currency: z.string().regex(/^[A-Z]{3}$/),
-    amount: z
-      .string()
-      .max(40)
-      .regex(/^[0-9]+(\.[0-9]+)?$/),
-  })
-  .strict();
-export type CreateMoonpayOrder = z.infer<typeof createMoonpayOrderSchema>;

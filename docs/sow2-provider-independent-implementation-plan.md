@@ -10,7 +10,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 - [x] B1. Inspect current changes, workspace instructions, shared contracts, ramp migrations, repository, MoonPay adapter, cash-out validator, worker, authentication, and Revenue UI. Record any conflicting behavior and preserve unrelated work.
 - [ ] B2. Define state transitions and a provider interface using actual requirements, including separate provider and chain outcomes, exact amounts, ownership, expiry, and recovery. Reuse or replace existing overlapping contracts deliberately.
-- [ ] B3. Confirm provider flags disable unavailable routes by default. Keep test fixtures inaccessible outside explicitly isolated tests.
+- [x] B3. Confirm provider flags disable unavailable routes by default. Keep test fixtures inaccessible outside explicitly isolated tests.
 
 ## Backend and transaction lifecycle
 
@@ -83,3 +83,7 @@ The admin transaction screen now lists and opens ramp orders, separates provider
 ### 28 October 2026: reconciliation lease recovery
 
 Added an additive lease-token migration. Expired workers can no longer persist observations or release a newer worker's lease, and a notification received during a lease keeps the job due for another check. The worker unit tests and isolated PostgreSQL race and repeated-migration tests passed; migration initialization also passed on an existing cloned local database. This advances R5 and V1 without establishing provider delivery or chain confirmation.
+
+### 28 October 2026: authenticated intent creation
+
+Added authenticated capability and intent-creation endpoints with server-derived account and wallet, exact decimal handling, current route limits, and recovery by request ID. Existing orders remain retrievable after a route becomes unavailable; changed terms or wallets are rejected. The application capability registry currently exposes no verified routes, regardless of sandbox flags, and therefore cannot create new orders yet. Test capabilities exist only in the isolated PostgreSQL suite. Concurrent create, retry, unsupported and expired capability, precision, limit, and ownership tests passed along with HTTP authorization and shared/server typechecks. This advances R1 and R2; provider capability discovery, launch recovery and actual provider processing remain open.
