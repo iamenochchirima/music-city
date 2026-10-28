@@ -280,7 +280,16 @@ export function createRampRepository(db: Database) {
     async release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | null) {
       return db.transaction(async (c) => {
         await c.query(
-          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,attempts=CASE WHEN $3::text IS NOT NULL THEN LEAST(attempts+1,8) ELSE 0 END,due_at=CASE WHEN due_at<leased_until THEN NOW() ELSE NOW()+CASE WHEN $3::text IS NOT NULL THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END END,last_error_code=$3 WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()",
+          `UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,
+           attempts=CASE WHEN $3::text IS NOT NULL THEN LEAST(attempts+1,8) ELSE 0 END,
+           due_at=CASE WHEN due_at<leased_until THEN NOW() ELSE NOW()+CASE
+             WHEN $3::text IS NOT NULL THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8))
+             WHEN EXISTS (SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND
+               ((o.provider_state='completed' AND o.chain_state='confirmed') OR
+                (o.provider_state IN ('failed','cancelled','refunded') AND o.chain_state IN ('unobserved','failed','expired'))))
+               THEN INTERVAL '6 hours'
+             ELSE INTERVAL '15 seconds' END END,last_error_code=$3
+           WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()`,
           [id, token, errorCode],
         );
       });

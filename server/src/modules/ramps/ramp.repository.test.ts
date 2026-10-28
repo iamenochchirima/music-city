@@ -420,12 +420,18 @@ test(
       const deliveryOrder = creates[0].order;
       await repo.issueLaunch(deliveryOrder.id, "other", serviceWallet);
       await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW()+INTERVAL '1 hour'"); await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [deliveryOrder.id]); });
-      const deliveryLease = await repo.lease();
+      let deliveryLease = await repo.lease();
       assert.equal(deliveryLease?.order.id, deliveryOrder.id);
       const deliveryObservation = { id: "delivery-provider", externalId: deliveryOrder.id, state: "completed" as const, originalStatus: "completed", updatedAt: "2026-10-28T00:00:00.000Z", chainHash: "e".repeat(64), assetUnits: "12500000" };
       const delivery = { transactionHash: "e".repeat(64), operationId: "123", ledger: 42, assetUnits: "12500000" };
       await repo.observe(deliveryOrder.id, { ...deliveryObservation, assetUnits: undefined }, deliveryLease!.token);
       await repo.observe(deliveryOrder.id, deliveryObservation, deliveryLease!.token);
+      await repo.release(deliveryOrder.id, deliveryLease!.token, null);
+      const awaitingDelivery = await db.transaction(async (c) => (await c.query("SELECT due_at < NOW()+INTERVAL '30 seconds' AS soon FROM ramp_reconciliation_jobs WHERE order_id=$1", [deliveryOrder.id])).rows[0]);
+      assert.equal(awaitingDelivery.soon, true);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [deliveryOrder.id]); });
+      deliveryLease = await repo.lease();
+      assert.equal(deliveryLease?.order.id, deliveryOrder.id);
       await assert.rejects(repo.observe(deliveryOrder.id, { ...deliveryObservation, assetUnits: "12500001" }, deliveryLease!.token), /Conflicting provider observation/);
       await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, { ...delivery, assetUnits: "1" }, deliveryLease!.token), /does not match/);
       await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, delivery, randomUUID()), /lease expired/);
@@ -437,6 +443,13 @@ test(
       assert.equal(recordedDelivery?.deliveries[0].transaction_hash, delivery.transactionHash);
       assert.equal(recordedDelivery?.deliveries[0].operation_id, delivery.operationId);
       await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, { ...delivery, operationId: "124" }, deliveryLease!.token), /different delivery/);
+      await repo.release(deliveryOrder.id, deliveryLease!.token, null);
+      const confirmedJob = await db.transaction(async (c) => (await c.query("SELECT due_at > NOW()+INTERVAL '5 hours' AS later FROM ramp_reconciliation_jobs WHERE order_id=$1", [deliveryOrder.id])).rows[0]);
+      assert.equal(confirmedJob.later, true);
+      await repo.recordMoonpayNotification({ orderId: deliveryOrder.id, providerId: "delivery-provider", userId: "other", direction: "buy", key: "completed-update", kind: "transaction_updated" });
+      const wokenJob = await db.transaction(async (c) => (await c.query("SELECT due_at <= NOW() AS due FROM ramp_reconciliation_jobs WHERE order_id=$1", [deliveryOrder.id])).rows[0]);
+      assert.equal(wokenJob.due, true);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW()+INTERVAL '1 hour' WHERE order_id=$1", [deliveryOrder.id]); });
 
       const duplicateOrder = (await repo.reserve(terms({ userId: "other", walletAddress: Keypair.random().publicKey() }))).order;
       await repo.issueLaunch(duplicateOrder.id, "other", duplicateOrder.terms.walletAddress);

@@ -205,3 +205,9 @@ Focused client and server tests passed for route configuration, supported amount
 The owner-scoped history response now distinguishes an unlaunched order from a requested launch or an established provider reference without exposing the reference. Wallet history can continue an unlaunched MoonPay order using its existing ID. An unresolved launch is labelled as checking and blocks another funding request while history is loaded or unavailable. The server remains the authority for rejecting conflicting launches.
 
 Local component and HTTP tests passed for resuming the same order, blocking an unresolved launch and account-scoped responses. Client and server typechecks passed. The resume screen has not yet been exercised in the full local application or with a real provider; MoonPay's safe-resume behavior remains unverified.
+
+### 29 October 2026: reconciliation scheduling
+
+The worker now checks fully confirmed deliveries and terminal failures less frequently, while retaining frequent checks for unconfirmed or uncertain transfers. A new verified notification makes the relevant job due immediately, including when a worker holds its lease. This reduces the chance that old completed jobs delay active orders; it does not remove the periodic check or treat provider completion as chain confirmation.
+
+The isolated PostgreSQL test covered prompt checks before delivery, slower checks after a confirmed receipt, and notification wake-up. Worker and webhook tests and server typecheck passed. Provider status regressions with newer timestamps still need an explicit policy and tests; R5 remains open.
