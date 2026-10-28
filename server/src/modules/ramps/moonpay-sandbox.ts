@@ -119,6 +119,31 @@ export class MoonpaySandbox {
       countries: z.array(country).parse(countries),
     };
   }
+  async paymentMethods(input: { countryCode: string; currencyCode: string; direction: "buy" | "sell"; state?: string }) {
+    const query = z.object({
+      countryCode: z.string().regex(/^[A-Z]{3}$/),
+      currencyCode: z.string().regex(/^[A-Z]{3}$/),
+      direction: z.enum(["buy", "sell"]),
+      state: z.string().regex(/^[A-Z]{2}$/).optional(),
+    }).strict().parse(input);
+    if (query.countryCode === "USA" && !query.state)
+      throw new HttpError(400, "Choose a state to check available payment methods");
+    const url = new URL("/payments/v1/payment-method-config", "https://api.moonpay.com");
+    url.searchParams.set("countryCode", query.countryCode);
+    url.searchParams.set("currencyCode", query.currencyCode);
+    url.searchParams.set("transactionType", query.direction);
+    if (query.state) url.searchParams.set("stateOfResidence", query.state);
+    let response: Response;
+    try {
+      response = await this.fetcher(url, { headers: { Authorization: `Api-Key ${this.config.MOONPAY_SK!}` },
+        redirect: "error", signal: AbortSignal.timeout(20000) });
+    } catch { throw new HttpError(502, "MoonPay payment methods are unavailable"); }
+    if (!response.ok) throw new HttpError(502, "MoonPay payment methods are unavailable");
+    try {
+      return z.array(z.object({ type: z.string().min(1).max(100), availability: z.object({ active: z.boolean() }) })).parse(await response.json())
+        .map(({ type, availability }) => ({ type, active: availability.active }));
+    } catch { throw new HttpError(502, "MoonPay returned unreadable payment methods"); }
+  }
   validateTerms(order: RampOrder, catalog: MoonpayCatalog) {
     rampOrderSchema.parse(order);
     const terms = order.terms;

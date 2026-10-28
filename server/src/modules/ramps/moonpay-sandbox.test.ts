@@ -330,3 +330,26 @@ test("widget signing requires an IP binding and signs it with the rest of the te
     second.searchParams.get("signature"),
   );
 });
+
+
+test("payment method discovery uses secret authentication on a fixed host and does not enable a route", async () => {
+  const fetcher = (async (input: URL, init: RequestInit) => {
+    assert.equal(input.origin, "https://api.moonpay.com");
+    assert.equal(input.pathname, "/payments/v1/payment-method-config");
+    assert.equal(input.searchParams.get("countryCode"), "GBR");
+    assert.equal(input.searchParams.get("currencyCode"), "GBP");
+    assert.equal(input.searchParams.get("transactionType"), "sell");
+    assert.ok(!input.href.includes("sk_test_fixture"));
+    assert.equal((init.headers as Record<string, string>).Authorization, "Api-Key sk_test_fixture");
+    assert.equal(init.redirect, "error");
+    return Response.json([{ type: "credit_debit_card", availability: { active: true }, limits: { arbitrary: "not trusted" } }, { type: "bank_transfer", availability: { active: false } }]);
+  }) as typeof fetch;
+  const client = new MoonpaySandbox(config(), fetcher);
+  assert.deepEqual(await client.paymentMethods({ countryCode: "GBR", currencyCode: "GBP", direction: "sell" }), [
+    { type: "credit_debit_card", active: true }, { type: "bank_transfer", active: false },
+  ]);
+  await assert.rejects(client.paymentMethods({ countryCode: "USA", currencyCode: "USD", direction: "buy" }), /state/);
+  await assert.rejects(client.paymentMethods({ countryCode: "GB", currencyCode: "GBP", direction: "buy" }));
+  const unavailable = new MoonpaySandbox(config(), (async () => new Response(null, { status: 401 })) as typeof fetch);
+  await assert.rejects(unavailable.paymentMethods({ countryCode: "GBR", currencyCode: "GBP", direction: "buy" }), /unavailable/);
+});
