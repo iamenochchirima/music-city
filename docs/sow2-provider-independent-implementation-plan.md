@@ -327,3 +327,9 @@ The isolated PostgreSQL recovery test now reconstructs the repository and envelo
 ### 29 October 2026: cash-out process restart test
 
 The PostgreSQL recovery test now starts separate Node worker processes against the same isolated schema and mocked Stellar transport. A process with the wrong test key leaves the retained attempt unknown and submits nothing. A new process with the correct key submits the exact saved envelope, after which the test records the retained transaction receipt. Lease recovery, ownership, idempotency, reordered observations, expired quotes and transfer tampering are covered by the related unit and database suites recorded above. V1 covers these automated tests only; real provider and wallet verification remain open.
+
+### 29 October 2026: current local wallet cancellation
+
+At revision `1630aea`, signed in through Dynamic Sandbox in the actual local application using an existing test identity and an isolated database. A simulated, unlaunched funding order appeared under Transactions. Manage opened the unavailable-option dialog, with cancellation available and no provider continuation. Cancellation succeeded and remained visible after reloading. No provider was contacted. The temporary fixture script was removed, and the test account was signed out.
+
+This check covers the current desktop flow only. Mobile, a real provider transaction, cash-out signing and the creator-to-claim journey remain open under U4, V3 and C2.
