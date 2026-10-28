@@ -10,6 +10,7 @@ import {
 import { HttpError } from "../../utils/http-error.js";
 import type { IncomingDelivery } from "./incoming-delivery.js";
 import { parseCashOutSnapshot, validateCashOutQuote } from "../cashout/cashout-quote.js";
+import { prepareCashOutTransfer } from "../cashout/cashout-transfer.js";
 
 type Database = {
   transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T>;
@@ -321,6 +322,56 @@ export function createRampRepository(db: Database) {
         await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'quote_saved',$3)",
           [id, `quote:${quote.id}`, JSON.stringify({ quoteId: quote.id, confirmationHash: verified.hash })]);
         return verified;
+      });
+    },
+    // Sequence, fee and ledger must come from a trusted Stellar account and ledger read.
+    async prepareCashOutAttempt(input: { orderId: string; quoteId: string; confirmationHash: string; userId: string; walletAddress: string; sequence: string; feeStroops: number; maxFeeStroops: number; preparedLedger: number; now?: Date }) {
+      if (!/^[a-f0-9]{64}$/.test(input.confirmationHash) || !Number.isSafeInteger(input.preparedLedger) || input.preparedLedger < 1)
+        throw new HttpError(400, "Review the quote and refresh your wallet");
+      return db.transaction(async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`cashout-wallet:${input.walletAddress}`]);
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE", [input.orderId, input.userId, input.walletAddress])).rows[0];
+        if (!row) throw new HttpError(404, "Transaction not found");
+        const order = hydrate(row);
+        const quoteRow = (await c.query("SELECT snapshot FROM ramp_quotes WHERE id=$1 AND order_id=$2", [input.quoteId, input.orderId])).rows[0];
+        if (!quoteRow) throw new HttpError(404, "Quote not found");
+        const saved = parseCashOutSnapshot(quoteRow.snapshot);
+        if (saved.hash !== input.confirmationHash) throw new HttpError(409, "Review the current quote before continuing");
+        const active = (await c.query("SELECT a.* FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE o.wallet_address=$1 AND (a.state IN ('prepared','submitting','unknown') OR (a.order_id=$2 AND a.state='confirmed')) ORDER BY a.created_at DESC LIMIT 1", [input.walletAddress, input.orderId])).rows[0];
+        if (active) {
+          if (active.order_id !== input.orderId || active.quote_id !== input.quoteId) throw new HttpError(409, "Check the existing transfer before starting another");
+          return { id: active.id as string, quoteId: active.quote_id as string, transaction: active.prepared_envelope as string, transactionHash: active.transaction_hash as string, expiresAt: new Date(active.expires_at).toISOString(), state: active.state as string };
+        }
+        if (!["created", "awaiting_user", "processing"].includes(order.providerState)) throw new HttpError(409, "This cash-out is no longer ready for a transfer");
+        const verified = validateCashOutQuote(order, saved.snapshot.quote, saved.snapshot.instructions, input.now ?? new Date());
+        const { quote, instructions } = verified.snapshot;
+        const policy = { provider: order.terms.provider, environment: order.terms.environment, network: order.terms.network, assetIssuer: order.terms.assetIssuer!, walletAddress: order.terms.walletAddress, market: quote.market, maxFeeStroops: input.maxFeeStroops };
+        const now = input.now ?? new Date();
+        let prepared = prepareCashOutTransfer(instructions, quote, policy, input.sequence, input.feeStroops, now);
+        // An unsigned cancellation must not reuse the old transaction hash, even within the same second.
+        for (let retries = 0; retries < 10; retries++) {
+          const duplicate = (await c.query("SELECT 1 FROM ramp_chain_attempts WHERE network=$1 AND transaction_hash=$2", [order.terms.network, prepared.transactionHash])).rows[0];
+          if (!duplicate) break;
+          prepared = prepareCashOutTransfer(instructions, quote, policy, input.sequence, input.feeStroops, now, Math.floor(Date.parse(prepared.expiresAt) / 1000) - 1);
+          if (retries === 9) throw new HttpError(409, "Try again with a new quote");
+        }
+        const attemptId = randomUUID();
+        await c.query("INSERT INTO ramp_chain_attempts(id,order_id,quote_id,network,transaction_hash,prepared_envelope,state,expires_at,prepared_ledger) VALUES($1,$2,$3,$4,$5,$6,'prepared',$7,$8)", [attemptId, input.orderId, input.quoteId, order.terms.network, prepared.transactionHash, prepared.transaction, prepared.expiresAt, input.preparedLedger]);
+        await c.query("UPDATE ramp_orders SET chain_state='prepared',updated_at=NOW() WHERE id=$1", [input.orderId]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'transfer_prepared',$3)", [input.orderId, `attempt:${attemptId}`, JSON.stringify({ attemptId, quoteId: input.quoteId, transactionHash: prepared.transactionHash })]);
+        return { id: attemptId, quoteId: input.quoteId, transaction: prepared.transaction, transactionHash: prepared.transactionHash, expiresAt: prepared.expiresAt, state: "prepared" };
+      });
+    },
+    async cancelUnsignedCashOutAttempt(orderId: string, attemptId: string, userId: string, walletAddress: string) {
+      return db.transaction(async (c) => {
+        await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`cashout-wallet:${walletAddress}`]);
+        const row = (await c.query("SELECT a.* FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE a.id=$1 AND a.order_id=$2 AND o.user_id=$3 AND o.wallet_address=$4 FOR UPDATE OF a,o", [attemptId, orderId, userId, walletAddress])).rows[0];
+        if (!row) throw new HttpError(404, "Transfer not found");
+        if (row.state === "cancelled") return;
+        if (row.state !== "prepared" || row.signed_envelope_encrypted) throw new HttpError(409, "Check the existing transfer before trying again");
+        await c.query("UPDATE ramp_chain_attempts SET state='cancelled',updated_at=NOW() WHERE id=$1", [attemptId]);
+        await c.query("UPDATE ramp_orders SET chain_state='unobserved',updated_at=NOW() WHERE id=$1 AND chain_state='prepared'", [orderId]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'transfer_cancelled',$3)", [orderId, `cancel:${attemptId}`, JSON.stringify({ attemptId })]);
       });
     },
     async getCashOutQuote(orderId: string, quoteId: string, userId: string, walletAddress: string) {

@@ -27,11 +27,15 @@ export function prepareCashOutTransfer(
   accountSequence: string,
   feeStroops: number,
   now = new Date(),
+  expiryCeilingSeconds?: number,
 ) {
+  if (expiryCeilingSeconds !== undefined && (!Number.isSafeInteger(expiryCeilingSeconds) || expiryCeilingSeconds < 1))
+    throw new HttpError(400, "Invalid transfer expiry");
   const instructions = cashOutTransferInstructionsSchema.parse(rawInstructions);
   const quote = cashOutQuoteSchema.parse(rawQuote);
   const expires = Math.floor(Math.min(
     Date.parse(instructions.expiresAt), Date.parse(quote.expiresAt), now.getTime() + 300_000,
+    expiryCeilingSeconds === undefined ? Infinity : expiryCeilingSeconds * 1000,
   ) / 1000);
   if (!Number.isFinite(now.getTime()) || Date.parse(quote.createdAt) > now.getTime() ||
     expires <= Math.floor(now.getTime() / 1000)) {

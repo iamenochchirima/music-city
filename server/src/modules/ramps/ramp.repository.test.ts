@@ -10,6 +10,7 @@ import { rampSchemaStatements } from "./ramp-migration.js";
 import { rampLeaseStatements } from "./ramp-lease-migration.js";
 import { rampDeliveryStatements } from "./ramp-delivery-migration.js";
 import { rampQuoteStatements } from "./ramp-quote-migration.js";
+import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 
@@ -101,9 +102,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -469,6 +470,38 @@ test(
       await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, instructions, new Date(instructions.expiresAt)), /new quote/);
       for (const sql of ["UPDATE ramp_quotes SET snapshot='{}' WHERE id=$1", "DELETE FROM ramp_quotes WHERE id=$1"]) await assert.rejects(db.transaction(async (c) => { await c.query(sql, [quoteId]); }), /append-only/);
       await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET terms=jsonb_set(terms,'{amount,units}',to_jsonb('1'::text)) WHERE id=$1", [cashOrder.id]); }), /immutable/);
+
+      const prepareInput = { orderId: cashOrder.id, quoteId, confirmationHash: saves[0].hash, userId: "other", walletAddress: cashWallet, sequence: "42", feeStroops: 100, maxFeeStroops: 1000, preparedLedger: 42, now: when };
+      await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, confirmationHash: "f".repeat(64) }), /Review/);
+      await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, userId: "artist" }), /not found/);
+      const prepared = await Promise.all(Array.from({ length: 8 }, () => repo.prepareCashOutAttempt(prepareInput)));
+      assert.equal(new Set(prepared.map((attempt) => attempt.id)).size, 1);
+      assert.equal((await repo.get(cashOrder.id))?.chainState, "prepared");
+      assert.equal(prepared[0].state, "prepared");
+      const changedQuoteId = randomUUID();
+      await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, { ...quote, id: changedQuoteId, providerQuoteId: "new-quote" }, { ...instructions, quoteId: changedQuoteId }, when), /existing transfer/);
+      const concurrentOrder = (await repo.reserve({ ...cashOrder.terms, requestId: randomUUID() })).order;
+      await repo.bindProviderReference(concurrentOrder.id, "other", cashWallet, "other-cash-provider");
+      const concurrentQuoteId = randomUUID();
+      const concurrentQuote = { ...quote, id: concurrentQuoteId, cashOutId: concurrentOrder.id, providerQuoteId: "other-quote", providerTransactionId: "other-cash-provider" };
+      const concurrentInstructions = { ...instructions, quoteId: concurrentQuoteId, cashOutId: concurrentOrder.id, providerTransactionId: "other-cash-provider" };
+      const concurrentSaved = await repo.saveCashOutQuote(concurrentOrder.id, "other", cashWallet, concurrentQuote, concurrentInstructions, when);
+      await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, orderId: concurrentOrder.id, quoteId: concurrentQuoteId, confirmationHash: concurrentSaved.hash }), /existing transfer/);
+      await assert.rejects(repo.cancelUnsignedCashOutAttempt(cashOrder.id, prepared[0].id, "artist", cashWallet), /not found/);
+      await repo.cancelUnsignedCashOutAttempt(cashOrder.id, prepared[0].id, "other", cashWallet);
+      await repo.cancelUnsignedCashOutAttempt(cashOrder.id, prepared[0].id, "other", cashWallet);
+      assert.equal((await repo.get(cashOrder.id))?.chainState, "unobserved");
+      const secondAttempt = await repo.prepareCashOutAttempt(prepareInput);
+      assert.notEqual(secondAttempt.id, prepared[0].id);
+      assert.notEqual(secondAttempt.transactionHash, prepared[0].transactionHash);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET transaction_hash=$2 WHERE id=$1", [secondAttempt.id, "d".repeat(64)]); }), /immutable/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("DELETE FROM ramp_chain_attempts WHERE id=$1", [secondAttempt.id]); }), /append-only/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='confirmed' WHERE id=$1", [secondAttempt.id]); }), /Invalid ramp transfer state/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='submitting' WHERE id=$1", [secondAttempt.id]); }), /signed transfer/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='submitting',signed_envelope_encrypted=$2 WHERE id=$1", [secondAttempt.id, Buffer.from("test-only-encrypted-envelope")]); });
+      await assert.rejects(repo.cancelUnsignedCashOutAttempt(cashOrder.id, secondAttempt.id, "other", cashWallet), /existing transfer/);
+      assert.equal((await repo.prepareCashOutAttempt(prepareInput)).state, "submitting");
+      await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, orderId: concurrentOrder.id, quoteId: concurrentQuoteId, confirmationHash: concurrentSaved.hash }), /existing transfer/);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();
