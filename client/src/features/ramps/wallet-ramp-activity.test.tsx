@@ -138,3 +138,31 @@ it("lets an unlaunched cash-out be cancelled even when the route is unavailable"
   expect(await screen.findByText("Cash-out request cancelled.")).toBeTruthy();
   expect(mock.post).toHaveBeenCalledWith("/ramps/saved-sell/cancel", {}, "session");
 });
+
+it("offers a quote only for a started, processing cash-out with a matching route", async () => {
+  const order = { id: "saved-sell", direction: "sell", provider: "moonpay", assetCode: "USDC", market: { country: "GB", currency: "GBP", method: "bank" }, launchRequested: true, providerStarted: true, providerState: "processing", chainState: "unobserved", amount: { currency: "USDC", units: "10000000", decimals: 7 }, createdAt: "2026-10-28T00:00:00Z" };
+  const route = { provider: "moonpay", direction: "sell", assetCode: "USDC", assetIssuer: "issuer", market: order.market, amountDecimals: 7, minUnits: "10000000", maxUnits: "100000000" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
+  const user = userEvent.setup();
+  mock.post.mockRejectedValue(new Error("not ready"));
+  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
+  await user.click(await screen.findByRole("button", { name: "Get quote" }));
+  expect((await within(screen.getByRole("dialog", { name: "Cash out" })).findByRole("alert")).textContent).toContain("Quote not available yet");
+  expect(mock.post).toHaveBeenCalledWith("/ramps/saved-sell/cashout/quotes", {}, "session");
+});
+
+it("takes a provider-ready cash-out from quote to review without signing", async () => {
+  const order = { id: "ready-sell", direction: "sell", provider: "moonpay", assetCode: "USDC", market: { country: "GB", currency: "GBP", method: "bank" }, launchRequested: true, providerStarted: true, providerState: "awaiting_user", chainState: "unobserved", amount: { currency: "USDC", units: "10000000", decimals: 7 }, createdAt: "2026-10-28T00:00:00Z" };
+  const route = { provider: "moonpay", direction: "sell", assetCode: "USDC", assetIssuer: "issuer", market: order.market, amountDecimals: 7, minUnits: "10000000", maxUnits: "100000000" };
+  const transfer = { id: "attempt", quoteId: "quote", transactionHash: "hash", transaction: "unsigned", networkFeeStroops: "100", state: "prepared", expiresAt: "2099-01-01T00:00:00Z" };
+  const quote = { provider: "moonpay", debitUnits: "10000000", receive: { currency: "GBP", units: "75", decimals: 2 }, destinationLabel: "Bank ending 1234", fees: [] };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : path.endsWith("/transfer") ? { transfer } : path.endsWith("/quotes/quote") ? { quote, expiresAt: "2099-01-01T00:00:00Z" } : { items: [order] });
+  mock.post.mockResolvedValueOnce({ quote: { id: "quote" }, confirmationHash: "hash" }).mockResolvedValueOnce({ transfer });
+  const sign = vi.fn(), user = userEvent.setup();
+  render(<WalletRampActivity token="session" sign={sign} spendableUsdc="2" />);
+  await user.click(await screen.findByRole("button", { name: "Get quote" }));
+  expect(await screen.findByText("0.75 GBP")).toBeTruthy();
+  expect(screen.getByText("Bank ending 1234")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Confirm cash-out" })).toBeTruthy();
+  expect(sign).not.toHaveBeenCalled();
+});

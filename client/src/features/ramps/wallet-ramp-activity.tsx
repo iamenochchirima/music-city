@@ -5,6 +5,7 @@ import { CashOutReview } from "./cash-out-review";
 import { AddFundsDialog, type FundingRoute } from "./add-funds-dialog";
 import { ResumeFundingDialog } from "./resume-funding-dialog";
 import { CashOutStartDialog, type CashOutRoute } from "./cash-out-start-dialog";
+import { CashOutQuoteDialog } from "./cash-out-quote-dialog";
 
 type Order = {
   id: string; direction: "buy" | "sell"; provider: string; providerState: string; chainState: string; launchRequested: boolean; providerStarted: boolean;
@@ -28,6 +29,7 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [quoteId, setQuoteId] = useState<string | null>(null);
   const [resume, setResume] = useState<Order | null>(null);
   const [funding, setFunding] = useState(false);
   const [cashOut, setCashOut] = useState(false);
@@ -64,13 +66,14 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
     const timer = window.setInterval(() => void load(), 15000);
     return () => { active = false; window.clearInterval(timer); };
   }, [token, retry]);
-  const resumeAvailable = resume !== null && (resume.direction === "buy" ? routes : cashOutRoutes).some((route) => {
-    if (route.provider !== resume.provider || route.assetCode !== resume.assetCode ||
-        route.market.country !== resume.market?.country || route.market.currency !== resume.market?.currency ||
-        route.market.method !== resume.market?.method || route.amountDecimals !== resume.amount.decimals) return false;
-    try { return BigInt(resume.amount.units) >= BigInt(route.minUnits) && BigInt(resume.amount.units) <= BigInt(route.maxUnits); }
+  function routeMatches(item: Order, route: FundingRoute | CashOutRoute) {
+    if (route.provider !== item.provider || route.direction !== item.direction || route.assetCode !== item.assetCode ||
+        route.market.country !== item.market?.country || route.market.currency !== item.market?.currency ||
+        route.market.method !== item.market?.method || route.amountDecimals !== item.amount.decimals) return false;
+    try { return BigInt(item.amount.units) >= BigInt(route.minUnits) && BigInt(item.amount.units) <= BigInt(route.maxUnits); }
     catch { return false; }
-  });
+  }
+  const resumeAvailable = resume !== null && (resume.direction === "buy" ? routes : cashOutRoutes).some((route) => routeMatches(resume, route));
   const unresolved = items.some((item) => (item.launchRequested || item.providerStarted) &&
     (["created", "awaiting_user", "processing", "ready_for_pickup", "refund_pending", "unknown"].includes(item.providerState) ||
       ["submitting", "unknown"].includes(item.chainState) || (item.providerState === "completed" && item.chainState !== "confirmed")));
@@ -81,7 +84,8 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
     </div>
     {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-slate-300">Could not load transaction history. <Button type="button" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div>}
     {unresolved && <p className="text-sm text-slate-400">Check your pending transaction before starting another.</p>}
-    {items.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium text-white">Transactions</h4><ul className="divide-y divide-white/10">{items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><p className="font-medium text-white">{item.direction === "buy" ? "Add funds" : "Cash-out"} · {money(item.amount)}</p><p className="mt-1 text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</p></div><div className="flex flex-wrap items-center gap-3"><p className="text-slate-300">{(item.launchRequested || item.providerStarted) && item.providerState === "created" ? "Checking status" : providerStatus[item.providerState] ?? "Checking status"}{(item.launchRequested || item.providerStarted || item.chainState !== "unobserved" || !["created", "cancelled"].includes(item.providerState)) && <> · {chainStatus[item.chainState] ?? "Checking transfer"}</>}</p>{item.providerState === "created" && !item.launchRequested && !item.providerStarted && <Button type="button" variant="outline" disabled={unresolved || loading || error} onClick={() => setResume(item)}>Manage</Button>}{item.direction === "sell" && item.chainState === "prepared" && sign && <Button type="button" variant="outline" onClick={() => setReviewId(item.id)}>Review cash-out</Button>}</div></li>)}</ul></div>}
+    {items.length > 0 && <div className="space-y-2"><h4 className="text-sm font-medium text-white">Transactions</h4><ul className="divide-y divide-white/10">{items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><p className="font-medium text-white">{item.direction === "buy" ? "Add funds" : "Cash-out"} · {money(item.amount)}</p><p className="mt-1 text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</p></div><div className="flex flex-wrap items-center gap-3"><p className="text-slate-300">{(item.launchRequested || item.providerStarted) && item.providerState === "created" ? "Checking status" : providerStatus[item.providerState] ?? "Checking status"}{(item.launchRequested || item.providerStarted || item.chainState !== "unobserved" || !["created", "cancelled"].includes(item.providerState)) && <> · {chainStatus[item.chainState] ?? "Checking transfer"}</>}</p>{item.providerState === "created" && !item.launchRequested && !item.providerStarted && <Button type="button" variant="outline" disabled={unresolved || loading || error} onClick={() => setResume(item)}>Manage</Button>}{item.direction === "sell" && item.providerStarted && ["awaiting_user", "processing"].includes(item.providerState) && item.chainState === "unobserved" && sign && cashOutRoutes.some((route) => routeMatches(item, route)) && <Button type="button" variant="outline" disabled={loading || error} onClick={() => setQuoteId(item.id)}>Get quote</Button>}{item.direction === "sell" && item.chainState === "prepared" && sign && <Button type="button" variant="outline" onClick={() => setReviewId(item.id)}>Review cash-out</Button>}</div></li>)}</ul></div>}
+    {quoteId && <CashOutQuoteDialog token={token} orderId={quoteId} onClose={() => setQuoteId(null)} onChanged={() => setRetry((value) => value + 1)} onPrepared={() => { setReviewId(quoteId); setQuoteId(null); }} />}
     {reviewId && sign && <CashOutReview token={token} orderId={reviewId} sign={sign} onClose={() => setReviewId(null)} onChanged={() => setRetry((value) => value + 1)} />}
     {cashOut && cashOutRoutes.length > 0 && <CashOutStartDialog token={token} routes={cashOutRoutes} available={spendableUsdc} onClose={() => setCashOut(false)} onChanged={() => setRetry((value) => value + 1)} />}
     {funding && routes.length > 0 && <AddFundsDialog token={token} routes={routes} onClose={() => setFunding(false)} onChanged={() => setRetry((value) => value + 1)} />}
