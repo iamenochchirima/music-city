@@ -23,6 +23,7 @@ export const rampChainStateSchema = z.enum([
   "confirmed",
   "failed",
   "unknown",
+  "expired",
 ]);
 
 export const rampMarketSchema = z.object({

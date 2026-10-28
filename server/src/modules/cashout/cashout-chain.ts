@@ -1,0 +1,66 @@
+import { Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
+import { z } from "zod";
+import { HttpError } from "../../utils/http-error.js";
+
+const horizon = "https://horizon-testnet.stellar.org";
+const receiptSchema = z.object({ hash: z.string().regex(/^[a-f0-9]{64}$/), successful: z.boolean(),
+  envelope_xdr: z.string().min(1).max(200000), ledger: z.number().int().positive().safe(), fee_charged: z.string().regex(/^(0|[1-9][0-9]*)$/).max(20) });
+const ledgerSchema = z.object({ sequence: z.number().int().positive().safe(), closed_at: z.string().datetime() });
+export type CashOutReceipt = z.infer<typeof receiptSchema>;
+export type CashOutLedger = z.infer<typeof ledgerSchema>;
+
+export function verifyCashOutReceipt(expected: { transactionHash: string; walletAddress: string }, raw: unknown): CashOutReceipt {
+  const parsed = receiptSchema.safeParse(raw);
+  if (!parsed.success) throw new HttpError(502, "The transfer receipt cannot be verified");
+  const receipt = parsed.data;
+  try {
+    const transaction = TransactionBuilder.fromXDR(receipt.envelope_xdr, Networks.TESTNET);
+    if (!(transaction instanceof Transaction) || transaction.hash().toString("hex") !== expected.transactionHash ||
+        receipt.hash !== expected.transactionHash || transaction.source !== expected.walletAddress) throw new Error("Receipt mismatch");
+  } catch { throw new HttpError(502, "The transfer receipt cannot be verified"); }
+  return receipt;
+}
+export function verifySavedCashOutEnvelope(expected: { transactionHash: string; walletAddress: string }, signedXdr: string) {
+  try {
+    const transaction = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET);
+    if (!(transaction instanceof Transaction) || transaction.hash().toString("hex") !== expected.transactionHash ||
+        transaction.source !== expected.walletAddress || transaction.signatures.length === 0) throw new Error("Envelope mismatch");
+  } catch { throw new HttpError(409, "The saved transfer cannot be verified"); }
+}
+export function createCashOutChain(fetcher: typeof fetch = fetch) {
+  async function read(path: string) {
+    let response: Response;
+    try { response = await fetcher(new URL(path, horizon), { redirect: "error", signal: AbortSignal.timeout(8000) }); }
+    catch { throw new HttpError(502, "Unable to check the Stellar transfer"); }
+    if (response.status === 404) return null;
+    if (!response.ok) throw new HttpError(502, "Unable to check the Stellar transfer");
+    try { return await response.json() as unknown; }
+    catch { throw new HttpError(502, "Stellar returned an unreadable response"); }
+  }
+  async function ledger(order: "desc") {
+    const body = await read(`/ledgers?order=${order}&limit=1`);
+    const data = z.object({ _embedded: z.object({ records: z.array(ledgerSchema).length(1) }) }).safeParse(body);
+    if (!data.success) throw new HttpError(502, "Unable to check the Stellar ledger");
+    return data.data._embedded.records[0];
+  }
+  return {
+    ledger: () => ledger("desc"),
+    async historyCoverage() {
+      const body = await read("/");
+      const coverage = z.object({ history_elder_ledger: z.number().int().positive().safe(), history_latest_ledger: z.number().int().positive().safe(), history_latest_ledger_closed_at: z.string().datetime() }).safeParse(body);
+      if (!coverage.success || coverage.data.history_elder_ledger > coverage.data.history_latest_ledger)
+        throw new HttpError(502, "Unable to verify Stellar history coverage");
+      return { start: coverage.data.history_elder_ledger, latest: coverage.data.history_latest_ledger, latestClosedAt: coverage.data.history_latest_ledger_closed_at };
+    },
+    async receipt(hash: string) {
+      if (!/^[a-f0-9]{64}$/.test(hash)) throw new HttpError(400, "Invalid transfer reference");
+      return read(`/transactions/${hash}`);
+    },
+    async submit(xdr: string) {
+      try {
+        const response = await fetcher(new URL("/transactions", horizon), { method: "POST", body: new URLSearchParams({ tx: xdr }), redirect: "error", signal: AbortSignal.timeout(8000) });
+        if (!response.ok) throw new Error("Submission unresolved");
+      } catch { throw new HttpError(502, "Waiting for transfer confirmation"); }
+    },
+  };
+}

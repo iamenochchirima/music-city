@@ -11,7 +11,7 @@ const providerStatus: Record<string, string> = {
   completed: "Provider completed", failed: "Failed", cancelled: "Cancelled", refund_pending: "Refund pending", refunded: "Refunded", unknown: "Checking status",
 };
 const chainStatus: Record<string, string> = {
-  unobserved: "Transfer unconfirmed", prepared: "Transfer prepared", submitting: "Transfer pending", confirmed: "Transfer confirmed", failed: "Transfer failed", unknown: "Checking transfer",
+  unobserved: "Transfer unconfirmed", prepared: "Transfer prepared", submitting: "Transfer pending", confirmed: "Transfer confirmed", failed: "Transfer failed", unknown: "Checking transfer", expired: "Transfer expired",
 };
 function money(value: Order["amount"]) {
   const digits = value.units.padStart(value.decimals + 1, "0");

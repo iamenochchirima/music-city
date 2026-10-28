@@ -6,6 +6,7 @@ import { databaseService } from "../../services/database.service.js";
 import { settlementService } from "./settlement.service.js";
 import { logger } from "../../utils/logger.js";
 import { rampCycle } from "../ramps/ramp-worker.js";
+import { cashOutCycle } from "../cashout/cashout-worker.js";
 export async function financialCycle() {
   await reconcileAgreementFinalizations();
   await supportService.cycle();
@@ -54,6 +55,7 @@ export async function financialCycle() {
     try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:error instanceof Error?error.message:String(error)});}
   });
   try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
+  try { await cashOutCycle(); } catch { logger.error("Cash-out reconciliation needs attention", {code: "cashout_configuration_invalid"}); }
 }
 async function recordDiscrepancy(id: string, error: unknown) {
   const message =

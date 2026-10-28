@@ -13,6 +13,7 @@ import { parseCashOutSnapshot, validateCashOutQuote } from "../cashout/cashout-q
 import { prepareCashOutTransfer, verifyCashOutEnvelope, type CashOutSigningAccount } from "../cashout/cashout-transfer.js";
 import type { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { Networks } from "@stellar/stellar-sdk";
+import { verifyCashOutReceipt, type CashOutLedger } from "../cashout/cashout-chain.js";
 
 type Database = {
   transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T>;
@@ -62,7 +63,7 @@ export function createRampRepository(db: Database) {
           "SELECT source,kind,created_at FROM ramp_events WHERE order_id=$1 ORDER BY id DESC LIMIT 200", [id],
         )).rows;
         const attempts = (await c.query(
-          "SELECT transaction_hash,state,expires_at,created_at FROM ramp_chain_attempts WHERE order_id=$1 ORDER BY created_at DESC LIMIT 50", [id],
+          "SELECT transaction_hash,state,expires_at,created_at,submission_count,last_error_code FROM ramp_chain_attempts WHERE order_id=$1 ORDER BY created_at DESC LIMIT 50", [id],
         )).rows;
         const job = (await c.query(
           "SELECT attempts,last_error_code,due_at FROM ramp_reconciliation_jobs WHERE order_id=$1", [id],
@@ -70,7 +71,10 @@ export function createRampRepository(db: Database) {
         const deliveries = (await c.query(
           "SELECT data->>'transactionHash' AS transaction_hash,data->>'operationId' AS operation_id,data->>'ledger' AS ledger,data->>'assetUnits' AS asset_units,created_at FROM ramp_events WHERE order_id=$1 AND source='chain' AND kind='incoming_delivery_confirmed' ORDER BY id DESC LIMIT 50", [id],
         )).rows;
-        return { order: hydrate(row), events, attempts, job, deliveries };
+        const receipts = (await c.query(
+          "SELECT kind,data->>'transactionHash' AS transaction_hash,data->>'ledger' AS ledger,data->>'feeCharged' AS fee_charged FROM ramp_events WHERE order_id=$1 AND source='chain' AND kind IN ('cashout_transfer_confirmed','cashout_transfer_failed') ORDER BY id DESC LIMIT 50", [id],
+        )).rows;
+        return { order: hydrate(row), events, attempts, job, deliveries, receipts };
       });
     },
     async get(id: string): Promise<RampOrder | null> {
@@ -385,6 +389,70 @@ export function createRampRepository(db: Database) {
         await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'transfer_authorized',$3)", [input.orderId, `authorize:${input.attemptId}`, JSON.stringify({ attemptId: input.attemptId, transactionHash: row.transaction_hash })]);
         return { id: input.attemptId, transactionHash: row.transaction_hash as string, state: "submitting" };
       });
+    },
+    async leaseCashOut() {
+      return db.transaction(async (c) => {
+        const row = (await c.query(`SELECT a.*,o.wallet_address FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id
+          WHERE a.state IN ('submitting','unknown') AND a.signed_envelope_encrypted IS NOT NULL AND a.due_at<=NOW()
+          AND (a.leased_until IS NULL OR a.leased_until<NOW()) ORDER BY a.due_at,a.id FOR UPDATE OF a SKIP LOCKED LIMIT 1`)).rows[0];
+        if (!row) return null;
+        const token = randomUUID();
+        await c.query("UPDATE ramp_chain_attempts SET leased_until=NOW()+INTERVAL '2 minutes',due_at=NOW()+INTERVAL '2 minutes',lease_token=$2 WHERE id=$1", [row.id, token]);
+        const ledger = row.prepared_ledger === null ? null : Number(row.prepared_ledger);
+        if (ledger !== null && (!Number.isSafeInteger(ledger) || ledger < 1)) throw new HttpError(409, "Invalid prepared ledger");
+        return { id: row.id as string, orderId: row.order_id as string, walletAddress: row.wallet_address as string,
+          transactionHash: row.transaction_hash as string, expiresAt: new Date(row.expires_at).toISOString(),
+          preparedLedger: ledger, encryptedEnvelope: row.signed_envelope_encrypted as Buffer, token };
+      });
+    },
+    async claimCashOutSubmission(id: string, token: string): Promise<boolean> {
+      return db.transaction(async (c) => {
+        const row = (await c.query(`UPDATE ramp_chain_attempts SET state='submitting',submission_count=submission_count+1,last_submitted_at=NOW(),updated_at=NOW()
+          WHERE id=$1 AND lease_token=$2 AND leased_until>NOW() AND state IN ('submitting','unknown')
+          AND signed_envelope_encrypted IS NOT NULL AND expires_at>NOW() AND submission_count<5
+          AND (last_submitted_at IS NULL OR last_submitted_at<NOW()-INTERVAL '15 seconds') RETURNING order_id,submission_count,transaction_hash`, [id, token])).rows[0];
+        if (!row) return false;
+        await c.query("UPDATE ramp_orders SET chain_state='submitting',updated_at=NOW() WHERE id=$1", [row.order_id]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'transfer_submission_requested',$3)",
+          [row.order_id, `submit:${id}:${row.submission_count}`, JSON.stringify({ attemptId: id, transactionHash: row.transaction_hash })]);
+        return true;
+      });
+    },
+    async markCashOutUnknown(id: string, token: string) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("UPDATE ramp_chain_attempts SET state='unknown',updated_at=NOW() WHERE id=$1 AND lease_token=$2 AND leased_until>NOW() AND state IN ('submitting','unknown') RETURNING order_id", [id, token])).rows[0];
+        if (!row) throw new HttpError(409, "Reconciliation lease expired");
+        await c.query("UPDATE ramp_orders SET chain_state='unknown',updated_at=NOW() WHERE id=$1", [row.order_id]);
+      });
+    },
+    async recordCashOutReceipt(id: string, token: string, rawReceipt: unknown) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT a.*,o.wallet_address FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE a.id=$1 AND a.lease_token=$2 AND a.leased_until>NOW() AND a.state IN ('submitting','unknown') FOR UPDATE OF a,o", [id, token])).rows[0];
+        if (!row) throw new HttpError(409, "Reconciliation lease expired");
+        const receipt = verifyCashOutReceipt({ transactionHash: row.transaction_hash, walletAddress: row.wallet_address }, rawReceipt);
+        const state = receipt.successful ? "confirmed" : "failed";
+        await c.query("UPDATE ramp_chain_attempts SET state=$2,updated_at=NOW() WHERE id=$1", [id, state]);
+        await c.query("UPDATE ramp_orders SET chain_state=$2,updated_at=NOW() WHERE id=$1", [row.order_id, state]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'chain',$2,$3,$4) ON CONFLICT DO NOTHING", [row.order_id, `outgoing:${row.transaction_hash}`, receipt.successful ? "cashout_transfer_confirmed" : "cashout_transfer_failed", JSON.stringify({ attemptId: id, transactionHash: row.transaction_hash, ledger: receipt.ledger, feeCharged: receipt.fee_charged })]);
+      });
+    },
+    async expireCashOutAttempt(id: string, token: string, ledger: CashOutLedger, historyStart: number) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT * FROM ramp_chain_attempts WHERE id=$1 AND lease_token=$2 AND leased_until>NOW() AND state IN ('submitting','unknown') FOR UPDATE", [id, token])).rows[0];
+        if (!row) throw new HttpError(409, "Reconciliation lease expired");
+        const preparedLedger = Number(row.prepared_ledger);
+        if (row.prepared_ledger === null || !Number.isSafeInteger(preparedLedger) || preparedLedger < 1 ||
+            !Number.isSafeInteger(historyStart) || historyStart < 1 || historyStart > preparedLedger ||
+            !Number.isSafeInteger(ledger.sequence) || ledger.sequence < preparedLedger ||
+            !Number.isFinite(Date.parse(ledger.closed_at)) || Date.parse(ledger.closed_at) <= new Date(row.expires_at).getTime())
+          throw new HttpError(409, "Transfer history is insufficient to prove expiry");
+        await c.query("UPDATE ramp_chain_attempts SET state='expired',updated_at=NOW() WHERE id=$1", [id]);
+        await c.query("UPDATE ramp_orders SET chain_state='expired',updated_at=NOW() WHERE id=$1", [row.order_id]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'chain',$2,'cashout_transfer_expired',$3) ON CONFLICT DO NOTHING", [row.order_id, `expired:${id}`, JSON.stringify({ attemptId: id, transactionHash: row.transaction_hash, ledger: ledger.sequence })]);
+      });
+    },
+    async releaseCashOut(id: string, token: string, errorCode: "chain_check_failed" | "submission_unknown" | "history_unavailable" | null) {
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET leased_until=NULL,lease_token=NULL,due_at=NOW()+CASE WHEN $3::text IS NULL THEN INTERVAL '15 seconds' ELSE INTERVAL '60 seconds' END,last_error_code=$3 WHERE id=$1 AND lease_token=$2 AND leased_until>NOW()", [id, token, errorCode]); });
     },
     async cancelUnsignedCashOutAttempt(orderId: string, attemptId: string, userId: string, walletAddress: string) {
       return db.transaction(async (c) => {

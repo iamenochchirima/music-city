@@ -11,9 +11,11 @@ import { rampLeaseStatements } from "./ramp-lease-migration.js";
 import { rampDeliveryStatements } from "./ramp-delivery-migration.js";
 import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
+import { rampCashOutRecoveryStatements } from "./ramp-cashout-recovery-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
+import { reconcileCashOut } from "../cashout/cashout-worker.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -103,9 +105,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -520,6 +522,67 @@ test(
       await assert.rejects(repo.cancelUnsignedCashOutAttempt(cashOrder.id, secondAttempt.id, "other", cashWallet), /existing transfer/);
       assert.equal((await repo.prepareCashOutAttempt(prepareInput)).state, "submitting");
       await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, orderId: concurrentOrder.id, quoteId: concurrentQuoteId, confirmationHash: concurrentSaved.hash }), /existing transfer/);
+
+      // Simulated transport, real signatures and PostgreSQL: recover a lost submission by its original hash.
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW()+INTERVAL '1 hour' WHERE state IN ('submitting','unknown')"); });
+      const liveKey = Keypair.random(), liveWallet = liveKey.publicKey(), liveIssuer = Keypair.random().publicKey();
+      const liveOrder = (await repo.reserve(terms({ userId: "other", walletAddress: liveWallet, direction: "sell", assetIssuer: liveIssuer,
+        market: { country: "GB", currency: "GBP", method: "bank" }, amount: { currency: "USDC", units: "10000000", decimals: 7 } }))).order;
+      await repo.bindProviderReference(liveOrder.id, "other", liveWallet, "recovery-provider");
+      const liveNow = new Date(), liveExpiry = new Date(liveNow.getTime()+600000).toISOString(), liveQuoteId = randomUUID();
+      const liveQuote = { ...quote, id: liveQuoteId, cashOutId: liveOrder.id, walletAddress: liveWallet, providerQuoteId: "recovery-quote", providerTransactionId: "recovery-provider", createdAt: new Date(liveNow.getTime()-1000).toISOString(), expiresAt: liveExpiry };
+      const liveInstructions = { ...instructions, cashOutId: liveOrder.id, quoteId: liveQuoteId, walletAddress: liveWallet, providerTransactionId: "recovery-provider", assetIssuer: liveIssuer, expiresAt: liveExpiry };
+      const liveSaved = await repo.saveCashOutQuote(liveOrder.id, "other", liveWallet, liveQuote, liveInstructions, liveNow);
+      const liveInput = { orderId: liveOrder.id, quoteId: liveQuoteId, confirmationHash: liveSaved.hash, userId: "other", walletAddress: liveWallet, sequence: "11", feeStroops: 100, maxFeeStroops: 1000, preparedLedger: 42, now: liveNow };
+      const liveAttempt = await repo.prepareCashOutAttempt(liveInput);
+      const liveTx = TransactionBuilder.fromXDR(liveAttempt.transaction, Networks.TESTNET); liveTx.sign(liveKey);
+      await repo.authorizeCashOutAttempt({ orderId: liveOrder.id, attemptId: liveAttempt.id, userId: "other", walletAddress: liveWallet, signedXdr: liveTx.toXDR(), account: { account_id: liveWallet, thresholds: { med_threshold: 1 }, signers: [{ key: liveWallet, type: "ed25519_public_key", weight: 1 }] }, cipher, now: liveNow });
+      const staleLease = await repo.leaseCashOut();
+      assert.equal(staleLease?.id, liveAttempt.id);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET leased_until=NOW()-INTERVAL '1 second',due_at=NOW()-INTERVAL '1 second' WHERE id=$1", [liveAttempt.id]); });
+      const newLease = await repo.leaseCashOut();
+      assert.equal(newLease?.id, liveAttempt.id);
+      assert.notEqual(staleLease?.token, newLease?.token);
+      assert.equal(await repo.claimCashOutSubmission(liveAttempt.id, staleLease!.token), false);
+      await assert.rejects(repo.recordCashOutReceipt(liveAttempt.id, staleLease!.token, { hash: liveAttempt.transactionHash, successful: true, envelope_xdr: liveTx.toXDR(), ledger: 51, fee_charged: "100" }), /lease expired/);
+      await repo.releaseCashOut(liveAttempt.id, staleLease!.token, null);
+      const currentLease = await db.transaction(async (c) => (await c.query("SELECT lease_token FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
+      assert.equal(currentLease.lease_token, newLease?.token);
+      await repo.releaseCashOut(liveAttempt.id, newLease!.token, null);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]); });
+      let submissions = 0, found = false;
+      const chain = { async ledger() { return { sequence: 50, closed_at: liveNow.toISOString() }; }, async historyCoverage() { return { start: 1, latest: 50, latestClosedAt: liveNow.toISOString() }; },
+        async receipt(hash: string) { assert.equal(hash, liveAttempt.transactionHash); return found ? { hash, successful: true, envelope_xdr: liveTx.toXDR(), ledger: 51, fee_charged: "100" } : null; },
+        async submit(xdr: string) { submissions++; assert.equal(xdr, liveTx.toXDR()); throw new Error("lost response"); } };
+      await reconcileCashOut(repo, chain, cipher);
+      assert.equal(submissions, 1);
+      assert.equal((await repo.get(liveOrder.id))?.chainState, "unknown");
+      const pending = await db.transaction(async (c) => (await c.query("SELECT state,submission_count,last_error_code FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
+      assert.deepEqual(pending, { state: "unknown", submission_count: 1, last_error_code: "submission_unknown" });
+      assert.equal((await repo.prepareCashOutAttempt(liveInput)).transactionHash, liveAttempt.transactionHash);
+      found = true;
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]); });
+      await reconcileCashOut(repo, chain, cipher);
+      assert.equal(submissions, 1);
+      assert.equal((await repo.get(liveOrder.id))?.chainState, "confirmed");
+      assert.equal((await repo.events(liveOrder.id)).filter((event) => event.kind === "cashout_transfer_confirmed").length, 1);
+      assert.equal((await repo.get(liveOrder.id))?.providerState, "created");
+
+      // A closed ledger alone is insufficient when the server has pruned relevant history.
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [secondAttempt.id]); });
+      let oldest = 43;
+      const expiredChain = { async ledger() { return { sequence: 50, closed_at: new Date(Date.parse(secondAttempt.expiresAt)+1000).toISOString() }; },
+        async historyCoverage() { return { start: oldest, latest: 50, latestClosedAt: new Date(Date.parse(secondAttempt.expiresAt)+1000).toISOString() }; }, async receipt() { return null; }, async submit() { assert.fail("expired transfer must not be submitted"); } };
+      await reconcileCashOut(repo, expiredChain, cipher);
+      assert.equal((await repo.get(cashOrder.id))?.chainState, "unknown");
+      const unresolved = await db.transaction(async (c) => (await c.query("SELECT state,last_error_code FROM ramp_chain_attempts WHERE id=$1", [secondAttempt.id])).rows[0]);
+      assert.deepEqual(unresolved, { state: "unknown", last_error_code: "history_unavailable" });
+      await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, orderId: concurrentOrder.id, quoteId: concurrentQuoteId, confirmationHash: concurrentSaved.hash }), /existing transfer/);
+      oldest = 1;
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [secondAttempt.id]); });
+      await reconcileCashOut(repo, expiredChain, cipher);
+      assert.equal((await repo.get(cashOrder.id))?.chainState, "expired");
+      assert.equal((await repo.events(cashOrder.id)).filter((event) => event.kind === "cashout_transfer_expired").length, 1);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();
