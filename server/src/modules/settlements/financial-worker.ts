@@ -5,10 +5,12 @@ import { indexSettlementEvents } from "./chain-events.js";
 import { databaseService } from "../../services/database.service.js";
 import { settlementService } from "./settlement.service.js";
 import { logger } from "../../utils/logger.js";
+import { rampCycle } from "../ramps/ramp-worker.js";
 export async function financialCycle() {
   await reconcileAgreementFinalizations();
   await supportService.cycle();
   await checkoutService.cycle();
+  try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
   // A transaction advisory lock prevents overlapping scans across worker replicas.
   return databaseService.transaction(async (client) => {
     const lock = await client.query(

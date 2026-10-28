@@ -298,8 +298,8 @@ test(
         Array.from({ length: 8 }, () => repo.lease()),
       );
       const leased = leases.filter((x) => x !== null);
-      assert.equal(leased.length, 3);
-      assert.equal(new Set(leased.map((x) => x.id)).size, 3);
+      assert.equal(leased.length, 2);
+      assert.deepEqual(new Set(leased.map((x) => x.id)), new Set([id, launchOrder.id]));
       await repo.release(id, true);
       const job = await db.transaction(
         async (c) =>

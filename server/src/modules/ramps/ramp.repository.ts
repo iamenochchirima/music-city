@@ -138,7 +138,7 @@ export function createRampRepository(db: Database) {
       return db.transaction(async (c) => {
         const job = (
           await c.query(
-            "SELECT order_id FROM ramp_reconciliation_jobs WHERE due_at<=NOW() AND (leased_until IS NULL OR leased_until<NOW()) AND EXISTS(SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND o.provider='moonpay') ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1",
+            "SELECT order_id FROM ramp_reconciliation_jobs WHERE due_at<=NOW() AND (leased_until IS NULL OR leased_until<NOW()) AND EXISTS(SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND o.provider='moonpay' AND (o.launch_issued_at IS NOT NULL OR o.provider_transaction_id IS NOT NULL)) ORDER BY due_at FOR UPDATE SKIP LOCKED LIMIT 1",
           )
         ).rows[0];
         if (!job) return null;
