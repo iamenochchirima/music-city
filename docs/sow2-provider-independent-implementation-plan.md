@@ -9,7 +9,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 ## Baseline and design
 
 - [x] B1. Inspect current changes, workspace instructions, shared contracts, ramp migrations, repository, MoonPay adapter, cash-out validator, worker, authentication, and Revenue UI. Record any conflicting behavior and preserve unrelated work.
-- [ ] B2. Define state transitions and a provider interface using actual requirements, including separate provider and chain outcomes, exact amounts, ownership, expiry, and recovery. Reuse or replace existing overlapping contracts deliberately.
+- [x] B2. Define state transitions and a provider interface using actual requirements, including separate provider and chain outcomes, exact amounts, ownership, expiry, and recovery. Reuse or replace existing overlapping contracts deliberately.
 - [x] B3. Confirm provider flags disable unavailable routes by default. Keep test fixtures inaccessible outside explicitly isolated tests.
 
 ## Backend and transaction lifecycle
@@ -277,3 +277,8 @@ Launch service and HTTP tests, isolated PostgreSQL session tests and server type
 A started transaction now blocks a second launch while provider action, processing, pickup or refund is pending, and while provider completion lacks a confirmed chain transfer. Both launch entry points enforce the rule under the existing wallet lock. The wallet applies the same rule and allows a new funding request when provider completion and chain confirmation are both recorded. Failure and refund recovery still require provider-specific evidence; an unresolved completed delivery may need operator investigation.
 
 Isolated PostgreSQL tests covered concurrent launches, pending states, unconfirmed delivery and the two launch entry points. Ten wallet component tests and client/server typechecks passed. This was simulated data; provider and chain completion were not newly demonstrated. R2 and R7 remain open for end-to-end verification.
+
+
+### 29 October 2026: lifecycle and adapter contract
+
+Documented the active order, observation, quote and transfer contracts in [Ramp lifecycle contract](ramp-lifecycle-contract.md), including the separate provider and chain outcomes, ownership, exact units, expiry, retries and adapter responsibilities. The document distinguishes the active ramp contracts from the broader cash-out model and identifies provider-specific state transitions and refunds as unfinished. B2 covers this design record; it does not claim the unchecked implementation or provider verification items are complete.
