@@ -1,0 +1,30 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { AddFundsDialog, type FundingRoute } from "./add-funds-dialog";
+const mock = vi.hoisted(() => ({ post: vi.fn() }));
+vi.mock("@/lib/api/http-client", () => ({ httpClient: mock }));
+const route: FundingRoute = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it("requires a supported amount and opens only the returned sandbox provider", async () => {
+  const user = userEvent.setup();
+  mock.post.mockResolvedValueOnce({ order: { id: "order" } }).mockResolvedValueOnce({ url: "https://buy-sandbox.moonpay.com/?signature=test" });
+  render(<AddFundsDialog token="session" routes={[route]} onClose={vi.fn()} onChanged={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+  await user.type(screen.getByLabelText("Amount in GBP"), "12.50");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  const link = await screen.findByRole("link", { name: "Continue to provider" });
+  expect(link.getAttribute("href")).toBe("https://buy-sandbox.moonpay.com/?signature=test");
+  expect(mock.post).toHaveBeenNthCalledWith(2, "/ramps/order/launch", {}, "session");
+  expect(mock.post.mock.calls[0][1]).toMatchObject({ provider: "moonpay", direction: "buy", amount: "12.50", market: route.market });
+});
+it("blocks another launch when the provider response is uncertain", async () => {
+  const user = userEvent.setup();
+  mock.post.mockResolvedValueOnce({ order: { id: "order" } }).mockRejectedValueOnce(new Error("timeout"));
+  render(<AddFundsDialog token="session" routes={[route]} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.type(screen.getByLabelText("Amount in GBP"), "12.50");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect((await screen.findByRole("alert")).textContent).toContain("Check this transaction in your history");
+  expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+  expect(mock.post).toHaveBeenCalledTimes(2);
+});

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { WalletRampActivity } from "./wallet-ramp-activity";
 const mock = vi.hoisted(() => ({ get: vi.fn() }));
@@ -15,9 +15,23 @@ it("keeps unavailable options disabled and distinguishes provider completion fro
   expect(mock.get).toHaveBeenCalledWith("/ramps", "session");
 });
 it("offers retry when transaction history cannot be loaded", async () => {
-  mock.get.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce({ items: [] });
+  let historyCalls = 0;
+  mock.get.mockImplementation(async (path: string) => {
+    if (path === "/ramps/capabilities") return { routes: [] };
+    if (++historyCalls === 1) throw new Error("offline");
+    return { items: [] };
+  });
   render(<WalletRampActivity token="session" />);
   await userEvent.setup().click(await screen.findByRole("button", { name: "Try again" }));
   expect(screen.queryByRole("alert")).toBeNull();
-  expect(mock.get).toHaveBeenCalledTimes(2);
+  expect(historyCalls).toBe(2);
+});
+it("offers funding only when the server provides a buy route", async () => {
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [{ provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" }] } : { items: [] });
+  const user = userEvent.setup();
+  render(<WalletRampActivity token="session" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
+  await user.click(screen.getByRole("button", { name: "Add funds" }));
+  expect(await screen.findByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(true);
 });

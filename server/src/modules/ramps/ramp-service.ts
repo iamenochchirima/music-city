@@ -5,6 +5,8 @@ import {
 } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 import { createRampRepository } from "./ramp.repository.js";
+import { rampSandboxConfigSchema } from "./sandbox-config.js";
+import { env } from "../../config/env.js";
 
 // Only an adapter with verified, current account-specific evidence may return a route.
 const verifiedRouteSchema = z.object({
@@ -81,3 +83,16 @@ export function createRampService(repository: Repository, capabilities: RampCapa
 
 // No account-specific payment route has passed verification yet.
 export const verifiedRampCapabilities: RampCapabilitySource = { async routes() { return []; } };
+
+// Do not advertise a route until the corresponding launch path is configured.
+export function createOperationalRampCapabilities(verified: RampCapabilitySource, configSource: () => unknown, proxyHops: number): RampCapabilitySource {
+  return { async routes() {
+    const config = rampSandboxConfigSchema.safeParse(configSource());
+    if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || config.data.RAMPS_LAUNCH_IP_MODE !== "direct" ||
+      !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || !config.data.MOONPAY_PK || !config.data.MOONPAY_SK || !config.data.MOONPAY_WEBHOOK || proxyHops !== 0)
+      return [];
+    return (await verified.routes()).filter((route) => route.provider === "moonpay" && route.direction === "buy" &&
+      route.assetCode === config.data.RAMPS_SANDBOX_ASSET && ["moonpay", "both"].includes(config.data.RAMPS_SANDBOX_PROVIDERS));
+  } };
+}
+export const operationalRampCapabilities = createOperationalRampCapabilities(verifiedRampCapabilities, () => process.env, env.TRUST_PROXY_HOPS);

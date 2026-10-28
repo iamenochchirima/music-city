@@ -11,7 +11,7 @@ import { usersRepository } from "../users/users.repository.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { canonicalizeMoonpayIp } from "./moonpay-ip.js";
 import { createRampRepository } from "./ramp.repository.js";
-import { createRampService, verifiedRampCapabilities } from "./ramp-service.js";
+import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
 import { createMoonpayLaunchAdapter, createRampLaunchService } from "./ramp-launch.service.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 
@@ -47,7 +47,7 @@ export function createRampLaunchRouter(service: () => Service, findUser: FindUse
 }
 
 const repository = createRampRepository(databaseService);
-const capabilities = createRampService(repository, verifiedRampCapabilities);
+const capabilities = createRampService(repository, operationalRampCapabilities);
 function configuredService() {
   const config = rampSandboxConfigSchema.safeParse(process.env);
   if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || config.data.RAMPS_LAUNCH_IP_MODE !== "direct" || env.TRUST_PROXY_HOPS !== 0)

@@ -6,7 +6,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "./ramp.repository.js";
-import { createRampService, verifiedRampCapabilities } from "./ramp-service.js";
+import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
 
 type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner">;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
@@ -64,4 +64,4 @@ export function createRampsRouter(repository: Repository, findUser: FindUser, se
 }
 
 const repository = createRampRepository(databaseService);
-export const rampsRouter = createRampsRouter(repository, usersRepository.findByWallet, createRampService(repository, verifiedRampCapabilities));
+export const rampsRouter = createRampsRouter(repository, usersRepository.findByWallet, createRampService(repository, operationalRampCapabilities));
