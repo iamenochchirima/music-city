@@ -318,3 +318,7 @@ The financial integration suites use real signatures with mocked chain or provid
 The cash-out service rechecks the verified route before exposing an unsigned prepared envelope and before accepting an authorization. If the route is unavailable or its evidence has expired, the user can still cancel the unsigned attempt and inspect existing transfer status. A signed attempt already held by the worker remains subject to chain reconciliation. This is an application-side capability check, not proof of current provider availability or payout behavior.
 
 Focused service and HTTP tests, the isolated PostgreSQL ramp suite, and server typecheck passed. The test uses simulated route availability and does not enable cash-out.
+
+### 29 October 2026: reconstructed cash-out recovery
+
+The isolated PostgreSQL recovery test now reconstructs the repository and envelope cipher after a simulated lost submission response. With a wrong encryption key, the attempt stays unknown and no new submission occurs. With the original key, the reconstructed worker submits the same signed envelope and later records its receipt. The network transport is mocked and the worker is reconstructed in the test process; an operating-system process restart and a real provider payout remain unverified.

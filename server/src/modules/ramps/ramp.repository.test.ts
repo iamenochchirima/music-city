@@ -700,13 +700,25 @@ test(
       const pending = await db.transaction(async (c) => (await c.query("SELECT state,submission_count,last_error_code FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
       assert.deepEqual(pending, { state: "unknown", submission_count: 1, last_error_code: "submission_unknown" });
       assert.equal((await repo.prepareCashOutAttempt(liveInput)).transactionHash, liveAttempt.transactionHash);
+      // Reconstruct the worker dependencies as after a restart. A wrong key must
+      // leave the original attempt unresolved without submitting another transfer.
+      const restartedRepo = createRampRepository(db);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW(),last_submitted_at=NOW()-INTERVAL '1 minute' WHERE id=$1", [liveAttempt.id]); });
+      await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 6)));
+      assert.equal(submissions, 1);
+      const wrongKey = await db.transaction(async (c) => (await c.query("SELECT state,submission_count,last_error_code FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
+      assert.deepEqual(wrongKey, { state: "unknown", submission_count: 1, last_error_code: "chain_check_failed" });
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]); });
+      await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 7)));
+      assert.equal(submissions, 2);
+      assert.equal((await restartedRepo.get(liveOrder.id))?.chainState, "unknown");
       found = true;
       await db.transaction(async (c) => {
         await c.query("UPDATE ramp_orders SET provider_state='failed' WHERE id=$1", [liveOrder.id]);
         await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);
       });
-      await reconcileCashOut(repo, chain, cipher);
-      assert.equal(submissions, 1);
+      await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 7)));
+      assert.equal(submissions, 2);
       assert.equal((await repo.get(liveOrder.id))?.chainState, "confirmed");
       assert.equal((await repo.events(liveOrder.id)).filter((event) => event.kind === "cashout_transfer_confirmed").length, 1);
       assert.equal((await repo.get(liveOrder.id))?.providerState, "failed");
