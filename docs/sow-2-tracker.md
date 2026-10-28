@@ -120,7 +120,7 @@ Source: sections 4.1 D3, 5.1 Week 4, and 6.1 D3. D3 integrates the two technical
 
 D3 acceptance checklist:
 
-Local core verification is complete in E8. The completed checkout changes have a local Git checkpoint. Their production rollout remains open. The two rollout/package items and reviewer acceptance below remain open.
+Local core verification is complete in E8. The completed checkout changes have a local Git checkpoint. Their production rollout remains open. The [local demo guide](sow2-local-demo.md) describes a repeat run but has not yet been verified against the current revision. The two rollout/package items and reviewer acceptance below remain open.
 
 - [x] Demonstrate the complete creator and admin journeys using real wallets and confirmed Testnet transactions. E8 connects actual release publication and purchase to two-signer funding and both beneficiary claims.
 - [x] Verify readiness, status, history, and recovery at each signing and payment boundary. E5 through E8 record the separate agreement, support, checkout and settlement results. E8 discloses the provider OTP dismissal limitation.

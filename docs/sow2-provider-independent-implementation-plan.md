@@ -181,3 +181,7 @@ Local adapter and service tests covered tampered destinations, duplicate paramet
 Added an authenticated launch endpoint that accepts no client-supplied payment terms or IP address. It is disabled by default and requires a sandbox key, a launch encryption key, an explicitly enabled direct connection and a current verified route. The direct connection uses only the socket address and rejects private or reserved addresses. It does not trust forwarding headers or support proxy ingress; a separately verified proxy integration is still needed for the deployed architecture.
 
 Local HTTP and IP tests passed for authentication, injected fields, proxy rejection and public-address selection; server typecheck passed. No provider route is currently verified, and MoonPay resume and completed transactions remain unverified. This does not complete the user-facing flow or R3.
+
+### 28 October 2026: local demonstration runbook
+
+Added a [local SOW 2 demonstration guide](sow2-local-demo.md) for the release, consent, purchase, settlement and claim sequence. It identifies the required Testnet wallets, two treasury signatures, services, receipts and reconciliation checks. It links the historical E8 evidence and distinguishes it from a new run. The guide has not yet been exercised end to end against the current revision, so C2 and C3 remain open.
