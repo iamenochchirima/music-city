@@ -715,11 +715,11 @@ This is a planning checkpoint against `5190cd9`. No new provider sessions, quote
 
 ### Dynamic Sandbox account verification, 29 October 2026
 
-The [local browser checkpoint](core-lifecycle-evidence/local-sandbox-checkpoint-2026-10-29.md) records the account and wallet checks against the isolated local database. Existing Ngoni and Kwame Sandbox identities signed in. Kwame's account showed the earlier Core Journey purchase and claim history, but its current wallet screen showed 0 XLM and 0 USDC. Those Testnet transactions are the historical E8 evidence, not new transfers from this run. A new listener identity completed onboarding but had no test funds or USDC trustline.
+The [local browser checkpoint](core-lifecycle-evidence/local-sandbox-checkpoint-2026-10-29.md) records the account and wallet checks against the isolated local database. Existing Ngoni and Kwame Sandbox identities signed in. Kwame's account showed the earlier Core Journey purchase and claim history. After the wallet request completed, the account page and Stellar Testnet Horizon showed 9,999.9969 XLM and 0.0073 USDC with the expected trustline. Those earlier Testnet transactions are the historical E8 evidence, not new transfers from this run. A new listener identity completed onboarding but had no test funds or USDC trustline.
 
 The account page showed MoonPay and MoneyGram as unavailable. Add funds and Cash out remained disabled, and the transaction list contained only a cancelled local GBP fixture. No provider session, quote, payment, or payout was created. The separate MoneyGram and MoonPay readiness checklist remains open.
 
-The local admin page required an admin sign-in; bootstrap was closed and no admin credentials were available, so this run did not verify an admin browser session. Automated tests passed, including the updated strict five-second stream threshold. The five-second fix is separate from the provider and SOW 2 ramp requirements.
+The local admin page required an admin sign-in; bootstrap was closed and no admin credentials were available, so this run did not verify an admin browser session. The wallet's initial loading view had shown zeros and an inaccurate USDC setup prompt; it now uses placeholders until balances load, verified in the local browser. Automated tests passed, including the updated strict five-second stream threshold. The five-second fix is separate from the provider and SOW 2 ramp requirements.
 
 ### Ramp foundations checkpoint, 26 October 2026
 

@@ -10,7 +10,9 @@ Dynamic used its Sandbox environment. The wallet service used Stellar Testnet. N
 
 ## Test accounts
 
-Ngoni and Kwame signed in through Dynamic Sandbox. Kwame's account showed the existing Core Journey purchase and prior payment history. The earlier accepted 70/30 agreement, purchase, settlement funding, and both claims are recorded in E8. In this current account check, the wallet displayed 0 XLM and 0 USDC, so it could not fund another purchase. This run did not create another purchase or claim.
+Ngoni and Kwame signed in through Dynamic Sandbox. Kwame's account showed the existing Core Journey purchase and prior payment history. The earlier accepted 70/30 agreement, purchase, settlement funding, and both claims are recorded in E8. After wallet loading completed, the account page and Stellar Testnet Horizon showed 9,999.9969 XLM and 0.0073 USDC, with the expected USDC trustline. This balance was not spent during this check; no new purchase or claim was created.
+
+During loading, the wallet summary briefly displayed zeros and an enable-USDC prompt before the balance request completed. The client now displays neutral placeholders and withholds trustline status until the account response arrives. Computer-use checks observed both the loading and settled states.
 
 A new Sandbox listener completed the onboarding flow. Its wallet had no Testnet funds or USDC trustline, so it could not buy a track or use wallet-funded features.
 
@@ -30,7 +32,7 @@ This playback check is separate from SOW 2 ramp acceptance.
 
 ## Verification and limits
 
-`pnpm test` passed 215 server, 194 client, and 22 admin tests. Thirteen database-backed server tests were skipped by the default command. Workspace typechecks and builds passed. The client build reported its existing large-chunk warning.
+`pnpm test` passed 215 server, 194 client, and 22 admin tests. Thirteen database-backed server tests were skipped by the default command. Workspace typechecks and builds passed. The focused wallet loading-state change passed the client tests and typecheck, and the client production build passed with its existing large-chunk warning.
 
 The current browser state was inspected, but this run did not save a screenshot artifact. E8 contains the screenshots and chain records for the earlier full lifecycle. This run did not submit a new Testnet wallet transaction. It did not complete MoonPay or MoneyGram sandbox flows.
 

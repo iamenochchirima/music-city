@@ -373,6 +373,8 @@ Kwame's account showed the existing Core Journey purchase and prior USDC receipt
 
 The wallet showed MoonPay and MoneyGram as unavailable. Add funds and Cash out stayed disabled, and history showed only a cancelled local GBP fixture. The application created no provider session or quote. The local admin page still required an admin sign-in, so this run did not verify a new admin browser session.
 
+The same browser check found that the wallet summary initially rendered `0` balances and an enable-USDC prompt while Horizon was still loading. The client now shows placeholders during that request and only displays trustline status after a response. The account page and a read-only Horizon query then agreed on the wallet's 9,999.9969 XLM and 0.0073 USDC. No funds were moved. This is a wallet loading-state correction; it does not enable a ramp route.
+
 The cloned database had no audio files. Disposable synthetic tones restored playback checks without using real recordings. Playback then completed in the local app. This exposed and fixed the short-track stream fallback under commit `1e49dfd`; a one-second play did not count, and a six-second play counted once. That product fix is separate from the SOW 2 ramp scope.
 
 `pnpm test` passed 215 server, 194 client, and 22 admin tests. The default server suite skipped 13 database-backed tests. Workspace typechecks and builds passed. The browser state was inspected, but this run did not save a screenshot file. C2, C3, U2, U4, R1 through R9, and V5 remain open. No provider sandbox payment or payout was verified.
