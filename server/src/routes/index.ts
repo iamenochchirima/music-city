@@ -8,6 +8,7 @@ import { cashOutQuoteRouter } from "../modules/cashout/cashout-quote.router.js";
 import { cashOutAuthorizationRouter } from "../modules/cashout/cashout-authorization.router.js";
 import { moonpayWebhookRouter } from "../modules/ramps/moonpay-webhook.router.js";
 import { rampsRouter } from "../modules/ramps/ramps.router.js";
+import { rampLaunchRouter } from "../modules/ramps/ramp-launch.router.js";
 import { adminRampsRouter } from "../modules/ramps/admin-ramps.router.js";
 
 import { adsRouter } from "../modules/ads/ads.router.js";
@@ -55,6 +56,7 @@ apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/webhooks/moonpay", moonpayWebhookRouter);
 apiRouter.use("/ramps/:orderId/cashout", cashOutQuoteRouter);
 apiRouter.use("/ramps/:orderId/cashout", cashOutAuthorizationRouter);
+apiRouter.use("/ramps/:orderId", rampLaunchRouter);
 apiRouter.use("/ramps", rampsRouter);
 apiRouter.use("/admin/ramps", adminRampsRouter);
 apiRouter.use("/support", supportRouter);

@@ -19,6 +19,8 @@ export const rampSandboxConfigSchema = z
     MOONPAY_SK: z.string().optional(),
     MOONPAY_WEBHOOK: z.string().optional(),
     RAMPS_CASHOUT_ENCRYPTION_KEY: z.preprocess((value) => value === "" ? undefined : value, z.string().regex(/^[a-fA-F0-9]{64}$/).optional()),
+    RAMPS_LAUNCH_ENCRYPTION_KEY: z.preprocess((value) => value === "" ? undefined : value, z.string().regex(/^[a-fA-F0-9]{64}$/).optional()),
+    RAMPS_LAUNCH_IP_MODE: z.enum(["disabled", "direct"]).default("disabled"),
   })
   .superRefine((config, context) => {
     if (config.RAMPS_SANDBOX_ENABLED !== "true") return;

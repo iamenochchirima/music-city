@@ -175,3 +175,9 @@ An isolated PostgreSQL test covered concurrent saves, ownership, immutable recor
 Added an internal launch service that checks the order owner and verified route, prepares a provider link, validates its sandbox origin and exact order, amount and wallet parameters, and encrypts the link before returning it. A safe-to-resume adapter can recover the same stored link without regenerating it. The MoonPay adapter uses the existing signed URL builder and explicitly does not claim safe resume. No provider is enabled by this service, and the service is not exposed through an HTTP route yet; trusted customer IP handling and the user flow remain open.
 
 Local adapter and service tests covered tampered destinations, duplicate parameters, capability and owner rejection, encryption and safe resume. An isolated PostgreSQL test exercised the service against durable storage; MoonPay catalog responses were simulated. Server typecheck passed. These checks did not create a MoonPay transaction or demonstrate provider-level idempotency.
+
+### 28 October 2026: launch API and ingress gate
+
+Added an authenticated launch endpoint that accepts no client-supplied payment terms or IP address. It is disabled by default and requires a sandbox key, a launch encryption key, an explicitly enabled direct connection and a current verified route. The direct connection uses only the socket address and rejects private or reserved addresses. It does not trust forwarding headers or support proxy ingress; a separately verified proxy integration is still needed for the deployed architecture.
+
+Local HTTP and IP tests passed for authentication, injected fields, proxy rejection and public-address selection; server typecheck passed. No provider route is currently verified, and MoonPay resume and completed transactions remain unverified. This does not complete the user-facing flow or R3.
