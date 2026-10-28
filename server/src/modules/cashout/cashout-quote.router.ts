@@ -8,6 +8,8 @@ import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "../ramps/ramp.repository.js";
 import { createCashOutQuoteService } from "./cashout-quote.service.js";
+import { createRampService, verifiedRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
+import { rampSandboxConfigSchema } from "../ramps/sandbox-config.js";
 
 type Service = ReturnType<typeof createCashOutQuoteService>;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
@@ -34,4 +36,11 @@ export function createCashOutQuoteRouter(service: Service, findUser: FindUser) {
   return router;
 }
 // No cash-out provider has supplied a verified instruction adapter yet.
-export const cashOutQuoteRouter = createCashOutQuoteRouter(createCashOutQuoteService(createRampRepository(databaseService), new Map()), usersRepository.findByWallet);
+const repository = createRampRepository(databaseService);
+const capabilities = createRampService(repository, verifiedRampCapabilities);
+export const cashOutQuoteRouter = createCashOutQuoteRouter(createCashOutQuoteService(repository, new Map(), undefined,
+  async (order) => {
+    const config = rampSandboxConfigSchema.safeParse(process.env);
+    if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_CASHOUT_ENCRYPTION_KEY) return false;
+    return (await capabilities.routes()).some((route) => routeSupportsOrder(route, order));
+  }), usersRepository.findByWallet);

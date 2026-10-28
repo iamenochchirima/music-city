@@ -11,7 +11,7 @@ import { usersRepository } from "../users/users.repository.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { canonicalizeMoonpayIp } from "./moonpay-ip.js";
 import { createRampRepository } from "./ramp.repository.js";
-import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
+import { createRampService, operationalRampCapabilities, routeSupportsOrder } from "./ramp-service.js";
 import { createMoonpayLaunchAdapter, createRampLaunchService } from "./ramp-launch.service.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 
@@ -54,11 +54,7 @@ function configuredService() {
     throw new HttpError(503, "This payment option is not available yet");
   const adapter = createMoonpayLaunchAdapter(config.data);
   return createRampLaunchService(repository, new Map([["moonpay", adapter]]), createCashOutEnvelopeCipher(Buffer.from(config.data.RAMPS_LAUNCH_ENCRYPTION_KEY, "hex")), async (order) =>
-    (await capabilities.routes()).some((route) => route.provider === order.terms.provider && route.direction === order.terms.direction &&
-      route.environment === order.terms.environment && route.network === order.terms.network && route.assetCode === order.terms.assetCode &&
-      route.assetIssuer === order.terms.assetIssuer && route.market.country === order.terms.market.country && route.market.currency === order.terms.market.currency &&
-      route.market.method === order.terms.market.method && route.amountDecimals === order.terms.amount.decimals &&
-      BigInt(order.terms.amount.units) >= BigInt(route.minUnits) && BigInt(order.terms.amount.units) <= BigInt(route.maxUnits)));
+    (await capabilities.routes()).some((route) => routeSupportsOrder(route, order)));
 }
 export const rampLaunchRouter = createRampLaunchRouter(configuredService, usersRepository.findByWallet,
   (req) => directCustomerIp(req, rampSandboxConfigSchema.parse(process.env).RAMPS_LAUNCH_IP_MODE, env.TRUST_PROXY_HOPS));

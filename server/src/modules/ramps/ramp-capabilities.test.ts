@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRampService, type VerifiedRampRoute } from "./ramp-service.js";
+import type { RampOrder } from "@music-city/shared";
+import { createRampService, routeSupportsOrder, type VerifiedRampRoute } from "./ramp-service.js";
 
 const issuer = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
 const valid: VerifiedRampRoute = { provider: "moonpay", direction: "buy", environment: "sandbox", network: "stellar:testnet", assetCode: "USDC", assetIssuer: issuer, market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "100", maxUnits: "100000", verifiedAt: "2026-10-27T00:00:00Z", expiresAt: "2026-10-30T00:00:00Z" };
@@ -27,4 +28,14 @@ test("does not show ambiguous duplicate routes that cannot be created", async ()
   const other = { ...valid, market: { ...valid.market, currency: "EUR" } };
   const service = createRampService(repository, { async routes() { return [valid, { ...valid, maxUnits: "200000" }, other]; } }, () => Date.parse("2026-10-28T00:00:00Z"));
   assert.deepEqual(await service.routes(), [other]);
+});
+
+
+test("route matching binds the complete order and amount", () => {
+  const order = { terms: { provider: valid.provider, direction: valid.direction, environment: valid.environment, network: valid.network,
+    assetCode: valid.assetCode, assetIssuer: valid.assetIssuer, market: valid.market, amount: { currency: "GBP", units: "10000", decimals: 2 } } } as RampOrder;
+  assert.equal(routeSupportsOrder(valid, order), true);
+  for (const route of [{ ...valid, market: { ...valid.market, country: "ZA" } }, { ...valid, assetIssuer: undefined },
+    { ...valid, amountDecimals: 7 }, { ...valid, maxUnits: "9999" }, { ...valid, minUnits: "10001" }])
+    assert.equal(routeSupportsOrder(route, order), false);
 });

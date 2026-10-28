@@ -7,7 +7,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "../ramps/ramp.repository.js";
-import { createRampService, verifiedRampCapabilities } from "../ramps/ramp-service.js";
+import { createRampService, verifiedRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
 import { rampSandboxConfigSchema } from "../ramps/sandbox-config.js";
 import { createCashOutAuthorizationService } from "./cashout-authorization.service.js";
 import { createCashOutChain } from "./cashout-chain.js";
@@ -56,11 +56,6 @@ function configuredService() {
   if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_CASHOUT_ENCRYPTION_KEY)
     throw new HttpError(503, "Cash-out is not available yet");
   return createCashOutAuthorizationService(repository, createCashOutChain(), createCashOutEnvelopeCipher(Buffer.from(config.data.RAMPS_CASHOUT_ENCRYPTION_KEY, "hex")), async (order) =>
-    (await capabilities.routes()).some((route) => route.provider === order.terms.provider && route.direction === "sell" &&
-      route.environment === order.terms.environment && route.network === order.terms.network && route.assetCode === order.terms.assetCode &&
-      route.assetIssuer === order.terms.assetIssuer && route.market.country === order.terms.market.country &&
-      route.market.currency === order.terms.market.currency && route.market.method === order.terms.market.method &&
-      route.amountDecimals === order.terms.amount.decimals && BigInt(order.terms.amount.units) >= BigInt(route.minUnits) &&
-      BigInt(order.terms.amount.units) <= BigInt(route.maxUnits)));
+    (await capabilities.routes()).some((route) => routeSupportsOrder(route, order)));
 }
 export const cashOutAuthorizationRouter = createCashOutAuthorizationRouter(configuredService, usersRepository.findByWallet);

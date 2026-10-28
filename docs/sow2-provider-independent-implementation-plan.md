@@ -333,3 +333,9 @@ The PostgreSQL recovery test now starts separate Node worker processes against t
 At revision `1630aea`, signed in through Dynamic Sandbox in the actual local application using an existing test identity and an isolated database. A simulated, unlaunched funding order appeared under Transactions. Manage opened the unavailable-option dialog, with cancellation available and no provider continuation. Cancellation succeeded and remained visible after reloading. No provider was contacted. The temporary fixture script was removed, and the test account was signed out.
 
 This check covers the current desktop flow only. Mobile, a real provider transaction, cash-out signing and the creator-to-claim journey remain open under U4, V3 and C2.
+
+### 29 October 2026: shared route checks for cash-out quotes
+
+Launch, cash-out quotes and cash-out authorization now use the same exact order-to-route match. The quote service checks verified capability before and after the adapter request, and the configured route also requires sandbox and cash-out encryption settings. A route that becomes unavailable during a quote request cannot save a new actionable quote. Existing quotes remain available for history and review.
+
+Focused capability and HTTP tests, the isolated PostgreSQL ramp suite and server typecheck passed. Quote adapters remain unconfigured and no cash-out route is enabled. A provider-specific session and the user-facing cash-out entry flow are still required before this can be demonstrated end to end.

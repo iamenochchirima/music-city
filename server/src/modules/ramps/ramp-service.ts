@@ -25,6 +25,16 @@ const verifiedRouteSchema = z.object({
 }).strict();
 export type VerifiedRampRoute = z.infer<typeof verifiedRouteSchema>;
 export type RampCapabilitySource = { routes(): Promise<VerifiedRampRoute[]> };
+
+// Call only with routes() results, which have already passed expiry and contract checks.
+export function routeSupportsOrder(route: VerifiedRampRoute, order: RampOrder) {
+  const terms = order.terms;
+  return route.provider === terms.provider && route.direction === terms.direction &&
+    route.environment === terms.environment && route.network === terms.network && route.assetCode === terms.assetCode &&
+    route.assetIssuer === terms.assetIssuer && route.market.country === terms.market.country && route.market.currency === terms.market.currency &&
+    route.market.method === terms.market.method && route.amountDecimals === terms.amount.decimals &&
+    BigInt(terms.amount.units) >= BigInt(route.minUnits) && BigInt(terms.amount.units) <= BigInt(route.maxUnits);
+}
 type Repository = Pick<ReturnType<typeof createRampRepository>, "getByRequest" | "reserve">;
 type Owner = { userId: string; walletAddress: string };
 
