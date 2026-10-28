@@ -306,3 +306,9 @@ Six cash-out review component tests and client typecheck passed. The checks used
 At revision `abc4fc6`, the workspace build and a subsequent standalone typecheck passed. The client build retained its large-bundle warning. A standalone `pnpm test` passed 210 server tests, 181 client tests and 22 admin tests. The default server run skipped 13 database-dependent tests; the ramp PostgreSQL suite was run separately after the relevant changes, as recorded above. These results do not constitute a new real-wallet or provider transaction.
 
 An earlier run started tests, typecheck and build concurrently. An onboarding test timed out and typecheck reported missing shared-package exports while the shared package was being rebuilt. The standalone reruns passed. The exact cause of the first failures was not independently proven, so future regression checks should run build, typecheck and tests sequentially.
+
+### 29 October 2026: database-backed regression on current code
+
+At revision `a247f8c`, ran the 13 suites skipped by the default server test command against separate disposable local PostgreSQL databases. All 105 checks passed with no skips. These covered admin authentication, agreements, finalization, checkout, guest playback, publication, ramp persistence, referrals, settlement, sponsorship, support, track metadata and onboarding. The disposable databases were removed after the run.
+
+The financial integration suites use real signatures with mocked chain or provider boundaries. They do not replace the current-code Dynamic wallet and Testnet journey or provider sandbox evidence.
