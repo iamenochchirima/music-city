@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { Pool, type PoolClient } from "pg";
 import { Keypair, Networks, TransactionBuilder } from "@stellar/stellar-sdk";
 import { rampOrderTermsSchema, type RampOrderTerms } from "@music-city/shared";
@@ -700,17 +702,26 @@ test(
       const pending = await db.transaction(async (c) => (await c.query("SELECT state,submission_count,last_error_code FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
       assert.deepEqual(pending, { state: "unknown", submission_count: 1, last_error_code: "submission_unknown" });
       assert.equal((await repo.prepareCashOutAttempt(liveInput)).transactionHash, liveAttempt.transactionHash);
-      // Reconstruct the worker dependencies as after a restart. A wrong key must
-      // leave the original attempt unresolved without submitting another transfer.
+      // Run new worker processes with mocked transport against the same saved attempt.
       const restartedRepo = createRampRepository(db);
+      const runRestartedWorker = (key: number) => {
+        const child = spawnSync(process.execPath, ["--import", "tsx", fileURLToPath(new URL("../../../test/fixtures/cashout-restart-worker.ts", import.meta.url))], {
+          cwd: fileURLToPath(new URL("../../../", import.meta.url)), timeout: 15000, encoding: "utf8",
+          env: { ...process.env, RAMP_TEST_DATABASE_URL: url!, RAMP_RESTART_SCHEMA: schema, RAMP_RESTART_TIME: liveNow.toISOString(),
+            RAMP_RESTART_HASH: liveAttempt.transactionHash, RAMP_RESTART_XDR: liveTx.toXDR(), RAMP_RESTART_KEY: String(key) },
+        });
+        assert.equal(child.status, 0, `worker fixture failed: ${child.stderr}`);
+        return child.stdout.trim();
+      };
       await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW(),last_submitted_at=NOW()-INTERVAL '1 minute' WHERE id=$1", [liveAttempt.id]); });
-      await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 6)));
+      assert.equal(runRestartedWorker(6), "simulated submissions: 0");
       assert.equal(submissions, 1);
       const wrongKey = await db.transaction(async (c) => (await c.query("SELECT state,submission_count,last_error_code FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
       assert.deepEqual(wrongKey, { state: "unknown", submission_count: 1, last_error_code: "chain_check_failed" });
       await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]); });
-      await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 7)));
-      assert.equal(submissions, 2);
+      assert.equal(runRestartedWorker(7), "simulated submissions: 1");
+      const afterRestart = await db.transaction(async (c) => (await c.query("SELECT submission_count FROM ramp_chain_attempts WHERE id=$1", [liveAttempt.id])).rows[0]);
+      assert.equal(afterRestart.submission_count, 2);
       assert.equal((await restartedRepo.get(liveOrder.id))?.chainState, "unknown");
       found = true;
       await db.transaction(async (c) => {
@@ -718,7 +729,7 @@ test(
         await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);
       });
       await reconcileCashOut(restartedRepo, chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 7)));
-      assert.equal(submissions, 2);
+      assert.equal(submissions, 1);
       assert.equal((await repo.get(liveOrder.id))?.chainState, "confirmed");
       assert.equal((await repo.events(liveOrder.id)).filter((event) => event.kind === "cashout_transfer_confirmed").length, 1);
       assert.equal((await repo.get(liveOrder.id))?.providerState, "failed");

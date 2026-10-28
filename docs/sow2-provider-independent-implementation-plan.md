@@ -40,7 +40,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 ## Verification and handoff
 
-- [ ] V1. Test ownership, capability rejection, idempotency, duplicate and reordered events, expired quotes, unknown status, worker restarts, and transfer tampering with meaningful unit and isolated PostgreSQL tests.
+- [x] V1. Test ownership, capability rejection, idempotency, duplicate and reordered events, expired quotes, unknown status, worker restarts, and transfer tampering with meaningful unit and isolated PostgreSQL tests.
 - [x] V2. Run affected server, client, admin and shared tests, workspace typechecks, builds, and fresh and existing database migrations. Recheck agreements, support, checkout, claims and settlements.
 - [ ] V3. Record dated local browser evidence and separately label simulated provider outcomes, real sandbox outcomes and on-chain transfers.
 - [ ] V4. Update the SOW tracker and provider plan only for evidenced results. Commit each completed coherent change without secrets, runtime state, or unrelated edits.
@@ -322,3 +322,8 @@ Focused service and HTTP tests, the isolated PostgreSQL ramp suite, and server t
 ### 29 October 2026: reconstructed cash-out recovery
 
 The isolated PostgreSQL recovery test now reconstructs the repository and envelope cipher after a simulated lost submission response. With a wrong encryption key, the attempt stays unknown and no new submission occurs. With the original key, the reconstructed worker submits the same signed envelope and later records its receipt. The network transport is mocked and the worker is reconstructed in the test process; an operating-system process restart and a real provider payout remain unverified.
+
+
+### 29 October 2026: cash-out process restart test
+
+The PostgreSQL recovery test now starts separate Node worker processes against the same isolated schema and mocked Stellar transport. A process with the wrong test key leaves the retained attempt unknown and submits nothing. A new process with the correct key submits the exact saved envelope, after which the test records the retained transaction receipt. Lease recovery, ownership, idempotency, reordered observations, expired quotes and transfer tampering are covered by the related unit and database suites recorded above. V1 covers these automated tests only; real provider and wallet verification remain open.
