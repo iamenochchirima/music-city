@@ -288,3 +288,9 @@ Documented the active order, observation, quote and transfer contracts in [Ramp 
 The owner-scoped history still returns at most 100 orders, but puts orders that block another launch first. It uses the same database condition as the launch guard. This keeps at least one blocking transaction visible even when the account has more than 100 newer orders; full history pagination remains separate work.
 
 An isolated PostgreSQL test created one old unresolved order and 101 newer orders, then verified that the old order appeared in its owner's bounded history and remained inaccessible to another user. The repository suite and server typecheck passed. This was simulated data and does not complete provider verification.
+
+### 29 October 2026: stale cash-out quotes and reviews
+
+The quote service rejects terminal or unknown provider states before making a provider request, and the repository checks again while saving the response. A prepared transfer is withheld from a fresh review when the provider is no longer ready, and a repeat prepare request is rejected. The user can still cancel the unsigned attempt. Authorization remains subject to the existing server-side provider-state check; a status change after a review has loaded can still lead to a wallet prompt before that check, so a just-in-time review refresh remains open.
+
+Isolated PostgreSQL tests covered blocked provider states, a state change during provider lookup and a previously prepared transfer. Four cash-out review component tests and client/server typechecks passed. Provider fixtures do not demonstrate a real quote or payout.

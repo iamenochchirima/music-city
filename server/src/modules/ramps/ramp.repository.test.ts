@@ -554,6 +554,19 @@ test(
       assert.equal((await quoteService.request(cashOrder.id, { userId: "other", walletAddress: cashWallet })).hash, saves[0].hash);
       await assert.rejects(quoteService.request(cashOrder.id, { userId: "artist", walletAddress: cashWallet }), /not found/);
       assert.equal(adapterCalls, 1);
+      for (const status of ["failed", "cancelled", "completed", "unknown", "refund_pending", "refunded"]) {
+        await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state=$2 WHERE id=$1", [cashOrder.id, status]); });
+        await assert.rejects(quoteService.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not ready for a quote/);
+        await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, instructions, when), /not ready for a quote/);
+      }
+      assert.equal(adapterCalls, 1);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='created' WHERE id=$1", [cashOrder.id]); });
+      const racedQuoteService = createCashOutQuoteService(repo, new Map([["moonpay", { async quote() {
+        await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='failed' WHERE id=$1", [cashOrder.id]); });
+        return { quote, instructions };
+      } }]]), () => when);
+      await assert.rejects(racedQuoteService.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not ready for a quote/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='created' WHERE id=$1", [cashOrder.id]); });
       const unavailable = createCashOutQuoteService(repo, new Map(), () => when);
       await assert.rejects(unavailable.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not available/);
       assert.equal(await repo.getCashOutQuote(cashOrder.id, quoteId, "artist", cashWallet), null);
@@ -572,6 +585,12 @@ test(
       const prepared = await Promise.all(Array.from({ length: 8 }, () => repo.prepareCashOutAttempt(prepareInput)));
       assert.equal(new Set(prepared.map((attempt) => attempt.id)).size, 1);
       assert.equal((await repo.get(cashOrder.id))?.chainState, "prepared");
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='failed' WHERE id=$1", [cashOrder.id]); });
+      assert.equal((await repo.latestCashOutAttempt(cashOrder.id, "other", cashWallet))?.transaction, null);
+      await assert.rejects(repo.prepareCashOutAttempt(prepareInput), /no longer ready/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='created' WHERE id=$1", [cashOrder.id]); });
+      assert.ok((await repo.latestCashOutAttempt(cashOrder.id, "other", cashWallet))?.transaction);
+
       assert.equal(prepared[0].state, "prepared");
       const changedQuoteId = randomUUID();
       await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, { ...quote, id: changedQuoteId, providerQuoteId: "new-quote" }, { ...instructions, quoteId: changedQuoteId }, when), /existing transfer/);

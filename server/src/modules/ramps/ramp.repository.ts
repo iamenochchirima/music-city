@@ -387,6 +387,8 @@ export function createRampRepository(db: Database) {
       return db.transaction(async (c) => {
         const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE", [id, userId, walletAddress])).rows[0];
         if (!row) throw new HttpError(404, "Transaction not found");
+        if (!["created", "awaiting_user", "processing"].includes(row.provider_state))
+          throw new HttpError(409, "This transaction is not ready for a quote");
         const verified = validateCashOutQuote(hydrate(row), rawQuote, rawInstructions, now);
         const { quote } = verified.snapshot;
         const existing = (await c.query("SELECT * FROM ramp_quotes WHERE id=$1 OR (order_id=$2 AND provider_quote_id=$3)", [quote.id, id, quote.providerQuoteId])).rows;
@@ -407,7 +409,7 @@ export function createRampRepository(db: Database) {
     },
     async latestCashOutAttempt(orderId: string, userId: string, walletAddress: string) {
       return db.transaction(async (c) => {
-        const row = (await c.query(`SELECT a.id,a.quote_id,a.transaction_hash,a.prepared_envelope,a.state,a.expires_at
+        const row = (await c.query(`SELECT a.id,a.quote_id,a.transaction_hash,a.prepared_envelope,a.state,a.expires_at,o.provider_state
           FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id
           WHERE a.order_id=$1 AND o.user_id=$2 AND o.wallet_address=$3 ORDER BY a.created_at DESC,a.id DESC LIMIT 1`,
           [orderId, userId, walletAddress])).rows[0];
@@ -421,7 +423,7 @@ export function createRampRepository(db: Database) {
           } catch { throw new HttpError(409, "The saved transfer cannot be verified"); }
         }
         return { id: row.id as string, quoteId: row.quote_id as string, transactionHash: row.transaction_hash as string,
-          transaction: row.state === "prepared" ? row.prepared_envelope as string : null,
+          transaction: row.state === "prepared" && ["created", "awaiting_user", "processing"].includes(row.provider_state) ? row.prepared_envelope as string : null,
           networkFeeStroops, state: row.state as string, expiresAt: new Date(row.expires_at).toISOString() };
       });
     },
@@ -441,6 +443,8 @@ export function createRampRepository(db: Database) {
         const active = (await c.query("SELECT a.* FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE o.wallet_address=$1 AND (a.state IN ('prepared','submitting','unknown') OR (a.order_id=$2 AND a.state='confirmed')) ORDER BY a.created_at DESC LIMIT 1", [input.walletAddress, input.orderId])).rows[0];
         if (active) {
           if (active.order_id !== input.orderId || active.quote_id !== input.quoteId) throw new HttpError(409, "Check the existing transfer before starting another");
+          if (active.state === "prepared" && !["created", "awaiting_user", "processing"].includes(order.providerState))
+            throw new HttpError(409, "This cash-out is no longer ready for a transfer");
           return { id: active.id as string, quoteId: active.quote_id as string, transaction: active.prepared_envelope as string, transactionHash: active.transaction_hash as string, expiresAt: new Date(active.expires_at).toISOString(), state: active.state as string };
         }
         if (!["created", "awaiting_user", "processing"].includes(order.providerState)) throw new HttpError(409, "This cash-out is no longer ready for a transfer");

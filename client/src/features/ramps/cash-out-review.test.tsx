@@ -43,3 +43,13 @@ it("cancels an unsigned transfer and checks the saved state", async () => {
   expect(sign).not.toHaveBeenCalled();
   expect(mock.post).toHaveBeenCalledWith("/ramps/order/cashout/transfer/attempt/cancel", {}, "session");
 });
+
+it("does not prompt for a signature when the prepared transfer is unavailable", async () => {
+  const sign = vi.fn();
+  mock.get.mockResolvedValueOnce({ transfer: { ...transfer, transaction: null } }).mockResolvedValueOnce(quote);
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  expect(await screen.findByText("This cash-out is no longer available.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Confirm cash-out" }).hasAttribute("disabled")).toBe(true);
+  expect(screen.getByRole("button", { name: "Cancel cash-out" }).hasAttribute("disabled")).toBe(false);
+  expect(sign).not.toHaveBeenCalled();
+});
