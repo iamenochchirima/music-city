@@ -57,3 +57,7 @@ Removed the ramp repository's unscoped list path. Listing now requires both a us
 ### 28 October 2026: sandbox provider polling
 
 The financial worker now runs a bounded MoonPay sandbox reconciliation cycle when the sandbox feature is explicitly enabled. A missing provider record remains unresolved, provider errors trigger backoff, and provider failures do not stop settlement reconciliation. Jobs are eligible for provider lookup only after a launch or a provider reference exists. Tests passed for missing records, errors, cycle limits and PostgreSQL job leasing; server typecheck passed. This is part of R5, not completion: notification handling, chain reconciliation, terminal scheduling, authenticated routes and browser verification remain open. No provider success is claimed.
+
+### 28 October 2026: authenticated transaction history
+
+Added authenticated ramp history and detail endpoints. The account is resolved from the signed-in wallet, and both the account and wallet scope each query. Responses keep provider and chain status separate and omit provider references and internal order terms. HTTP tests cover missing or invalid credentials, cross-account access, missing orders and response privacy; server typecheck passed. This is part of R1; creation, capabilities and resume remain open.
