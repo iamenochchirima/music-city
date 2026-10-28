@@ -1,0 +1,45 @@
+import { afterEach, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { CashOutReview } from "./cash-out-review";
+const mock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
+vi.mock("@/lib/api/http-client", () => ({ httpClient: mock }));
+const transfer = { id: "attempt", quoteId: "quote", transactionHash: "hash", transaction: "exact-xdr", networkFeeStroops: "100", state: "prepared", expiresAt: "2099-01-01T00:00:00Z" };
+const quote = { quote: { provider: "moonpay", debitUnits: "10000000", receive: { currency: "GBP", units: "75", decimals: 2 }, destinationLabel: "Bank ending 1234", fees: [{ kind: "provider", amount: { currency: "GBP", units: "10", decimals: 2 }, includedInDebit: false }] }, expiresAt: "2099-01-01T00:00:00Z" };
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it("shows the saved quote and exact network fee before signing, then checks status", async () => {
+  const user = userEvent.setup(), sign = vi.fn().mockResolvedValue("signed-xdr"), changed = vi.fn();
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockResolvedValueOnce({ transfer: { ...transfer, transaction: null, state: "submitting" } });
+  mock.post.mockResolvedValue({});
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={changed} />);
+  expect(await screen.findByText("0.75 GBP")).toBeTruthy();
+  expect(screen.getByText("Bank ending 1234")).toBeTruthy();
+  expect(screen.getByText("0.00001 XLM")).toBeTruthy();
+  expect(sign).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Confirm cash-out" }));
+  expect(await screen.findByText("Checking your transfer.")).toBeTruthy();
+  expect(sign).toHaveBeenCalledWith("exact-xdr");
+  expect(mock.post).toHaveBeenCalledWith("/ramps/order/cashout/transfer/attempt/authorize", { signedXdr: "signed-xdr" }, "session");
+  expect(changed).toHaveBeenCalled();
+});
+it("does not offer another signature when the authorization outcome cannot be checked", async () => {
+  const user = userEvent.setup(), sign = vi.fn().mockResolvedValue("signed-xdr");
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockRejectedValue(new Error("offline"));
+  mock.post.mockRejectedValue(new Error("timeout"));
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.click(await screen.findByRole("button", { name: "Confirm cash-out" }));
+  await screen.findByText("Could not check the transfer. Try again before taking another action.");
+  expect(screen.queryByRole("button", { name: "Confirm cash-out" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  await waitFor(() => expect(sign).toHaveBeenCalledTimes(1));
+});
+it("cancels an unsigned transfer and checks the saved state", async () => {
+  const user = userEvent.setup(), sign = vi.fn();
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockResolvedValueOnce({ transfer: { ...transfer, transaction: null, state: "cancelled" } });
+  mock.post.mockResolvedValue(undefined);
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.click(await screen.findByRole("button", { name: "Cancel cash-out" }));
+  expect(await screen.findByText("Cash-out cancelled.")).toBeTruthy();
+  expect(sign).not.toHaveBeenCalled();
+  expect(mock.post).toHaveBeenCalledWith("/ramps/order/cashout/transfer/attempt/cancel", {}, "session");
+});

@@ -12,7 +12,7 @@ import type { IncomingDelivery } from "./incoming-delivery.js";
 import { parseCashOutSnapshot, validateCashOutQuote } from "../cashout/cashout-quote.js";
 import { prepareCashOutTransfer, verifyCashOutEnvelope, type CashOutSigningAccount } from "../cashout/cashout-transfer.js";
 import type { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
-import { Networks } from "@stellar/stellar-sdk";
+import { Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { verifyCashOutReceipt, type CashOutLedger } from "../cashout/cashout-chain.js";
 
 type Database = {
@@ -337,9 +337,17 @@ export function createRampRepository(db: Database) {
           WHERE a.order_id=$1 AND o.user_id=$2 AND o.wallet_address=$3 ORDER BY a.created_at DESC,a.id DESC LIMIT 1`,
           [orderId, userId, walletAddress])).rows[0];
         if (!row) return null;
+        let networkFeeStroops: string | null = null;
+        if (row.state === "prepared") {
+          try {
+            const tx = TransactionBuilder.fromXDR(row.prepared_envelope, Networks.TESTNET);
+            if (!(tx instanceof Transaction) || tx.source !== walletAddress || tx.hash().toString("hex") !== row.transaction_hash || !/^\d+$/.test(tx.fee)) throw new Error("Invalid prepared transfer");
+            networkFeeStroops = tx.fee;
+          } catch { throw new HttpError(409, "The saved transfer cannot be verified"); }
+        }
         return { id: row.id as string, quoteId: row.quote_id as string, transactionHash: row.transaction_hash as string,
           transaction: row.state === "prepared" ? row.prepared_envelope as string : null,
-          state: row.state as string, expiresAt: new Date(row.expires_at).toISOString() };
+          networkFeeStroops, state: row.state as string, expiresAt: new Date(row.expires_at).toISOString() };
       });
     },
     // Sequence, fee and ledger must come from a trusted Stellar account and ledger read.
@@ -384,14 +392,15 @@ export function createRampRepository(db: Database) {
     async authorizeCashOutAttempt(input: { orderId: string; attemptId: string; userId: string; walletAddress: string; signedXdr: string; account: CashOutSigningAccount; cipher: ReturnType<typeof createCashOutEnvelopeCipher>; now?: Date }) {
       return db.transaction(async (c) => {
         await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`cashout-wallet:${input.walletAddress}`]);
-        const row = (await c.query("SELECT a.* FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE a.id=$1 AND a.order_id=$2 AND o.user_id=$3 AND o.wallet_address=$4 FOR UPDATE OF a,o", [input.attemptId, input.orderId, input.userId, input.walletAddress])).rows[0];
+        const row = (await c.query("SELECT a.*,o.provider_state FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id WHERE a.id=$1 AND a.order_id=$2 AND o.user_id=$3 AND o.wallet_address=$4 FOR UPDATE OF a,o", [input.attemptId, input.orderId, input.userId, input.walletAddress])).rows[0];
         if (!row) throw new HttpError(404, "Transfer not found");
         if (row.signed_envelope_encrypted) {
           const saved = input.cipher.decrypt(input.orderId, input.attemptId, row.transaction_hash, row.signed_envelope_encrypted);
           if (saved !== input.signedXdr) throw new HttpError(409, "A different signed transfer is already saved");
           return { id: row.id as string, transactionHash: row.transaction_hash as string, state: row.state as string };
         }
-        if (row.state !== "prepared" || row.network !== "stellar:testnet" || input.account.account_id !== input.walletAddress)
+        if (row.state !== "prepared" || row.network !== "stellar:testnet" || input.account.account_id !== input.walletAddress ||
+            !["created", "awaiting_user", "processing"].includes(row.provider_state))
           throw new HttpError(409, "This transfer cannot be authorized");
         const signed = verifyCashOutEnvelope({ transaction: row.prepared_envelope, transactionHash: row.transaction_hash,
           networkPassphrase: Networks.TESTNET, expiresAt: new Date(row.expires_at).toISOString() }, input.signedXdr, input.account, input.now ?? new Date());

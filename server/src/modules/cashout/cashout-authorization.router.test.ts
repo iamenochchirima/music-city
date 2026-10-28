@@ -14,7 +14,7 @@ test("cash-out transfer actions require a session and use the authenticated wall
   const owned = (owner: { userId: string; walletAddress: string }) => {
     if (owner.userId !== "artist" || owner.walletAddress !== wallet) throw new HttpError(404, "Transaction not found");
   };
-  const transfer = { id: attempt, quoteId: quote, transactionHash: "a".repeat(64), transaction: "unsigned", state: "prepared", expiresAt: "2026-10-28T23:59:00.000Z" };
+  const transfer = { id: attempt, quoteId: quote, transactionHash: "a".repeat(64), transaction: "unsigned", networkFeeStroops: "100", state: "prepared", expiresAt: "2026-10-28T23:59:00.000Z" };
   const app = express(); app.use(express.json());
   app.use("/ramps/:orderId/cashout", createCashOutAuthorizationRouter(() => ({
     async latest(_order, owner) { owned(owner); calls.push("latest"); return transfer; },

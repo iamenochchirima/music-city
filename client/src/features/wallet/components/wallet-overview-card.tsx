@@ -553,7 +553,11 @@ export const WalletOverviewCard = () => {
           )}
         </div>
 
-        {session?.token && <WalletRampActivity key={session.token} token={session.token} />}
+        {session?.token && <WalletRampActivity key={session.token} token={session.token} sign={async (transaction) => {
+          if (!stellarWallet) throw new Error("Connect your Stellar wallet to continue");
+          await authorizeWallet(stellarWallet);
+          return stellarWallet.signTransaction(transaction);
+        }} />}
 
         {isSendModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">

@@ -508,6 +508,9 @@ test(
       const account = { account_id: cashWallet, thresholds: { med_threshold: 1 }, signers: [{ key: cashWallet, type: "ed25519_public_key", weight: 1 }] };
       const authorization = { orderId: cashOrder.id, attemptId: secondAttempt.id, userId: "other", walletAddress: cashWallet, signedXdr: signedTx.toXDR(), account, cipher, now: when };
       await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, userId: "artist" }), /not found/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='failed' WHERE id=$1", [cashOrder.id]); });
+      await assert.rejects(repo.authorizeCashOutAttempt(authorization), /cannot be authorized/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='created' WHERE id=$1", [cashOrder.id]); });
       const outsider = TransactionBuilder.fromXDR(secondAttempt.transaction, Networks.TESTNET); outsider.sign(Keypair.random());
       await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, signedXdr: outsider.toXDR() }), /signature/);
       await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, now: new Date(secondAttempt.expiresAt) }), /expired/);
@@ -542,6 +545,7 @@ test(
       const liveOwner = { userId: "other", walletAddress: liveWallet };
       const liveAttempt = await authorizationService.prepare(liveOrder.id, liveQuoteId, liveSaved.hash, liveOwner);
       assert.equal((await authorizationService.latest(liveOrder.id, liveOwner))?.transaction, liveAttempt.transaction);
+      assert.equal((await authorizationService.latest(liveOrder.id, liveOwner))?.networkFeeStroops, "100");
       assert.equal(await repo.latestCashOutAttempt(liveOrder.id, "artist", liveWallet), null);
       const liveTx = TransactionBuilder.fromXDR(liveAttempt.transaction, Networks.TESTNET); liveTx.sign(liveKey);
       await authorizationService.authorize(liveOrder.id, liveAttempt.id, liveTx.toXDR(), liveOwner);
