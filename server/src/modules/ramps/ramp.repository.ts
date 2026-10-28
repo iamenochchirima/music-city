@@ -9,6 +9,7 @@ import {
 } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 import type { IncomingDelivery } from "./incoming-delivery.js";
+import { parseCashOutSnapshot, validateCashOutQuote } from "../cashout/cashout-quote.js";
 
 type Database = {
   transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T>;
@@ -297,6 +298,36 @@ export function createRampRepository(db: Database) {
           );
         }
         return { order: hydrate(row), created };
+      });
+    },
+    // Raw quote and instructions must be returned by the authenticated provider adapter.
+    async saveCashOutQuote(id: string, userId: string, walletAddress: string, rawQuote: unknown, rawInstructions: unknown, now = new Date()) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 AND user_id=$2 AND wallet_address=$3 FOR UPDATE", [id, userId, walletAddress])).rows[0];
+        if (!row) throw new HttpError(404, "Transaction not found");
+        const verified = validateCashOutQuote(hydrate(row), rawQuote, rawInstructions, now);
+        const { quote } = verified.snapshot;
+        const existing = (await c.query("SELECT * FROM ramp_quotes WHERE id=$1 OR (order_id=$2 AND provider_quote_id=$3)", [quote.id, id, quote.providerQuoteId])).rows;
+        if (existing.length) {
+          if (existing.length !== 1 || existing[0].id !== quote.id || existing[0].order_id !== id ||
+              parseCashOutSnapshot(existing[0].snapshot).hash !== verified.hash)
+            throw new HttpError(409, "This quote already exists with different terms");
+          return verified;
+        }
+        const active = (await c.query("SELECT 1 FROM ramp_chain_attempts WHERE order_id=$1 AND state IN ('prepared','submitting','unknown','confirmed') LIMIT 1", [id])).rows[0];
+        if (active) throw new HttpError(409, "Check the existing transfer before changing the quote");
+        await c.query("INSERT INTO ramp_quotes(id,order_id,provider_quote_id,snapshot,expires_at) VALUES($1,$2,$3,$4,$5)",
+          [quote.id, id, quote.providerQuoteId, JSON.stringify(verified.snapshot), verified.expiresAt]);
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'app',$2,'quote_saved',$3)",
+          [id, `quote:${quote.id}`, JSON.stringify({ quoteId: quote.id, confirmationHash: verified.hash })]);
+        return verified;
+      });
+    },
+    async getCashOutQuote(orderId: string, quoteId: string, userId: string, walletAddress: string) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT q.snapshot,q.expires_at FROM ramp_quotes q JOIN ramp_orders o ON o.id=q.order_id WHERE q.order_id=$1 AND q.id=$2 AND o.user_id=$3 AND o.wallet_address=$4", [orderId, quoteId, userId, walletAddress])).rows[0];
+        if (!row) return null;
+        return { ...parseCashOutSnapshot(row.snapshot), expiresAt: new Date(row.expires_at).toISOString() };
       });
     },
     async getByRequest(userId: string, requestId: string): Promise<RampOrder | null> {

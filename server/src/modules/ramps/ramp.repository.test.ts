@@ -9,7 +9,9 @@ import { rampProgressStatements } from "./ramp-progress-migration.js";
 import { rampSchemaStatements } from "./ramp-migration.js";
 import { rampLeaseStatements } from "./ramp-lease-migration.js";
 import { rampDeliveryStatements } from "./ramp-delivery-migration.js";
+import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
+import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -99,9 +101,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -210,7 +212,7 @@ test(
         db.transaction(async (c) => {
           await c.query("UPDATE ramp_orders SET terms='{}' WHERE id=$1", [id]);
         }),
-        /check constraint/,
+        /immutable/,
       );
       await db.transaction(async (c) => {
         for (const orderId of [id, other.order.id])
@@ -438,6 +440,35 @@ test(
       await repo.observe(duplicateOrder.id, duplicateObservation, duplicateLease!.token);
       await assert.rejects(repo.recordIncomingDelivery(duplicateOrder.id, duplicateObservation, delivery, duplicateLease!.token), /unique constraint/);
       assert.equal((await repo.get(duplicateOrder.id))?.chainState, "unobserved");
+
+      const cashWallet = Keypair.random().publicKey(), cashIssuer = Keypair.random().publicKey();
+      const cashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cashWallet, direction: "sell", assetIssuer: cashIssuer,
+        market: { country: "GB", currency: "GBP", method: "bank" }, amount: { currency: "USDC", units: "10000000", decimals: 7 } }))).order;
+      await repo.bindProviderReference(cashOrder.id, "other", cashWallet, "cash-provider");
+      const quoteId = randomUUID(), when = new Date("2026-10-28T12:00:00.000Z");
+      const quote = { id: quoteId, cashOutId: cashOrder.id, sessionId: "session", providerQuoteId: "provider-quote", providerTransactionId: "cash-provider", provider: "moonpay", environment: "sandbox", network: "stellar:testnet", walletAddress: cashWallet, market: { country: "GB", currency: "GBP", payoutMethod: "bank" }, debitUnits: "10000000", receive: { currency: "GBP", units: "75", decimals: 2 }, fees: [], destinationLabel: "Bank account ending 1234", createdAt: "2026-10-28T11:59:00.000Z", expiresAt: "2026-10-28T12:10:00.000Z" };
+      const instructions = { provider: "moonpay", environment: "sandbox", network: "stellar:testnet", walletAddress: cashWallet, cashOutId: cashOrder.id, quoteId, providerTransactionId: "cash-provider", destination: Keypair.random().publicKey(), assetCode: "USDC", assetIssuer: cashIssuer, amountUnits: "10000000", memo: { type: "id", value: "123" }, expiresAt: "2026-10-28T12:05:00.000Z" };
+      const saves = await Promise.all(Array.from({ length: 8 }, () => repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, instructions, when)));
+      assert.equal(new Set(saves.map((result) => result.hash)).size, 1);
+      assert.equal(saves[0].expiresAt, instructions.expiresAt);
+      const storedQuote = await repo.getCashOutQuote(cashOrder.id, quoteId, "other", cashWallet);
+      assert.equal(storedQuote?.hash, saves[0].hash);
+      let adapterCalls = 0;
+      const quoteService = createCashOutQuoteService(repo, new Map([["moonpay", { async quote(received) { adapterCalls++; assert.equal(received.id, cashOrder.id); return { quote, instructions }; } }]]), () => when);
+      assert.equal((await quoteService.request(cashOrder.id, { userId: "other", walletAddress: cashWallet })).hash, saves[0].hash);
+      await assert.rejects(quoteService.request(cashOrder.id, { userId: "artist", walletAddress: cashWallet }), /not found/);
+      assert.equal(adapterCalls, 1);
+      const unavailable = createCashOutQuoteService(repo, new Map(), () => when);
+      await assert.rejects(unavailable.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not available/);
+      assert.equal(await repo.getCashOutQuote(cashOrder.id, quoteId, "artist", cashWallet), null);
+      assert.equal(await repo.getCashOutQuote(cashOrder.id, quoteId, "other", input.walletAddress), null);
+      await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "artist", cashWallet, quote, instructions, when), /not found/);
+      await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, { ...quote, receive: { ...quote.receive, units: "76" } }, instructions, when), /different terms/);
+      for (const patch of [{ amountUnits: "9999999" }, { assetIssuer: Keypair.random().publicKey() }, { destination: cashWallet }, { providerTransactionId: "wrong" }])
+        await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, { ...instructions, ...patch }, when));
+      await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, instructions, new Date(instructions.expiresAt)), /new quote/);
+      for (const sql of ["UPDATE ramp_quotes SET snapshot='{}' WHERE id=$1", "DELETE FROM ramp_quotes WHERE id=$1"]) await assert.rejects(db.transaction(async (c) => { await c.query(sql, [quoteId]); }), /append-only/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET terms=jsonb_set(terms,'{amount,units}',to_jsonb('1'::text)) WHERE id=$1", [cashOrder.id]); }), /immutable/);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();
