@@ -13,6 +13,8 @@ test("rejects live identity, signing keys, databases, network and API endpoints"
     [{ ...server, DYNAMIC_JWKS_URL: "https://app.dynamic.xyz/api/v0/sdk/live/.well-known/jwks" }, client],
     [{ ...server, DATABASE_URL: "postgres://test@db.example.test/demo_test" }, client],
     [{ ...server, DATABASE_URL: "postgres://test@localhost/production" }, client],
+    [{ ...server, DATABASE_URL: "postgres://test@localhost/demo_test?host=remote.example" }, client],
+    [{ ...server, DATABASE_URL: "https://localhost/demo_test" }, client],
     [{ ...server, STELLAR_NETWORK_PASSPHRASE: "Public Global Stellar Network ; September 2015" }, client],
     [{ ...server, STELLAR_HORIZON_URL: "https://horizon.stellar.org" }, client],
     [{ ...server, RAMPS_SANDBOX_ENABLED: "true" }, client],
@@ -24,4 +26,14 @@ test("rejects live identity, signing keys, databases, network and API endpoints"
   ]) assert.ok(checkLocalDemoConfig(changedServer, changedClient, admin).length > 0);
   assert.ok(checkLocalDemoConfig(server, client, { VITE_ADMIN_API_BASE_URL: "https://example.test/api/v1/admin" }).length > 0);
   assert.ok(checkLocalDemoConfig(server, client, { VITE_ADMIN_API_BASE_URL: "http://localhost:4319/api/v1/admin" }).length > 0);
+});
+
+
+test("rejects a connection string whose query overrides its apparent local host", async () => {
+  const { createRequire } = await import("node:module");
+  const require = createRequire(new URL("../server/package.json", import.meta.url));
+  const { Client } = require("pg");
+  const database = "postgres://test@localhost/demo_test?host=remote.example";
+  assert.equal(new Client({ connectionString: database }).connectionParameters.host, "remote.example");
+  assert.ok(checkLocalDemoConfig({ ...server, DATABASE_URL: database }, client, admin).some((error) => error.includes("DATABASE_URL")));
 });

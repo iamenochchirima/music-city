@@ -12,8 +12,12 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
   const failures = [];
   let database;
   try { database = new URL(server.DATABASE_URL); } catch { failures.push("Set DATABASE_URL to an isolated local test database."); }
-  if (database && (!["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) || !database.pathname.endsWith("_test")))
-    failures.push("DATABASE_URL must use localhost and a database name ending in _test.");
+  // pg permits query parameters such as host to override the URL authority.
+  // Disallow them so the connection the app opens matches what we check here.
+  if (database && (!["postgres:", "postgresql:"].includes(database.protocol) ||
+      !["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) ||
+      !/^\/[A-Za-z0-9_]+_test$/.test(database.pathname) || database.search || database.hash))
+    failures.push("DATABASE_URL must use localhost and a database name ending in _test, without query parameters.");
   if (server.NODE_ENV === "production") failures.push("Use a non-production server environment.");
   if (server.STORAGE_PROVIDER && server.STORAGE_PROVIDER !== "local") failures.push("Use local media storage for the demo.");
   if (server.MEDIA_PROVIDER && server.MEDIA_PROVIDER !== "local") failures.push("Use local media processing for the demo.");

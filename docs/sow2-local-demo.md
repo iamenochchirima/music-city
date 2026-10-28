@@ -21,7 +21,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    node scripts/check-sow2-local-env.mjs
    ```
 
-   If the API uses a different local port, set `PORT` and change both frontend API URLs to match. The preflight checks configured environment values; confirm the running processes use the same values.
+   If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters. The preflight checks configured environment values; confirm the running processes use the same values.
 5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh
