@@ -50,3 +50,28 @@ test("cash-out authorization uses owner-scoped records and server-read network d
   await assert.rejects(service.cancel("order", "attempt", owner), /not available/);
   assert.deepEqual(calls, ["order"]);
 });
+
+
+test("withdraws unsigned authorization when route verification expires without hiding history or cancellation", async () => {
+  const wallet = Keypair.random().publicKey(), owner = { userId: "artist", walletAddress: wallet };
+  const order = { terms: { direction: "sell", environment: "sandbox", network: "stellar:testnet" } };
+  let state = "prepared", cancelled = false, checks = 0, allowed = true;
+  const repository = {
+    async getForOwner() { return order; }, async getCashOutQuote() { return null; },
+    async latestCashOutAttempt() { return { id: "attempt", state, transaction: state === "prepared" ? "unsigned" : null }; },
+    async prepareCashOutAttempt() { throw new Error("unexpected preparation"); },
+    async authorizeCashOutAttempt() { throw new Error("unexpected authorization"); },
+    async cancelUnsignedCashOutAttempt() { cancelled = true; },
+  };
+  const chain = { async preparationLedger() { throw new Error("unexpected ledger"); }, async account() { checks++; throw new Error("unexpected account read"); } };
+  const service = createCashOutAuthorizationService(repository as unknown as Parameters<typeof createCashOutAuthorizationService>[0], chain, createCashOutEnvelopeCipher(Buffer.alloc(32, 1)), async () => allowed);
+  assert.equal((await service.latest("order", owner))?.transaction, "unsigned");
+  allowed = false;
+  assert.equal((await service.latest("order", owner))?.transaction, null);
+  await assert.rejects(service.authorize("order", "attempt", "signed", owner), /not available/);
+  assert.equal(checks, 0);
+  await service.cancel("order", "attempt", owner);
+  assert.equal(cancelled, true);
+  state = "unknown";
+  assert.equal((await service.latest("order", owner))?.state, "unknown");
+});

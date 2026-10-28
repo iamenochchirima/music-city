@@ -30,11 +30,14 @@ export function createCashOutAuthorizationService(repository: Repository, chain:
         feeStroops: ledger.base_fee_in_stroops, maxFeeStroops: 10000, preparedLedger: ledger.sequence });
     },
     async latest(orderId: string, owner: Owner) {
-      await checkOrder(orderId, owner);
-      return repository.latestCashOutAttempt(orderId, owner.userId, owner.walletAddress);
+      const order = await checkOrder(orderId, owner);
+      const attempt = await repository.latestCashOutAttempt(orderId, owner.userId, owner.walletAddress);
+      if (attempt?.state === "prepared" && !await canPrepare(order)) return { ...attempt, transaction: null };
+      return attempt;
     },
     async authorize(orderId: string, attemptId: string, signedXdr: string, owner: Owner) {
-      await checkOrder(orderId, owner);
+      const order = await checkOrder(orderId, owner);
+      if (!await canPrepare(order)) throw new HttpError(503, "Cash-out is not available yet");
       const account = await chain.account(owner.walletAddress);
       return repository.authorizeCashOutAttempt({ orderId, attemptId, signedXdr, ...owner, account, cipher });
     },

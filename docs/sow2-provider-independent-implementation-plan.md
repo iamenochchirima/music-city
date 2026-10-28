@@ -312,3 +312,9 @@ An earlier run started tests, typecheck and build concurrently. An onboarding te
 At revision `a247f8c`, ran the 13 suites skipped by the default server test command against separate disposable local PostgreSQL databases. All 105 checks passed with no skips. These covered admin authentication, agreements, finalization, checkout, guest playback, publication, ramp persistence, referrals, settlement, sponsorship, support, track metadata and onboarding. The disposable databases were removed after the run.
 
 The financial integration suites use real signatures with mocked chain or provider boundaries. They do not replace the current-code Dynamic wallet and Testnet journey or provider sandbox evidence.
+
+### 29 October 2026: cash-out route expiry
+
+The cash-out service rechecks the verified route before exposing an unsigned prepared envelope and before accepting an authorization. If the route is unavailable or its evidence has expired, the user can still cancel the unsigned attempt and inspect existing transfer status. A signed attempt already held by the worker remains subject to chain reconciliation. This is an application-side capability check, not proof of current provider availability or payout behavior.
+
+Focused service and HTTP tests, the isolated PostgreSQL ramp suite, and server typecheck passed. The test uses simulated route availability and does not enable cash-out.
