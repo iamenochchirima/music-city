@@ -103,7 +103,7 @@ export function createRampRepository(db: Database) {
         const uncertain = (await c.query(
           `SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
            AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
-           AND (provider_state IN ('created','unknown') OR chain_state IN ('submitting','unknown')) LIMIT 1`,
+           AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown') OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed')) LIMIT 1`,
           [userId, wallet, id],
         )).rows[0];
         if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
@@ -169,7 +169,7 @@ export function createRampRepository(db: Database) {
           throw new HttpError(409, "Check your existing transaction before reopening payment.");
         const uncertain = (await c.query(`SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
           AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
-          AND (provider_state IN ('created','unknown') OR chain_state IN ('submitting','unknown')) LIMIT 1`, [userId, wallet, id])).rows[0];
+          AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown') OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed')) LIMIT 1`, [userId, wallet, id])).rows[0];
         if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
         await c.query("INSERT INTO ramp_launch_sessions(order_id,encrypted_session,resumable) VALUES($1,$2,$3)", [id, encryptedSession, resumable]);
         await c.query("UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1", [id]);

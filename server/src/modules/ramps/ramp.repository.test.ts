@@ -249,7 +249,7 @@ test(
         }),
         /foreign key/,
       );
-      // A known processing transaction is not an unknown outcome.
+      // A processing transaction must be resolved before a second launch.
       await repo.observe(id, {
         id: "reference", externalId: id, state: "processing", originalStatus: "pending",
         updatedAt: "2026-10-26T12:00:00.000Z",
@@ -257,11 +257,14 @@ test(
       const launchOrder = (
         await repo.reserve({ ...input, requestId: randomUUID() })
       ).order;
+      await assert.rejects(repo.issueLaunch(launchOrder.id, "artist", input.walletAddress), /existing transaction/);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='completed',chain_state='confirmed' WHERE id=$1", [id]); });
       const launchResults = await Promise.allSettled(
         Array.from({ length: 8 }, () =>
           repo.issueLaunch(launchOrder.id, "artist", input.walletAddress),
         ),
       );
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='processing',chain_state='unobserved' WHERE id=$1", [id]); });
       assert.equal(
         launchResults.filter((r) => r.status === "fulfilled").length,
         1,
@@ -394,7 +397,12 @@ test(
         state: "processing", originalStatus: "pending", updatedAt: "2026-10-28T00:00:00.000Z" });
       await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='unknown' WHERE id=$1", [launched.id]); });
       await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
-      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='confirmed' WHERE id=$1", [launched.id]); });
+      for (const [providerState, chainState] of [["processing", "confirmed"], ["awaiting_user", "unobserved"], ["refund_pending", "unobserved"], ["completed", "unobserved"]]) {
+        await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state=$2,chain_state=$3 WHERE id=$1", [launched.id, providerState, chainState]); });
+        await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
+        await assert.rejects(repo.saveLaunchSession(waiting.id, "other", secondWallet, Buffer.alloc(40), false), /existing transaction/);
+      }
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state='completed',chain_state='confirmed' WHERE id=$1", [launched.id]); });
       assert.equal((await repo.issueLaunch(waiting.id, "other", secondWallet)).id, waiting.id);
 
       const serviceWallet = Keypair.random().publicKey();

@@ -91,3 +91,23 @@ it("allows cancellation but hides provider launch when the saved route is unavai
   await user.click(dialog.getByRole("button", { name: "Cancel funding" }));
   expect(mock.post).toHaveBeenCalledWith("/ramps/saved/cancel", {}, "session");
 });
+
+
+it("blocks new funding while a started transaction is pending or delivery is unconfirmed", async () => {
+  const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: true, providerStarted: true, providerState: "completed", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
+  const route = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
+  render(<WalletRampActivity token="session" />);
+  expect(await screen.findByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
+  expect(screen.getByText("Check your pending transaction before starting another.")).toBeTruthy();
+});
+
+it("allows new funding once both provider and transfer are confirmed", async () => {
+  const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: true, providerStarted: true, providerState: "completed", chainState: "confirmed", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
+  const route = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
+  render(<WalletRampActivity token="session" />);
+  expect(await screen.findByText("Provider completed · Transfer confirmed")).toBeTruthy();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
+});

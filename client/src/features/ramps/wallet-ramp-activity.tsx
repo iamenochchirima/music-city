@@ -64,7 +64,9 @@ export function WalletRampActivity({ token, sign }: { token: string; sign?: (tra
     try { return BigInt(resume.amount.units) >= BigInt(route.minUnits) && BigInt(resume.amount.units) <= BigInt(route.maxUnits); }
     catch { return false; }
   });
-  const unresolved = items.some((item) => (item.launchRequested || item.providerStarted) && (item.providerState === "created" || item.providerState === "unknown" || item.chainState === "submitting" || item.chainState === "unknown"));
+  const unresolved = items.some((item) => (item.launchRequested || item.providerStarted) &&
+    (["created", "awaiting_user", "processing", "ready_for_pickup", "refund_pending", "unknown"].includes(item.providerState) ||
+      ["submitting", "unknown"].includes(item.chainState) || (item.providerState === "completed" && item.chainState !== "confirmed")));
   return <section aria-label="Funding and cash-out" className="space-y-3 border-t border-white/10 pt-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h3 className="text-sm font-medium text-white">Funding and cash-out</h3>{routes.length === 0 && <p className="mt-1 text-sm text-slate-400">MoonPay and MoneyGram are unavailable</p>}</div>

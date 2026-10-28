@@ -271,3 +271,9 @@ Eight client component tests and client typecheck passed. A desktop browser comp
 The launch service now requires each registered adapter to validate its provider-specific URL against the saved order. The shared boundary independently rejects non-HTTPS URLs, embedded credentials and fragments. MoonPay retains its existing sandbox origin and parameter checks, including on resumed encrypted sessions. A second provider adapter in tests demonstrates the boundary; it is a fixture and does not enable MoneyGram.
 
 Launch service and HTTP tests, isolated PostgreSQL session tests and server typecheck passed. Additional provider adapters still require verified route discovery, URL rules, transaction lookup, status mapping, UI support and sandbox evidence; B2 and R3 remain open.
+
+### 29 October 2026: pending delivery and duplicate launch prevention
+
+A started transaction now blocks a second launch while provider action, processing, pickup or refund is pending, and while provider completion lacks a confirmed chain transfer. Both launch entry points enforce the rule under the existing wallet lock. The wallet applies the same rule and allows a new funding request when provider completion and chain confirmation are both recorded. Failure and refund recovery still require provider-specific evidence; an unresolved completed delivery may need operator investigation.
+
+Isolated PostgreSQL tests covered concurrent launches, pending states, unconfirmed delivery and the two launch entry points. Ten wallet component tests and client/server typechecks passed. This was simulated data; provider and chain completion were not newly demonstrated. R2 and R7 remain open for end-to-end verification.
