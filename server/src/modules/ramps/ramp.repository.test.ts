@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
-import { Keypair } from "@stellar/stellar-sdk";
+import { Keypair, Networks, TransactionBuilder } from "@stellar/stellar-sdk";
 import { rampOrderTermsSchema, type RampOrderTerms } from "@music-city/shared";
 import { createRampRepository } from "./ramp.repository.js";
 import { rampProgressStatements } from "./ramp-progress-migration.js";
@@ -13,6 +13,7 @@ import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
+import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -442,7 +443,7 @@ test(
       await assert.rejects(repo.recordIncomingDelivery(duplicateOrder.id, duplicateObservation, delivery, duplicateLease!.token), /unique constraint/);
       assert.equal((await repo.get(duplicateOrder.id))?.chainState, "unobserved");
 
-      const cashWallet = Keypair.random().publicKey(), cashIssuer = Keypair.random().publicKey();
+      const cashKey = Keypair.random(), cashWallet = cashKey.publicKey(), cashIssuer = Keypair.random().publicKey();
       const cashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cashWallet, direction: "sell", assetIssuer: cashIssuer,
         market: { country: "GB", currency: "GBP", method: "bank" }, amount: { currency: "USDC", units: "10000000", decimals: 7 } }))).order;
       await repo.bindProviderReference(cashOrder.id, "other", cashWallet, "cash-provider");
@@ -498,7 +499,24 @@ test(
       await assert.rejects(db.transaction(async (c) => { await c.query("DELETE FROM ramp_chain_attempts WHERE id=$1", [secondAttempt.id]); }), /append-only/);
       await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='confirmed' WHERE id=$1", [secondAttempt.id]); }), /Invalid ramp transfer state/);
       await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='submitting' WHERE id=$1", [secondAttempt.id]); }), /signed transfer/);
-      await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET state='submitting',signed_envelope_encrypted=$2 WHERE id=$1", [secondAttempt.id, Buffer.from("test-only-encrypted-envelope")]); });
+      const cipher = createCashOutEnvelopeCipher(Buffer.alloc(32, 7));
+      const signedTx = TransactionBuilder.fromXDR(secondAttempt.transaction, Networks.TESTNET);
+      signedTx.sign(cashKey);
+      const account = { account_id: cashWallet, thresholds: { med_threshold: 1 }, signers: [{ key: cashWallet, type: "ed25519_public_key", weight: 1 }] };
+      const authorization = { orderId: cashOrder.id, attemptId: secondAttempt.id, userId: "other", walletAddress: cashWallet, signedXdr: signedTx.toXDR(), account, cipher, now: when };
+      await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, userId: "artist" }), /not found/);
+      const outsider = TransactionBuilder.fromXDR(secondAttempt.transaction, Networks.TESTNET); outsider.sign(Keypair.random());
+      await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, signedXdr: outsider.toXDR() }), /signature/);
+      await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, now: new Date(secondAttempt.expiresAt) }), /expired/);
+      const authorizations = await Promise.all(Array.from({ length: 8 }, () => repo.authorizeCashOutAttempt(authorization)));
+      assert.ok(authorizations.every((attempt) => attempt.state === "submitting" && attempt.transactionHash === secondAttempt.transactionHash));
+      const encrypted = await db.transaction(async (c) => (await c.query("SELECT signed_envelope_encrypted FROM ramp_chain_attempts WHERE id=$1", [secondAttempt.id])).rows[0].signed_envelope_encrypted as Buffer);
+      assert.equal(encrypted.includes(Buffer.from(signedTx.toXDR())), false);
+      assert.equal(cipher.decrypt(cashOrder.id, secondAttempt.id, secondAttempt.transactionHash, encrypted), signedTx.toXDR());
+      assert.equal((await repo.get(cashOrder.id))?.chainState, "submitting");
+      assert.equal((await repo.events(cashOrder.id)).filter((event) => event.kind === "transfer_authorized").length, 1);
+      await assert.rejects(repo.authorizeCashOutAttempt({ ...authorization, signedXdr: outsider.toXDR() }), /different signed/);
+      await assert.rejects(db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET signed_envelope_encrypted=$2 WHERE id=$1", [secondAttempt.id, Buffer.from("replaced")]); }), /immutable/);
       await assert.rejects(repo.cancelUnsignedCashOutAttempt(cashOrder.id, secondAttempt.id, "other", cashWallet), /existing transfer/);
       assert.equal((await repo.prepareCashOutAttempt(prepareInput)).state, "submitting");
       await assert.rejects(repo.prepareCashOutAttempt({ ...prepareInput, orderId: concurrentOrder.id, quoteId: concurrentQuoteId, confirmationHash: concurrentSaved.hash }), /existing transfer/);
