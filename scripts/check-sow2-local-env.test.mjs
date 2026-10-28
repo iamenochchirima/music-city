@@ -17,6 +17,7 @@ test("rejects live identity, signing keys, databases, network and API endpoints"
     [{ ...server, STELLAR_HORIZON_URL: "https://horizon.stellar.org" }, client],
     [{ ...server, RAMPS_SANDBOX_ENABLED: "true" }, client],
     [{ ...server, STORAGE_PROVIDER: "s3" }, client],
+    [{ ...server, MEDIA_PROVIDER: "mux" }, client],
     [server, { ...client, VITE_API_BASE_URL: "http://localhost:4319/api/v1" }],
     [server, { ...client, VITE_DYNAMIC_ENVIRONMENT_ID: "live" }],
     [server, { ...client, VITE_API_BASE_URL: "https://example.test/api/v1" }],

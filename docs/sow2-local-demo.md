@@ -17,6 +17,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export VITE_ADMIN_API_BASE_URL=http://localhost:4319/api/v1/admin
    export RAMPS_SANDBOX_ENABLED=false
    export STORAGE_PROVIDER=local
+   export MEDIA_PROVIDER=local
    node scripts/check-sow2-local-env.mjs
    ```
 

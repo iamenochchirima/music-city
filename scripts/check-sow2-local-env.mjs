@@ -16,6 +16,7 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
     failures.push("DATABASE_URL must use localhost and a database name ending in _test.");
   if (server.NODE_ENV === "production") failures.push("Use a non-production server environment.");
   if (server.STORAGE_PROVIDER && server.STORAGE_PROVIDER !== "local") failures.push("Use local media storage for the demo.");
+  if (server.MEDIA_PROVIDER && server.MEDIA_PROVIDER !== "local") failures.push("Use local media processing for the demo.");
   if (server.DYNAMIC_ENVIRONMENT_ID !== sandboxId || client.VITE_DYNAMIC_ENVIRONMENT_ID !== sandboxId)
     failures.push("Set both Dynamic environment IDs to the Music City Sandbox ID.");
   if (server.DYNAMIC_JWKS_URL && server.DYNAMIC_JWKS_URL !== sandboxJwks)
