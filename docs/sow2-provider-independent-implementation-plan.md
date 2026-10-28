@@ -229,3 +229,9 @@ Local PostgreSQL, HTTP and component tests passed, including the launch-versus-c
 Started the actual local admin and API against a disposable clone of the settlement test database. A simulated order with conflicting provider observations appeared in transaction history and its detail page. The detail page now displays a clear conflict warning rather than relying on the activity list alone. The admin component tests and typecheck passed. The temporary app processes, fixture script and cloned database were removed after the check.
 
 This was a local browser check with simulated provider data. It did not verify a real provider transaction, the creator wallet journey, mobile layout or SOW reviewer acceptance; U4 and V3 remain open.
+
+### 29 October 2026: local wallet and environment safeguards
+
+Signed in to the local application with a Dynamic Sandbox test identity against a disposable PostgreSQL clone. A simulated unlaunched funding order appeared in the wallet, could be opened and cancelled, and remained cancelled after reloading. New funding and cash-out remained unavailable because no provider route is verified. This did not contact a payment provider or prove a transfer.
+
+The initial local configuration pointed to Dynamic Live. A disposable test email was submitted to the Live login prompt before the mismatch was noticed; no verification code was entered and no sign-in or payment was performed. The local application was restarted with Sandbox authentication and its matching signing-key endpoint before the wallet check. A new preflight checks the local database, Dynamic, Stellar and provider settings before a demonstration. Provider transactions, the complete real-wallet cash-out path and reviewer acceptance remain open.

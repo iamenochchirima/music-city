@@ -7,7 +7,20 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
 1. Use an isolated local PostgreSQL database and local application configuration. Confirm that the API, client, admin and financial worker use Stellar Testnet and the same Testnet USDC issuer, agreement registry and settlement contracts. Do not point the demo at production data.
 2. Prepare two Dynamic Sandbox users with Stellar Testnet wallets. One acts as artist; the other can act as both contributor and buyer, as in E8. Both beneficiaries need a USDC trustline and sufficient XLM for network fees. The buyer also needs Testnet USDC.
 3. Prepare an administrator account and three independent Testnet treasury signers. The configured treasury and contracts must require two signatures. Keep wallet keys and admin credentials out of screenshots, shared documents and logs.
-4. From the repository root, build the shared package and start the services in separate terminals:
+4. In each terminal that starts a service, set the isolated `DATABASE_URL` and the Sandbox and local API overrides below. The project's local environment files may contain Live Dynamic settings; the preflight rejects those settings. Keep database credentials out of the command history and shared evidence.
+
+   ```sh
+   export DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
+   export DYNAMIC_JWKS_URL=https://app.dynamic.xyz/api/v0/sdk/2bf133b3-0bd0-4e1d-b956-7e613ed3d319/.well-known/jwks
+   export VITE_DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
+   export VITE_API_BASE_URL=http://localhost:4319/api/v1
+   export VITE_ADMIN_API_BASE_URL=http://localhost:4319/api/v1/admin
+   export RAMPS_SANDBOX_ENABLED=false
+   node scripts/check-sow2-local-env.mjs
+   ```
+
+   If the API uses a different local port, change both frontend API URLs. The preflight checks configured environment values; confirm the running processes use the same values.
+5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh
    pnpm --filter @music-city/shared build
@@ -19,7 +32,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    ```
 
    The default addresses are `http://localhost:4317` for the client, `http://localhost:4318` for the admin and `http://localhost:4319` for the API. Local configuration can change them. The media worker processes uploads; the financial worker reconciles payments, settlements and claims.
-5. Confirm that the API readiness endpoint at `/api/v1/health/ready` responds successfully and that both frontends load against the local API. Record the current Git revision with `git rev-parse HEAD`.
+6. Confirm that the API readiness endpoint at `/api/v1/health/ready` responds successfully and that both frontends load against the local API. Record the current Git revision with `git rev-parse HEAD`.
 
 ## Publish music and approve the agreement
 

@@ -12,6 +12,7 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter server --filter client --filter admin test",
+    "test:sow2-preflight": "node --test scripts/check-sow2-local-env.test.mjs",
     "test:referrals": "bash scripts/verify-referrals.sh",
     "test:early-user-discount": "bash scripts/verify-referrals.sh",
     "test:e2e:early-user-discount": "bash scripts/verify-early-user-discount-browser.sh",
