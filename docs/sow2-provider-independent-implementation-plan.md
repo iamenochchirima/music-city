@@ -99,3 +99,7 @@ MoonPay's [payment-method configuration endpoint](https://dev.moonpay.com/api-re
 ### 28 October 2026: repeatable payment-method checks
 
 The MoonPay sandbox adapter and readiness command can now query reported methods for an explicitly supplied ISO-3 country, fiat currency, direction, and US state where required. The secret stays in the authorization header, and provider numeric limits are not used as exact money. Nine adapter tests and server typecheck passed. A read-only GBP/GBR XLM readiness run returned methods for both directions, while both flows still report that provider-flow verification is needed. This does not enable a route or demonstrate a payment.
+
+### 28 October 2026: signed MoonPay notifications
+
+Added a sandbox-only webhook endpoint for the documented buy and sell transaction events. It checks [MoonPay's V2 signature](https://dev.moonpay.com/api-reference/widget/webhooks/signature) against the raw body and timestamp, verifies the saved account, direction and existing provider reference, deduplicates the notification, and schedules an authenticated provider lookup. It does not treat the notification as a payment or chain receipt. HTTP signature, expiry, unsupported-event and ownership tests passed; isolated PostgreSQL tests covered duplicate notifications and an in-flight lease. Server typecheck passed. This advances R4; real sandbox notification delivery and the MoneyGram adapter remain unverified.

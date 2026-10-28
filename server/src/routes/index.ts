@@ -4,6 +4,7 @@ import { settlementsRouter, adminSettlementsRouter } from "../modules/settlement
 import { referralsRouter, adminReferralsRouter } from "../modules/referrals/referrals.router.js";
 import { sponsorshipsRouter, adminSponsorshipsRouter } from "../modules/sponsorships/sponsorships.router.js";
 import { Router } from "express";
+import { moonpayWebhookRouter } from "../modules/ramps/moonpay-webhook.router.js";
 import { rampsRouter } from "../modules/ramps/ramps.router.js";
 import { adminRampsRouter } from "../modules/ramps/admin-ramps.router.js";
 
@@ -49,6 +50,7 @@ apiRouter.use("/playback", playbackRouter);
 apiRouter.use("/playlists", playlistsRouter);
 apiRouter.use("/media", mediaRouter);
 apiRouter.use("/payments", paymentsRouter);
+apiRouter.use("/webhooks/moonpay", moonpayWebhookRouter);
 apiRouter.use("/ramps", rampsRouter);
 apiRouter.use("/admin/ramps", adminRampsRouter);
 apiRouter.use("/support", supportRouter);

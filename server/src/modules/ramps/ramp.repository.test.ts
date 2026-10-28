@@ -298,8 +298,12 @@ test(
         updatedAt: "2026-10-26T12:01:00.000Z",
       });
       assert.equal((await repo.get(id))?.chainState, "unobserved");
-      await repo.recordWebhook(id, "notification-1", "updated");
-      await repo.recordWebhook(id, "notification-1", "updated");
+      const notification = { orderId: id, providerId: "reference", userId: "artist", direction: "buy" as const, key: "notification-1", kind: "transaction_updated" };
+      assert.equal(await repo.recordMoonpayNotification(notification), true);
+      assert.equal(await repo.recordMoonpayNotification(notification), true);
+      assert.equal(await repo.recordMoonpayNotification({ ...notification, providerId: "wrong" }), false);
+      assert.equal(await repo.recordMoonpayNotification({ ...notification, userId: "other" }), false);
+      assert.equal(await repo.recordMoonpayNotification({ ...notification, direction: "sell" }), false);
       assert.equal(
         (await repo.events(id)).filter((e) => e.source === "verified_webhook")
           .length,
@@ -334,10 +338,13 @@ test(
       assert.equal(job.leased_until, null);
       assert.equal(job.last_error_code, "provider_check_failed");
       assert.equal(job.delayed, true);
+      await repo.recordMoonpayNotification(notification);
+      const duplicateJob = await db.transaction(async (c) => (await c.query("SELECT due_at>NOW() delayed FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
+      assert.equal(duplicateJob.delayed, true);
       await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [id]); });
       const notifiedLease = await repo.lease();
       assert.equal(notifiedLease?.order.id, id);
-      await repo.recordWebhook(id, "during-lease", "updated");
+      await repo.recordMoonpayNotification({ ...notification, key: "during-lease" });
       await repo.release(id, notifiedLease!.token, false);
       const afterNotice = await db.transaction(async (c) => (await c.query("SELECT due_at<=NOW() due FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
       assert.equal(afterNotice.due, true);

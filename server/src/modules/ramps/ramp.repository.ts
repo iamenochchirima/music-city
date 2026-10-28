@@ -166,16 +166,21 @@ export function createRampRepository(db: Database) {
           );
       });
     },
-    async recordWebhook(id: string, key: string, kind: string) {
+    async recordMoonpayNotification(input: { orderId: string; providerId: string; userId: string; direction: "buy" | "sell"; key: string; kind: string }): Promise<boolean> {
       return db.transaction(async (c) => {
-        await c.query(
-          "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'verified_webhook',$2,$3,'{}') ON CONFLICT DO NOTHING",
-          [id, key, kind],
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 FOR UPDATE", [input.orderId])).rows[0];
+        if (!row || row.provider !== "moonpay" || row.environment !== "sandbox" ||
+            row.direction !== input.direction || row.user_id !== input.userId ||
+            (!row.launch_issued_at && !row.provider_transaction_id) ||
+            (row.provider_transaction_id && row.provider_transaction_id !== input.providerId)) return false;
+        const inserted = await c.query(
+          "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'verified_webhook',$2,$3,'{}') ON CONFLICT DO NOTHING RETURNING id",
+          [input.orderId, input.key, input.kind],
         );
-        await c.query(
-          "UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1",
-          [id],
+        if (inserted.rowCount) await c.query(
+          "UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [input.orderId],
         );
+        return true;
       });
     },
     async lease(): Promise<{ order: RampOrder; token: string } | null> {
