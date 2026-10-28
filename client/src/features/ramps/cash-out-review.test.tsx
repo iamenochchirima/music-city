@@ -9,7 +9,7 @@ const quote = { quote: { provider: "moonpay", debitUnits: "10000000", receive: {
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 it("shows the saved quote and exact network fee before signing, then checks status", async () => {
   const user = userEvent.setup(), sign = vi.fn().mockResolvedValue("signed-xdr"), changed = vi.fn();
-  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockResolvedValueOnce({ transfer: { ...transfer, transaction: null, state: "submitting" } });
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockResolvedValueOnce({ transfer }).mockResolvedValueOnce({ transfer: { ...transfer, transaction: null, state: "submitting" } });
   mock.post.mockResolvedValue({});
   render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={changed} />);
   expect(await screen.findByText("0.75 GBP")).toBeTruthy();
@@ -24,7 +24,7 @@ it("shows the saved quote and exact network fee before signing, then checks stat
 });
 it("does not offer another signature when the authorization outcome cannot be checked", async () => {
   const user = userEvent.setup(), sign = vi.fn().mockResolvedValue("signed-xdr");
-  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockRejectedValue(new Error("offline"));
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockResolvedValueOnce({ transfer }).mockRejectedValue(new Error("offline"));
   mock.post.mockRejectedValue(new Error("timeout"));
   render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
   await user.click(await screen.findByRole("button", { name: "Confirm cash-out" }));
@@ -52,4 +52,28 @@ it("does not prompt for a signature when the prepared transfer is unavailable", 
   expect(screen.getByRole("button", { name: "Confirm cash-out" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByRole("button", { name: "Cancel cash-out" }).hasAttribute("disabled")).toBe(false);
   expect(sign).not.toHaveBeenCalled();
+});
+
+
+it("refreshes a changed transfer without opening the wallet", async () => {
+  const user = userEvent.setup(), sign = vi.fn();
+  const unavailable = { ...transfer, transaction: null };
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote)
+    .mockResolvedValueOnce({ transfer: unavailable }).mockResolvedValueOnce({ transfer: unavailable }).mockResolvedValueOnce(quote);
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.click(await screen.findByRole("button", { name: "Confirm cash-out" }));
+  expect(await screen.findByText("Cash-out changed. Check its current status.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Confirm cash-out" }).hasAttribute("disabled")).toBe(true);
+  expect(sign).not.toHaveBeenCalled();
+  expect(mock.post).not.toHaveBeenCalled();
+});
+
+it("does not open the wallet if the pre-sign check is unavailable", async () => {
+  const user = userEvent.setup(), sign = vi.fn();
+  mock.get.mockResolvedValueOnce({ transfer }).mockResolvedValueOnce(quote).mockRejectedValue(new Error("offline"));
+  render(<CashOutReview token="session" orderId="order" sign={sign} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.click(await screen.findByRole("button", { name: "Confirm cash-out" }));
+  expect(await screen.findByText("Could not check the transfer. Try again before taking another action.")).toBeTruthy();
+  expect(sign).not.toHaveBeenCalled();
+  expect(mock.post).not.toHaveBeenCalled();
 });

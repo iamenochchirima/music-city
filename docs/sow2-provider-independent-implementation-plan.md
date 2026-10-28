@@ -294,3 +294,9 @@ An isolated PostgreSQL test created one old unresolved order and 101 newer order
 The quote service rejects terminal or unknown provider states before making a provider request, and the repository checks again while saving the response. A prepared transfer is withheld from a fresh review when the provider is no longer ready, and a repeat prepare request is rejected. The user can still cancel the unsigned attempt. Authorization remains subject to the existing server-side provider-state check; a status change after a review has loaded can still lead to a wallet prompt before that check, so a just-in-time review refresh remains open.
 
 Isolated PostgreSQL tests covered blocked provider states, a state change during provider lookup and a previously prepared transfer. Four cash-out review component tests and client/server typechecks passed. Provider fixtures do not demonstrate a real quote or payout.
+
+### 29 October 2026: pre-sign cash-out refresh
+
+The review re-reads the saved transfer immediately before opening the wallet and compares the attempt, quote, transaction hash, envelope, fee and expiry. If the record changed or cannot be read, it does not request a signature. The server still checks provider state when authorization is submitted. A provider update can occur after either check, so this does not replace provider-specific cancellation and reconciliation rules.
+
+Six cash-out review component tests and client typecheck passed. The checks used fixtures and did not open a real wallet or contact a provider; full cash-out browser verification remains open.

@@ -48,8 +48,22 @@ export function CashOutReview({ token, orderId, sign, onClose, onChanged }: {
     if (Date.now() >= Math.min(Date.parse(transfer.expiresAt), Date.parse(quote.expiresAt))) { setError("This quote has expired. Start again for a new quote."); return; }
     locked.current = true; setBusy(true); setError(null);
     try {
+      const latest = (await httpClient.get<{ transfer: Transfer | null }>(`${base}/transfer`, token)).transfer;
+      if (!latest || latest.state !== "prepared" || latest.id !== transfer.id || latest.quoteId !== transfer.quoteId ||
+          latest.transactionHash !== transfer.transactionHash || latest.transaction !== transfer.transaction ||
+          latest.networkFeeStroops !== transfer.networkFeeStroops || latest.expiresAt !== transfer.expiresAt) {
+        setReady(false);
+        await refresh(); onChanged();
+        setError("Cash-out changed. Check its current status.");
+        return;
+      }
+      const expires = Math.min(Date.parse(latest.expiresAt), Date.parse(quote.expiresAt));
+      if (!Number.isFinite(expires) || Date.now() >= expires) {
+        setError("This quote has expired. Start again for a new quote.");
+        return;
+      }
       setSigning(true);
-      const signedXdr = await sign(transfer.transaction);
+      const signedXdr = await sign(latest.transaction!);
       setSigning(false);
       setReady(false);
       await httpClient.post(`${base}/transfer/${encodeURIComponent(transfer.id)}/authorize`, { signedXdr }, token);
