@@ -41,7 +41,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 ## Verification and handoff
 
 - [ ] V1. Test ownership, capability rejection, idempotency, duplicate and reordered events, expired quotes, unknown status, worker restarts, and transfer tampering with meaningful unit and isolated PostgreSQL tests.
-- [ ] V2. Run affected server, client, admin and shared tests, workspace typechecks, builds, and fresh and existing database migrations. Recheck agreements, support, checkout, claims and settlements.
+- [x] V2. Run affected server, client, admin and shared tests, workspace typechecks, builds, and fresh and existing database migrations. Recheck agreements, support, checkout, claims and settlements.
 - [ ] V3. Record dated local browser evidence and separately label simulated provider outcomes, real sandbox outcomes and on-chain transfers.
 - [ ] V4. Update the SOW tracker and provider plan only for evidenced results. Commit each completed coherent change without secrets, runtime state, or unrelated edits.
 - [ ] V5. When MoonPay responds or other providers grant access, finish provider-specific integration and real sandbox journeys. These external dependencies remain open until demonstrated.
@@ -185,3 +185,11 @@ Local HTTP and IP tests passed for authentication, injected fields, proxy reject
 ### 28 October 2026: local demonstration runbook
 
 Added a [local SOW 2 demonstration guide](sow2-local-demo.md) for the release, consent, purchase, settlement and claim sequence. It identifies the required Testnet wallets, two treasury signatures, services, receipts and reconciliation checks. It links the historical E8 evidence and distinguishes it from a new run. The guide has not yet been exercised end to end against the current revision, so C2 and C3 remain open.
+
+### 28 October 2026: current workspace and database regression
+
+At revision `221b1b8`, `pnpm typecheck` and `pnpm build` passed for the workspace. The client build reported its existing large-bundle warning. `pnpm test` passed 204 server, 168 client and 20 admin tests; 13 database-dependent server tests were skipped in that default run.
+
+Each skipped test then ran against its own disposable local PostgreSQL database. The publication, metadata, agreement workflow, onboarding, guest listening, referrals, sponsorship and admin-auth suites passed 58 checks. The finalization, checkout, direct support, settlement and ramp suites passed another 47 checks. The chain boundaries in the financial integration suites use mocks, although those suites exercise real signatures and PostgreSQL transactions. These results do not establish new Testnet transactions.
+
+Fresh and repeated migration initialization passed on a disposable database. A simulated existing database with a retained user row and the launch-session migration removed initialized again, restored the table and migration marker, and preserved the row. The disposable databases were removed. This completes V2 for local regression; the real-wallet browser journey, provider transactions, deployment and reviewer acceptance remain open.
