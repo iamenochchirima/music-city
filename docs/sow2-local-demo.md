@@ -16,10 +16,11 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export VITE_API_BASE_URL=http://localhost:4319/api/v1
    export VITE_ADMIN_API_BASE_URL=http://localhost:4319/api/v1/admin
    export RAMPS_SANDBOX_ENABLED=false
+   export STORAGE_PROVIDER=local
    node scripts/check-sow2-local-env.mjs
    ```
 
-   If the API uses a different local port, change both frontend API URLs. The preflight checks configured environment values; confirm the running processes use the same values.
+   If the API uses a different local port, set `PORT` and change both frontend API URLs to match. The preflight checks configured environment values; confirm the running processes use the same values.
 5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh

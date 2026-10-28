@@ -15,6 +15,7 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
   if (database && (!["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) || !database.pathname.endsWith("_test")))
     failures.push("DATABASE_URL must use localhost and a database name ending in _test.");
   if (server.NODE_ENV === "production") failures.push("Use a non-production server environment.");
+  if (server.STORAGE_PROVIDER && server.STORAGE_PROVIDER !== "local") failures.push("Use local media storage for the demo.");
   if (server.DYNAMIC_ENVIRONMENT_ID !== sandboxId || client.VITE_DYNAMIC_ENVIRONMENT_ID !== sandboxId)
     failures.push("Set both Dynamic environment IDs to the Music City Sandbox ID.");
   if (server.DYNAMIC_JWKS_URL && server.DYNAMIC_JWKS_URL !== sandboxJwks)
@@ -34,6 +35,11 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
   let adminApi;
   try { adminApi = new URL(admin.VITE_ADMIN_API_BASE_URL || "http://localhost:4319/api/v1/admin"); } catch { failures.push("Set the admin API URL to the local server."); }
   if (adminApi && !["localhost", "127.0.0.1", "[::1]"].includes(adminApi.hostname)) failures.push("The admin API URL must use localhost.");
+  const port = server.PORT || "4319";
+  for (const [url, path, label] of [[api, "/api/v1", "client"], [adminApi, "/api/v1/admin", "admin"]]) {
+    if (url && (url.protocol !== "http:" || (url.port || "80") !== port || url.pathname.replace(/\/$/, "") !== path || url.search || url.hash || url.username || url.password))
+      failures.push(`The ${label} API URL must use the configured local server port and expected API path.`);
+  }
   if (server.RAMPS_SANDBOX_ENABLED && server.RAMPS_SANDBOX_ENABLED !== "false") failures.push("Disable provider ramps for the core earnings demo.");
   return failures;
 }
