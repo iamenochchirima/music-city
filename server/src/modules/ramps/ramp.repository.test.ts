@@ -8,6 +8,7 @@ import { createRampRepository } from "./ramp.repository.js";
 import { rampProgressStatements } from "./ramp-progress-migration.js";
 import { rampSchemaStatements } from "./ramp-migration.js";
 import { rampLeaseStatements } from "./ramp-lease-migration.js";
+import { rampDeliveryStatements } from "./ramp-delivery-migration.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
@@ -98,9 +99,9 @@ test(
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements])
           await c.query(sql);
       });
       const repo = createRampRepository(db);
@@ -321,10 +322,10 @@ test(
       assert.equal(freshLease?.order.id, id);
       assert.notEqual(freshLease?.token, oldLease.token);
       await assert.rejects(repo.observe(id, { ...observed, updatedAt: "2026-10-26T12:02:00.000Z" }, oldLease.token), /lease expired/);
-      await repo.release(id, oldLease.token, true);
+      await repo.release(id, oldLease.token, "provider_check_failed");
       const stillLeased = await db.transaction(async (c) => (await c.query("SELECT lease_token FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
       assert.equal(stillLeased.lease_token, freshLease?.token);
-      await repo.release(id, freshLease!.token, true);
+      await repo.release(id, freshLease!.token, "provider_check_failed");
       const job = await db.transaction(
         async (c) =>
           (
@@ -345,7 +346,7 @@ test(
       const notifiedLease = await repo.lease();
       assert.equal(notifiedLease?.order.id, id);
       await repo.recordMoonpayNotification({ ...notification, key: "during-lease" });
-      await repo.release(id, notifiedLease!.token, false);
+      await repo.release(id, notifiedLease!.token, null);
       const afterNotice = await db.transaction(async (c) => (await c.query("SELECT due_at<=NOW() due FROM ramp_reconciliation_jobs WHERE order_id=$1", [id])).rows[0]);
       assert.equal(afterNotice.due, true);
       const adminDetail = await repo.detailForAdmin(id);
@@ -406,6 +407,37 @@ test(
       assert.equal((await service.create(serviceOwner, request)).order.id, creates[0].order.id);
       await assert.rejects(service.create(serviceOwner, { ...request, amount: "101.00" }), /different terms/);
       await assert.rejects(service.create({ ...serviceOwner, walletAddress: secondWallet }, request), /different terms/);
+
+      const deliveryOrder = creates[0].order;
+      await repo.issueLaunch(deliveryOrder.id, "other", serviceWallet);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW()+INTERVAL '1 hour'"); await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [deliveryOrder.id]); });
+      const deliveryLease = await repo.lease();
+      assert.equal(deliveryLease?.order.id, deliveryOrder.id);
+      const deliveryObservation = { id: "delivery-provider", externalId: deliveryOrder.id, state: "completed" as const, originalStatus: "completed", updatedAt: "2026-10-28T00:00:00.000Z", chainHash: "e".repeat(64), assetUnits: "12500000" };
+      const delivery = { transactionHash: "e".repeat(64), operationId: "123", ledger: 42, assetUnits: "12500000" };
+      await repo.observe(deliveryOrder.id, { ...deliveryObservation, assetUnits: undefined }, deliveryLease!.token);
+      await repo.observe(deliveryOrder.id, deliveryObservation, deliveryLease!.token);
+      await assert.rejects(repo.observe(deliveryOrder.id, { ...deliveryObservation, assetUnits: "12500001" }, deliveryLease!.token), /Conflicting provider observation/);
+      await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, { ...delivery, assetUnits: "1" }, deliveryLease!.token), /does not match/);
+      await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, delivery, randomUUID()), /lease expired/);
+      await repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, delivery, deliveryLease!.token);
+      await repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, delivery, deliveryLease!.token);
+      assert.equal((await repo.get(deliveryOrder.id))?.chainState, "confirmed");
+      assert.equal((await repo.events(deliveryOrder.id)).filter((event) => event.kind === "incoming_delivery_confirmed").length, 1);
+      const recordedDelivery = await repo.detailForAdmin(deliveryOrder.id);
+      assert.equal(recordedDelivery?.deliveries[0].transaction_hash, delivery.transactionHash);
+      assert.equal(recordedDelivery?.deliveries[0].operation_id, delivery.operationId);
+      await assert.rejects(repo.recordIncomingDelivery(deliveryOrder.id, deliveryObservation, { ...delivery, operationId: "124" }, deliveryLease!.token), /different delivery/);
+
+      const duplicateOrder = (await repo.reserve(terms({ userId: "other", walletAddress: Keypair.random().publicKey() }))).order;
+      await repo.issueLaunch(duplicateOrder.id, "other", duplicateOrder.terms.walletAddress);
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_reconciliation_jobs SET due_at=NOW() WHERE order_id=$1", [duplicateOrder.id]); });
+      const duplicateLease = await repo.lease();
+      assert.equal(duplicateLease?.order.id, duplicateOrder.id);
+      const duplicateObservation = { ...deliveryObservation, id: "another-provider", externalId: duplicateOrder.id };
+      await repo.observe(duplicateOrder.id, duplicateObservation, duplicateLease!.token);
+      await assert.rejects(repo.recordIncomingDelivery(duplicateOrder.id, duplicateObservation, delivery, duplicateLease!.token), /unique constraint/);
+      assert.equal((await repo.get(duplicateOrder.id))?.chainState, "unobserved");
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();

@@ -8,6 +8,7 @@ import {
   rampProviderObservationSchema,
 } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
+import type { IncomingDelivery } from "./incoming-delivery.js";
 
 type Database = {
   transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T>;
@@ -62,7 +63,10 @@ export function createRampRepository(db: Database) {
         const job = (await c.query(
           "SELECT attempts,last_error_code,due_at FROM ramp_reconciliation_jobs WHERE order_id=$1", [id],
         )).rows[0] ?? null;
-        return { order: hydrate(row), events, attempts, job };
+        const deliveries = (await c.query(
+          "SELECT data->>'transactionHash' AS transaction_hash,data->>'operationId' AS operation_id,data->>'ledger' AS ledger,data->>'assetUnits' AS asset_units,created_at FROM ramp_events WHERE order_id=$1 AND source='chain' AND kind='incoming_delivery_confirmed' ORDER BY id DESC LIMIT 50", [id],
+        )).rows;
+        return { order: hydrate(row), events, attempts, job, deliveries };
       });
     },
     async get(id: string): Promise<RampOrder | null> {
@@ -140,13 +144,15 @@ export function createRampRepository(db: Database) {
           Date.parse(observation.updatedAt) < Date.parse(previous.updatedAt)
         )
           return;
-        if (
-          previous &&
-          observation.updatedAt === previous.updatedAt &&
-          JSON.stringify(rampProviderObservationSchema.parse(previous)) !==
-            JSON.stringify(observation)
-        )
-          throw new HttpError(409, "Conflicting provider observation");
+        if (previous && observation.updatedAt === previous.updatedAt) {
+          const prior = rampProviderObservationSchema.parse(previous);
+          // A newer parser may recover a hash or amount omitted by an earlier version.
+          const enriched = rampProviderObservationSchema.parse({ ...prior,
+            chainHash: prior.chainHash ?? observation.chainHash,
+            assetUnits: prior.assetUnits ?? observation.assetUnits });
+          if (JSON.stringify(enriched) !== JSON.stringify(observation))
+            throw new HttpError(409, "Conflicting provider observation");
+        }
         const eventKey = createHash("sha256")
           .update(JSON.stringify(observation))
           .digest("hex");
@@ -164,6 +170,29 @@ export function createRampRepository(db: Database) {
               JSON.stringify(observation),
             ],
           );
+      });
+    },
+    async recordIncomingDelivery(id: string, observation: unknown, delivery: IncomingDelivery, token: string) {
+      const expected = rampProviderObservationSchema.parse(observation);
+      if (!/^[a-f0-9]{64}$/.test(delivery.transactionHash) || !/^[0-9]+$/.test(delivery.operationId) ||
+          !Number.isSafeInteger(delivery.ledger) || delivery.ledger < 1 || delivery.assetUnits !== expected.assetUnits ||
+          delivery.transactionHash !== expected.chainHash || expected.state !== "completed" || expected.externalId !== id)
+        throw new HttpError(409, "Delivery evidence does not match the provider transaction");
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1 FOR UPDATE", [id])).rows[0];
+        const lease = (await c.query("SELECT 1 FROM ramp_reconciliation_jobs WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW() FOR UPDATE", [id, token])).rows[0];
+        if (!lease) throw new HttpError(409, "Reconciliation lease expired");
+        if (!row || row.direction !== "buy" || row.network !== "stellar:testnet" ||
+            JSON.stringify(rampProviderObservationSchema.parse(row.provider_observation)) !== JSON.stringify(expected))
+          throw new HttpError(409, "Provider transaction changed during delivery verification");
+        const key = `${delivery.transactionHash}:${delivery.operationId}`;
+        if (row.chain_state === "confirmed") {
+          const existing = (await c.query("SELECT 1 FROM ramp_events WHERE order_id=$1 AND source='chain' AND kind='incoming_delivery_confirmed' AND event_key=$2", [id, key])).rows[0];
+          if (!existing) throw new HttpError(409, "A different delivery was already confirmed");
+          return;
+        }
+        await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'chain',$2,'incoming_delivery_confirmed',$3)", [id, key, JSON.stringify(delivery)]);
+        await c.query("UPDATE ramp_orders SET chain_state='confirmed',updated_at=NOW() WHERE id=$1", [id]);
       });
     },
     async recordMoonpayNotification(input: { orderId: string; providerId: string; userId: string; direction: "buy" | "sell"; key: string; kind: string }): Promise<boolean> {
@@ -202,11 +231,11 @@ export function createRampRepository(db: Database) {
         return { order, token };
       });
     },
-    async release(id: string, token: string, failed: boolean) {
+    async release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | null) {
       return db.transaction(async (c) => {
         await c.query(
-          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,attempts=CASE WHEN $3 THEN LEAST(attempts+1,8) ELSE 0 END,due_at=CASE WHEN due_at<leased_until THEN NOW() ELSE NOW()+CASE WHEN $3 THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END END,last_error_code=CASE WHEN $3 THEN 'provider_check_failed' ELSE NULL END WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()",
-          [id, token, failed],
+          "UPDATE ramp_reconciliation_jobs SET leased_until=NULL,lease_token=NULL,attempts=CASE WHEN $3::text IS NOT NULL THEN LEAST(attempts+1,8) ELSE 0 END,due_at=CASE WHEN due_at<leased_until THEN NOW() ELSE NOW()+CASE WHEN $3::text IS NOT NULL THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8)) ELSE INTERVAL '15 seconds' END END,last_error_code=$3 WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()",
+          [id, token, errorCode],
         );
       });
     },

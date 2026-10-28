@@ -16,7 +16,7 @@ test("ramp administration is read-only and restricted to admin sessions", async 
   const app = express();
   app.use("/admin/ramps", createAdminRampsRouter({
     async listForAdmin() { reads++; return [order]; },
-    async detailForAdmin(id) { reads++; return id === order.id ? { order, events: [{ source: "provider_api", kind: "status_observed" }], attempts: [], job: { attempts: 1, last_error_code: "provider_check_failed" } } : null; },
+    async detailForAdmin(id) { reads++; return id === order.id ? { order, events: [{ source: "provider_api", kind: "status_observed" }], attempts: [], deliveries: [], job: { attempts: 1, last_error_code: "provider_check_failed" } } : null; },
   }));
   app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => res.status(error instanceof HttpError ? error.statusCode : 500).json({ error: error.message }));
   const server = app.listen(0, "127.0.0.1");

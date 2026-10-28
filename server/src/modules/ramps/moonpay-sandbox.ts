@@ -58,6 +58,7 @@ export type MoonpayObservation = {
   originalStatus: string;
   updatedAt: string;
   chainHash?: string;
+  assetUnits?: string;
 };
 const codeFor = (asset: "USDC" | "XLM") =>
   asset === "XLM" ? "xlm" : "usdc_xlm";
@@ -356,6 +357,15 @@ export class MoonpaySandbox {
       typeof chain === "string" && /^[a-f0-9]{64}$/.test(chain)
         ? chain
         : undefined;
+    let assetUnits: string | undefined;
+    if (terms.direction === "buy" && row.quoteCurrencyAmount != null) {
+      try {
+        const amount = providerAmountUnits(row.quoteCurrencyAmount, 7);
+        // JSON numeric values beyond safe integer precision cannot establish exact Stellar units.
+        if (amount > 0n && amount <= 9223372036854775807n &&
+            (typeof row.quoteCurrencyAmount !== "number" || amount <= BigInt(Number.MAX_SAFE_INTEGER))) assetUnits = amount.toString();
+      } catch { /* A missing or imprecise amount cannot prove delivery. */ }
+    }
     return {
       id,
       externalId: order.id,
@@ -363,6 +373,7 @@ export class MoonpaySandbox {
       originalStatus,
       updatedAt: z.string().datetime().parse(row.updatedAt),
       chainHash,
+      assetUnits,
     };
   }
   verifyWebhook(raw: string, header: string, now = Date.now()): boolean {

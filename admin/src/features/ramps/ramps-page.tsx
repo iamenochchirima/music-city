@@ -15,6 +15,7 @@ type Detail = {
   order: Order;
   events: { source: string; kind: string; created_at: string }[];
   attempts: { transaction_hash: string; state: string; created_at: string }[];
+  deliveries: { transaction_hash: string; operation_id: string; ledger: string; asset_units: string }[];
   job: { attempts: number; last_error_code: string | null; due_at: string } | null;
 };
 function amount(value: Order["amount"]) {
@@ -71,6 +72,7 @@ export function AdminRampsPage() {
           </dl>
           {detail.job?.last_error_code && <p role="status" className="rounded-lg border border-amber-400/30 p-3 text-sm text-amber-200">Reconciliation needs attention: {readable(detail.job.last_error_code)} · {detail.job.attempts} attempts</p>}
           <div><h3 className="font-medium">Chain attempts</h3>{detail.attempts.length ? <ul className="mt-2 space-y-2 text-sm text-slate-300">{detail.attempts.map((attempt) => <li key={attempt.transaction_hash} className="break-all">{readable(attempt.state)} · {attempt.transaction_hash}{attempt.state === "confirmed" && /^[a-f0-9]{64}$/.test(attempt.transaction_hash) && detail.order.network === "stellar:testnet" && <> · <a className="underline" target="_blank" rel="noreferrer" href={`https://stellar.expert/explorer/testnet/tx/${attempt.transaction_hash}`}>View receipt</a></>}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">No chain attempts yet.</p>}</div>
+          {detail.deliveries.length > 0 && <div><h3 className="font-medium">Received transfers</h3><ul className="mt-2 space-y-2 text-sm text-slate-300">{detail.deliveries.map((delivery) => <li key={`${delivery.transaction_hash}:${delivery.operation_id}`} className="break-all">{delivery.transaction_hash} · ledger {delivery.ledger}{/^[a-f0-9]{64}$/.test(delivery.transaction_hash) && detail.order.network === "stellar:testnet" && <> · <a className="underline" target="_blank" rel="noreferrer" href={`https://stellar.expert/explorer/testnet/tx/${delivery.transaction_hash}`}>View receipt</a></>}</li>)}</ul></div>}
           <div><h3 className="font-medium">Activity</h3>{detail.events.length ? <ul className="mt-2 space-y-2 text-sm text-slate-300">{detail.events.map((event, index) => <li key={`${event.created_at}-${index}`}>{readable(event.kind)} · {new Date(event.created_at).toLocaleString()}</li>)}</ul> : <p className="mt-2 text-sm text-slate-400">No activity yet.</p>}</div>
         </section>
       </> : !loading && !error && !selected ? <section className={panel} aria-label="Transactions">

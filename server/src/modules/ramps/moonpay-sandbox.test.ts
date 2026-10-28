@@ -353,3 +353,13 @@ test("payment method discovery uses secret authentication on a fixed host and do
   const unavailable = new MoonpaySandbox(config(), (async () => new Response(null, { status: 401 })) as typeof fetch);
   await assert.rejects(unavailable.paymentMethods({ countryCode: "GBR", currencyCode: "GBP", direction: "buy" }), /unavailable/);
 });
+
+
+test("buy delivery amount is retained only when it has exact Stellar precision", async () => {
+  const o = order();
+  for (const [raw, expected] of [["1.2500000", "12500000"], ["1.25000001", undefined], ["0", undefined], [900719925.4740992, undefined], [undefined, undefined]] as const) {
+    const fetcher = (async () => Response.json([{ ...providerRow(o), quoteCurrencyAmount: raw }])) as typeof fetch;
+    const result = await new MoonpaySandbox(config(), fetcher).lookup(o);
+    assert.equal(result?.assetUnits, expected);
+  }
+});

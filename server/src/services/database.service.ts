@@ -1,3 +1,4 @@
+import { rampDeliveryStatements } from "../modules/ramps/ramp-delivery-migration.js";
 import { rampLeaseStatements } from "../modules/ramps/ramp-lease-migration.js";
 import { rampProgressStatements } from "../modules/ramps/ramp-progress-migration.js";
 import { rampSchemaStatements } from "../modules/ramps/ramp-migration.js";
@@ -417,6 +418,7 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-26-ramp-orders", statements: rampSchemaStatements },
   { name: "2026-10-26-ramp-progress", statements: rampProgressStatements },
   { name: "2026-10-28-ramp-lease", statements: rampLeaseStatements },
+  { name: "2026-10-28-ramp-delivery", statements: rampDeliveryStatements },
   { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
   { name: "2026-10-20-guest-listening-time", statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", statements: checkoutSchemaStatements },
@@ -913,6 +915,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-28-ramp-delivery", migrationName: "2026-10-28-ramp-delivery", relations: ["ramp_events"], indexes: ["ramp_unique_incoming_payment"], statements: rampDeliveryStatements },
   { name: "2026-10-28-ramp-lease", migrationName: "2026-10-28-ramp-lease", relations: ["ramp_reconciliation_jobs"], columns: ["ramp_reconciliation_jobs.lease_token"], statements: rampLeaseStatements },
   { name: "2026-10-26-ramp-progress", migrationName: "2026-10-26-ramp-progress", relations: ["ramp_orders"], columns: ["ramp_orders.provider_observation", "ramp_orders.launch_issued_at"], statements: rampProgressStatements },
   { name: "2026-10-26-ramp-orders", migrationName: "2026-10-26-ramp-orders", relations: ["ramp_orders", "ramp_quotes", "ramp_chain_attempts", "ramp_events", "ramp_reconciliation_jobs"], indexes: ["ramp_orders_owner_history", "ramp_one_uncertain_transfer", "ramp_reconciliation_due"], statements: rampSchemaStatements },

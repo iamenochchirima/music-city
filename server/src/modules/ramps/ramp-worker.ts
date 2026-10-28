@@ -4,11 +4,13 @@ import { MoonpaySandbox, type MoonpayObservation } from "./moonpay-sandbox.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 import { databaseService } from "../../services/database.service.js";
 import { logger } from "../../utils/logger.js";
+import { verifyIncomingDelivery, type IncomingDelivery } from "./incoming-delivery.js";
 
 type Repository = {
   lease(): Promise<{ order: RampOrder; token: string } | null>;
   observe(id: string, observation: MoonpayObservation, token: string): Promise<void>;
-  release(id: string, token: string, failed: boolean): Promise<void>;
+  release(id: string, token: string, errorCode: "provider_check_failed" | "delivery_check_failed" | null): Promise<void>;
+  recordIncomingDelivery(id: string, observation: MoonpayObservation, delivery: IncomingDelivery, token: string): Promise<void>;
 };
 type Provider = { lookup(order: RampOrder): Promise<MoonpayObservation | null> };
 
@@ -17,20 +19,31 @@ export async function reconcileRampOrders(
   repository: Repository,
   provider: Provider,
   limit = 10,
+  verifyDelivery = verifyIncomingDelivery,
 ): Promise<void> {
   for (let i = 0; i < limit; i++) {
     const lease = await repository.lease();
     if (!lease) return;
     const { order, token } = lease;
-    let failed = false;
+    let errorCode: "provider_check_failed" | "delivery_check_failed" | null = null;
     try {
       const observation = await provider.lookup(order);
-      if (observation) await repository.observe(order.id, observation, token);
+      if (observation) {
+        await repository.observe(order.id, observation, token);
+        if (observation.state === "completed" && observation.chainHash && observation.assetUnits && order.terms.direction === "buy") {
+          try {
+            const delivery = await verifyDelivery(order, observation);
+            if (delivery) await repository.recordIncomingDelivery(order.id, observation, delivery, token);
+          } catch {
+            errorCode = "delivery_check_failed";
+          }
+        }
+      }
     } catch {
       // Provider responses can contain private data; retain only a stable error code.
-      failed = true;
+      errorCode = "provider_check_failed";
     } finally {
-      await repository.release(order.id, token, failed);
+      await repository.release(order.id, token, errorCode);
     }
   }
 }
