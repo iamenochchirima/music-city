@@ -26,7 +26,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 ## Creator and admin experience
 
-- [ ] U1. Add funding and cash-out entry points next to spendable wallet funds, separate from unclaimed earnings. Show unavailable providers clearly.
+- [x] U1. Add funding and cash-out entry points next to spendable wallet funds, separate from unclaimed earnings. Show unavailable providers clearly.
 - [ ] U2. Build the amount, quote, provider action and status flow with automatic progress, history and resumable URLs. Do not expose fixtures as live options.
 - [x] U3. Build authorized read-only admin list and detail views for status, chain receipts and reconciliation exceptions.
 - [ ] U4. Verify desktop, mobile, keyboard, cancellation, slow responses, reload and recovery through computer use against the local app.
@@ -42,8 +42,8 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 - [x] V1. Test ownership, capability rejection, idempotency, duplicate and reordered events, expired quotes, unknown status, worker restarts, and transfer tampering with meaningful unit and isolated PostgreSQL tests.
 - [x] V2. Run affected server, client, admin and shared tests, workspace typechecks, builds, and fresh and existing database migrations. Recheck agreements, support, checkout, claims and settlements.
-- [ ] V3. Record dated local browser evidence and separately label simulated provider outcomes, real sandbox outcomes and on-chain transfers.
-- [ ] V4. Update the SOW tracker and provider plan only for evidenced results. Commit each completed coherent change without secrets, runtime state, or unrelated edits.
+- [x] V3. Record dated local browser evidence and separately label simulated provider outcomes, real sandbox outcomes and on-chain transfers.
+- [x] V4. Update the SOW tracker and provider plan only for evidenced results. Commit each completed coherent change without secrets, runtime state, or unrelated edits.
 - [ ] V5. When MoonPay responds or other providers grant access, finish provider-specific integration and real sandbox journeys. These external dependencies remain open until demonstrated.
 
 ## Execution checkpoints
@@ -364,3 +364,15 @@ Focused component tests cover the quote-to-review path, unavailable quotes, lost
 Cash-out preparation and authorization now read the Testnet account and ledger and check spendable USDC, the exact issuer and trustline authorization, XLM liabilities, account reserve and network fee using integer units. A fresh review withholds the unsigned transaction if those checks fail and displays an actionable reason. Existing submitted attempts remain available for reconciliation. Chain submission remains authoritative because balances and fees can change after a read.
 
 Focused server tests covered insufficient USDC after liabilities, wrong or unauthorized trustlines, the XLM reserve boundary, malformed account data and changed fees. The isolated PostgreSQL recovery suite, cash-out component tests and client/server typechecks passed. Live Testnet reads confirmed that the account and ledger endpoints expose the fields used; no cash-out was submitted. Provider verification and real wallet signing remain open.
+
+### 29 October 2026: Dynamic Sandbox account check
+
+The dated browser results are in [Local Sandbox account verification](core-lifecycle-evidence/local-sandbox-checkpoint-2026-10-29.md). The local app used an isolated PostgreSQL clone, Dynamic Sandbox identities for Ngoni and Kwame, and Stellar Testnet wallet data. The readiness endpoint reported a healthy database and applied schema groups.
+
+Kwame's account showed the existing Core Journey purchase and prior USDC receipt. The accepted 70/30 agreement, purchase, settlement funding, and claims remain the historical Testnet transactions recorded in [E8](core-lifecycle-evidence/README.md). This run did not create a new purchase, claim, or other wallet transaction. A separate new Sandbox listener completed onboarding but had no Testnet funds or USDC trustline.
+
+The wallet showed MoonPay and MoneyGram as unavailable. Add funds and Cash out stayed disabled, and history showed only a cancelled local GBP fixture. The application created no provider session or quote. The local admin page still required an admin sign-in, so this run did not verify a new admin browser session.
+
+The cloned database had no audio files. Disposable synthetic tones restored playback checks without using real recordings. Playback then completed in the local app. This exposed and fixed the short-track stream fallback under commit `1e49dfd`; a one-second play did not count, and a six-second play counted once. That product fix is separate from the SOW 2 ramp scope.
+
+`pnpm test` passed 215 server, 194 client, and 22 admin tests. The default server suite skipped 13 database-backed tests. Workspace typechecks and builds passed. The browser state was inspected, but this run did not save a screenshot file. C2, C3, U2, U4, R1 through R9, and V5 remain open. No provider sandbox payment or payout was verified.

@@ -713,6 +713,14 @@ The owner requested end-to-end sandbox implementation of both MoneyGram and Moon
 
 This is a planning checkpoint against `5190cd9`. No new provider sessions, quotes, transactions, signatures, or capability checks were executed for this update. MoneyGram authentication remains the dated 25 October result. MoonPay's account-specific Stellar USDC support remains unverified. No additional integration checklist item is complete merely because the plan exists.
 
+### Dynamic Sandbox account verification, 29 October 2026
+
+The [local browser checkpoint](core-lifecycle-evidence/local-sandbox-checkpoint-2026-10-29.md) records the account and wallet checks against the isolated local database. Existing Ngoni and Kwame Sandbox identities signed in. Kwame's account showed the earlier Core Journey purchase and claim history, but its current wallet screen showed 0 XLM and 0 USDC. Those Testnet transactions are the historical E8 evidence, not new transfers from this run. A new listener identity completed onboarding but had no test funds or USDC trustline.
+
+The account page showed MoonPay and MoneyGram as unavailable. Add funds and Cash out remained disabled, and the transaction list contained only a cancelled local GBP fixture. No provider session, quote, payment, or payout was created. The separate MoneyGram and MoonPay readiness checklist remains open.
+
+The local admin page required an admin sign-in; bootstrap was closed and no admin credentials were available, so this run did not verify an admin browser session. Automated tests passed, including the updated strict five-second stream threshold. The five-second fix is separate from the provider and SOW 2 ramp requirements.
+
 ### Ramp foundations checkpoint, 26 October 2026
 
 The [combined plan](ramp-sandbox-implementation-plan.md#current-execution-decision) records the owner's later instruction to defer MoneyGram and test MoonPay with native XLM separately. The USDC flow remains open. Fresh provider checks found MoonPay Stellar USDC unavailable in test mode and the MoneyGram key configured for custodial sessions.
