@@ -8,7 +8,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 ## Baseline and design
 
-- [ ] B1. Inspect current changes, workspace instructions, shared contracts, ramp migrations, repository, MoonPay adapter, cash-out validator, worker, authentication, and Revenue UI. Record any conflicting behavior and preserve unrelated work.
+- [x] B1. Inspect current changes, workspace instructions, shared contracts, ramp migrations, repository, MoonPay adapter, cash-out validator, worker, authentication, and Revenue UI. Record any conflicting behavior and preserve unrelated work.
 - [ ] B2. Define state transitions and a provider interface using actual requirements, including separate provider and chain outcomes, exact amounts, ownership, expiry, and recovery. Reuse or replace existing overlapping contracts deliberately.
 - [ ] B3. Confirm provider flags disable unavailable routes by default. Keep test fixtures inaccessible outside explicitly isolated tests.
 
@@ -28,7 +28,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 - [ ] U1. Add funding and cash-out entry points next to spendable wallet funds, separate from unclaimed earnings. Show unavailable providers clearly.
 - [ ] U2. Build the amount, quote, provider action and status flow with automatic progress, history and resumable URLs. Do not expose fixtures as live options.
-- [ ] U3. Build authorized read-only admin list and detail views for status, chain receipts and reconciliation exceptions.
+- [x] U3. Build authorized read-only admin list and detail views for status, chain receipts and reconciliation exceptions.
 - [ ] U4. Verify desktop, mobile, keyboard, cancellation, slow responses, reload and recovery through computer use against the local app.
 
 ## Core SOW completion
@@ -73,3 +73,9 @@ Launches for one wallet now serialize across providers and directions. A differe
 ### 28 October 2026: admin read-only data
 
 Added authenticated, read-only admin endpoints for ramp history and details, including provider and chain state, chain hashes, event types, and reconciliation errors. Queries exclude transaction envelopes and event payloads. HTTP authorization and isolated PostgreSQL checks passed. The admin interface and browser verification are still required for U3.
+
+### 28 October 2026: baseline and admin interface
+
+The baseline inspection found that Revenue shows unclaimed earnings, while spendable balances are on the separate wallet page. Ramp history was not connected to either page. The existing quote and transfer validator is not connected to verified provider instructions or persistence; MoonPay catalog checks do not establish available payout methods. The current one-time launch record cannot yet recover a lost launch response. Sandbox creation remains unavailable through the application until these gaps are resolved. The unrelated local evidence checkpoint remains untouched.
+
+The admin transaction screen now lists and opens ramp orders, separates provider and chain status, and displays activity, chain attempt hashes, confirmed Testnet receipt links, and reconciliation errors. The screen is read-only. Component tests and admin typecheck passed; the local browser showed both an empty history and the details of a simulated order in a cloned test database. This completes the admin interface item U3, but does not prove a real provider transaction or chain receipt. The broader desktop/mobile and end-to-end browser matrix remains open under U4 and V3.
