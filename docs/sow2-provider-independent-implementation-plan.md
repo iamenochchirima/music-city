@@ -69,3 +69,7 @@ Settlement reconciliation now runs before ramp polling, and each worker cycle ch
 ### 28 October 2026: concurrent launch protection
 
 Launches for one wallet now serialize across providers and directions. A different order cannot launch while an earlier launched or provider-bound order has an unknown provider outcome or an uncertain chain submission. The PostgreSQL test races different request IDs and providers, checks owner isolation and verifies that unknown chain state remains blocking. Server typecheck passed. This advances R2; authenticated creation, reliable recovery after a lost launch response and chain reconciliation remain open.
+
+### 28 October 2026: admin read-only data
+
+Added authenticated, read-only admin endpoints for ramp history and details, including provider and chain state, chain hashes, event types, and reconciliation errors. Queries exclude transaction envelopes and event payloads. HTTP authorization and isolated PostgreSQL checks passed. The admin interface and browser verification are still required for U3.

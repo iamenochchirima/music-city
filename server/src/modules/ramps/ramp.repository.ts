@@ -43,6 +43,28 @@ export function createRampRepository(db: Database) {
         return rows.rows.map(hydrate);
       });
     },
+    async listForAdmin(): Promise<RampOrder[]> {
+      return db.transaction(async (c) => {
+        const rows = await c.query("SELECT * FROM ramp_orders ORDER BY created_at DESC, id DESC LIMIT 100");
+        return rows.rows.map(hydrate);
+      });
+    },
+    async detailForAdmin(id: string) {
+      return db.transaction(async (c) => {
+        const row = (await c.query("SELECT * FROM ramp_orders WHERE id=$1", [id])).rows[0];
+        if (!row) return null;
+        const events = (await c.query(
+          "SELECT source,kind,created_at FROM ramp_events WHERE order_id=$1 ORDER BY id DESC LIMIT 200", [id],
+        )).rows;
+        const attempts = (await c.query(
+          "SELECT transaction_hash,state,expires_at,created_at FROM ramp_chain_attempts WHERE order_id=$1 ORDER BY created_at DESC LIMIT 50", [id],
+        )).rows;
+        const job = (await c.query(
+          "SELECT attempts,last_error_code,due_at FROM ramp_reconciliation_jobs WHERE order_id=$1", [id],
+        )).rows[0] ?? null;
+        return { order: hydrate(row), events, attempts, job };
+      });
+    },
     async get(id: string): Promise<RampOrder | null> {
       return db.transaction(async (c) => {
         const row = (

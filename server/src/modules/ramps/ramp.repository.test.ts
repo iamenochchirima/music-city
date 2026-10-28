@@ -319,6 +319,15 @@ test(
       assert.equal(job.leased_until, null);
       assert.equal(job.last_error_code, "provider_check_failed");
       assert.equal(job.delayed, true);
+      const adminDetail = await repo.detailForAdmin(id);
+      assert.ok(adminDetail);
+      assert.equal(adminDetail.order.id, id);
+      assert.equal(adminDetail.job?.last_error_code, "provider_check_failed");
+      assert.equal(adminDetail.attempts[0].transaction_hash, "a".repeat(64));
+      assert.equal("prepared_envelope" in adminDetail.attempts[0], false);
+      assert.equal("data" in adminDetail.events[0], false);
+      assert.equal(await repo.detailForAdmin("missing"), null);
+      assert.equal((await repo.listForAdmin()).length, 3);
 
       // Different request IDs and providers cannot race past an unresolved launch.
       const secondWallet = Keypair.random().publicKey();

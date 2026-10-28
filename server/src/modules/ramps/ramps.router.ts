@@ -11,7 +11,7 @@ type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getFor
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
 
 // Provider state and chain state are deliberately separate: neither implies the other.
-function publicOrder(order: RampOrder) {
+export function publicOrder(order: RampOrder) {
   return {
     id: order.id,
     provider: order.terms.provider,
