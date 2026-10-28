@@ -37,6 +37,10 @@ function hydrate(row: Record<string, unknown>): RampOrder {
     updatedAt: new Date(row.updated_at as string).toISOString(),
   });
 }
+// Keep the history ordering and launch guard aligned so an old blocking order remains visible.
+const unresolvedOrderSql = `(launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
+  AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown')
+    OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed'))`;
 export function createRampRepository(db: Database) {
   return {
     async list(userId: string, walletAddress: string): Promise<RampOrder[]> {
@@ -44,7 +48,7 @@ export function createRampRepository(db: Database) {
         throw new HttpError(400, "User and wallet are required");
       return db.transaction(async (c) => {
         const rows = await c.query(
-          "SELECT * FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 ORDER BY created_at DESC LIMIT 100",
+          `SELECT * FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 ORDER BY (${unresolvedOrderSql}) DESC, created_at DESC, id DESC LIMIT 100`,
           [userId, walletAddress],
         );
         return rows.rows.map(hydrate);
@@ -102,8 +106,7 @@ export function createRampRepository(db: Database) {
         if (!owned) throw new HttpError(404, "Ramp transaction not found");
         const uncertain = (await c.query(
           `SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
-           AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
-           AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown') OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed')) LIMIT 1`,
+           AND (${unresolvedOrderSql}) LIMIT 1`,
           [userId, wallet, id],
         )).rows[0];
         if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
@@ -168,8 +171,7 @@ export function createRampRepository(db: Database) {
         if (row.launch_issued_at || row.provider_transaction_id || row.provider_state !== "created")
           throw new HttpError(409, "Check your existing transaction before reopening payment.");
         const uncertain = (await c.query(`SELECT 1 FROM ramp_orders WHERE user_id=$1 AND wallet_address=$2 AND id<>$3
-          AND (launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
-          AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown') OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed')) LIMIT 1`, [userId, wallet, id])).rows[0];
+          AND (${unresolvedOrderSql}) LIMIT 1`, [userId, wallet, id])).rows[0];
         if (uncertain) throw new HttpError(409, "Check your existing transaction before starting another payment.");
         await c.query("INSERT INTO ramp_launch_sessions(order_id,encrypted_session,resumable) VALUES($1,$2,$3)", [id, encryptedSession, resumable]);
         await c.query("UPDATE ramp_orders SET launch_issued_at=NOW(),updated_at=NOW() WHERE id=$1", [id]);

@@ -707,6 +707,17 @@ test(
       await reconcileCashOut(repo, expiredChain, cipher);
       assert.equal((await repo.get(cashOrder.id))?.chainState, "expired");
       assert.equal((await repo.events(cashOrder.id)).filter((event) => event.kind === "cashout_transfer_expired").length, 1);
+
+      // Even when more than 100 newer records exist, a blocking order remains visible.
+      const historyWallet = Keypair.random().publicKey();
+      const oldOrder = (await repo.reserve(terms({ userId: "other", walletAddress: historyWallet }))).order;
+      await repo.bindProviderReference(oldOrder.id, "other", historyWallet, "old-pending");
+      for (let i = 0; i < 101; i++) await repo.reserve(terms({ userId: "other", walletAddress: historyWallet }));
+      await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET created_at=NOW()-INTERVAL '1 year' WHERE id=$1", [oldOrder.id]); });
+      const history = await repo.list("other", historyWallet);
+      assert.equal(history.length, 100);
+      assert.equal(history[0].id, oldOrder.id);
+      assert.equal((await repo.list("artist", historyWallet)).length, 0);
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();

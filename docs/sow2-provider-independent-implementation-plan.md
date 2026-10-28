@@ -282,3 +282,9 @@ Isolated PostgreSQL tests covered concurrent launches, pending states, unconfirm
 ### 29 October 2026: lifecycle and adapter contract
 
 Documented the active order, observation, quote and transfer contracts in [Ramp lifecycle contract](ramp-lifecycle-contract.md), including the separate provider and chain outcomes, ownership, exact units, expiry, retries and adapter responsibilities. The document distinguishes the active ramp contracts from the broader cash-out model and identifies provider-specific state transitions and refunds as unfinished. B2 covers this design record; it does not claim the unchecked implementation or provider verification items are complete.
+
+### 29 October 2026: visible unresolved history
+
+The owner-scoped history still returns at most 100 orders, but puts orders that block another launch first. It uses the same database condition as the launch guard. This keeps at least one blocking transaction visible even when the account has more than 100 newer orders; full history pagination remains separate work.
+
+An isolated PostgreSQL test created one old unresolved order and 101 newer orders, then verified that the old order appeared in its owner's bounded history and remained inaccessible to another user. The repository suite and server typecheck passed. This was simulated data and does not complete provider verification.
