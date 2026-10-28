@@ -8,12 +8,19 @@ import type { RampSandboxConfig } from "./sandbox-config.js";
 type Owner = { userId: string; walletAddress: string };
 type Repository = Pick<ReturnType<typeof createRampRepository>, "getForOwner" | "getLaunchSession" | "saveLaunchSession">;
 // Preparing a session must not create a provider transaction. Set safeResume only with provider-specific evidence.
-export type RampLaunchAdapter = { safeResume: boolean; prepare(order: RampOrder, customerIps: readonly string[]): Promise<string> };
+export type RampLaunchAdapter = { safeResume: boolean; prepare(order: RampOrder, customerIps: readonly string[]): Promise<string>; validate(order: RampOrder, url: URL): void };
 
-function validateUrl(order: RampOrder, raw: string) {
+function validateUrl(order: RampOrder, raw: string, adapter: RampLaunchAdapter) {
   if (typeof raw !== "string" || raw.length > 12000) throw new HttpError(502, "The payment link could not be verified");
   let url: URL;
   try { url = new URL(raw); } catch { throw new HttpError(502, "The payment link could not be verified"); }
+  if (url.protocol !== "https:" || url.username || url.password || url.hash)
+    throw new HttpError(502, "The payment link could not be verified");
+  adapter.validate(order, url);
+  return url.href;
+}
+
+export function validateMoonpayLaunch(order: RampOrder, url: URL) {
   if (order.terms.provider !== "moonpay") throw new HttpError(503, "This payment option is not available yet");
   const expectedOrigin = `https://${order.terms.direction === "buy" ? "buy" : "sell"}-sandbox.moonpay.com`;
   if (url.origin !== expectedOrigin || url.pathname !== "/" || url.username || url.password || url.hash)
@@ -31,7 +38,6 @@ function validateUrl(order: RampOrder, raw: string) {
       params.getAll("apiKey").length !== 1 || !params.get("apiKey")?.startsWith("pk_test_") ||
       ["allowedIpAddress", "signature"].some((key) => params.getAll(key).length !== 1 || !params.get(key)))
     throw new HttpError(502, "The payment link could not be verified");
-  return url.href;
 }
 
 export function createRampLaunchService(repository: Repository, adapters: ReadonlyMap<string, RampLaunchAdapter>,
@@ -45,17 +51,17 @@ export function createRampLaunchService(repository: Repository, adapters: Readon
       const previous = await repository.getLaunchSession(id, owner.userId, owner.walletAddress);
       if (previous) {
         if (!adapter.safeResume) throw new HttpError(409, "Check your existing transaction before reopening payment.");
-        return { url: validateUrl(order, cipher.decrypt(id, "provider-launch", id, previous)), created: false };
+        return { url: validateUrl(order, cipher.decrypt(id, "provider-launch", id, previous), adapter), created: false };
       }
-      const url = validateUrl(order, await adapter.prepare(order, customerIps));
+      const url = validateUrl(order, await adapter.prepare(order, customerIps), adapter);
       const saved = await repository.saveLaunchSession(id, owner.userId, owner.walletAddress,
         cipher.encrypt(id, "provider-launch", id, url), adapter.safeResume);
-      return { url: validateUrl(order, cipher.decrypt(id, "provider-launch", id, saved.encryptedSession)), created: saved.created };
+      return { url: validateUrl(order, cipher.decrypt(id, "provider-launch", id, saved.encryptedSession), adapter), created: saved.created };
     },
   };
 }
 
 export function createMoonpayLaunchAdapter(config: RampSandboxConfig, fetcher: typeof fetch = fetch): RampLaunchAdapter {
   const moonpay = new MoonpaySandbox(config, fetcher);
-  return { safeResume: false, async prepare(order, customerIps) { return moonpay.widgetUrl(order, await moonpay.catalog(), customerIps); } };
+  return { safeResume: false, validate: validateMoonpayLaunch, async prepare(order, customerIps) { return moonpay.widgetUrl(order, await moonpay.catalog(), customerIps); } };
 }

@@ -4,7 +4,7 @@ import type { RampOrder } from "@music-city/shared";
 import { Keypair } from "@stellar/stellar-sdk";
 import { randomUUID } from "node:crypto";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
-import { createMoonpayLaunchAdapter, createRampLaunchService, type RampLaunchAdapter } from "./ramp-launch.service.js";
+import { createMoonpayLaunchAdapter, createRampLaunchService, validateMoonpayLaunch, type RampLaunchAdapter } from "./ramp-launch.service.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
 
 test("launch validates owner, verified capability and provider destination before saving", async () => {
@@ -19,7 +19,7 @@ test("launch validates owner, verified capability and provider destination befor
   const params = new URLSearchParams({ apiKey: "pk_test_fixture", externalTransactionId: "order", externalCustomerId: "user", theme: "dark", lockAmount: "true", currencyCode: "xlm", walletAddress: "wallet", baseCurrencyCode: "usd", baseCurrencyAmount: "100.00", allowedIpAddress: "binding", signature: "sig" });
   const good = `https://buy-sandbox.moonpay.com/?${params}`;
   let link = good;
-  const adapter: RampLaunchAdapter = { safeResume: true, async prepare() { calls++; return link; } };
+  const adapter: RampLaunchAdapter = { safeResume: true, validate: validateMoonpayLaunch, async prepare() { calls++; return link; } };
   const service = createRampLaunchService(repository as unknown as Parameters<typeof createRampLaunchService>[0], new Map([["moonpay", adapter]]), createCashOutEnvelopeCipher(Buffer.alloc(32, 9)), async () => allowed);
   await assert.rejects(service.launch("order", { ...owner, userId: "other" }, ["203.0.113.1"]), /not found/);
   allowed = false;
@@ -62,4 +62,30 @@ test("MoonPay adapter builds the signed sandbox URL but does not claim safe resu
   assert.equal(url.searchParams.get("externalTransactionId"), order.id);
   assert.ok(url.searchParams.get("signature"));
   assert.deepEqual(new Set(requests), new Set(["/v3/currencies", "/v3/countries"]));
+});
+
+
+test("a provider adapter validates both new and resumed links without weakening common URL checks", async () => {
+  const order = { id: "order", terms: { userId: "user", walletAddress: "wallet", provider: "moneygram", direction: "buy" } } as RampOrder;
+  const owner = { userId: "user", walletAddress: "wallet" };
+  let saved: Buffer | null = null, destination = "https://sandbox.example.test/pay?order=order", validations = 0;
+  const repository = {
+    async getForOwner() { return order; }, async getLaunchSession() { return saved; },
+    async saveLaunchSession(_id: string, _user: string, _wallet: string, value: Buffer) { saved = value; return { encryptedSession: value, created: true }; },
+  };
+  const adapter: RampLaunchAdapter = { safeResume: true, async prepare() { return destination; }, validate(current, url) {
+    validations++;
+    if (current.terms.provider !== "moneygram" || url.origin !== "https://sandbox.example.test" || url.pathname !== "/pay" || url.searchParams.get("order") !== current.id) throw new Error("Invalid fixture provider URL");
+  } };
+  const service = createRampLaunchService(repository, new Map([["moneygram", adapter]]), createCashOutEnvelopeCipher(Buffer.alloc(32, 8)), async () => true);
+  destination = "http://sandbox.example.test/pay?order=order";
+  await assert.rejects(service.launch("order", owner, []), /could not be verified/);
+  assert.equal(saved, null);
+  destination = "https://other.example.test/pay?order=order";
+  await assert.rejects(service.launch("order", owner, []), /Invalid fixture/);
+  destination = "https://sandbox.example.test/pay?order=order";
+  assert.equal((await service.launch("order", owner, [])).created, true);
+  const before = validations;
+  assert.equal((await service.launch("order", owner, [])).created, false);
+  assert.equal(validations, before + 1);
 });

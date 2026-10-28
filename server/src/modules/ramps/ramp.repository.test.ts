@@ -18,7 +18,7 @@ import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { reconcileCashOut } from "../cashout/cashout-worker.js";
 import { createCashOutAuthorizationService } from "../cashout/cashout-authorization.service.js";
-import { createRampLaunchService } from "./ramp-launch.service.js";
+import { createRampLaunchService, validateMoonpayLaunch } from "./ramp-launch.service.js";
 
 const terms = (patch: Partial<RampOrderTerms> = {}): RampOrderTerms => ({
   userId: "artist",
@@ -515,7 +515,7 @@ test(
       const adapterWallet = Keypair.random().publicKey();
       const adapterOrder = (await repo.reserve(terms({ userId: "other", walletAddress: adapterWallet }))).order;
       let prepareCalls = 0;
-      const adapterService = createRampLaunchService(repo, new Map([["moonpay", { safeResume: true, async prepare(order) {
+      const adapterService = createRampLaunchService(repo, new Map([["moonpay", { safeResume: true, validate: validateMoonpayLaunch, async prepare(order) {
         prepareCalls++;
         const params = new URLSearchParams({ apiKey: "pk_test_fixture", externalTransactionId: order.id, externalCustomerId: order.terms.userId, theme: "dark", lockAmount: "true", currencyCode: "usdc_xlm", walletAddress: order.terms.walletAddress, baseCurrencyCode: "zar", baseCurrencyAmount: "100.00", allowedIpAddress: "binding", signature: "test-signature" });
         return `https://buy-sandbox.moonpay.com/?${params}`;

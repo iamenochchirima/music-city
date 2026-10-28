@@ -265,3 +265,9 @@ Focused capability tests, the existing isolated PostgreSQL order and recovery su
 A saved unlaunched funding request now opens through Manage. The dialog offers cancellation but only offers provider continuation when the current capability matches the saved route and amount. This is a user-interface guard; the server still checks capability at launch.
 
 Eight client component tests and client typecheck passed. A desktop browser component preview showed the unavailable message and cancellation action, and keyboard focus moved between actions. The preview used fixture data and did not contact a provider. Mobile and full application verification remain open under U4.
+
+### 29 October 2026: provider launch validation boundary
+
+The launch service now requires each registered adapter to validate its provider-specific URL against the saved order. The shared boundary independently rejects non-HTTPS URLs, embedded credentials and fragments. MoonPay retains its existing sandbox origin and parameter checks, including on resumed encrypted sessions. A second provider adapter in tests demonstrates the boundary; it is a fixture and does not enable MoneyGram.
+
+Launch service and HTTP tests, isolated PostgreSQL session tests and server typecheck passed. Additional provider adapters still require verified route discovery, URL rules, transaction lookup, status mapping, UI support and sandbox evidence; B2 and R3 remain open.
