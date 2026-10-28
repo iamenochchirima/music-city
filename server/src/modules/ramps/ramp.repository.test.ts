@@ -538,11 +538,16 @@ test(
       const authorizationService = createCashOutAuthorizationService(repo, {
         async preparationLedger() { return { sequence: 42, base_fee_in_stroops: 100, closed_at: liveNow.toISOString() }; },
         async account(address) { assert.equal(address, liveWallet); return { account_id: liveWallet, sequence: "11", thresholds: { med_threshold: 0 }, signers: [{ key: liveWallet, type: "ed25519_public_key", weight: 1 }] }; },
-      }, cipher);
+      }, cipher, async () => true);
       const liveOwner = { userId: "other", walletAddress: liveWallet };
       const liveAttempt = await authorizationService.prepare(liveOrder.id, liveQuoteId, liveSaved.hash, liveOwner);
+      assert.equal((await authorizationService.latest(liveOrder.id, liveOwner))?.transaction, liveAttempt.transaction);
+      assert.equal(await repo.latestCashOutAttempt(liveOrder.id, "artist", liveWallet), null);
       const liveTx = TransactionBuilder.fromXDR(liveAttempt.transaction, Networks.TESTNET); liveTx.sign(liveKey);
       await authorizationService.authorize(liveOrder.id, liveAttempt.id, liveTx.toXDR(), liveOwner);
+      const resumed = await authorizationService.latest(liveOrder.id, liveOwner);
+      assert.equal(resumed?.transaction, null);
+      assert.equal(resumed?.transactionHash, liveAttempt.transactionHash);
       const staleLease = await repo.leaseCashOut();
       assert.equal(staleLease?.id, liveAttempt.id);
       await db.transaction(async (c) => { await c.query("UPDATE ramp_chain_attempts SET leased_until=NOW()-INTERVAL '1 second',due_at=NOW()-INTERVAL '1 second' WHERE id=$1", [liveAttempt.id]); });

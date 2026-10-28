@@ -151,3 +151,9 @@ An internal authorization service now obtains the account sequence, signing conf
 Seventeen focused tests and server typecheck passed. Read-only Testnet requests verified that the ledger and existing wallet responses parse; no transfer was sent. The service is not exposed to users yet. A provider instruction adapter, wallet signing flow, local browser verification and a real provider transaction remain open.
 
 The isolated PostgreSQL recovery test now also passes through the authorization service using simulated account and network responses, a real wallet signature and the encrypted saved envelope. It covers preparation, authorization, uncertain submission and matching receipt recovery together; it does not establish a provider payout.
+
+### 28 October 2026: authenticated cash-out transfer actions
+
+Added sandbox-only, owner-scoped endpoints to retrieve the latest transfer, prepare an approved quote, submit a signed envelope for recovery, and cancel an unsigned attempt. The latest-transfer response includes the unsigned transaction only while it is awaiting authorization and never returns the saved signed envelope. New preparation additionally requires a current verified provider route matching the order and amount. The verified route registry is empty, so this does not enable cash-outs. The user-facing signing flow remains to be built.
+
+Local HTTP tests covered session and wallet ownership, rejected extra payment fields, safe responses and the disabled route gate. The isolated PostgreSQL test covered retrieval before and after signing, owner isolation, encrypted persistence and recovery. Focused tests and server typecheck passed. These checks used simulated provider instructions and do not prove a sandbox payout.

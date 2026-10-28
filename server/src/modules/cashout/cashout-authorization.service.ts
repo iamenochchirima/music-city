@@ -2,22 +2,24 @@ import type { createRampRepository } from "../ramps/ramp.repository.js";
 import type { createCashOutChain } from "./cashout-chain.js";
 import type { createCashOutEnvelopeCipher } from "./cashout-envelope.js";
 import { HttpError } from "../../utils/http-error.js";
+import type { RampOrder } from "@music-city/shared";
 
-type Repository = Pick<ReturnType<typeof createRampRepository>, "getForOwner" | "getCashOutQuote" | "prepareCashOutAttempt" | "authorizeCashOutAttempt" | "cancelUnsignedCashOutAttempt">;
+type Repository = Pick<ReturnType<typeof createRampRepository>, "getForOwner" | "getCashOutQuote" | "latestCashOutAttempt" | "prepareCashOutAttempt" | "authorizeCashOutAttempt" | "cancelUnsignedCashOutAttempt">;
 type Chain = Pick<ReturnType<typeof createCashOutChain>, "account" | "preparationLedger">;
 type Owner = { userId: string; walletAddress: string };
 
-// This service is not exposed until a provider route and the complete wallet flow are verified.
-export function createCashOutAuthorizationService(repository: Repository, chain: Chain, cipher: ReturnType<typeof createCashOutEnvelopeCipher>) {
+export function createCashOutAuthorizationService(repository: Repository, chain: Chain, cipher: ReturnType<typeof createCashOutEnvelopeCipher>, canPrepare: (order: RampOrder) => Promise<boolean> = async () => false) {
   async function checkOrder(orderId: string, owner: Owner) {
     const order = await repository.getForOwner(orderId, owner.userId, owner.walletAddress);
     if (!order) throw new HttpError(404, "Transaction not found");
     if (order.terms.direction !== "sell" || order.terms.environment !== "sandbox" || order.terms.network !== "stellar:testnet")
       throw new HttpError(409, "This cash-out is not available on the test network");
+    return order;
   }
   return {
     async prepare(orderId: string, quoteId: string, confirmationHash: string, owner: Owner) {
-      await checkOrder(orderId, owner);
+      const order = await checkOrder(orderId, owner);
+      if (!await canPrepare(order)) throw new HttpError(503, "Cash-out is not available yet");
       const quote = await repository.getCashOutQuote(orderId, quoteId, owner.userId, owner.walletAddress);
       if (!quote) throw new HttpError(404, "Quote not found");
       if (quote.hash !== confirmationHash) throw new HttpError(409, "Review the current quote before continuing");
@@ -26,6 +28,10 @@ export function createCashOutAuthorizationService(repository: Repository, chain:
       const account = await chain.account(owner.walletAddress);
       return repository.prepareCashOutAttempt({ orderId, quoteId, confirmationHash, ...owner, sequence: account.sequence,
         feeStroops: ledger.base_fee_in_stroops, maxFeeStroops: 10000, preparedLedger: ledger.sequence });
+    },
+    async latest(orderId: string, owner: Owner) {
+      await checkOrder(orderId, owner);
+      return repository.latestCashOutAttempt(orderId, owner.userId, owner.walletAddress);
     },
     async authorize(orderId: string, attemptId: string, signedXdr: string, owner: Owner) {
       await checkOrder(orderId, owner);

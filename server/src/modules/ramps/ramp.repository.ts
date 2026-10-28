@@ -330,6 +330,18 @@ export function createRampRepository(db: Database) {
         return verified;
       });
     },
+    async latestCashOutAttempt(orderId: string, userId: string, walletAddress: string) {
+      return db.transaction(async (c) => {
+        const row = (await c.query(`SELECT a.id,a.quote_id,a.transaction_hash,a.prepared_envelope,a.state,a.expires_at
+          FROM ramp_chain_attempts a JOIN ramp_orders o ON o.id=a.order_id
+          WHERE a.order_id=$1 AND o.user_id=$2 AND o.wallet_address=$3 ORDER BY a.created_at DESC,a.id DESC LIMIT 1`,
+          [orderId, userId, walletAddress])).rows[0];
+        if (!row) return null;
+        return { id: row.id as string, quoteId: row.quote_id as string, transactionHash: row.transaction_hash as string,
+          transaction: row.state === "prepared" ? row.prepared_envelope as string : null,
+          state: row.state as string, expiresAt: new Date(row.expires_at).toISOString() };
+      });
+    },
     // Sequence, fee and ledger must come from a trusted Stellar account and ledger read.
     async prepareCashOutAttempt(input: { orderId: string; quoteId: string; confirmationHash: string; userId: string; walletAddress: string; sequence: string; feeStroops: number; maxFeeStroops: number; preparedLedger: number; now?: Date }) {
       if (!/^[a-f0-9]{64}$/.test(input.confirmationHash) || !Number.isSafeInteger(input.preparedLedger) || input.preparedLedger < 1)
