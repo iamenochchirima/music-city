@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { httpClient } from "@/lib/api/http-client";
 
-export function ResumeFundingDialog({ token, orderId, provider, available, onClose, onChanged }: {
-  token: string; orderId: string; provider: string; available: boolean; onClose: () => void; onChanged: () => void;
+export function ResumeFundingDialog({ token, orderId, provider, direction = "buy", available, onClose, onChanged }: {
+  token: string; orderId: string; provider: string; direction?: "buy" | "sell"; available: boolean; onClose: () => void; onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
@@ -18,7 +18,7 @@ export function ResumeFundingDialog({ token, orderId, provider, available, onClo
     try {
       const result = await httpClient.post<{ url: string }>(`/ramps/${encodeURIComponent(orderId)}/launch`, {}, token);
       const destination = new URL(result.url);
-      if (provider !== "moonpay" || destination.origin !== "https://buy-sandbox.moonpay.com" || destination.username || destination.password) throw new Error("Invalid provider destination");
+      if (provider !== "moonpay" || destination.origin !== `https://${direction === "buy" ? "buy" : "sell"}-sandbox.moonpay.com` || destination.username || destination.password) throw new Error("Invalid provider destination");
       setUrl(destination.href);
     } catch { setUncertain(true); }
     finally { lock.current = false; setBusy(false); onChanged(); }
@@ -30,11 +30,11 @@ export function ResumeFundingDialog({ token, orderId, provider, available, onClo
     catch { setUncertain(true); }
     finally { lock.current = false; setBusy(false); onChanged(); }
   }
-  return <Dialog title="Add funds" onClose={onClose} busy={busy}>
+  return <Dialog title={direction === "buy" ? "Add funds" : "Cash out"} onClose={onClose} busy={busy}>
     <div className="space-y-4">
-      <p>{cancelled ? "Funding request cancelled." : uncertain ? "Check this transaction in your history before trying again." : opened ? "Check your transaction history for updates." : url ? "Continue to MoonPay to complete your purchase." : available ? "Continue this transaction with MoonPay." : "This payment option is unavailable."}</p>
+      <p>{cancelled ? (direction === "buy" ? "Funding request cancelled." : "Cash-out request cancelled.") : uncertain ? "Check this transaction in your history before trying again." : opened ? "Check your transaction history for updates." : url ? "Continue to MoonPay to complete this request." : available ? "Continue this transaction with MoonPay." : "This payment option is unavailable."}</p>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" disabled={busy} onClick={onClose}>Close</Button>
-        {!url && !uncertain && !cancelled && <Button type="button" variant="outline" disabled={busy} onClick={() => void cancel()}>Cancel funding</Button>}
+        {!url && !uncertain && !cancelled && <Button type="button" variant="outline" disabled={busy} onClick={() => void cancel()}>{direction === "buy" ? "Cancel funding" : "Cancel cash-out"}</Button>}
         {!url && !uncertain && !cancelled && available && <Button type="button" disabled={busy} onClick={() => void prepare()}>{busy ? "Preparing…" : "Continue"}</Button>}
         {url && !opened && <Button asChild><a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => { if (lock.current) { event.preventDefault(); return; } lock.current = true; setOpened(true); onChanged(); }}>Continue to provider</a></Button>}
       </div>

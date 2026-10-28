@@ -346,3 +346,9 @@ Focused capability and HTTP tests, the isolated PostgreSQL ramp suite and server
 The owner can now cancel a cash-out order before a provider session or chain activity exists. Cancellation uses the same wallet lock as session launch and records a separate cash-out event. It remains unavailable once a provider reference, launch or chain activity exists. This prepares the entry flow without enabling a provider.
 
 The isolated PostgreSQL test covered owner checks, idempotent cancellation and a cancellation-versus-launch race. The authenticated HTTP test and server typecheck passed. Provider cancellation and refunds remain open.
+
+### 29 October 2026: cash-out entry screen
+
+Added a cash-out entry dialog that appears only for an advertised supported sell route, a connected signing wallet and spendable Testnet USDC. The user chooses a payout option and an amount within the route limits and spendable balance. The dialog reserves an order, requests a validated MoonPay sandbox handoff and avoids a second launch after an uncertain response. An unlaunched sell order can be managed and cancelled from transaction history. The current server advertises no sell route, so this screen is not enabled for users.
+
+Twenty-one focused client tests and client typecheck passed. A local component preview with a simulated route was inspected at desktop and 390-pixel widths; keyboard focus moved from the route to the amount field. The preview did not contact a provider. Provider session behavior, the return-to-quote flow, MoneyGram handoff, real wallet signing and end-to-end cash-out remain open. U1, U2 and U4 are not complete.

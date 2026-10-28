@@ -111,3 +111,30 @@ it("allows new funding once both provider and transfer are confirmed", async () 
   expect(await screen.findByText("Provider completed · Transfer confirmed")).toBeTruthy();
   await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
 });
+
+
+it("offers cash-out only for a supported sell route and spendable USDC", async () => {
+  const route = { provider: "moonpay", direction: "sell", assetCode: "USDC", assetIssuer: "issuer", market: { country: "GB", currency: "GBP", method: "bank" }, amountDecimals: 7, minUnits: "10000000", maxUnits: "100000000" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [] });
+  const user = userEvent.setup();
+  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2.5" />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(false));
+  await user.click(screen.getByRole("button", { name: "Cash out" }));
+  expect(screen.getByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
+  expect(screen.getByRole("textbox", { name: "Amount in USDC" })).toBeTruthy();
+});
+
+
+it("lets an unlaunched cash-out be cancelled even when the route is unavailable", async () => {
+  const order = { id: "saved-sell", direction: "sell", provider: "moonpay", assetCode: "USDC", market: { country: "GB", currency: "GBP", method: "bank" }, launchRequested: false, providerStarted: false, providerState: "created", chainState: "unobserved", amount: { currency: "USDC", units: "10000000", decimals: 7 }, createdAt: "2026-10-28T00:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
+  mock.post.mockResolvedValue({});
+  const user = userEvent.setup();
+  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
+  await user.click(await screen.findByRole("button", { name: "Manage" }));
+  const dialog = within(screen.getByRole("dialog", { name: "Cash out" }));
+  expect(dialog.getByText("This payment option is unavailable.")).toBeTruthy();
+  await user.click(dialog.getByRole("button", { name: "Cancel cash-out" }));
+  expect(await screen.findByText("Cash-out request cancelled.")).toBeTruthy();
+  expect(mock.post).toHaveBeenCalledWith("/ramps/saved-sell/cancel", {}, "session");
+});
