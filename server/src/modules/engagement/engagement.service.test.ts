@@ -683,7 +683,12 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
   }
 });
 
-for (const reported of [undefined, 4.99]) test(`recordPlaybackEvent rejects seeks and listening below five seconds (${reported ?? 0})`, async () => {
+for (const scenario of [
+  { runtime: "3:00", reported: undefined },
+  { runtime: "3:00", reported: 4.99 },
+  { runtime: "0:01", reported: 0.5 },
+  { runtime: "0:04", reported: 2 },
+]) test(`recordPlaybackEvent rejects listening below five seconds for ${scenario.runtime} tracks (${scenario.reported ?? 0})`, async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   let savedSession: unknown;
@@ -698,7 +703,7 @@ for (const reported of [undefined, 4.99]) test(`recordPlaybackEvent rejects seek
         artistId: "usr-artist",
         artistName: "Artist",
         genre: "Pop",
-        runtime: "3:00",
+        runtime: scenario.runtime,
         priceLabel: "Public",
         status: "published",
         access: "public",
@@ -762,7 +767,7 @@ for (const reported of [undefined, 4.99]) test(`recordPlaybackEvent rejects seek
         eventType: "progress",
         positionSeconds: 179,
         durationSeconds: 1,
-        listenedSeconds: reported,
+        listenedSeconds: scenario.reported,
       },
     );
 

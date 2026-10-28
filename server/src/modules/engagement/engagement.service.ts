@@ -18,7 +18,6 @@ import { tracksRepository } from "../tracks/tracks.repository.js";
 import { usersService } from "../users/users.service.js";
 import { engagementRepository } from "./engagement.repository.js";
 
-const QUALIFIED_STREAM_FRACTION = 0.5;
 const MAX_LISTEN_SECONDS_PER_EVENT = 3600;
 const LISTEN_TIME_CLOCK_TOLERANCE_SECONDS = 2;
 const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
@@ -75,30 +74,8 @@ const syncTrackPlayCount = async (track: TrackSummary) => {
   return playCount;
 };
 
-const shouldCountQualifiedStream = (
-  listenedSeconds: number,
-  durationSeconds?: number,
-) => {
-  const fractionThreshold =
-    durationSeconds && durationSeconds > 0
-      ? durationSeconds * QUALIFIED_STREAM_FRACTION
-      : Number.POSITIVE_INFINITY;
-
-  return (
-    listenedSeconds >= STREAM_QUALIFICATION_SECONDS ||
-    listenedSeconds >= fractionThreshold
-  );
-};
-
-const getTrackDurationSeconds = (runtime: string | undefined) => {
-  const match = runtime?.match(/^(\d+):(\d{2})$/);
-
-  if (!match) {
-    return undefined;
-  }
-
-  return Number(match[1]) * 60 + Number(match[2]);
-};
+const shouldCountQualifiedStream = (listenedSeconds: number) =>
+  listenedSeconds >= STREAM_QUALIFICATION_SECONDS;
 
 const getCreditedListenSeconds = (
   session: PlaybackSession,
@@ -401,7 +378,7 @@ export const engagementService = {
     let streamCount = track.plays;
     const qualifies =
       !updatedSession.qualifiedStreamCountedAt &&
-      shouldCountQualifiedStream(listenedSeconds, getTrackDurationSeconds(track.runtime));
+      shouldCountQualifiedStream(listenedSeconds);
 
     if (qualifies) {
       const qualifiedInserted = await engagementRepository.insertQualifiedPlaybackEvent(
