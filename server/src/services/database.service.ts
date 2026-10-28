@@ -1485,6 +1485,33 @@ export const databaseService = {
     return result.rows[0] ?? null;
   },
 
+  async getTrackReleaseContexts(trackIds: string[]) {
+    if (trackIds.length === 0) return [];
+
+    const result = await pool.query<{
+      trackId: string;
+      releaseId: string;
+      releaseTitle: string;
+      releaseArtistName: string | null;
+      trackNumber: number;
+      discNumber: number;
+      isFocusTrack: boolean;
+    }>(
+      `SELECT rt.track_id AS "trackId", r.id AS "releaseId",
+        r.payload->>'title' AS "releaseTitle",
+        r.payload->>'artistName' AS "releaseArtistName",
+        rt.track_number AS "trackNumber", rt.disc_number AS "discNumber",
+        rt.is_focus_track AS "isFocusTrack"
+       FROM release_tracks rt
+       JOIN releases r ON r.id = rt.release_id
+       JOIN tracks t ON t.id = rt.track_id
+       WHERE rt.track_id = ANY($1::text[]) AND r.artist_id = t.artist_id`,
+      [trackIds],
+    );
+
+    return result.rows;
+  },
+
   async applyReleaseTrackMetadata(artistId: string, releaseId: string, input: ReleaseTrackMetadataInput): Promise<TrackSummary[]> {
     return this.transaction(async client => {
       const release = await client.query("SELECT artist_id FROM releases WHERE id=$1 FOR UPDATE", [releaseId]);

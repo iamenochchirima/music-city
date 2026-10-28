@@ -33,3 +33,17 @@ No purchase, settlement, claim, USDC transfer, provider session, quote, payment,
 - No screenshot artifact was saved.
 
 This run adds current-code account and UI evidence. It does not replace the historical creator-to-claim Testnet evidence in [E8](README.md). C2 remains open until a fresh purchase, settlement, and claim pass succeeds.
+
+## Follow-up account checks
+
+The local API was restarted against the isolated `sow2_current_demo_test` database with Dynamic Sandbox, Stellar Testnet, local media and storage, and ramp providers disabled. The API readiness route reported healthy. The app account was reauthenticated with the Dynamic Sandbox test identity after the restart.
+
+The artist account showed its Testnet USDC trustline as active, with 0 USDC and 9,999.99999 XLM spendable. This follows a successful Testnet `change_trust` operation; no USDC was received. Circle's Testnet faucet presented a reCAPTCHA challenge, so no faucet request was completed and no funds were sent. The faucet tab is left open for the user to complete the challenge.
+
+The current app showed one published synthetic release and its one track. A qualified playback advanced the track's stream count from one to two. The artist track list initially labeled that same track `Not in a release`, although the release detail and track detail showed the assignment. The list response now hydrates release membership from the authoritative `release_tracks` relation; the local browser retest displayed `SOW2 Sandbox Lifecycle Test` as the track's release.
+
+The Revenue page loaded with 0.00 USDC available, 0.00 pending, and no purchases. Funding and cash-out displayed MoonPay and MoneyGram as unavailable, with both actions disabled. No quote, provider session, purchase, settlement, claim, or payout was created. A fresh creator-to-claim lifecycle remains open.
+
+The separate listener Sandbox identity also signed in successfully. Discover showed the synthetic release once and its two qualified streams. The empty playlist and agreement pages showed their normal empty states; direct access to artist tracks showed the artist setup gate. Its wallet was unfunded on Testnet with no USDC trustline, and add-funds, cash-out, and trustline controls stayed disabled where prerequisites were missing.
+
+After the track-list correction, the focused track-service tests passed (9/9), the full workspace tests passed (218 server, 194 client, and 22 admin; 13 database-backed server tests were skipped by the default runner), workspace typechecks passed, and the production builds passed. The broader mobile, keyboard, cancellation, slow-response, and recovery browser matrix remains open under U4.

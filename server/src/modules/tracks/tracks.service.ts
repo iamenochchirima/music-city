@@ -144,9 +144,26 @@ export const tracksService = {
     const publicTrackIds = new Set(
       await tracksRepository.listPublicTrackIds(profile.id),
     );
-    return tracks.map((track) =>
-      hydrateTrackForView(track, publicTrackIds.has(track.id)),
+    const releaseContexts = new Map(
+      (await tracksRepository.findReleaseContexts(tracks.map((track) => track.id))).map(
+        ({ trackId, ...context }) => [trackId, context],
+      ),
     );
+    return tracks.map((track) => {
+      const context = releaseContexts.get(track.id);
+      return hydrateTrackForView(
+        {
+          ...track,
+          releaseId: context?.releaseId,
+          releaseTitle: context?.releaseTitle,
+          releaseArtistName: context?.releaseArtistName ?? undefined,
+          trackNumber: context?.trackNumber,
+          discNumber: context?.discNumber,
+          isFocusTrack: context?.isFocusTrack,
+        },
+        publicTrackIds.has(track.id),
+      );
+    });
   },
 
   async listPublicTracksByArtist(artistId: string) {

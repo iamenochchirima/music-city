@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { TrackSummary } from "@music-city/shared";
 
 process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/music-city";
 
@@ -337,4 +338,47 @@ test("clearing optional metadata preserves publication and unrelated track value
     assert.equal(cleared.playbackReady, true);
     assert.equal(cleared.masterStorageKey, "audio.wav");
   } finally { cleanup.reverse().forEach(fn => fn()); }
+});
+
+test("artist track list hydrates release assignment from the release-track relation", async () => {
+  const track = {
+    id: "assigned-track",
+    title: "Assigned song",
+    artistId: artistProfile.id,
+    artistName: "Artist",
+    genre: "Pop",
+    runtime: "2:10",
+    priceLabel: "Published",
+    status: "published",
+    visibility: "published",
+    plays: 0,
+    likes: 0,
+    playbackReady: true,
+  } as TrackSummary;
+  const cleanup = [
+    restore(usersService, "getProfile", async () => artistProfile),
+    restore(tracksRepository, "listByArtist", async () => [track]),
+    restore(tracksRepository, "listPublicTrackIds", async () => [track.id]),
+    restore(tracksRepository, "findReleaseContexts", async () => [
+      {
+        trackId: track.id,
+        releaseId: "release-1",
+        releaseTitle: "One Song Release",
+        releaseArtistName: "Artist",
+        trackNumber: 1,
+        discNumber: 1,
+        isFocusTrack: false,
+      },
+    ]),
+  ];
+
+  try {
+    const [listed] = await tracksService.listMyTracks(walletAddress);
+    assert.equal(listed?.releaseId, "release-1");
+    assert.equal(listed?.releaseTitle, "One Song Release");
+    assert.equal(listed?.trackNumber, 1);
+    assert.equal(listed?.visibility, "published");
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
 });

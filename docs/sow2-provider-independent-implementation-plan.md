@@ -386,3 +386,13 @@ The [test-account run](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.
 The browser exposed a server error for an empty playlist list before onboarding finished and a 500 for a listener opening the artist editor. Playlist reads now return an empty list before profile creation. Artist-only access failures now return 403. Twelve focused server tests and server typecheck passed. Local browser retests confirmed the listener playlist page and the readable artist-access denial.
 
 The artist's XLM test wallet was funded through Friendbot, but the Dynamic wallet approval for its USDC trustline stayed pending. The test account had no USDC, and MoonPay and MoneyGram had no verified routes. No purchase, settlement, claim, provider session, quote, payment, or payout was created. C2 and U4 remain open.
+
+### 29 October 2026: Sandbox account follow-up and track-list correction
+
+The follow-up account evidence is in [Local Sandbox account verification](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md). Against the isolated local database, the artist account now showed the Testnet USDC trustline as active, 0 USDC, and 9,999.99999 XLM. The track's qualified playback advanced the stream count from one to two. The Revenue view remained at zero available and pending earnings with no purchases; both ramp actions remained disabled because neither provider had a verified route.
+
+Account testing exposed stale release membership on the artist track list: the release detail and track detail showed an assigned release, but the list showed `Not in a release`. The list API now hydrates membership from the authoritative release-track relation in one batch, and the local browser retest showed the correct release title. Focused server tests, the full workspace suite, typechecks, and builds passed. The default runner still skips 13 database-backed tests.
+
+The separate listener identity signed into Dynamic Sandbox and saw the published release once in Discover, normal empty playlist and agreement states, and the artist setup gate on direct studio access. The listener's unfunded Testnet wallet had no USDC trustline, so funding, cash-out, and trustline actions stayed disabled.
+
+The Circle Testnet faucet required a reCAPTCHA challenge, which was not completed. The wallet therefore received no USDC and this run created no purchase, settlement, claim, or payout. C2 remains open. The full mobile and interaction browser matrix remains open under U4; provider sandbox outcomes remain open under V5.

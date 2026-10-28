@@ -729,6 +729,14 @@ That test uncovered two generic server errors. A listener opening the artist edi
 
 The artist's wallet received 10,000 XLM from Stellar Friendbot. Its USDC trustline stayed pending at Dynamic wallet approval, and the listener wallet remained unfunded. The ramp capability list had no routes, so Add funds and Cash out stayed disabled. No purchase, settlement, claim, provider session, quote, payment, or payout was created. C2, U2, U4, and V5 remain open.
 
+### Sandbox account follow-up, 29 October 2026
+
+The [follow-up account evidence](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) confirms the artist's Testnet USDC trustline is active, with 0 USDC. A qualified playback advanced the synthetic track from one to two streams. The Revenue page showed no purchases or earnings, and provider funding/cash-out actions stayed unavailable and disabled. The Circle faucet blocked the USDC request behind reCAPTCHA, so no funds were sent and no new purchase, settlement, claim, or payout was created.
+
+Testing also found and fixed a wrong `Not in a release` label in the artist track list. The list now gets release assignment from the relational tracklist, and the local browser shows the correct release title. Automated tests, workspace typechecks, and builds passed; the default suite skipped 13 database-backed tests. C2, U2, U4, and V5 remain open.
+
+The listener Sandbox identity also signed in on the local app. Discover showed the synthetic release once, playlists and agreements showed their empty states, and direct artist-studio access showed the artist setup gate. Its unfunded Testnet wallet did not enable transfer, trustline, or ramp actions.
+
 ### Ramp foundations checkpoint, 26 October 2026
 
 The [combined plan](ramp-sandbox-implementation-plan.md#current-execution-decision) records the owner's later instruction to defer MoneyGram and test MoonPay with native XLM separately. The USDC flow remains open. Fresh provider checks found MoonPay Stellar USDC unavailable in test mode and the MoneyGram key configured for custodial sessions.
