@@ -6,7 +6,7 @@ import { databaseService } from "../../services/database.service.js";
 import { logger } from "../../utils/logger.js";
 
 type Repository = Pick<ReturnType<typeof createRampRepository>, "leaseCashOut" | "claimCashOutSubmission" | "markCashOutUnknown" | "recordCashOutReceipt" | "expireCashOutAttempt" | "releaseCashOut">;
-type Chain = ReturnType<typeof createCashOutChain>;
+type Chain = Pick<ReturnType<typeof createCashOutChain>, "ledger" | "receipt" | "historyCoverage" | "submit">;
 type Cipher = ReturnType<typeof createCashOutEnvelopeCipher>;
 type ErrorCode = "chain_check_failed" | "submission_unknown" | "history_unavailable" | null;
 

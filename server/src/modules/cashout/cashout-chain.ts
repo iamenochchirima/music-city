@@ -1,4 +1,4 @@
-import { Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
+import { Networks, StrKey, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { z } from "zod";
 import { HttpError } from "../../utils/http-error.js";
 
@@ -6,6 +6,9 @@ const horizon = "https://horizon-testnet.stellar.org";
 const receiptSchema = z.object({ hash: z.string().regex(/^[a-f0-9]{64}$/), successful: z.boolean(),
   envelope_xdr: z.string().min(1).max(200000), ledger: z.number().int().positive().safe(), fee_charged: z.string().regex(/^(0|[1-9][0-9]*)$/).max(20) });
 const ledgerSchema = z.object({ sequence: z.number().int().positive().safe(), closed_at: z.string().datetime() });
+const accountSchema = z.object({ account_id: z.string(), sequence: z.string().regex(/^(0|[1-9][0-9]{0,18})$/),
+  thresholds: z.object({ med_threshold: z.number().int().min(0).max(255) }),
+  signers: z.array(z.object({ key: z.string().min(1).max(128), type: z.string().min(1).max(64), weight: z.number().int().min(0).max(255) })).min(1).max(20) });
 export type CashOutReceipt = z.infer<typeof receiptSchema>;
 export type CashOutLedger = z.infer<typeof ledgerSchema>;
 
@@ -45,6 +48,20 @@ export function createCashOutChain(fetcher: typeof fetch = fetch) {
   }
   return {
     ledger: () => ledger("desc"),
+    async account(walletAddress: string) {
+      if (!StrKey.isValidEd25519PublicKey(walletAddress)) throw new HttpError(400, "Invalid wallet address");
+      const result = accountSchema.safeParse(await read(`/accounts/${walletAddress}`));
+      if (!result.success || result.data.account_id !== walletAddress || BigInt(result.data.sequence) >= 9223372036854775807n)
+        throw new HttpError(502, "Unable to verify the Stellar wallet");
+      return result.data;
+    },
+    async preparationLedger() {
+      const body = await read("/ledgers?order=desc&limit=1");
+      const schema = z.object({ _embedded: z.object({ records: z.array(ledgerSchema.extend({ base_fee_in_stroops: z.number().int().min(100).max(10000) })).length(1) }) });
+      const result = schema.safeParse(body);
+      if (!result.success) throw new HttpError(502, "Unable to verify the Stellar network fee");
+      return result.data._embedded.records[0];
+    },
     async historyCoverage() {
       const body = await read("/");
       const coverage = z.object({ history_elder_ledger: z.number().int().positive().safe(), history_latest_ledger: z.number().int().positive().safe(), history_latest_ledger_closed_at: z.string().datetime() }).safeParse(body);

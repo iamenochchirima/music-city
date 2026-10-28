@@ -33,3 +33,24 @@ test("chain requests use a fixed Testnet host and leave unavailable receipts unr
   await assert.rejects(chain.submit("signed"), /Waiting/);
   assert.deepEqual(requests, ["GET /ledgers", "GET /", "GET /transactions/" + "a".repeat(64), "POST /transactions"]);
 });
+
+test("preparation uses a validated Testnet ledger and the requested wallet account", async () => {
+  const wallet = Keypair.random().publicKey();
+  let accountId = wallet;
+  let fee = 100;
+  const requests: string[] = [];
+  const chain = createCashOutChain((async (url: URL) => {
+    assert.equal(url.origin, "https://horizon-testnet.stellar.org");
+    requests.push(url.pathname);
+    if (url.pathname === "/ledgers") return Response.json({ _embedded: { records: [{ sequence: 30, closed_at: "2026-10-28T12:00:00.000Z", base_fee_in_stroops: fee }] } });
+    return Response.json({ account_id: accountId, sequence: "123", thresholds: { med_threshold: 1 }, signers: [{ key: wallet, type: "ed25519_public_key", weight: 1 }] });
+  }) as typeof fetch);
+  assert.equal((await chain.preparationLedger()).base_fee_in_stroops, 100);
+  assert.equal((await chain.account(wallet)).sequence, "123");
+  assert.deepEqual(requests, ["/ledgers", `/accounts/${wallet}`]);
+  accountId = Keypair.random().publicKey();
+  await assert.rejects(chain.account(wallet), /verify the Stellar wallet/);
+  await assert.rejects(chain.account("../transactions"), /Invalid wallet/);
+  fee = 10001;
+  await assert.rejects(chain.preparationLedger(), /network fee/);
+});
