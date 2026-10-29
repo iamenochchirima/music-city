@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import type { TrackSale } from "@music-city/shared";
 import userEvent from "@testing-library/user-event";
 import { DashboardRevenueOverview } from "./dashboard-revenue-overview";
 const m = vi.hoisted(() => ({ sales: vi.fn() }));
@@ -19,6 +20,19 @@ vi.mock("@/features/ramps/revenue-wallet-cashout", () => ({
 }));
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
+it("does not present a pending sales response as zero purchases", async () => {
+  let complete!: (sales: TrackSale[]) => void;
+  m.sales.mockReturnValue(new Promise<TrackSale[]>((resolve) => {
+    complete = resolve;
+  }));
+  render(<DashboardRevenueOverview />);
+  expect(screen.getByRole("status").textContent).toBe("Loading sales");
+  expect(screen.queryByText("0 purchases")).toBeNull();
+  expect(screen.queryByText("Your song sales will appear here.")).toBeNull();
+  await act(async () => complete([]));
+  expect(await screen.findByText("0 purchases")).toBeTruthy();
+  expect(screen.queryByRole("status")).toBeNull();
+});
 it("shows incoming song sales with exact amounts and the receipt's original network", async () => {
   m.sales.mockResolvedValue([
     {
@@ -48,6 +62,7 @@ it("keeps claims accessible when sales fail and can retry without payment action
   render(<DashboardRevenueOverview />);
   expect(screen.getByText("Claim earnings")).toBeTruthy();
   await screen.findByRole("alert");
+  expect(screen.queryByText("0 purchases")).toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByText("Your song sales will appear here.");
   expect(screen.queryByRole("alert")).toBeNull();

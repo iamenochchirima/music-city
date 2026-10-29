@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { TrackSale } from "@music-city/shared";
 import { CreatorClaims } from "@/features/settlements/creator-claims";
 import { RevenueWalletCashout } from "@/features/ramps/revenue-wallet-cashout";
@@ -12,6 +13,7 @@ export const DashboardRevenueOverview = () => {
   const { session } = useAuth();
   const [sales, setSales] = useState<TrackSale[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
   const artist =
     session?.primaryIntent === "artist" || session?.primaryIntent === "both";
@@ -19,6 +21,7 @@ export const DashboardRevenueOverview = () => {
     let active = true;
     setSales([]);
     setError(null);
+    setLoading(Boolean(session?.token && artist));
     if (!session?.token || !artist) return;
     void paymentsApi
       .listTrackSales(session.token)
@@ -33,6 +36,9 @@ export const DashboardRevenueOverview = () => {
           setError(
             cause instanceof Error ? cause.message : "Could not load sales",
           );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -56,10 +62,23 @@ export const DashboardRevenueOverview = () => {
           <div className="flex items-center justify-between gap-4">
             <h3 className="font-semibold">Song sales</h3>
             <span className="text-sm text-muted-foreground">
-              {sales.length} {sales.length === 1 ? "purchase" : "purchases"}
+              {loading || error
+                ? "—"
+                : `${sales.length} ${sales.length === 1 ? "purchase" : "purchases"}`}
             </span>
           </div>
-          {error ? (
+          {loading ? (
+            <p
+              role="status"
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+            >
+              <Loader2
+                aria-hidden="true"
+                className="size-4 animate-spin motion-reduce:animate-none"
+              />
+              Loading sales
+            </p>
+          ) : error ? (
             <div
               role="alert"
               className="flex items-center justify-between gap-3 text-sm"
