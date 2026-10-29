@@ -38,8 +38,9 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    pnpm verify:sow2-settlement-config
    ```
 
-   The preflight verifies the Stellar address formats and requires a positive deployment ledger. `pnpm verify:sow2-settlement-config` then performs read-only Horizon and Soroban checks that the registry, settlement contract, treasury, 2-of-3 signers, and deployment ledger match on Testnet. Use one verified deployment tuple, then confirm the running processes use those same values. The last local verification used the E8 deployment tuple in [core lifecycle evidence](core-lifecycle-evidence/README.md); rerun the verifier before relying on it. The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters.
-As of 29 October 2026, the verified E8 deployment tuple is:
+   The preflight verifies the Stellar address formats and requires a positive deployment ledger. `pnpm verify:sow2-settlement-config` performs read-only Horizon and Soroban checks that the registry, settlement contract, treasury, signer threshold, and deployment ledger match on Testnet. On 29 October 2026, the verifier confirmed the E8 deployment tuple below and its 2-of-3 signer threshold. Rerun the verifier whenever a value changes. The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters.
+
+The verified E8 deployment tuple is:
 
 | Setting | Testnet value |
 | --- | --- |
