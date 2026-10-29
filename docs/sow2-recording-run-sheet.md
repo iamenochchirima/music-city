@@ -8,7 +8,7 @@ Use this run sheet to separate the live product walkthrough from the completed S
 - The public artist directory is now clean: `/artists` and Discover's **Artists in motion** show the three profiles with published releases. This was deployed and checked on 29 October 2026.
 - Keep playback under five seconds unless you intend to add a public stream.
 - Do not present the Marketplace as a completed purchase. It has no track sale enabled. The 15 USDC Music City Pass was viewed but not purchased.
-- Do not show Add funds or Cash out as working. No provider route has a verified successful transaction.
+- The live Revenue page leaves Add funds and Cash out disabled and says they are not available yet. It is safe to show this unavailable state, but do not imply that a provider route has completed a transaction. Hide wallet balances in the recording.
 
 ## Clip 1: Hosted product walkthrough
 
