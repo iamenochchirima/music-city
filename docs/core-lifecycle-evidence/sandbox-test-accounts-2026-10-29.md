@@ -466,3 +466,5 @@ With the funded `SOW2 QA Listener` account, the local browser prepared a new `Co
 I restarted the local client at `http://localhost:3000` and checked its existing API at `http://localhost:4339`. The SOW2 preflight passed against the API process configuration, which targets `127.0.0.1:32768/sow2_current_demo_test`, Dynamic Sandbox, Stellar Testnet, local storage and media, and disabled ramp providers. Readiness returned HTTP 200 with all 29 schema groups healthy.
 
 In the browser, `SOW2 QA Listener` showed 40 USDC spendable, zero earnings, and no verified funding or cash-out route. At a 390-pixel viewport, the Revenue and track-detail pages had a 375-pixel document width with no horizontal overflow. Keyboard navigation on the track-detail page reached Play and then Buy without activating either control. This adds responsive and keyboard evidence, but U4 remains open for the cancellation, slow-response, reload, and recovery checks. No provider order or financial action was created.
+
+Reloading Revenue restored the same account and 40 USDC wallet balance after the asynchronous balance request completed. Add funds and Cash out stayed disabled.
