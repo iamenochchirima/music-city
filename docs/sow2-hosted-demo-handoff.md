@@ -46,3 +46,9 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
 - Artist-entry fix `1dfad1b`, regression test `193b883`, and QA notes are included in pushed production commit `f2b8445`. Vercel deployment `v0-music-city-dg1tbf6fa-iamenochchirimas-projects.vercel.app` is Ready and aliases `musiccity.pro`. Computer use confirmed the live listener account now reaches step 2 with **I’m an artist** selected; the user did not continue, so no account change was made. Upload and publication still need an authorized artist profile and approved demo media.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
+
+## Local creator upload smoke test
+
+On 29 October 2026, the browser rehearsal on `http://localhost:3000` used the isolated `sow2_current_demo_test` database and the Sandbox test artist `SOW2 QA Listener`. A generated 44.1 kHz stereo PCM WAV uploaded successfully; the release workspace showed **Audio ready**. An 800 × 800 PNG cover saved, the review showed artwork, a valid tracklist, and ready audio, and publishing succeeded in the local test environment. The release appeared once in Studio and its fan page opened. Playback of the uploaded WAV started and reached the end without a media-source error. The file was exactly five seconds long; the server recorded 4.91 seconds listened, so it correctly remained below the five-second stream threshold. This is local evidence only and does not replace the hosted artist upload/publish rehearsal.
+
+One older seeded `SOW2 QA Tone` fixture still points to unavailable local media and produced an audio-source error. The freshly uploaded WAV played normally; use newly uploaded media for local demonstrations instead of that stale fixture.
