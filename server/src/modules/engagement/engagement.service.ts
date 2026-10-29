@@ -141,16 +141,22 @@ export const engagementService = {
       throw new Error("You cannot follow yourself");
     }
 
-    await engagementRepository.upsertArtistFollow(profile.id, artist.id, occurredAt);
-    await recordAnalyticsEvent({
-      id: createId("anl"),
-      eventType: "follow_artist",
+    const wasCreated = await engagementRepository.upsertArtistFollow(
+      profile.id,
+      artist.id,
       occurredAt,
-      actorUserId: profile.id,
-      artistId: artist.id,
-      source: ANALYTICS_SOURCE,
-      surface: "artist_profile",
-    });
+    );
+    if (wasCreated) {
+      await recordAnalyticsEvent({
+        id: createId("anl"),
+        eventType: "follow_artist",
+        occurredAt,
+        actorUserId: profile.id,
+        artistId: artist.id,
+        source: ANALYTICS_SOURCE,
+        surface: "artist_profile",
+      });
+    }
     return this.getArtistFollowState(walletAddress, artist.id);
   },
 

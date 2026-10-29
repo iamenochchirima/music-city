@@ -94,7 +94,7 @@ test("followArtist stores the follow and returns the refreshed state", async () 
     restore(
       engagementRepository,
       "upsertArtistFollow",
-      (async () => undefined) as typeof engagementRepository.upsertArtistFollow,
+      (async () => true) as typeof engagementRepository.upsertArtistFollow,
     ),
     restore(
       engagementRepository,
@@ -122,6 +122,58 @@ test("followArtist stores the follow and returns the refreshed state", async () 
       following: true,
       followerCount: 7,
     });
+    assert.deepEqual(analyticsEvents, ["follow_artist"]);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("repeating a follow does not create another analytics event", async () => {
+  const analyticsEvents: string[] = [];
+  let insertCount = 0;
+  const cleanup = [
+    restore(
+      usersService,
+      "getProfile",
+      (async () => createFanProfile()) as typeof usersService.getProfile,
+    ),
+    restore(
+      usersService,
+      "getProfileById",
+      (async () => createArtistProfile()) as typeof usersService.getProfileById,
+    ),
+    restore(
+      engagementRepository,
+      "upsertArtistFollow",
+      (async () => {
+        insertCount += 1;
+        return insertCount === 1;
+      }) as typeof engagementRepository.upsertArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "hasArtistFollow",
+      (async () => true) as typeof engagementRepository.hasArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "countArtistFollowers",
+      (async () => 1) as typeof engagementRepository.countArtistFollowers,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event.eventType);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+  ];
+
+  try {
+    await engagementService.followArtist("wallet-1", "usr-artist");
+    await engagementService.followArtist("wallet-1", "usr-artist");
+
+    assert.equal(insertCount, 2);
     assert.deepEqual(analyticsEvents, ["follow_artist"]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());

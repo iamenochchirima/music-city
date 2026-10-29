@@ -19,7 +19,7 @@ export const engagementRepository = {
   },
 
   async upsertArtistFollow(userId: string, artistId: string, createdAt: string) {
-    await databaseService.upsertArtistFollow(userId, artistId, createdAt);
+    return databaseService.upsertArtistFollow(userId, artistId, createdAt);
   },
 
   async deleteArtistFollow(userId: string, artistId: string) {

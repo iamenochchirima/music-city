@@ -1817,13 +1817,15 @@ export const databaseService = {
   },
 
   async upsertArtistFollow(userId: string, artistId: string, createdAt: string) {
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO artist_follows (user_id, artist_id, created_at)
        VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, artist_id) DO UPDATE SET
-         created_at = EXCLUDED.created_at`,
+       ON CONFLICT (user_id, artist_id) DO NOTHING
+       RETURNING user_id`,
       [userId, artistId, createdAt],
     );
+
+    return (result.rowCount ?? 0) > 0;
   },
 
   async deleteArtistFollow(userId: string, artistId: string) {

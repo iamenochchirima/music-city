@@ -23,6 +23,7 @@ import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { sponsorshipsService } from "../sponsorships/sponsorships.service.js";
+import { engagementRepository } from "../engagement/engagement.repository.js";
 import { usersRepository } from "./users.repository.js";
 
 const nowIso = () => new Date().toISOString();
@@ -161,6 +162,33 @@ const ensureFavoriteArtistIds = async (favoriteArtistIds: string[]) => {
 
   if (favoriteArtistIds.some((artistId) => !artistIds.has(artistId))) {
     throw new HttpError(400, "Choose artists from the Music City artist list");
+  }
+};
+
+const followSelectedArtists = async (
+  profile: UserProfile,
+  artistIds: string[],
+  occurredAt: string,
+) => {
+  for (const artistId of artistIds) {
+    if (artistId === profile.id) continue;
+
+    const wasCreated = await engagementRepository.upsertArtistFollow(
+      profile.id,
+      artistId,
+      occurredAt,
+    );
+    if (!wasCreated) continue;
+
+    await engagementRepository.insertAnalyticsEvent({
+      id: createId("anl"),
+      eventType: "follow_artist",
+      occurredAt,
+      actorUserId: profile.id,
+      artistId,
+      source: "server.engagement",
+      surface: "onboarding",
+    });
   }
 };
 
@@ -466,7 +494,19 @@ export const usersService = {
       nextProfile.onboardingStep = existing?.onboardingStep ?? nextProfile.onboardingStep;
     }
 
-    return withArtistAccess(await usersRepository.upsert(nextProfile, { referralReceipt: parsed.step === "identity" ? parsed.referralReceipt : undefined }));
+    const savedProfile = await usersRepository.upsert(nextProfile, {
+      referralReceipt:
+        parsed.step === "identity" ? parsed.referralReceipt : undefined,
+    });
+    if (parsed.step === "personalize") {
+      await followSelectedArtists(
+        savedProfile,
+        parsed.favoriteArtistIds,
+        timestamp,
+      );
+    }
+
+    return withArtistAccess(savedProfile);
   },
 
   async completeOnboarding(

@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { UserProfile } from "@music-city/shared";
+import type { AnalyticsEvent, UserProfile } from "@music-city/shared";
 
 process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/music-city";
 
 const walletAddress = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 const { usersService } = await import("./users.service.js");
 const { usersRepository } = await import("./users.repository.js");
+const { engagementRepository } = await import("../engagement/engagement.repository.js");
 const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
 const { HttpError } = await import("../../utils/http-error.js");
 
@@ -382,6 +383,101 @@ test("both intent persists listener and artist personalization without role ambi
     assert.equal(profile.bio, "A sound from both sides of the city.");
     assert.equal(profile.hasReleasedMusic, true);
     assert.equal(profile.onboardingStep, "visuals");
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("selected onboarding artists become follows and retries do not duplicate follow events", async () => {
+  const artistProfile = createProfile({
+    id: "usr-onboarding-artist",
+    walletAddress: "GCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+    displayName: "Test Artist",
+    primaryIntent: "artist",
+    artistAccess: true,
+    onboardingStatus: "complete",
+    onboardingStep: "complete",
+  });
+  let stored = createProfile({ onboardingStep: "personalize" });
+  let followWrites = 0;
+  const analyticsEvents: AnalyticsEvent[] = [];
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      usersRepository,
+      "listArtists",
+      (async () => [artistProfile]) as typeof usersRepository.listArtists,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 0,
+        campaignCode: null,
+        termsRevision: null,
+        status: "legacy_free",
+        profileExists: true,
+        artistAccess: true,
+        activatedAt: new Date(0).toISOString(),
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+    restore(
+      engagementRepository,
+      "upsertArtistFollow",
+      (async () => {
+        followWrites += 1;
+        return followWrites === 1;
+      }) as typeof engagementRepository.upsertArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+  ];
+
+  try {
+    const input = {
+      step: "personalize" as const,
+      genres: ["Kwaito" as const],
+      favoriteArtistIds: [artistProfile.id],
+      interestedInLocalMusic: false,
+      notificationPreferences: {
+        releaseNotifications: false,
+        artistUpdates: false,
+        productUpdates: false,
+      },
+    };
+
+    await usersService.saveOnboardingStep(walletAddress, input);
+    await usersService.saveOnboardingStep(walletAddress, input);
+
+    assert.deepEqual(stored.favoriteArtistIds, [artistProfile.id]);
+    assert.equal(followWrites, 2);
+    assert.equal(analyticsEvents.length, 1);
+    assert.equal(analyticsEvents[0]?.eventType, "follow_artist");
+    assert.equal(analyticsEvents[0]?.actorUserId, stored.id);
+    assert.equal(analyticsEvents[0]?.artistId, artistProfile.id);
+    assert.equal(analyticsEvents[0]?.source, "server.engagement");
+    assert.equal(analyticsEvents[0]?.surface, "onboarding");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
