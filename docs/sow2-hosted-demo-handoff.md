@@ -20,6 +20,8 @@ The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. Com
 
 The local fix is committed as `b41bb63` and is not deployed. Registration can now finish even if artist activation is unpaid; artist tools remain locked until activation is paid or sponsored. This removes the cycle that previously blocked account completion before the activation checkout was reachable. Local integration tests cover registration completion and the continuing 402 lock on artist tools. Computer use completed the sponsored Sandbox artist setup, and **Create your first release** opened the local release editor. The hosted account still needs an eligible $0 sponsored activation or an owner-authorized payment before hosted artist access, upload, or publication can be verified.
 
+The release-entry fix is commit `3bfbb22`, included in `origin/main` through merge `3a75988`. An unpaid artist now sees the activation quote before entering release details. **Review activation** opens the existing wallet review, which shows the exact Stellar amount and balance; Cancel returns without creating a release or confirming payment. The new regression test covers that unpaid state, while the local browser check used the sponsored Sandbox artist and confirmed the release form remains available. Full client verification passed (239 tests, typecheck, and production build). The unpaid payment review was not signed or submitted, and no production account was opened after the user asked to keep the demo local. We did not verify whether a live deployment has picked up the merge.
+
 ## Short production walkthrough that is ready now
 
 This is a read-only product walkthrough, not a completed SOW 2 transaction demo:
@@ -61,7 +63,7 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed. The current local candidate also passes 8 focused client tests, 8 ramp-readiness server tests, full typecheck, and production build; its dedicated PostgreSQL support lifecycle test was skipped.
 - Artist-entry fix `1dfad1b`, regression test `193b883`, and QA notes are included in pushed production commit `f2b8445`. Vercel deployment `v0-music-city-dg1tbf6fa-iamenochchirimas-projects.vercel.app` is Ready and aliases `musiccity.pro`. Computer use confirmed the live listener can enter onboarding. After the user's approval to continue, the account advanced to Artist profile at step 4; the previous activation step showed $20 due and no early-user offer. Reload returned it to step 2 with the artist choice selected; profile details remain blank and unsaved. Upload and publication still need active artist access and approved demo media.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
-- Local `main` has unshipped commits and is one commit behind `origin/main`; the directory-filter behavior is already in both trees, but local code updates `302a265`, `4cc3efd`, and `b41bb63` have not been deployed. Do not push the divergent branch without reconciling its history.
+- At the latest local check, `main` and `origin/main` both point to merge `3a75988`, which contains activation UI fix `3bfbb22`. The deployment audit above is older; live deployment status was not rechecked after the user's instruction to keep the demo local.
 
 ## Local creator upload smoke test
 
