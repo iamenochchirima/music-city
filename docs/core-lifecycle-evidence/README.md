@@ -26,6 +26,14 @@ The sanitized [provider readiness snapshot](../ramp-sandbox-evidence/readiness-2
 
 E8's contract identifiers, transaction hashes, ledgers, and screenshots remain available in the historical chain-check and browser evidence linked below. They support the 17 October demonstration only. The current checkout has not been pushed or deployed. Its deployed versions and remote migration state have not been verified. An earlier local API startup reached Railway before the host mismatch was caught; whether it applied a migration or repair is unknown, as recorded in the Sandbox account evidence. C3 remains open until a deployment candidate and its actual deployed versions can be verified.
 
+## Latest ramp and funded-wallet check, 29 October 2026
+
+The current checkout is revision `338e80b`, including refund-state transition recovery from `e6b0895`. The isolated local API at `http://127.0.0.1:4339` returned healthy with 29 schema groups applied and local storage/media. The local preflight passed 4/4. The current client ramp suite passed 51/51; focused server ramp and cash-out tests passed 69 with one opt-in PostgreSQL test skipped in that invocation; workspace typecheck passed. The separate disposable-PostgreSQL ramp suite passed 3/3 as recorded in the implementation plan.
+
+The Dynamic Sandbox QA wallet holds 20 Testnet USDC from Circle faucet transaction [6e4a54dd…](https://horizon-testnet.stellar.org/transactions/6e4a54dd862d4be15577c3c08f6a0550c5c094d2ae07e310a8ff0dd78e49643b), plus its Testnet XLM reserve. Revenue showed 20 USDC spendable, zero earnings or pending payments, and no verified provider route; Add funds and Cash out remained disabled. The local `Core Journey` 0.001 USDC purchase review was keyboard-tested and closed with Escape; Music City restored focus to the Buy button and reported that no payment was sent. No wallet signature, purchase, provider order, cash-out, settlement, or claim occurred in this check. The complete current account log is in [sandbox-test-accounts-2026-10-29.md](sandbox-test-accounts-2026-10-29.md).
+
+This evidence covers the current local database and Sandbox account only. The older E8 receipts and screenshots below remain historical. No current deployment, deployed migration state, provider acceptance, or new purchase-to-claim run is claimed; C2, C3, and provider-dependent checklist items remain open.
+
 ## Demonstrated result
 
 The actual creator UI published **Core Journey**, a four-second synthetic tone, as release `rel_f8f84266f7314b02`, recording `trk_810ef0432acc4b44`. Ngoni and Kwame independently accepted a nonbinding 70/30 verification agreement through real Dynamic Sandbox wallets. Two independent treasury signatures finalized it on Stellar Testnet. The owner enabled sales at exactly 0.001 USDC.
