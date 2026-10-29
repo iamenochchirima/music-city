@@ -13,6 +13,11 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
    export DYNAMIC_JWKS_URL=https://app.dynamic.xyz/api/v0/sdk/2bf133b3-0bd0-4e1d-b956-7e613ed3d319/.well-known/jwks
    export VITE_DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
+   export STELLAR_SETTLEMENT_ASSET_CODE=USDC
+   export STELLAR_SETTLEMENT_ASSET_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+   export VITE_STELLAR_TESTNET_USDC_CODE=USDC
+   export VITE_STELLAR_TESTNET_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+   # Set STELLAR_TREASURY_ADDRESS to the approved Testnet treasury public key.
    export CLIENT_ORIGIN=http://localhost:3000
    export VITE_APP_BASE_URL=http://localhost:3000
    export VITE_API_BASE_URL=http://localhost:4319/api/v1

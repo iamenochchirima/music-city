@@ -7,6 +7,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sandboxId = "2bf133b3-0bd0-4e1d-b956-7e613ed3d319";
 const testnet = "Test SDF Network ; September 2015";
 const sandboxJwks = `https://app.dynamic.xyz/api/v0/sdk/${sandboxId}/.well-known/jwks`;
+const testnetUsdcCode = "USDC";
+const testnetUsdcIssuer = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
 
 export function checkLocalDemoConfig(server, client, admin = {}) {
   const failures = [];
@@ -45,6 +47,16 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
     failures.push("DYNAMIC_JWKS_URL must use the Music City Sandbox signing-key endpoint.");
   if ((server.STELLAR_NETWORK_PASSPHRASE || testnet) !== testnet || (client.VITE_STELLAR_NETWORK_PASSPHRASE || testnet) !== testnet)
     failures.push("Set both Stellar networks to Testnet.");
+  if (server.STELLAR_SETTLEMENT_ASSET_CODE !== testnetUsdcCode)
+    failures.push("Set STELLAR_SETTLEMENT_ASSET_CODE=USDC for the SOW 2 purchase and earnings lifecycle.");
+  if (server.STELLAR_SETTLEMENT_ASSET_ISSUER !== testnetUsdcIssuer)
+    failures.push("Set STELLAR_SETTLEMENT_ASSET_ISSUER to the Stellar Testnet USDC issuer.");
+  const clientUsdcCode = client.VITE_STELLAR_TESTNET_USDC_CODE || testnetUsdcCode;
+  const clientUsdcIssuer = client.VITE_STELLAR_TESTNET_USDC_ISSUER || testnetUsdcIssuer;
+  if (clientUsdcCode !== testnetUsdcCode || clientUsdcIssuer !== testnetUsdcIssuer)
+    failures.push("Configure the client to use the same Stellar Testnet USDC asset as the API.");
+  if (!/^G[A-Z2-7]{55}$/.test(server.STELLAR_TREASURY_ADDRESS || ""))
+    failures.push("Set STELLAR_TREASURY_ADDRESS to the approved Stellar Testnet treasury public key.");
   const expectedNetworks = [
     [server.STELLAR_HORIZON_URL, "https://horizon-testnet.stellar.org"],
     [client.VITE_STELLAR_HORIZON_URL, "https://horizon-testnet.stellar.org"],
