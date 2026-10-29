@@ -1,5 +1,19 @@
 # Core music-to-earnings verification
 
+## Current signed purchase and settlement preparation, 29 October 2026
+
+At application revision `501b6d9`, the user completed Dynamic Sandbox wallet authorization for the separate `SOW2 QA Listener`. Stellar Testnet confirmed the 0.0010000 USDC purchase of **Core Journey** in ledger `5448808`, transaction [2bd73d77…](https://horizon-testnet.stellar.org/transactions/2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44). Independent Horizon checks verified the successful payment, exact USDC issuer, QA source wallet, E8 treasury destination, intent memo, and 100-stroop network fee.
+
+The isolated local database contains exactly one payment and one listening entitlement for this purchase. Its two royalty entries preserve agreement `7186e534-47db-4d05-9c2f-1bee561cc67e`, version 1, allocating 0.0007000 USDC to Ngoni and 0.0003000 USDC to Kwame. Computer use verified that Purchased survives reload.
+
+A synthetic QA administrator was seeded only in the existing loopback test database, leaving existing administrators unchanged. Normal password sign-in through the local admin UI succeeded. Through that UI, the new source earnings were approved, exact allocations reviewed, and both entries reserved in batch `b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069`. Funding attempt `099c7ca3-43ff-4025-a389-27a697a95d3e` awaits two treasury signatures. Computer use showed 0 of 2 signatures and disabled submission. No treasury signature or funding submission occurred. The prepared transaction expires at 12:08:36 SAST on 29 October and must be refreshed after expiry.
+
+The local financial worker was stopped. Restarting it with the running API's isolated test environment restored event-index freshness and a reconciliation snapshot with `ok: true`. Three older support attempts still report unavailable payment history and remain unresolved; they were not resent or reclassified. This is separate from the confirmed current track purchase.
+
+See the [sanitized chain and database snapshot](current-qa-purchase-2026-10-29.json), [purchased page](current-qa-purchase-2026-10-29.png), and [unsigned funding review](current-qa-funding-review-2026-10-29.png). This advances C2 but does not complete it: new treasury funding, both beneficiary claims, and final reconciliation remain unverified. Provider journeys remain open. No push or deployment occurred.
+
+## Historical evidence and earlier checkpoints
+
 Verified locally on 17 October 2026. Original verification base `9cd39f0`, branch `main`. The completed implementation is recorded in Git history. No production deployment or push was performed. This is E8 in the [SOW 2 tracker](../sow-2-tracker.md#core-d3-lifecycle-closure), not acceptance of the whole SOW.
 
 ## Latest local verification, 29 October 2026
