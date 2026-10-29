@@ -1,5 +1,11 @@
 # Core music-to-earnings verification
 
+## Current contributor claim confirmed, 29 October 2026
+
+The user completed Kwame's Dynamic wallet authorization for the new 0.0003000 USDC claim. Horizon independently confirms [89813d21…](https://horizon-testnet.stellar.org/transactions/89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46), ledger `5449138`, with Kwame as transaction source and a fee of 10213 stroops. The local attempt is confirmed with one submission, the matching royalty entry is paid, and the event index contains one matching claim event. Reconciliation remains `ok: true`. After reload, the browser shows Received with the new receipt, zero available earnings, and spendable USDC increased from 0.0073 to 0.0076. See the [claim snapshot](current-qa-contributor-claim-2026-10-29.json) and [received page](current-qa-contributor-received-2026-10-29.png).
+
+I then signed out of Kwame, restored the existing Ngoni account through ordinary Google sign-in, and opened the separate 0.0007000 USDC artist claim review. The displayed recipient matches Ngoni's wallet. That claim is not signed or submitted. C2 remains open for the artist claim and final closed-batch reconciliation; provider acceptance remains open.
+
 ## Current funding confirmed and live event compatibility fixed, 29 October 2026
 
 The user authorized running the local Testnet commands. The CLI signed the existing funding envelope with two saved treasury test keys, and the authenticated local API verified both signatures and submitted once. Horizon confirms transaction [08463be2…](https://horizon-testnet.stellar.org/transactions/08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36), ledger `5448972`, with a fee of 252038 stroops. Batch `b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069` is Funded; both new allocations are available. No private key entered the browser or repository.
