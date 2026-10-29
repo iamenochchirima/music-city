@@ -105,6 +105,8 @@ it("reviews the exact amount and authorizes the persisted envelope before submis
   await user.click(screen.getByRole("button", { name: "Pay" }));
   await screen.findByRole("dialog", { name: "Review payment" });
   expect(screen.getByText("10.0000000 USDC")).toBeTruthy();
+  await user.click(screen.getByText("Payment details"));
+  expect(screen.getByText("Prepared transaction hash (not submitted)")).toBeTruthy();
   expect(mocks.sign).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Confirm and pay" }));
   await waitFor(() =>

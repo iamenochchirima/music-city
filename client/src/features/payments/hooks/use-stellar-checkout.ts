@@ -295,7 +295,13 @@ export const StellarCheckoutProvider = ({
               createElement("dd", null, pending.intent.destinationAddress),
               createElement("dt", null, "Order"),
               createElement("dd", null, pending.intent.id),
-              createElement("dt", null, "Transaction"),
+              createElement(
+                "dt",
+                null,
+                pending.attempt.status === "prepared"
+                  ? "Prepared transaction hash (not submitted)"
+                  : "Transaction hash",
+              ),
               createElement("dd", null, pending.attempt.transactionHash),
             ),
           ),
