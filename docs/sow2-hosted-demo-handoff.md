@@ -2,6 +2,8 @@
 
 Status checked 29 October 2026. This guide separates the production pages that are ready to show from SOW 2 journeys that still need setup or wallet authorization.
 
+For the clip order and recording cautions, see the [SOW 2 recording run sheet](sow2-recording-run-sheet.md).
+
 ## Ready to show
 
 Start at [Discover](https://musiccity.pro/discover). The page shows the three live releases once, with featured tracks and no empty playlist category. Playback, pause, mute, and volume controls were checked in the browser. A listen under five seconds did not count; crossing five seconds added one stream to Isgubhu, moving it from three to four. For another recording, keep playback under five seconds unless you want another public stream counted.
