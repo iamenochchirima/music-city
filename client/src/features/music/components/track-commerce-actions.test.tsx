@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { TrackSummary } from "@music-city/shared";
 import { TrackCommerceActions } from "./track-commerce-actions";
-const m = vi.hoisted(() => ({ list: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null }));
+const m = vi.hoisted(() => ({ list: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null, activeTrackId: null as string | null, isPlaying: false }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ session: m.session }),
 }));
@@ -14,7 +14,7 @@ vi.mock("@/features/payments/hooks/use-stellar-checkout", () => ({
   useStellarCheckout: () => m.checkout,
 }));
 vi.mock("@/features/playback/providers/global-playback-provider", () => ({
-  useGlobalPlayback: () => ({ playTrack: m.play, setPlaybackQueue: vi.fn() }),
+  useGlobalPlayback: () => ({ activeTrackId: m.activeTrackId, isPlaying: m.isPlaying, playTrack: m.play, setPlaybackQueue: vi.fn() }),
 }));
 vi.mock("@/features/playback/lib/playback-api", () => ({ playbackApi: { preloadTracks: m.preload } }));
 const track = {
@@ -23,7 +23,7 @@ const track = {
   purchasePrice: "1",
   purchaseAssetCode: "USDC",
 } as TrackSummary;
-beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; });
+beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; m.activeTrackId = null; m.isPlaying = false; });
 afterEach(cleanup);
 it("shows a retained purchase after reopening without offering another payment", async () => {
   m.list.mockResolvedValue([
@@ -51,6 +51,19 @@ it("lets a guest play a ready song through the shared player", async () => {
   const play = screen.getByRole("button", { name: "Play" });
   expect(play.hasAttribute("disabled")).toBe(false);
   await userEvent.click(play);
+  expect(m.play).toHaveBeenCalledWith(expect.objectContaining({ id: "track" }));
+});
+it("shows Play when the selected track has finished or is paused", () => {
+  m.activeTrackId = "track";
+  render(<TrackCommerceActions track={{ ...track, purchaseEnabled: false, playbackReady: true }} />);
+  expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+});
+it("shows Pause while the selected track is playing", async () => {
+  m.activeTrackId = "track";
+  m.isPlaying = true;
+  render(<TrackCommerceActions track={{ ...track, purchaseEnabled: false, playbackReady: true }} />);
+  const pause = screen.getByRole("button", { name: "Pause" });
+  await userEvent.click(pause);
   expect(m.play).toHaveBeenCalledWith(expect.objectContaining({ id: "track" }));
 });
 it("keeps unprocessed audio unavailable to guests", () => {

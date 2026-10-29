@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, LoaderCircle, Play, ShoppingBag } from "lucide-react";
+import { Check, LoaderCircle, Pause, Play, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ArtistPublicProfile, TrackSummary } from "@music-city/shared";
@@ -33,7 +33,8 @@ export const TrackCommerceActions = ({
   hidePlay?: boolean;
 }) => {
   const { session } = useAuth();
-  const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
+  const { activeTrackId, isPlaying, playTrack, setPlaybackQueue } = useGlobalPlayback();
+  const isTrackPlaying = activeTrackId === track.id && isPlaying;
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
   const buyButton = useRef<HTMLButtonElement>(null);
@@ -134,9 +135,14 @@ export const TrackCommerceActions = ({
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
           disabled={!track.playbackReady}
           onClick={() => void handlePlay()}
+          aria-label={isTrackPlaying ? "Pause" : "Play"}
         >
-          <Play className="mr-2 h-4 w-4 fill-current" />
-          {activeTrackId === track.id ? "Playing" : "Play"}
+          {isTrackPlaying ? (
+            <Pause className="mr-2 h-4 w-4 fill-current" />
+          ) : (
+            <Play className="mr-2 h-4 w-4 fill-current" />
+          )}
+          {isTrackPlaying ? "Pause" : "Play"}
         </Button>
       ) : null}
 
