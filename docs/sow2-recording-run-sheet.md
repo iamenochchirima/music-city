@@ -7,6 +7,7 @@ Keep this rehearsal on the local Sandbox app and isolated database. The hosted p
 Checked on 29 October 2026:
 
 - The local client at `http://localhost:3000` is signed in as **SOW2 Sandbox Artist**. Studio shows one published synthetic release, **Sandbox QA EP** (two tracks). The release setup page is available at `/dashboard/create`.
+- Both tracks are marked **Ready**. Studio Analytics currently shows six streams and one unique listener from synthetic QA playback; label those values as test data if the page is shown, not as audience results.
 - The local API at port `4339` returns HTTP 200 from `/api/v1/health/ready`. The database and all 29 schema groups are healthy; storage and media use local providers.
 - The local Revenue screen resolves earnings and spendable balance to `0 USDC`. Add funds and Cash out are disabled with an explanation that those routes are unavailable; this is an honest empty state, not a provider demo.
 - `node scripts/check-sow2-local-env.mjs` passes for the isolated loopback `_test` database, Dynamic Sandbox, Stellar Testnet, local storage/media, and disabled ramps. The read-only Stellar verifier confirms the Testnet treasury, registry, settlement contract, deployment ledger, and 2-of-3 signer threshold.
@@ -22,6 +23,8 @@ Use synthetic or otherwise authorized media. Keep test content labeled **Local a
 ## Clip 1: Local artist studio
 
 Start at [local Releases](http://localhost:3000/dashboard/releases). Show **Sandbox QA EP** once, its published status, and the preview link. Open [Create](http://localhost:3000/dashboard/create) to show the five-step release setup: release type and name, songs, song details, artwork and release details, then review and publish. Label the clip **Local Sandbox app and isolated database**. This shows the current local release UI; it does not establish hosted artist access.
+
+Studio Analytics is optional. It currently reports six streams from one unique listener on the synthetic EP; say that these are QA playback counts if you include the screen. The local artist's Agreements page is empty, so use the saved E7/E8 evidence for agreement and treasury controls.
 
 Open [local Revenue](http://localhost:3000/dashboard/revenue) only if you want to show the unavailable funding state. It displays zero earnings and spendable balance; Add funds and Cash out are disabled. Do not describe either provider flow as completed.
 
