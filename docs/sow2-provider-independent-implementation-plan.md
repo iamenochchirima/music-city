@@ -552,3 +552,5 @@ I restarted the isolated local API with Testnet USDC and the public address of t
 Expanding payment details also showed an unsigned, unsent transaction hash labeled only `Transaction`. The review now labels it `Prepared transaction hash (not submitted)` until authorization. The focused checkout hook suite passed 6/6, client typecheck passed, and the local browser displayed the updated wording. This clarifies preparation without implying that a payment was submitted.
 
 The browser also verified the close-and-resume behavior: the action says `Close review`, the resulting notice says `Payment review closed. No payment was sent.`, and the existing order opens again when the buyer retries. No wallet signature or Testnet transaction occurred. This covers one U4 close/reopen case; the broader browser matrix and C2 remain open.
+
+Keyboard verification showed focus moving through the review controls and wrapping in both directions; Escape closed it with the same no-payment notice, and the buyer could reopen the review. This adds desktop keyboard and pre-sign recovery evidence to U4. Mobile, slow-response, lost-response, post-submission recovery, and C2 remain open.
