@@ -3,8 +3,8 @@ import test from "node:test";
 import { checkLocalDemoConfig } from "./check-sow2-local-env.mjs";
 
 const sandbox = "2bf133b3-0bd0-4e1d-b956-7e613ed3d319";
-const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339", APP_BASE_URL: "http://localhost:4339" };
-const client = { VITE_DYNAMIC_ENVIRONMENT_ID: sandbox, VITE_API_BASE_URL: "http://localhost:4339/api/v1" };
+const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339", CLIENT_ORIGIN: "http://localhost:3000", APP_BASE_URL: "http://localhost:4339" };
+const client = { VITE_DYNAMIC_ENVIRONMENT_ID: sandbox, VITE_API_BASE_URL: "http://localhost:4339/api/v1", VITE_APP_BASE_URL: "http://localhost:3000" };
 const admin = { VITE_ADMIN_API_BASE_URL: "http://localhost:4339/api/v1/admin" };
 test("accepts an isolated local Sandbox and Testnet configuration", () => assert.deepEqual(checkLocalDemoConfig(server, client, admin), []));
 test("rejects live identity, signing keys, databases, network and API endpoints", () => {
@@ -39,4 +39,13 @@ test("rejects a connection string whose query overrides its apparent local host"
   const database = "postgres://test@localhost/demo_test?host=remote.example";
   assert.equal(new Client({ connectionString: database }).connectionParameters.host, "remote.example");
   assert.ok(checkLocalDemoConfig({ ...server, DATABASE_URL: database }, client, admin).some((error) => error.includes("DATABASE_URL")));
+});
+
+test("rejects mismatched or non-local client origins before the browser check", () => {
+  assert.ok(checkLocalDemoConfig({ ...server, CLIENT_ORIGIN: "http://localhost:4317" }, client, admin)
+    .some((error) => error.includes("must match VITE_APP_BASE_URL")));
+  assert.ok(checkLocalDemoConfig(server, { ...client, VITE_APP_BASE_URL: "https://musiccity.pro" }, admin)
+    .some((error) => error.includes("VITE_APP_BASE_URL must be a local origin")));
+  assert.ok(checkLocalDemoConfig({ ...server, CLIENT_ORIGIN: "http://localhost:3000/app" }, client, admin)
+    .some((error) => error.includes("CLIENT_ORIGIN must be a local origin")));
 });

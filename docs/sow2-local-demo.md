@@ -13,6 +13,8 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
    export DYNAMIC_JWKS_URL=https://app.dynamic.xyz/api/v0/sdk/2bf133b3-0bd0-4e1d-b956-7e613ed3d319/.well-known/jwks
    export VITE_DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
+   export CLIENT_ORIGIN=http://localhost:3000
+   export VITE_APP_BASE_URL=http://localhost:3000
    export VITE_API_BASE_URL=http://localhost:4319/api/v1
    export VITE_ADMIN_API_BASE_URL=http://localhost:4319/api/v1/admin
    export RAMPS_SANDBOX_ENABLED=false
@@ -21,7 +23,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    node scripts/check-sow2-local-env.mjs
    ```
 
-   If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters. The preflight checks configured environment values; confirm the running processes use the same values.
+   The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters. The preflight checks configured environment values; confirm the running processes use the same values.
 5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh
@@ -29,7 +31,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    pnpm dev:server
    pnpm dev:worker
    pnpm dev:financial-worker
-   pnpm dev:client
+   pnpm --filter client dev --host 0.0.0.0 --port 3000
    pnpm dev:admin
    ```
 
