@@ -7,7 +7,8 @@ The [SOW 2 tracker](sow-2-tracker.md) remains the scope and acceptance record. T
 ## Start from the verified state
 
 - Local application/evidence baseline: `018f7de`. A fresh purchase, two-signature treasury funding, both beneficiary claims, and final reconciliation passed on Stellar Testnet. Creator onboarding and publication have separate dated browser evidence.
-- Live check at 13:01 SAST on 29 October 2026: `musiccity.pro`, the Vercel admin, and the Railway API returned HTTP 200. API readiness reported 19 healthy schema groups; current local code expects 29. Production admin bootstrap reported `bootstrapRequired: true`.
+- Live release check at 13:42 SAST on 29 October 2026: Railway's API and both workers run `0aa57d9`; the Vercel admin runs `0aa57d9`; the Vercel client runs `4ec021b`. The client change only hides empty Discover sections. API readiness returns HTTP 200 with all 29 schema groups healthy. Admin bootstrap still reports `bootstrapRequired: true`.
+- Computer-use check on `musiccity.pro`: three unique releases and their artwork load; the empty playlists section is hidden. A track starts, pauses, and exposes working mute and volume controls. A listen under five seconds did not count. A second test crossed five seconds and raised Isgubhu from three to four streams. That test added one counted stream to the public catalog.
 - MoonPay and MoneyGram remain unavailable for a verified funding/cash-out journey. Keep those routes disabled. Their external approval and testing do not hold up the other demos.
 - Preserve the unrelated, untracked `docs/core-lifecycle-evidence/checkpoint.json` and all existing customer and financial records.
 
@@ -24,11 +25,11 @@ Work through the list once. Prioritize failures that prevent sign-in, music crea
 
 ## 1. Prepare one release and usable accounts
 
-- [ ] Fetch the latest remote changes and compare them with the local work. Integrate any new changes and record the exact release revision.
-- [ ] Review the outgoing changes and production configuration. Confirm the client, admin, API, media worker, and financial worker point to the intended services.
+- [x] Fetch the latest remote changes and compare them with the local work. Integrate any new changes and record the exact release revision (`4ec021b`).
+- [x] Review the outgoing changes and production configuration. Confirm the client, admin, API, media worker, and financial worker point to the intended services.
 - [ ] Confirm the hosted Dynamic environment, Stellar network, USDC issuer, treasury, registry, and settlement contract match. Keep Sandbox identities and disposable data out of the live customer database. Label Testnet financial recordings clearly.
 - [ ] Confirm access to one artist, one contributor, one fresh buyer, and one production administrator. Prepare authorized audio and artwork. Check wallet funding, trustlines, and signer access before the financial rehearsal.
-- [ ] Run the release checks from [production deployment](production-deployment.md): tests, typecheck, and builds. Reuse valid results for unchanged code; rerun affected checks after fixes. Confirm current migrations against an isolated existing-data test database.
+- [x] Run the release checks from [production deployment](production-deployment.md): tests, typecheck, and builds. Reuse valid results for unchanged code; rerun affected checks after fixes. Confirm current migrations against an isolated existing-data test database.
 
 Ready when: there is one release candidate, every required role can be accessed, and the demo's network and data location are explicit. If hosted configuration prevents the financial rehearsal, resolve it here rather than switching environments during recording.
 
@@ -36,12 +37,15 @@ Ready when: there is one release candidate, every required role can be accessed,
 
 Execute the rollout after the release candidate is reviewed and deployment is authorized. Follow the existing deployment guide and update its primary client URL to `https://musiccity.pro`.
 
-- [ ] Take a private production database backup before migrations. Record the backup location privately and capture baseline record counts.
-- [ ] Deploy the Railway API with the registered migration command. Verify readiness against the current schema manifest, including all 29 groups at this baseline.
-- [ ] Deploy the media worker and financial worker from the same revision. Verify real job progress and financial-index freshness, not only process status.
-- [ ] Deploy both Vercel applications from the reviewed revision. Verify `musiccity.pro` and the hosted admin use the intended Railway API and authentication origins.
+- [x] Take a private production database backup before migrations. Record the backup location privately and capture baseline record counts.
+- [x] Deploy the Railway API with the registered migration command. Verify readiness against the current schema manifest, including all 29 groups at this baseline.
+- [x] Deploy the media worker and financial worker from the same backend revision (`0aa57d9`).
+- [ ] Verify real media-job progress and financial-index freshness, not only process status.
+- [x] Deploy the Vercel admin (`0aa57d9`) and client (`4ec021b`). The later client commit only changes Discover section visibility.
+- [ ] Verify completed sign-in and authentication origins for both hosted applications. The client reaches Google's account chooser, but no account has been selected.
 - [ ] Open first-admin setup for the owner to set the production password. Complete normal sign-in and verify access to Agreements, Royalties, Settlements, and reconciliation. Keep setup credentials out of the demo.
-- [ ] Compare preserved data counts and spot-check existing releases, payments, and claims. Record deployed revisions and migration results. Keep the previous application deployment available for rollback if the release fails.
+- [x] Restore the pre-migration backup into a disposable PostgreSQL 18 database and rehearse the migration. Existing table counts stayed unchanged; the live API now reports all 29 schema groups.
+- [ ] Spot-check existing releases, payments, and claims in production. Record deployed revisions and migration results. Keep the previous application deployment available for rollback if the release fails.
 
 Ready when: the hosted client, admin, API, and both workers run the intended release; current migrations pass; admin sign-in works; existing records remain available.
 
@@ -53,7 +57,9 @@ Use the actual hosted applications through computer use. For each row, perform t
 | --- | --- | --- |
 | [ ] | Sign in and onboarding | Sign-in on `musiccity.pro` reaches the correct account. New users can finish onboarding. Back and Cancel work; saved details survive return. Existing users reach the app without repeating onboarding. |
 | [ ] | Create and publish music | Enter release details, add WAV/MP3 audio and artwork, review track information, and publish. Selected tracks appear once in the same working area. Upload/processing progress is visible and updates automatically. Pending publication completes after audio is ready. |
-| [ ] | Listen from the catalog | Open Discover, artist, release, and track pages. Ready tracks play from their visible buttons; volume and mute work. A release continues to its next track. Existing artwork loads and empty/duplicate release categories are absent. |
+| [x] | Discover catalog | Three live releases and their artwork load once. Featured tracks appear, and the empty playlist section is hidden. |
+| [x] | Playback controls | A ready track starts and pauses from its visible button. Mute and volume controls respond. A listen under five seconds did not count; a test past five seconds counted once. The longer test changed Isgubhu from three to four streams. |
+| [ ] | Release playback and other pages | Verify artist, release, and track pages, plus next-track playback on a multi-track release. No multi-track release is currently available in the live catalog. |
 | [ ] | Agreements and treasury | Create/review the intended split, collect contributor responses, and finalize with the required treasury signatures. Show the resulting agreement version and receipt. |
 | [ ] | Purchase and earnings | Use a buyer who has not bought that track. Complete one purchase. Purchased persists after reload. Show the matching sale and exact beneficiary allocations without another charge. |
 | [ ] | Admin settlement | Approve the purchase source, review allocations, reserve once, and fund with two treasury signatures. Show confirmation and the matching receipt. |
