@@ -8,6 +8,7 @@ Checked on 29 October 2026:
 
 - The local client at `http://localhost:3000` is signed in as **SOW2 Sandbox Artist**. Studio shows one published synthetic release, **Sandbox QA EP** (two tracks). The release setup page is available at `/dashboard/create`.
 - The local API at port `4339` returns HTTP 200 from `/api/v1/health/ready`. The database and all 29 schema groups are healthy; storage and media use local providers.
+- The local Revenue screen resolves earnings and spendable balance to `0 USDC`. Add funds and Cash out are disabled with an explanation that those routes are unavailable; this is an honest empty state, not a provider demo.
 - `node scripts/check-sow2-local-env.mjs` passes for the isolated loopback `_test` database, Dynamic Sandbox, Stellar Testnet, local storage/media, and disabled ramps. The read-only Stellar verifier confirms the Testnet treasury, registry, settlement contract, deployment ledger, and 2-of-3 signer threshold.
 - The local admin app is at `http://localhost:4318/auth`. It currently shows the sign-in form; an authenticated local admin browser session has not been reverified. Use the saved E7/E8 admin evidence for protected admin screens instead of claiming a live local admin view.
 - Do not show credentials, wallet secrets, or real customer data. No production sign-in, provider order, or new chain transaction was part of this local check.
@@ -21,6 +22,8 @@ Use synthetic or otherwise authorized media. Keep test content labeled **Local a
 ## Clip 1: Local artist studio
 
 Start at [local Releases](http://localhost:3000/dashboard/releases). Show **Sandbox QA EP** once, its published status, and the preview link. Open [Create](http://localhost:3000/dashboard/create) to show the five-step release setup: release type and name, songs, song details, artwork and release details, then review and publish. Label the clip **Local Sandbox app and isolated database**. This shows the current local release UI; it does not establish hosted artist access.
+
+Open [local Revenue](http://localhost:3000/dashboard/revenue) only if you want to show the unavailable funding state. It displays zero earnings and spendable balance; Add funds and Cash out are disabled. Do not describe either provider flow as completed.
 
 For a complete audio upload demonstration, use the dated [multi-format browser verification](audio-upload-evidence/2026-10-29-multi-format-browser-e2e.md) and [local creator upload smoke test](sow2-hosted-demo-handoff.md#local-creator-upload-smoke-test). WAV, MP3, FLAC, OGG, M4A, and AAC passed through the local release flow. Do not create another release just for the recording unless the synthetic media is available and the isolated database preflight passes.
 
