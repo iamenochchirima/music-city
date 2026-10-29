@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
@@ -9,11 +9,16 @@ const mocks = vi.hoisted(() => ({
     email: string;
     verifiedCredentials: { chain: string; address: string }[];
   },
+  refreshedUser: null as null | {
+    userId: string;
+    email: string;
+    verifiedCredentials: { chain: string; address: string }[];
+  },
   userWithMissingInfo: false,
   primaryWalletAddress: null as string | null,
   showAuthFlow: false,
   setShowAuthFlow: vi.fn(),
-  setShowLinkNewWalletModal: vi.fn(),
+  refreshUser: vi.fn(),
   handleLogOut: vi.fn(),
   createDynamicSession: vi.fn(),
   getMe: vi.fn(),
@@ -41,9 +46,7 @@ vi.mock("@dynamic-labs/sdk-react-core", () => ({
     setShowAuthFlow: mocks.setShowAuthFlow,
     handleLogOut: mocks.handleLogOut,
   }),
-  useDynamicModals: () => ({
-    setShowLinkNewWalletModal: mocks.setShowLinkNewWalletModal,
-  }),
+  useRefreshUser: () => mocks.refreshUser,
 }));
 vi.mock("@/features/auth/lib/auth-api", () => ({
   authApi: { createDynamicSession: mocks.createDynamicSession },
@@ -69,7 +72,6 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.routerPush }
 
 import {
   AuthProvider,
-  DYNAMIC_AUTH_CANCEL_EVENT,
   useAuthContext,
 } from "./auth-provider";
 import { AuthPanel } from "../components/auth-panel";
@@ -97,9 +99,11 @@ function LoginControls() {
   const auth = useAuthContext();
   return (
     <>
-      {auth.walletLinkRequired && <p role="status">Link your Stellar wallet to finish signing in.</p>}
+      {auth.walletLinkRequired && (
+        <p role="status">Your Stellar wallet is still being set up. Check again to finish signing in.</p>
+      )}
       <button onClick={() => void auth.connectWallet()}>
-        {auth.walletLinkRequired ? "Connect Stellar wallet" : "Sign in"}
+        {auth.walletLinkRequired ? "Check wallet again" : "Sign in"}
       </button>
       {auth.session && <p role="status">Signed in as {auth.session.walletAddress}</p>}
       {auth.error && <p role="alert">{auth.error}</p>}
@@ -111,6 +115,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mocks.user = null;
+  mocks.refreshedUser = null;
   mocks.userWithMissingInfo = false;
   mocks.primaryWalletAddress = null;
   mocks.showAuthFlow = false;
@@ -118,6 +123,7 @@ beforeEach(() => {
   mocks.createDynamicSession.mockResolvedValue(session);
   mocks.getMe.mockResolvedValue(null);
   mocks.getOnboardingState.mockResolvedValue(null);
+  mocks.refreshUser.mockImplementation(async () => mocks.refreshedUser ?? mocks.user ?? undefined);
 });
 
 afterEach(() => cleanup());
@@ -158,7 +164,7 @@ it("verifies a Dynamic login, creates the app session, and binds a referral to i
     .toMatchObject({ walletAddress, token: session.token });
 });
 
-it("offers wallet linking when Dynamic login arrives before its Stellar credential", async () => {
+it("refreshes Dynamic credentials when its embedded Stellar wallet is still being set up", async () => {
   mocks.user = {
     userId: "dynamic-user-without-stellar",
     email: "artist@example.com",
@@ -173,14 +179,14 @@ it("offers wallet linking when Dynamic login arrives before its Stellar credenti
   );
 
   expect((await screen.findByRole("status")).textContent).toContain(
-    "Link your Stellar wallet to finish signing in.",
+    "Your Stellar wallet is still being set up. Check again to finish signing in.",
   );
   expect(mocks.createDynamicSession).not.toHaveBeenCalled();
 
-  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
-  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
-  act(() => window.dispatchEvent(new Event(DYNAMIC_AUTH_CANCEL_EVENT)));
-  expect(screen.getByRole("button", { name: "Connect Stellar wallet" })).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: "Check wallet again" }));
+  expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
+  expect(mocks.createDynamicSession).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "Check wallet again" })).toBeTruthy();
 
   mocks.userWithMissingInfo = false;
   mocks.user = {
@@ -201,7 +207,7 @@ it("offers wallet linking when Dynamic login arrives before its Stellar credenti
   );
 });
 
-it("shows a clear connect-wallet action instead of a raw missing-credential error", async () => {
+it("shows a clear wallet setup retry instead of a raw missing-credential error", async () => {
   mocks.user = {
     userId: "dynamic-user-without-stellar",
     email: "artist@example.com",
@@ -215,13 +221,13 @@ it("shows a clear connect-wallet action instead of a raw missing-credential erro
     </AuthProvider>,
   );
 
-  expect(await screen.findByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
-  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
-  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
-  expect(screen.getByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
+  expect(await screen.findByText("Your Stellar wallet is still being set up. Check again to finish signing in.")).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: "Check wallet again" }));
+  expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
+  expect(screen.getByText("Your Stellar wallet is still being set up. Check again to finish signing in.")).toBeTruthy();
 });
 
-it("retries a rejected first session after the user links the matching Stellar wallet", async () => {
+it("retries a rejected first session after refreshing Dynamic's Stellar credentials", async () => {
   mocks.user = {
     userId: "dynamic-user-with-stellar-pending",
     email: "artist@example.com",
@@ -238,23 +244,17 @@ it("retries a rejected first session after the user links the matching Stellar w
     </AuthProvider>,
   );
 
-  expect(await screen.findByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
+  expect(await screen.findByText("Your Stellar wallet is still being set up. Check again to finish signing in.")).toBeTruthy();
   expect(mocks.createDynamicSession).toHaveBeenCalledTimes(1);
 
-  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
-  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
-
-  mocks.user = {
+  mocks.refreshedUser = {
     userId: "dynamic-user-with-stellar-pending",
     email: "artist@example.com",
     verifiedCredentials: [{ chain: "stellar", address: walletAddress }],
   };
-  view.rerender(
-    <AuthProvider>
-      <AuthPanel />
-    </AuthProvider>,
-  );
+  await userEvent.click(screen.getByRole("button", { name: "Check wallet again" }));
 
+  expect(mocks.refreshUser).toHaveBeenCalledTimes(1);
   expect(await screen.findByText("Connected. Redirecting you now.")).toBeTruthy();
   expect(mocks.createDynamicSession).toHaveBeenCalledTimes(2);
 });

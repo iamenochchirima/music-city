@@ -13,7 +13,7 @@ import {
 import {
   getAuthToken,
   useDynamicContext,
-  useDynamicModals,
+  useRefreshUser,
 } from "@dynamic-labs/sdk-react-core";
 import { toast } from "sonner";
 
@@ -299,7 +299,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setShowAuthFlow,
     handleLogOut,
   } = useDynamicContext();
-  const { setShowLinkNewWalletModal } = useDynamicModals();
+  const refreshDynamicUser = useRefreshUser();
   const {
     session,
     setSession,
@@ -696,7 +696,30 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       failedSyncKeyRef.current = null;
       persistFailedSyncKey(null);
-      setShowLinkNewWalletModal(true);
+      try {
+        const refreshedUser = await refreshDynamicUser();
+        if (refreshedUser) {
+          userRef.current = refreshedUser;
+        }
+
+        if (!findStellarCredentialAddress(refreshedUser ?? userRef.current)) {
+          setWalletLinkRequired(true);
+          setIsLoading(false);
+          return;
+        }
+
+        setWalletLinkRequired(false);
+        await syncDynamicSession();
+      } catch (caughtError) {
+        logDynamicAuth("wallet refresh failed", {
+          message:
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Dynamic user refresh failed",
+        });
+        setWalletLinkRequired(true);
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -706,9 +729,11 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setError,
     setIsLoading,
     setShowAuthFlow,
-    setShowLinkNewWalletModal,
     setWalletLinkRequired,
     failedSyncKeyRef,
+    refreshDynamicUser,
+    syncDynamicSession,
+    userRef,
     user,
   ]);
 

@@ -43,7 +43,7 @@ export const AuthPanel = () => {
           {session ? (
             <p>Connected. Redirecting you now.</p>
           ) : walletLinkRequired ? (
-            <p>Link your Stellar wallet to finish signing in.</p>
+            <p>Your Stellar wallet is still being set up. Check again to finish signing in.</p>
           ) : dynamicConfigured ? (
             <p>Ready to sign in.</p>
           ) : (
@@ -67,7 +67,7 @@ export const AuthPanel = () => {
           {isLoading
             ? "Connecting..."
             : walletLinkRequired
-              ? "Connect Stellar wallet"
+              ? "Check wallet again"
               : "Login"}
         </Button>
       </CardContent>
