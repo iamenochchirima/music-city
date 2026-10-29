@@ -49,6 +49,7 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 
 ## Current release and verification
 
+- Fresh read-only computer-use check at 17:33 SAST on 29 October: Discover showed three unique live releases, three featured tracks, and three release-backed artists, with no empty sections. The signed-in production super-admin opened Settlements; reconciliation was **Reconciled** with zero balances, no approved sources, and no settlement history. No playback or production mutation occurred.
 - Railway API and workers: `0aa57d9`; Vercel admin: `0aa57d9`.
 - Vercel client: functional fixes `4ec021b` and `13c3154`; the latter deployment was checked live on `musiccity.pro`.
 - Fresh check at 15:15 SAST: Railway API, media worker, and financial worker are Online; readiness returns HTTP 200 with all 29 schema groups applied. Latest client and admin Vercel production deployments are Ready, but CLI inspection did not expose their source SHAs. Production first-admin setup is complete; the owner signed in and the Admins page shows one super-admin.
