@@ -19,11 +19,15 @@ test("allows loopback PostgreSQL for development and test processes", () => {
 test("rejects hosted databases and PostgreSQL host overrides outside production", () => {
   assert.throws(
     () => assertDatabaseTargetAllowed("postgres://app:secret@db.example/music_city_test", "development"),
-    /non-local DATABASE_URL/,
+    /unsafe DATABASE_URL/,
   );
   assert.throws(
     () => assertDatabaseTargetAllowed("postgres://app:secret@localhost/music_city_test?host=db.example", "test"),
-    /non-local DATABASE_URL/,
+    /unsafe DATABASE_URL/,
+  );
+  assert.throws(
+    () => assertDatabaseTargetAllowed("postgres://app:secret@localhost/music_city", "development"),
+    /unsafe DATABASE_URL/,
   );
 });
 

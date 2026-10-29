@@ -391,6 +391,6 @@ With the funded Sandbox wallet, the local browser opened the published `Core Jou
 
 ## Non-production database startup guard, 29 October 2026
 
-The database service now rejects database initialization in development or test mode unless `DATABASE_URL` uses loopback PostgreSQL. It also rejects a PostgreSQL `host` query override. A focused child-process test confirmed that the service stops before its first schema query when a non-production process targets a remote database.
+The database service now rejects database initialization in development or test mode unless `DATABASE_URL` uses loopback PostgreSQL and a database name ending in `_test`. It also rejects a PostgreSQL `host` query override. A focused child-process test confirmed that the service stops before its first schema query when a non-production process targets a remote database.
 
-The safety suite passed 3/3 and server typecheck passed. The local SOW 2 preflight passed with an explicit loopback URL. After restarting the local API with the guard, readiness returned `ok: true` with 29 healthy schema groups and local storage and media. The purchase review remained open in the authenticated browser. No Testnet payment was signed or submitted.
+The safety suite passed 3/3. The full server suite passed 230/230 with 13 opt-in database tests skipped, and server typecheck passed. The local SOW 2 preflight passed with an explicit loopback `_test` URL. After restarting the local API with the guard, readiness returned `ok: true` with 29 healthy schema groups and local storage and media. The purchase review remained open in the authenticated browser. No Testnet payment was signed or submitted.
