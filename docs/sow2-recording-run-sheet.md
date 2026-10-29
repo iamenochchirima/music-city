@@ -16,7 +16,15 @@ Open [Discover](https://musiccity.pro/discover), show the three live-release car
 
 For the admin view, open [Settlements](https://music-city-admin.vercel.app/console/settlements). Say that production reconciliation is healthy and empty. There are no production earnings sources or settlement records to process.
 
-## Clip 2: Testnet purchase-to-claim result
+## Clip 2: Local creator upload and release
+
+Use the [local creator upload evidence](sow2-hosted-demo-handoff.md#local-creator-upload-smoke-test) on the isolated Sandbox app and database. Show release details, an authorized audio file and artwork, **Audio ready**, review, publication, and playback. Label the recording **Local app and isolated database**. This verifies the creator flow locally, not production artist access. The live account is stopped at the $20 artist-activation screen.
+
+## Clip 3: Agreement and treasury controls
+
+Use the dated [E7 agreement lifecycle evidence](contributor-agreements-evidence/lifecycle-review/README.md) to show the signed contributor proposal and the admin's two-signature finalization. Label the recording **Stellar Testnet**. Explain that the contributor signatures are separate from the treasury's 2-of-3 authorization. Do not show private signer material.
+
+## Clip 4: Testnet purchase-to-claim result
 
 Use the saved screenshots and receipts for this completed local Testnet cycle. Label the clip **Stellar Testnet, local app and database**. It is not a production transaction.
 
