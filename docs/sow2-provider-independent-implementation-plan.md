@@ -655,6 +655,8 @@ The focused safety tests passed 3/3, including a child-process check that proves
 
 The ramp repository PostgreSQL suite then passed 3/3 against a separate disposable local `_test` database with no skips. It exercised persisted ownership and idempotency, append-only events, cash-out attempt recovery and expiry, and an unchanged earnings and claim snapshot. The database was dropped after the run. Provider checkout and wallet authorization remain unverified.
 
-### 29 October 2026: current ramp evidence package
+### 29 October 2026: full local workspace verification
 
-The evidence package now records revision `338e80b`, the latest local API readiness result with 29 schema groups, the 20 USDC Circle Testnet receipt, the current ramp test results, and the keyboard dismissal of the local 0.001 USDC marketplace review. Historical E8 contract IDs, receipts, and screenshots remain labeled with their original date. The current review was not signed or submitted, and no provider order or payout occurred. C3a is complete. C3b remains open until a deployment is authorized and the deployed versions and migrations are verified.
+At revision `d54f7b7`, `pnpm test` passed 335 server, 222 client, and 23 admin tests with no skips. Every opt-in database test used a fresh loopback PostgreSQL database named `music_city_ramp_check_test`; the temporary container was removed after the run. `pnpm typecheck` passed, the SOW2 preflight passed 4/4, and the local API reported 29 healthy schema groups.
+
+The evidence package records the Testnet wallet balance, the 20 USDC Circle receipt, and the local marketplace payment review check. Historical E8 contract IDs, receipts, and screenshots retain their original date. No wallet signature, provider order, payout, or new purchase-to-claim run occurred. C3a is complete. C3b, C2, and provider-dependent checklist items remain open.

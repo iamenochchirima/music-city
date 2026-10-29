@@ -28,7 +28,9 @@ E8's contract identifiers, transaction hashes, ledgers, and screenshots remain a
 
 ## Latest ramp and funded-wallet check, 29 October 2026
 
-The application code under test is revision `338e80b`, including refund-state transition recovery from `e6b0895`. The isolated local API at `http://127.0.0.1:4339` returned healthy with 29 schema groups applied and local storage/media. The local preflight passed 4/4. The current client ramp suite passed 51/51; focused server ramp and cash-out tests passed 69 with one opt-in PostgreSQL test skipped in that invocation; workspace typecheck passed. The separate disposable-PostgreSQL ramp suite passed 3/3 as recorded in the implementation plan.
+The current workspace revision is `d54f7b7`; application changes include refund-state recovery from `e6b0895`. The isolated local API at `http://127.0.0.1:4339` returned healthy with 29 schema groups applied and local storage/media. The local preflight passed 4/4, and workspace typecheck passed.
+
+`pnpm test` passed 335 server, 222 client, and 23 admin tests with no skips. Every opt-in database test used the same fresh PostgreSQL database on loopback with a `_test` name. The temporary database container was removed after the run. This includes the ramp repository's PostgreSQL ownership, idempotency, event-history, and settlement-history checks.
 
 The Dynamic Sandbox QA wallet holds 20 Testnet USDC from Circle faucet transaction [6e4a54dd…](https://horizon-testnet.stellar.org/transactions/6e4a54dd862d4be15577c3c08f6a0550c5c094d2ae07e310a8ff0dd78e49643b), plus its Testnet XLM reserve. Revenue showed 20 USDC spendable, zero earnings or pending payments, and no verified provider route; Add funds and Cash out remained disabled. The local `Core Journey` 0.001 USDC purchase review was keyboard-tested and closed with Escape; Music City restored focus to the Buy button and reported that no payment was sent. No wallet signature, purchase, provider order, cash-out, settlement, or claim occurred in this check. The complete current account log is in [sandbox-test-accounts-2026-10-29.md](sandbox-test-accounts-2026-10-29.md).
 
