@@ -126,3 +126,13 @@ I created a second synthetic Dynamic Sandbox identity, `SOW2 Listener Test`, and
 The listener account opened Discover and Revenue. Revenue showed 0.00 USDC and disabled Add funds and Cash out because no verified provider route is enabled. Opening the artist's private release review URL displayed "Artist access is required to manage releases." The artist dashboard instead offered the path to set up an artist profile. The listener account created no provider order, quote, payment, payout, wallet signature, claim, or chain transaction.
 
 After the role check, I signed back into `SOW2 Artist Test` and restored its private draft at `/dashboard/releases/rel_526bbf64f2b14cdf?step=review`. CO-25 remains open for admin and worker checks, mobile/keyboard/recovery coverage, and real provider acceptance.
+
+## Listener role matrix recheck, 29 October 2026
+
+I signed out and back into both synthetic Dynamic Sandbox identities using the local app. Repeat sign-in succeeded for the listener and artist accounts. The earlier missing-wallet response did not recur on this pass; keep the first-login issue open because the initial failure was observed previously.
+
+With the listener account, I opened Studio overview, Create, Tracks, Releases, Analytics, and Revenue. The five artist-only screens showed the artist setup gate rather than a server error. Revenue loaded with no verified ramp routes and disabled Add funds and Cash out. Agreements and playlists loaded their expected empty states, and Discover remained accessible. A direct request to the artist's private release draft displayed the artist-access message. The browser logged no console errors during this route check.
+
+I then signed back into `SOW2 Artist Test` and reopened the private release review. It still showed `Draft`, `All changes saved`, `Artwork uploaded`, `Tracklist is valid`, and `Audio is ready`. The app remained connected to the isolated local test database with ramps disabled. No provider request, quote, payment, payout, wallet signature, claim, publication, or chain transaction occurred.
+
+This pass extends listener route and repeat-auth coverage. It does not complete the admin/worker browser matrix, keyboard and interrupted-request checks, provider flow, or fresh purchase-to-claim lifecycle. CO-25, U4, and C2 remain open.
