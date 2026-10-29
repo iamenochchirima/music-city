@@ -580,3 +580,7 @@ At 390 pixels, Revenue showed no horizontal overflow, kept the spendable wallet 
 ### 29 October 2026: automatic ramp status refresh
 
 The ramp UI polls transaction history and an open transaction detail every 15 seconds, and refreshes a submitted or uncertain cash-out transfer every 5 seconds. New client regression tests advance those intervals and verify that `Processing` changes to `Provider completed` in history and detail, and that `Submitting` changes to `Transfer confirmed` in the cash-out review without a manual refresh. All seven ramp UI files passed 45/45 tests; the full client suite passed 216/216 and client typecheck passed. This verifies local polling behavior, not a live provider status transition. U2/CO-20 remain open for actual provider progress, payout instructions/receipts, and full browser recovery acceptance.
+
+### 29 October 2026: test-account mobile Revenue recheck
+
+In a temporary local browser tab with the signed-in Dynamic Sandbox artist, Revenue at 390×844 had a 375-pixel document width and no horizontal overflow. Spendable balance resolved to 0.014 USDC; Add funds and Cash out stayed disabled with the no-verified-route explanation. Keyboard Tab from the earnings retry button focused wallet history. The browser viewport was reset and the temporary tab closed. This extends CO-22/U4 mobile and keyboard evidence; authenticated admin, provider dialog focus return, and the complete validation/interruption matrix remain open.
