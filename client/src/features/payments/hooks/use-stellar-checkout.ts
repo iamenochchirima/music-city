@@ -218,7 +218,7 @@ export const StellarCheckoutProvider = ({
       new Error(
         pending?.attempt.status === "submitting" || uncertain
           ? "Your payment is processing. It will finish automatically."
-          : "Payment cancelled",
+          : "Payment review closed. No payment was sent.",
       ),
     );
     completion.current = null;
@@ -315,7 +315,7 @@ export const StellarCheckoutProvider = ({
             },
             pending.attempt.status === "submitting" || uncertain
               ? "Continue browsing"
-              : "Cancel",
+              : "Close review",
           ),
         ),
       }),

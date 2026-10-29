@@ -122,7 +122,7 @@ it("reviews the exact amount and authorizes the persisted envelope before submis
     mocks.submit.mock.invocationCallOrder[0]!,
   );
 });
-it("cancelling review requests no signature and submits nothing", async () => {
+it("closing review keeps an unsigned payment resumable without claiming it was cancelled", async () => {
   const user = userEvent.setup();
   render(
     <StellarCheckoutProvider>
@@ -130,14 +130,19 @@ it("cancelling review requests no signature and submits nothing", async () => {
     </StellarCheckoutProvider>,
   );
   await user.click(screen.getByRole("button", { name: "Pay" }));
-  await user.click(await screen.findByRole("button", { name: "Cancel" }));
+  await user.click(await screen.findByRole("button", { name: "Close review" }));
   await waitFor(() =>
     expect(screen.getByLabelText("Checkout result").textContent).toBe(
-      "Payment cancelled",
+      "Payment review closed. No payment was sent.",
     ),
   );
   expect(mocks.sign).not.toHaveBeenCalled();
   expect(mocks.submit).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Pay" }));
+  await screen.findByRole("dialog", { name: "Review payment" });
+  expect(mocks.prepare).toHaveBeenCalledTimes(2);
+  expect(mocks.prepare).toHaveBeenNthCalledWith(2, "token", "intent");
+  expect(mocks.sign).not.toHaveBeenCalled();
 });
 it("an already submitted checkout resumes confirmation without signing again", async () => {
   mocks.prepare.mockResolvedValue({ ...attempt, status: "submitting" });
