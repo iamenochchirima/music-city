@@ -726,6 +726,41 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       lastObservedPlaybackPositionRef.current = audio.currentTime;
       lastObservedPlaybackTimeRef.current = performance.now();
     };
+    const handleWaiting = () => {
+      if (guestPromptOpenedRef.current) return;
+      const session = playbackSessionRef.current;
+      const track = activeTrackRef.current;
+      if (!session?.isGuest || !track) return;
+
+      const declaredRuntime = track.runtime.match(/^(\d+):(\d{2})$/);
+      const fullDuration = declaredRuntime
+        ? Number(declaredRuntime[1]) * 60 + Number(declaredRuntime[2])
+        : audio.duration;
+      if (
+        fullDuration <= 0 ||
+        (session.guestBudgetRemainingSeconds ?? Infinity) > fullDuration
+      )
+        return;
+
+      const allowedSeconds = Math.min(
+        fullDuration,
+        session.guestRemainingSeconds ?? fullDuration,
+      );
+      const bufferedEnd = audio.buffered.length
+        ? audio.buffered.end(audio.buffered.length - 1)
+        : 0;
+      if (
+        audio.currentTime < allowedSeconds - 0.5 ||
+        bufferedEnd < allowedSeconds - 0.25
+      )
+        return;
+
+      guestPromptOpenedRef.current = true;
+      audio.pause();
+      setCurrentTime(Math.min(audio.currentTime, allowedSeconds));
+      setIsPlaying(false);
+      setGuestLimitReached(true);
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
@@ -735,6 +770,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("seeking", handleSeeking);
+    audio.addEventListener("waiting", handleWaiting);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
@@ -745,6 +781,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("seeking", handleSeeking);
+      audio.removeEventListener("waiting", handleWaiting);
       stopAnimationLoop();
     };
   }, [handleAudioEnded]);
@@ -796,6 +833,8 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         startAnimationLoop();
       } catch (error) {
         setIsPlaying(false);
+
+        if (guestPromptOpenedRef.current) return;
 
         if (activeAd && pendingTrackAfterAd) {
           const impressionId = activeAdImpressionId;
