@@ -14,7 +14,7 @@ The [Music City Admin console](https://music-city-admin.vercel.app/console/admin
 
 ## Creator access blocker
 
-The signed-in production account is listener-only and its Artist access is not unlocked. In the live site, **Set up artist profile** opens the completed listener onboarding page (“Your listening space is ready”) instead of the artist path. The local fix in `1dfad1b` routes to the intent step with Artist selected; it does not change the account until the user continues. Nine focused onboarding tests, client typecheck, and client production build pass. The fix has not been pushed or deployed, so do not record the hosted creator journey yet. After deployment, an authorized artist profile, artist activation, and approved demo audio/artwork are still needed to verify upload and publication.
+The signed-in production account is listener-only and its Artist access is not unlocked. In the live site, **Set up artist profile** opens the completed listener onboarding page (“Your listening space is ready”) instead of the artist path. The local fix in `1dfad1b` routes to the intent step with Artist selected; it does not change the account until the user continues. Nine focused onboarding tests, client typecheck, client production build, and a server regression test pass in local candidate `193b883`. The fix has not been pushed or deployed, so do not record the hosted creator journey yet. After deployment, an authorized artist profile, artist activation, and approved demo audio/artwork are still needed to verify upload and publication.
 
 ## Remaining setup before recording SOW 2 transactions
 
@@ -44,5 +44,5 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 - The hosted admin's Agreements and Royalties pages are empty. Settlement reconciliation passes with all balances at zero, and there are no approved earnings sources or settlement batches.
 - A Dynamic Sandbox static-OTP identity did not authenticate to the hosted client, which is configured against a different Dynamic environment. Use an account belonging to the hosted environment for the demo; do not present that Sandbox identity as production access.
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
-- Local demo candidate `1dfad1b` fixes the hosted artist-entry route reproduced in computer use. It is committed locally, not pushed or deployed; client focused onboarding tests (9), typecheck, and build pass.
+- Local demo candidate `193b883` includes the artist-entry fix `1dfad1b` reproduced in computer use. It is committed locally, not pushed or deployed; client focused onboarding tests (9), typecheck, build, and the server regression test pass. The browser route was loaded against an isolated local `_test` database and showed the expected sign-in gate; the authenticated hosted recheck remains outstanding.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
