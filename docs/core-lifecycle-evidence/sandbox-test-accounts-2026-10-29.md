@@ -136,3 +136,11 @@ With the listener account, I opened Studio overview, Create, Tracks, Releases, A
 I then signed back into `SOW2 Artist Test` and reopened the private release review. It still showed `Draft`, `All changes saved`, `Artwork uploaded`, `Tracklist is valid`, and `Audio is ready`. The app remained connected to the isolated local test database with ramps disabled. No provider request, quote, payment, payout, wallet signature, claim, publication, or chain transaction occurred.
 
 This pass extends listener route and repeat-auth coverage. It does not complete the admin/worker browser matrix, keyboard and interrupted-request checks, provider flow, or fresh purchase-to-claim lifecycle. CO-25, U4, and C2 remain open.
+
+## Ramp retry UI and artist account recheck, 29 October 2026
+
+The current local `SOW2 Artist Test` account still opened its private release review as a draft. It showed all changes saved, uploaded artwork, a valid tracklist, and ready audio. Revenue showed 0 USDC, no verified provider route, and disabled Add funds/Cash out. Account showed the test artist profile, EARLYUSER activation coverage, and wallet/testnet controls; no financial action was started.
+
+For the funding and cash-out create dialogs, focused tests simulate a lost network response, retry the exact request with the same idempotency key and frozen terms, and verify that a saved order can continue to the returned provider URL. A definite HTTP 400/422 rejection unlocks the form and rotates the request ID before edited terms are submitted. HTTP 409 and authentication failures remain ambiguous to avoid duplicating a possibly existing order. These are controlled UI/API tests; they do not prove a real provider route.
+
+Verification: 29 focused client tests passed, client typecheck passed, and `git diff --check` passed. No provider quote, session, payment, payout, wallet signature, claim, publication, or chain transaction occurred. The listener role matrix, its artist-only access checks, and its empty ramp capability state remain recorded in the preceding pass. C2 and U4 remain open; provider journeys remain open under R3-R9 and V5.

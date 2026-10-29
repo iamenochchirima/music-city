@@ -36,3 +36,42 @@ it("does not offer a handoff when the provider response is uncertain", async () 
   expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
   expect(screen.queryByRole("link", { name: "Continue to provider" })).toBeNull();
 });
+it("retries an uncertain cash-out creation with the same request ID and frozen terms", async () => {
+  const user = userEvent.setup(), changed = vi.fn();
+  mock.post
+    .mockRejectedValueOnce(new TypeError("Network error"))
+    .mockResolvedValueOnce({ order: { id: "saved" } })
+    .mockResolvedValueOnce({ url: "https://sell-sandbox.moonpay.com/?test=1" });
+  render(<CashOutStartDialog token="session" routes={[route]} available="3" onClose={vi.fn()} onChanged={changed} />);
+  const amount = screen.getByRole("textbox", { name: "Amount in USDC" });
+  await user.type(amount, "1.5");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect((await screen.findByRole("alert")).textContent).toContain("couldn't confirm whether this cash-out started");
+  expect(amount.hasAttribute("disabled")).toBe(true);
+  await user.click(screen.getByRole("button", { name: "Retry safely" }));
+  expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
+  const creates = mock.post.mock.calls.filter(([path]) => path === "/ramps");
+  expect(creates).toHaveLength(2);
+  expect(creates[0]?.[1]).toEqual(creates[1]?.[1]);
+  expect(changed).toHaveBeenCalled();
+});
+it("unlocks cash-out terms after a safe retry is definitively rejected", async () => {
+  const user = userEvent.setup();
+  mock.post.mockRejectedValueOnce(new TypeError("Network error")).mockRejectedValueOnce({ status: 400 })
+    .mockResolvedValueOnce({ order: { id: "saved" } }).mockResolvedValueOnce({ url: "https://sell-sandbox.moonpay.com/?test=1" });
+  render(<CashOutStartDialog token="session" routes={[route]} available="3" onClose={vi.fn()} onChanged={vi.fn()} />);
+  const amount = screen.getByRole("textbox", { name: "Amount in USDC" });
+  await user.type(amount, "1.5");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  const firstRequestId = mock.post.mock.calls[0]?.[1]?.requestId;
+  await user.click(screen.getByRole("button", { name: "Retry safely" }));
+  expect(amount.hasAttribute("disabled")).toBe(false);
+  await user.clear(amount);
+  await user.type(amount, "2");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
+  const creates = mock.post.mock.calls.filter(([path]) => path === "/ramps");
+  expect(creates[0]?.[1]).toEqual(creates[1]?.[1]);
+  expect(creates[2]?.[1]).toMatchObject({ amount: "2" });
+  expect(creates[2]?.[1]?.requestId).not.toBe(firstRequestId);
+});
