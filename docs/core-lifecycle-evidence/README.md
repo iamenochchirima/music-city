@@ -2,6 +2,18 @@
 
 Verified locally on 17 October 2026. Original verification base `9cd39f0`, branch `main`. The completed implementation is recorded in Git history. No production deployment or push was performed. This is E8 in the [SOW 2 tracker](../sow-2-tracker.md#core-d3-lifecycle-closure), not acceptance of the whole SOW.
 
+## Current local SOW2 checkpoint, 29 October 2026
+
+This checkpoint is separate from the historical E8 Testnet journey below. It describes the current local checkout at `f9cce90` and does not present E8's older chain receipts as a fresh run on this revision.
+
+The local client at `http://localhost:3000` returned HTTP 200. The API readiness endpoint at `http://localhost:4339/api/v1/health/ready` returned `ok: true`, with database, schema, and local storage healthy and every registered schema group applied. This verifies only the local test database and schema; it says nothing about a deployed database.
+
+The current client verification passed 207/207 tests, including 29 focused ramp dialog and retry tests, and the client typecheck passed. The ramp dialogs preserve the same idempotency key and freeze route and amount after an ambiguous create response; only HTTP 400/422 validation responses release the form for correction. The account evidence in [sandbox-test-accounts-2026-10-29.md](sandbox-test-accounts-2026-10-29.md) records local artist and listener route checks. The artist draft remained private. The current artist Testnet wallet had no XLM or USDC; no provider route was available, and no payment, payout, claim, or chain transaction was made.
+
+The sanitized [provider readiness snapshot](../ramp-sandbox-evidence/readiness-2026-10-29.json) reports MoonPay native XLM Test Mode support but no Stellar USDC Test Mode support; MoneyGram does not accept the configured non-custodial partner mode. The snapshot records no provider transactions. R3–R9, U2's verified provider journey, C2's fresh purchase-to-claim lifecycle, and V5 remain open.
+
+E8's contract identifiers, transaction hashes, ledgers, and screenshots remain available in the historical chain-check and browser evidence linked below. They support the 17 October demonstration only. The current checkout has not been pushed or deployed, and no live revision or remote migration state was verified. C3 remains open until a deployment candidate and its actual deployed versions can be verified.
+
 ## Demonstrated result
 
 The actual creator UI published **Core Journey**, a four-second synthetic tone, as release `rel_f8f84266f7314b02`, recording `trk_810ef0432acc4b44`. Ngoni and Kwame independently accepted a nonbinding 70/30 verification agreement through real Dynamic Sandbox wallets. Two independent treasury signatures finalized it on Stellar Testnet. The owner enabled sales at exactly 0.001 USDC.
