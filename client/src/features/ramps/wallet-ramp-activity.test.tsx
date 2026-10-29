@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -23,6 +23,59 @@ it("keeps unavailable options disabled and distinguishes provider completion fro
   expect(await screen.findByText("No verified provider route is enabled yet. Your wallet balance stays unchanged.")).toBeTruthy();
   expect(screen.getByText("Add funds · 100.00 GBP")).toBeTruthy();
   expect(mock.get).toHaveBeenCalledWith("/ramps", "session");
+});
+it("automatically refreshes transaction history and detail when a provider status changes", async () => {
+  const order = {
+    id: "saved",
+    direction: "buy",
+    provider: "moonpay",
+    assetCode: "XLM",
+    market: { country: "GB", currency: "GBP", method: "card" },
+    launchRequested: true,
+    providerStarted: true,
+    providerState: "processing",
+    chainState: "unobserved",
+    amount: { currency: "GBP", units: "1250", decimals: 2 },
+    createdAt: "2026-10-29T09:00:00Z",
+  };
+  let historyCalls = 0;
+  let detailCalls = 0;
+  mock.get.mockImplementation(async (path: string) => {
+    if (path === "/ramps/capabilities") return { routes: [] };
+    if (path === "/ramps") {
+      historyCalls += 1;
+      return { items: [{ ...order, providerState: historyCalls === 1 ? "processing" : "completed" }] };
+    }
+    if (path === "/ramps/saved") {
+      detailCalls += 1;
+      return { order: { ...order, providerState: detailCalls === 1 ? "processing" : "completed" } };
+    }
+    throw new Error(`Unexpected request: ${path}`);
+  });
+
+  vi.useFakeTimers();
+  try {
+    renderActivity(<WalletRampActivity token="session" />, ["/account?ramp=saved"]);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const details = screen.getByRole("dialog", { name: "Funding details" });
+    expect(within(details).getByText("Processing")).toBeTruthy();
+    expect(screen.getByText("Processing · Transfer unconfirmed")).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15000);
+    });
+
+    expect(historyCalls).toBe(2);
+    expect(detailCalls).toBe(2);
+    expect(screen.getByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
+    expect(within(details).getByText("Provider completed")).toBeTruthy();
+    expect(screen.getByText("Check your pending transaction before starting another.")).toBeTruthy();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 it("offers retry when transaction history cannot be loaded", async () => {
   let historyCalls = 0;

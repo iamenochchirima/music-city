@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CashOutReview } from "./cash-out-review";
 const mock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
@@ -57,6 +57,32 @@ it("does not prompt for a signature when the prepared transfer is unavailable", 
   expect(screen.getByRole("button", { name: "Confirm cash-out" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByRole("button", { name: "Cancel cash-out" }).hasAttribute("disabled")).toBe(false);
   expect(sign).not.toHaveBeenCalled();
+});
+
+it("automatically follows an unresolved cash-out transfer until it is confirmed", async () => {
+  const submitting = { ...transfer, transaction: null, state: "submitting" };
+  const confirmed = { ...submitting, state: "confirmed" };
+  const changed = vi.fn();
+  mock.get.mockResolvedValueOnce({ transfer: submitting }).mockResolvedValueOnce({ transfer: confirmed });
+  vi.useFakeTimers();
+  try {
+    render(<CashOutReview token="session" orderId="order" sign={vi.fn()} onClose={vi.fn()} onChanged={changed} />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByText("Checking your transfer.")).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+
+    expect(mock.get).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Transfer confirmed. Check your payout status in transactions.")).toBeTruthy();
+    expect(changed).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 
