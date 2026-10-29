@@ -7,6 +7,29 @@ import { WalletRampActivity } from "./wallet-ramp-activity";
 const mock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/lib/api/http-client", () => ({ httpClient: { get: mock.get, post: mock.post } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+it("clears the previous session's history and details before a new session can load them", async () => {
+  const order = { id: "saved", direction: "buy", provider: "moonpay", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, launchRequested: true, providerStarted: true, providerState: "processing", chainState: "unobserved", amount: { currency: "GBP", units: "1250", decimals: 2 }, createdAt: "2026-10-29T09:00:00Z" };
+  let resolveHistory!: (result: { items: unknown[] }) => void;
+  let rejectDetail!: (error: Error) => void;
+  mock.get.mockImplementation((path: string, token: string) => {
+    if (path === "/ramps/capabilities") return Promise.resolve({ routes: [] });
+    if (token === "first-session") return Promise.resolve(path === "/ramps" ? { items: [order] } : { order });
+    if (path === "/ramps") return new Promise((resolve) => { resolveHistory = resolve; });
+    return new Promise((_resolve, reject) => { rejectDetail = reject; });
+  });
+  const view = render(<MemoryRouter initialEntries={["/account?ramp=saved"]}><WalletRampActivity token="first-session" /></MemoryRouter>);
+  expect(await screen.findByText("12.50 GBP · GB · Card")).toBeTruthy();
+
+  view.rerender(<MemoryRouter><WalletRampActivity token="second-session" /></MemoryRouter>);
+  expect(screen.queryAllByText(/12\.50 GBP/)).toHaveLength(0);
+  expect(screen.getByText("Loading transaction…")).toBeTruthy();
+  await act(async () => {
+    resolveHistory({ items: [] });
+    rejectDetail(new Error("Not found"));
+  });
+  expect(await screen.findByText("Could not load this transaction.")).toBeTruthy();
+  expect(screen.queryAllByText(/12\.50 GBP/)).toHaveLength(0);
+});
 function renderActivity(child: ReactNode, initialEntries = ["/account"]) {
   function LocationProbe() {
     const location = useLocation();
@@ -14,6 +37,22 @@ function renderActivity(child: ReactNode, initialEntries = ["/account"]) {
   }
   return render(<MemoryRouter initialEntries={initialEntries}>{child}<LocationProbe /></MemoryRouter>);
 }
+it("offers a visible close action while saved transaction details load or fail", async () => {
+  let rejectDetail!: (error: Error) => void;
+  mock.get.mockImplementation((path: string) => {
+    if (path === "/ramps/capabilities") return Promise.resolve({ routes: [] });
+    if (path === "/ramps") return Promise.resolve({ items: [] });
+    return new Promise((_resolve, reject) => { rejectDetail = reject; });
+  });
+  renderActivity(<WalletRampActivity token="session" />, ["/account?section=wallet&ramp=missing"]);
+  expect(screen.getByText("Loading transaction…")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+  await act(async () => rejectDetail(new Error("Not found")));
+  expect(await screen.findByText("Could not load this transaction.")).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByTestId("current-url").textContent).toBe("/account?section=wallet");
+});
 it("keeps unavailable options disabled and distinguishes provider completion from delivery", async () => {
   mock.get.mockResolvedValue({ items: [{ id: "one", direction: "buy", providerState: "completed", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" }] });
   renderActivity(<WalletRampActivity token="session" />);

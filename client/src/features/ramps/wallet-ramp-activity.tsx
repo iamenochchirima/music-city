@@ -38,7 +38,13 @@ function showsChainState(order: Order) {
   return order.launchRequested || order.providerStarted || order.chainState !== "unobserved" || !["created", "cancelled"].includes(order.providerState);
 }
 
-export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTransactions = true }: { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string; showTransactions?: boolean }) {
+type WalletRampActivityProps = { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string; showTransactions?: boolean };
+
+export function WalletRampActivity(props: WalletRampActivityProps) {
+  return <WalletRampSession key={props.token} {...props} />;
+}
+
+function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions = true }: WalletRampActivityProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Order[]>([]);
   const [error, setError] = useState(false);
@@ -216,6 +222,7 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
           </div>
         </div>
       </div>}
+    {!detail && <div className="flex justify-end"><Button type="button" variant="outline" onClick={closeDetail}>Close</Button></div>}
     </Dialog>}
     {quoteId && <CashOutQuoteDialog token={token} orderId={quoteId} onClose={() => setQuoteId(null)} onChanged={() => setRetry((value) => value + 1)} onPrepared={() => { setReviewId(quoteId); setQuoteId(null); }} />}
     {reviewId && sign && <CashOutReview token={token} orderId={reviewId} sign={sign} onClose={() => setReviewId(null)} onChanged={() => setRetry((value) => value + 1)} />}

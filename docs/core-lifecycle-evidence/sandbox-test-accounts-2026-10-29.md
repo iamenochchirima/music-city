@@ -476,3 +476,11 @@ I verified that the API process targeted the isolated loopback `sow2_current_dem
 The first run exposed a sales-loading bug: Song sales displayed “0 purchases” before the request completed. The component now shows a spinner and “Loading sales” during the request, and hides the count on failure. A second 15-second browser delay verified the loading state, followed by the true empty state after the response. The focused component suite passed 3/3, all 223 client tests passed, and client typecheck passed.
 
 This verifies delayed Revenue requests and recovery. It does not verify the provider quote, launch, transaction-detail, or cash-out review screens, whose browser matrix remains open in U4. No wallet signature, payment submission, or provider order occurred during the delay checks.
+
+## Session isolation and unavailable transaction recovery, 29 October 2026
+
+The ramp history and detail component could retain the previous session's records while requests for a new token were pending or rejected. A regression test reproduced both stale history and stale detail amounts. The component now mounts a separate state tree for each token, so history, details, routes, and open actions reset together. Requests from the previous tree cannot update the new tree. This also applies to the Revenue entry point, which previously did not key its ramp component by token.
+
+Computer use opened `http://localhost:3000/account?ramp=qa-missing-order` under the existing Dynamic Sandbox account. The local API rejected that unavailable ID. The dialog initially offered Retry without a visible Close button. It now offers Close while loading and after failure. The browser verified retry, a 390-pixel viewport with a 358-pixel dialog and no horizontal overflow, keyboard focus from Retry to Close, and Enter closing the dialog and removing `ramp` from the URL. The temporary tab was closed and the viewport override reset.
+
+The 23 ramp activity tests, all 225 client tests, and client typecheck pass. No fixture provider record, provider route, wallet signature, or payment was created. This covers the unavailable transaction-detail path. Actual provider quotes, launch, populated transaction details, and cash-out reviews still need browser verification under U4.
