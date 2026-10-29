@@ -36,6 +36,19 @@ export function ReleaseCreateOverview() {
   const [activationIntent, setActivationIntent] =
     useState<PaymentIntentRecord | null>(null);
   const [activationError, setActivationError] = useState("");
+  function updateRelease(patch: Partial<ReleaseCreateInput>) {
+    const nextValue = { ...value, ...patch };
+    const validationErrors = releaseSetupErrors(nextValue);
+    setValue(nextValue);
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors };
+      for (const field of Object.keys(currentErrors)) {
+        if (validationErrors[field]) nextErrors[field] = validationErrors[field];
+        else delete nextErrors[field];
+      }
+      return nextErrors;
+    });
+  }
   async function start() {
     if (!session?.token || busy) return;
     const nextErrors = releaseSetupErrors(value);
@@ -200,9 +213,7 @@ export function ReleaseCreateOverview() {
         <fieldset disabled={busy}>
           <ReleaseSetupFields
             value={value}
-            onChange={(patch) =>
-              setValue((current) => ({ ...current, ...patch }))
-            }
+            onChange={updateRelease}
             errors={errors}
           />
         </fieldset>

@@ -127,6 +127,18 @@ it("does not create an unnamed release", async () => {
   expect(mocks.create).not.toHaveBeenCalled();
 });
 
+it("clears release-name feedback as soon as the name is corrected", async () => {
+  const user = userEvent.setup();
+  open();
+  await user.click(screen.getByRole("button", { name: "Continue to songs" }));
+  expect(screen.getByText("Give your release a name.")).toBeTruthy();
+
+  await user.type(screen.getByLabelText("Release name"), "Night Songs");
+
+  expect(screen.queryByText("Give your release a name.")).toBeNull();
+  expect(mocks.create).not.toHaveBeenCalled();
+});
+
 it("shows the activation fee before release setup and keeps payment behind an explicit review", async () => {
   const user = userEvent.setup();
   Object.assign(mocks.session, { artistAccess: false });
