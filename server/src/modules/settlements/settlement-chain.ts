@@ -26,6 +26,11 @@ import {
   type TreasuryAccount,
 } from "../agreements/treasury-signatures.js";
 import { amountUnits } from "./settlement-domain.js";
+import {
+  loadHistoricalSettlementEvents,
+  shouldBackfillSettlementEvents,
+  type IndexedSettlementEvent,
+} from "./settlement-event-archive.js";
 
 const rpc = () => new Server(env.STELLAR_SOROBAN_RPC_URL, { timeout: 15000 });
 export function settlementConfig(): SettlementConfig {
@@ -203,7 +208,48 @@ export const settlementChain = {
   },
   async events(cursor?:string) {
     const config=settlementConfig();
-    const result=await rpc().getEvents({...(cursor?{cursor}:{startLedger:this.eventStartLedger()}),filters:[{type:"contract",contractIds:[config.contractId]}],limit:1000});
+    const server=rpc();
+    const start=this.eventStartLedger();
+    const health=await server.getHealth();
+    const oldestLedger=health.oldestLedger;
+    if(!Number.isSafeInteger(oldestLedger)||oldestLedger<1)throw new HttpError(502,"Stellar RPC did not report its oldest retained ledger");
+    const filters=[{type:"contract" as const,contractIds:[config.contractId]}];
+    let archive:IndexedSettlementEvent[]=[];
+    let archiveLoaded=false;
+    let result;
+    const storedCursor=cursor?.startsWith("rpc:")?cursor.slice(4):cursor;
+    // A pre-change cursor may exist even though the index never captured the
+    // contract's history before RPC retention. Treat every unmarked cursor as
+    // the first archive catch-up and restart live polling at the retention
+    // boundary. Event inserts are idempotent, so this safely upgrades old
+    // cursors without losing events that were already stored.
+    const needsArchive=shouldBackfillSettlementEvents(start,oldestLedger,cursor);
+    try {
+      if(needsArchive) {
+        // Read the live retention window before the slower historical checks.
+        // The RPC's oldest ledger advances continuously; fetching the archive
+        // first can make this start ledger stale before getEvents is called.
+        result=await server.getEvents({startLedger:oldestLedger,filters,limit:1000});
+      } else {
+        result=await server.getEvents({...(storedCursor?{cursor:storedCursor}:{startLedger:start}),filters,limit:1000});
+      }
+    } catch(error) {
+      if(start>=oldestLedger||(!storedCursor&&!needsArchive))throw error;
+      const refreshedHealth=await server.getHealth();
+      const refreshedOldest=refreshedHealth.oldestLedger;
+      if(!Number.isSafeInteger(refreshedOldest)||refreshedOldest<1)throw new HttpError(502,"Stellar RPC did not report its oldest retained ledger");
+      result=await server.getEvents({startLedger:refreshedOldest,filters,limit:1000});
+      archive=await loadHistoricalSettlementEvents(config,env.STELLAR_HORIZON_URL,refreshedOldest,async id=>{
+        const value=await read(config,"get_batch",[bytes(id)]);
+        return value===null||value===undefined?null:value as ChainBatch;
+      });
+      archiveLoaded=true;
+    }
+    if(needsArchive&&!archiveLoaded) archive=await loadHistoricalSettlementEvents(config,env.STELLAR_HORIZON_URL,oldestLedger,async id=>{
+      const value=await read(config,"get_batch",[bytes(id)]);
+      return value===null||value===undefined?null:value as ChainBatch;
+    });
+    if(!result.cursor)throw new HttpError(409,"Stellar RPC did not return a resumable event cursor");
     const receipts=new Map<string,{ledger:number;feeCharged:string;envelope:string}>();
     const hashes=[...new Set(result.events.map(event=>event.txHash))];
     for(let offset=0;offset<hashes.length;offset+=5) {
@@ -214,15 +260,16 @@ export const settlementChain = {
       }));
       for(const [hash,receipt] of chunk)receipts.set(hash,receipt);
     }
-    return {
-      cursor:result.cursor,latestLedger:result.latestLedger,caughtUp:result.events.length<1000,
-      events:result.events.map(event=>{
+    const live:IndexedSettlementEvent[]=result.events.map(event=>{
         if(event.contractId?.contractId()!==config.contractId || !event.inSuccessfulContractCall) throw new HttpError(409,"Unexpected contract event identity");
         if(receipts.get(event.txHash)?.ledger!==event.ledger) throw new HttpError(409,"Contract event and transaction receipt ledgers differ");
         const topics=event.topic.map(scValToNative);
         if(topics[0]!=="music_city" || !["settlement_funded","claim_consumed"].includes(topics[1]) || !(topics[2] instanceof Uint8Array) || topics[2].length!==32) throw new HttpError(409,"Unsupported settlement event format");
         return {id:event.id,transactionHash:event.txHash,ledger:event.ledger,batchId:Buffer.from(topics[2]).toString("hex"),type:String(topics[1]),payload:{topics:event.topic.map(v=>v.toXDR("base64")),value:event.value.toXDR("base64"),ledgerClosedAt:new Date(event.ledgerClosedAt).toISOString(),receipt:receipts.get(event.txHash)!}};
-      }),
+      });
+    return {
+      cursor:`rpc:${result.cursor}`,latestLedger:result.latestLedger,caughtUp:result.events.length<1000,
+      events:[...archive,...live],
     };
   },
   async treasurySigners(config = settlementConfig()) {
