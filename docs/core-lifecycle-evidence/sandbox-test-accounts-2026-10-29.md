@@ -194,3 +194,9 @@ This remains account and interface verification only. The test wallet has no Tes
 I started the local admin frontend with its API base explicitly set to `http://localhost:4339/api/v1/admin`. `/auth` showed the existing-admin Login form, not first-admin bootstrap. At 390 × 844 the document fit without horizontal overflow; keyboard Tab reached Email, Password, Show password, and Sign in in order. The browser error log was empty. I did not enter credentials or submit the form, so authenticated admin lists and details were not checked. The admin frontend was stopped after this check.
 
 The financial worker was not running during the local account tests, so its browser-independent startup and reconciliation cycle were not verified in this pass. CO-25 and U4 remain open for authenticated admin review, worker checks, remaining interruption/recovery coverage, and provider acceptance.
+
+## Sell-capability gate recheck, 29 October 2026
+
+After updating the local backend's sell-route gate, I reloaded `/dashboard/revenue` in the existing signed-in Dynamic Sandbox artist session. The page settled to 0 USDC spendable and displayed “No verified provider route is enabled yet. Your wallet balance stays unchanged.” Add funds and Cash out remained disabled. The browser error log was empty. I did not create an order, quote, or provider session, sign a wallet transaction, or modify the account.
+
+This confirms only that the current Sandbox account does not receive an unverified sell route. Unit tests used a synthetic MoonPay catalog to verify that a USDC sell can be validated while the buy asset is XLM. MoonPay's real sandbox still reports Stellar USDC unavailable; the production verified route source and cash-out quote adapter remain empty. The separate artist/listener role matrix is documented above; admin authentication and financial worker checks remain open.

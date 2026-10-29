@@ -4,6 +4,7 @@ export const rampSandboxConfigSchema = z
   .object({
     RAMPS_SANDBOX_ENABLED: z.enum(["true", "false"]).default("false"),
     RAMPS_SANDBOX_ASSET: z.enum(["USDC", "XLM"]).default("USDC"),
+    RAMPS_SANDBOX_SELL_ENABLED: z.enum(["true", "false"]).default("false"),
     RAMPS_SANDBOX_PROVIDERS: z
       .enum(["moonpay", "moneygram", "both"])
       .default("moonpay"),

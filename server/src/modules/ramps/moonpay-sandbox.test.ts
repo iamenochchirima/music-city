@@ -30,6 +30,17 @@ const catalog: MoonpayCatalog = {
       metadata: { networkCode: "stellar" },
     },
     {
+      code: "usdc_xlm",
+      type: "crypto",
+      precision: 7,
+      supportsTestMode: true,
+      isSellSupported: true,
+      isSuspended: false,
+      minSellAmount: 1,
+      maxSellAmount: 1000,
+      metadata: { networkCode: "stellar" },
+    },
+    {
       code: "usd",
       type: "fiat",
       precision: 2,
@@ -42,7 +53,7 @@ const catalog: MoonpayCatalog = {
     { alpha2: "ZW", isBuyAllowed: false, isSellAllowed: false },
   ],
 };
-const order = (direction: "buy" | "sell" = "buy"): RampOrder => ({
+const order = (direction: "buy" | "sell" = "buy", assetCode: "USDC" | "XLM" = "XLM"): RampOrder => ({
   id: randomUUID(),
   terms: {
     userId: "artist",
@@ -52,11 +63,12 @@ const order = (direction: "buy" | "sell" = "buy"): RampOrder => ({
     direction,
     environment: "sandbox",
     network: "stellar:testnet",
-    assetCode: "XLM",
+    assetCode,
+    ...(assetCode === "USDC" ? { assetIssuer: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5" } : {}),
     market: { country: "US", currency: "USD", method: "card" },
     amount: {
-      currency: direction === "buy" ? "USD" : "XLM",
-      units: direction === "buy" ? "10000" : "2500000000",
+      currency: direction === "buy" ? "USD" : assetCode,
+      units: direction === "buy" ? "10000" : assetCode === "XLM" ? "2500000000" : "25000000",
       decimals: direction === "buy" ? 2 : 7,
     },
   },
@@ -66,16 +78,17 @@ const order = (direction: "buy" | "sell" = "buy"): RampOrder => ({
   updatedAt: new Date().toISOString(),
 });
 function providerRow(o: RampOrder) {
+  const assetCode = o.terms.assetCode === "XLM" ? "xlm" : "usdc_xlm";
   return {
     id: "provider-id",
     externalTransactionId: o.id,
     externalCustomerId: o.terms.userId,
     walletAddress: o.terms.walletAddress,
     refundWalletAddress: o.terms.walletAddress,
-    currency: { code: "xlm" },
-    baseCurrency: { code: o.terms.direction === "buy" ? "usd" : "xlm" },
+    currency: { code: o.terms.direction === "buy" ? assetCode : "usd" },
+    baseCurrency: { code: o.terms.direction === "buy" ? "usd" : assetCode },
     quoteCurrency: { code: "usd" },
-    baseCurrencyAmount: o.terms.direction === "buy" ? 100 : 250,
+    baseCurrencyAmount: o.terms.direction === "buy" ? 100 : o.terms.assetCode === "XLM" ? 250 : 2.5,
     feeAmount: 0,
     extraFeeAmount: 0,
     networkFeeAmount: 0,
@@ -89,7 +102,7 @@ function providerRow(o: RampOrder) {
 test("buy and sell URLs lock the approved amount, wallet, asset and correlation identifiers", () => {
   const client = new MoonpaySandbox(config());
   for (const direction of ["buy", "sell"] as const) {
-    const o = order(direction);
+    const o = direction === "buy" ? order("buy") : order("sell", "USDC");
     const url = new URL(client.widgetUrl(o, catalog, customerIps));
     assert.equal(
       url.origin,
@@ -122,11 +135,11 @@ test("buy and sell URLs lock the approved amount, wallet, asset and correlation 
       url.searchParams.get(
         direction === "buy" ? "currencyCode" : "baseCurrencyCode",
       ),
-      "xlm",
+      direction === "buy" ? "xlm" : "usdc_xlm",
     );
     assert.equal(
       url.searchParams.get("baseCurrencyAmount"),
-      direction === "buy" ? "100.00" : "250.0000000",
+      direction === "buy" ? "100.00" : "2.5000000",
     );
     assert.equal(url.searchParams.get("externalTransactionId"), o.id);
     assert.equal(url.searchParams.get("externalCustomerId"), "artist");
@@ -142,6 +155,21 @@ test("buy and sell URLs lock the approved amount, wallet, asset and correlation 
       /existing transaction/,
     );
   }
+});
+
+test("USDC cash-out works when the separately configured buy asset is XLM", async () => {
+  const o = order("sell", "USDC");
+  const fetcher = (async (url: URL) => {
+    assert.equal(url.pathname, `/v3/sell_transactions/ext/${o.id}`);
+    return Response.json([providerRow(o)]);
+  }) as typeof fetch;
+  const client = new MoonpaySandbox(config(), fetcher);
+  const url = new URL(client.widgetUrl(o, catalog, customerIps));
+  assert.equal(url.origin, "https://sell-sandbox.moonpay.com");
+  assert.equal(url.searchParams.get("baseCurrencyCode"), "usdc_xlm");
+  assert.equal(url.searchParams.get("refundWalletAddress"), o.terms.walletAddress);
+  assert.equal(url.searchParams.get("baseCurrencyAmount"), "2.5000000");
+  assert.equal((await client.lookup(o))?.state, "completed");
 });
 
 test("buy lookup verifies the total charge including provider fees in exact fiat units", async () => {
@@ -235,7 +263,7 @@ test("widget creation refuses unsupported test assets, countries, precision and 
 
 test("provider lookups use publishable API authentication and verify owned terms before returning a status", async () => {
   for (const direction of ["buy", "sell"] as const) {
-    const o = order(direction);
+    const o = direction === "buy" ? order("buy") : order("sell", "USDC");
     const fetcher = (async (url: URL, init: RequestInit) => {
       assert.equal(url.searchParams.get("apiKey"), "pk_test_fixture");
       assert.ok(!url.href.includes("sk_test_fixture"));

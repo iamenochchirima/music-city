@@ -62,6 +62,8 @@ export type MoonpayObservation = {
 };
 const codeFor = (asset: "USDC" | "XLM") =>
   asset === "XLM" ? "xlm" : "usdc_xlm";
+const orderAsset = (direction: "buy" | "sell", configuredAsset: "USDC" | "XLM") =>
+  direction === "buy" ? configuredAsset : "USDC";
 export class MoonpaySandbox {
   private config: RampSandboxConfig;
   constructor(
@@ -150,7 +152,7 @@ export class MoonpaySandbox {
     const terms = order.terms;
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== this.config.RAMPS_SANDBOX_ASSET
+      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
     )
       throw new HttpError(
         409,
@@ -219,7 +221,7 @@ export class MoonpaySandbox {
     const terms = order.terms;
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== this.config.RAMPS_SANDBOX_ASSET
+      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
     )
       throw new HttpError(
         409,
@@ -272,7 +274,7 @@ export class MoonpaySandbox {
     const { terms } = rampOrderSchema.parse(order);
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== this.config.RAMPS_SANDBOX_ASSET
+      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
     )
       throw new HttpError(
         409,

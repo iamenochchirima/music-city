@@ -122,8 +122,14 @@ export function createOperationalRampCapabilities(verified: RampCapabilitySource
     if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || config.data.RAMPS_LAUNCH_IP_MODE !== "direct" ||
       !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || !config.data.MOONPAY_PK || !config.data.MOONPAY_SK || !config.data.MOONPAY_WEBHOOK || proxyHops !== 0)
       return [];
-    return (await verified.routes()).filter((route) => route.provider === "moonpay" && route.direction === "buy" &&
-      route.assetCode === config.data.RAMPS_SANDBOX_ASSET && ["moonpay", "both"].includes(config.data.RAMPS_SANDBOX_PROVIDERS));
+    if (!["moonpay", "both"].includes(config.data.RAMPS_SANDBOX_PROVIDERS)) return [];
+    return (await verified.routes()).filter((route) => {
+      if (route.provider !== "moonpay") return false;
+      if (route.direction === "buy") return route.assetCode === config.data.RAMPS_SANDBOX_ASSET;
+      return route.direction === "sell" && route.assetCode === "USDC" &&
+        config.data.RAMPS_SANDBOX_SELL_ENABLED === "true" &&
+        Boolean(config.data.RAMPS_CASHOUT_ENCRYPTION_KEY);
+    });
   } };
 }
 export const operationalRampCapabilities = createOperationalRampCapabilities(verifiedRampCapabilities, () => process.env, env.TRUST_PROXY_HOPS);

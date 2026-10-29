@@ -8,7 +8,7 @@ import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "../ramps/ramp.repository.js";
 import { createCashOutQuoteService } from "./cashout-quote.service.js";
-import { createRampService, verifiedRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
+import { createRampService, operationalRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
 import { rampSandboxConfigSchema } from "../ramps/sandbox-config.js";
 
 type Service = ReturnType<typeof createCashOutQuoteService>;
@@ -37,7 +37,7 @@ export function createCashOutQuoteRouter(service: Service, findUser: FindUser) {
 }
 // No cash-out provider has supplied a verified instruction adapter yet.
 const repository = createRampRepository(databaseService);
-const capabilities = createRampService(repository, verifiedRampCapabilities);
+const capabilities = createRampService(repository, operationalRampCapabilities);
 export const cashOutQuoteRouter = createCashOutQuoteRouter(createCashOutQuoteService(repository, new Map(), undefined,
   async (order) => {
     const config = rampSandboxConfigSchema.safeParse(process.env);

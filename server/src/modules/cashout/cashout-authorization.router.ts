@@ -7,7 +7,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "../ramps/ramp.repository.js";
-import { createRampService, verifiedRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
+import { createRampService, operationalRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
 import { rampSandboxConfigSchema } from "../ramps/sandbox-config.js";
 import { createCashOutAuthorizationService } from "./cashout-authorization.service.js";
 import { createCashOutChain } from "./cashout-chain.js";
@@ -50,7 +50,7 @@ export function createCashOutAuthorizationRouter(service: () => Service, findUse
 }
 
 const repository = createRampRepository(databaseService);
-const capabilities = createRampService(repository, verifiedRampCapabilities);
+const capabilities = createRampService(repository, operationalRampCapabilities);
 function configuredService() {
   const config = rampSandboxConfigSchema.safeParse(process.env);
   if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_CASHOUT_ENCRYPTION_KEY)
