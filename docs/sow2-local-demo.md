@@ -31,9 +31,22 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export STORAGE_PROVIDER=local
    export MEDIA_PROVIDER=local
    node scripts/check-sow2-local-env.mjs
+   pnpm verify:sow2-settlement-config
    ```
 
-   The preflight verifies the Stellar address formats and requires a positive deployment ledger, but it cannot establish that the contracts are deployed or configured together. Use the exact values from one verified Testnet deployment, then confirm the running processes use those same values. The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters.
+   The preflight verifies the Stellar address formats and requires a positive deployment ledger. `pnpm verify:sow2-settlement-config` then performs read-only Horizon and Soroban checks that the registry, settlement contract, treasury, 2-of-3 signers, and deployment ledger match on Testnet. Use one verified deployment tuple, then confirm the running processes use those same values. The last local verification used the E8 deployment tuple in [core lifecycle evidence](core-lifecycle-evidence/README.md); rerun the verifier before relying on it. The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters.
+As of 29 October 2026, the verified E8 deployment tuple is:
+
+| Setting | Testnet value |
+| --- | --- |
+| `STELLAR_TREASURY_ADDRESS` | `GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5` |
+| `AGREEMENT_TREASURY_ADDRESS` | `GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5` |
+| `ROYALTY_REGISTRY_CONTRACT_ID` | `CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS` |
+| `SETTLEMENT_CONTRACT_ID` | `CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43` |
+| `SETTLEMENT_DEPLOYMENT_LEDGER` | `5204451` |
+
+These are public Testnet identifiers, not signing keys. They passed the read-only deployment verifier on 29 October 2026. Re-run the verifier whenever the tuple changes.
+
 5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh
