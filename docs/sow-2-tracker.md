@@ -36,6 +36,8 @@ Implementation rules:
 
 ## Deliverable summary
 
+The [production usability and demo plan](sow2-production-demo-plan.md) orders the remaining rollout, admin setup, hosted browser rehearsal, and recording handoff. Its checks remain open until executed. Provider acceptance remains separately tracked.
+
 | Deliverable | Current position | Next completion boundary |
 | --- | --- | --- |
 | D1. Soroban earnings settlement engine | Implemented and service lifecycle verified on Testnet. E5 records funding, beneficiary claims, amendment, expiry recovery, and independent reconciliation. | Record reviewer acceptance. Real Dynamic wallet journeys passed in E5. |
