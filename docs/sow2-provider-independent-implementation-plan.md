@@ -36,7 +36,8 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 - [x] C1. Audit every specified protected treasury action and verify its required threshold. Record evidence or the exact remaining gap.
 - [ ] C2. Re-run the creator-to-purchase-to-settlement-to-claim lifecycle locally against current code with real Dynamic Sandbox and Stellar Testnet where available. Preserve the historical evidence and distinguish fixtures.
-- [ ] C3. Prepare a repeatable deployment and evidence package with tested revisions, contract IDs, transaction receipts, screenshots and results. Verify deployed versions before making live claims.
+- [x] C3a. Prepare the current local evidence package with tested revisions, contract IDs, Testnet receipts, screenshots, results, and rollout requirements. See [core lifecycle evidence](core-lifecycle-evidence/README.md).
+- [ ] C3b. Verify the deployed client, API, worker, and migration state before making live claims. No current deployment has been authorized or verified.
 - [x] C4. Resolve or document the production admin setup and historical migration-before-backup exception. Do not claim reviewer acceptance without the reviewer.
 
 ## Verification and handoff
@@ -642,7 +643,7 @@ The first API restart in this follow-up omitted `DATABASE_URL`; because the serv
 
 This adds local wallet-balance, empty-ramp-state, and qualified-playback evidence to U4/V3. It does not complete a provider on-ramp or off-ramp, a purchase-to-claim cycle, or the remaining browser recovery matrix. C2, U2, U4, R3-R9, CO-25, and V5 remain open.
 
-The 390-pixel Revenue page had no horizontal overflow. Tab moved from the Music City link to Studio and then to the account menu, and the page logged no browser errors. With the funded Sandbox wallet, the browser opened the `Core Journey` review for 0.001 USDC and showed that XLM covers the separate network fee. Computer use verified keyboard focus through the review controls; Escape closed the review, returned focus to `Buy 0.001 USDC`, and displayed “Payment review closed. No payment was sent.” The review details exposed the recipient, local order ID, and a prepared transaction hash marked “not submitted.” No wallet signing, payment, or settlement occurred. U4 remains open for ramp-specific and slow-response/reload recovery cases; C2 remains open for a signed purchase and settlement-to-claim completion.
+The 390-pixel Revenue page had no horizontal overflow. Tab moved from the Music City link to Studio and then to the account menu, and the page logged no browser errors. With the funded Sandbox wallet, the browser opened the `Core Journey` review for 0.001 USDC and showed that XLM covers the separate network fee. Computer use verified keyboard focus through the review controls. Escape closed the review, returned focus to `Buy 0.001 USDC`, and displayed `Payment review closed. No payment was sent.` The review details exposed the recipient, local order ID, and a prepared transaction hash marked `not submitted`. No wallet signing, payment, or settlement occurred. U4 remains open for ramp-specific and slow-response/reload recovery cases. C2 remains open for a signed purchase and settlement-to-claim completion.
 
 The Dynamic Sandbox test identity also reached the local Music City account with both listener and artist access. The account page showed its Testnet balance and the provider-independent empty state; Add funds and Cash out stayed disabled because the capability API returned no verified routes. This verifies local authentication, wallet display, and safe route gating, but it does not stand in for a provider order or signed payment.
 
@@ -653,3 +654,7 @@ The database service now refuses to initialize in development or test mode unles
 The focused safety tests passed 3/3, including a child-process check that proves the service rejects a remote target before database I/O. The full server suite passed 230/230 with 13 opt-in database tests skipped; server typecheck passed. The local SOW 2 preflight passed with an explicit loopback `_test` URL, and the restarted local API reported `ok: true`, 29 healthy schema groups, and local storage and media. This addresses accidental API or worker startup against the hosted Railway database. The one-time metadata migration still requires an explicit URL and is not loaded from project environment files.
 
 The ramp repository PostgreSQL suite then passed 3/3 against a separate disposable local `_test` database with no skips. It exercised persisted ownership and idempotency, append-only events, cash-out attempt recovery and expiry, and an unchanged earnings and claim snapshot. The database was dropped after the run. Provider checkout and wallet authorization remain unverified.
+
+### 29 October 2026: current ramp evidence package
+
+The evidence package now records revision `338e80b`, the latest local API readiness result with 29 schema groups, the 20 USDC Circle Testnet receipt, the current ramp test results, and the keyboard dismissal of the local 0.001 USDC marketplace review. Historical E8 contract IDs, receipts, and screenshots remain labeled with their original date. The current review was not signed or submitted, and no provider order or payout occurred. C3a is complete. C3b remains open until a deployment is authorized and the deployed versions and migrations are verified.
