@@ -92,3 +92,17 @@ Verification on this checkout:
 - `migrate-production.ts` applied all 27 schema groups to a fresh disposable PostgreSQL database with no missing relations, indexes, columns, or constraints.
 
 This run verifies one real local Sandbox account path and one synthetic playback. It does not complete CASH-01 through CASH-12 or a fresh purchase-to-claim journey. CO-25 remains open for the admin/worker browser checks, mobile/keyboard and recovery matrix, and genuine provider integration. CO-26 is complete for the current checkout; CO-27 remains open because the browser matrix and provider evidence are incomplete. No screenshot artifact was saved.
+
+## Current checkout release and ramp smoke run, 29 October 2026
+
+The Dynamic developer console already had Sandbox Test Accounts enabled; no setting was changed. Computer use reused the signed-in `SOW2 Artist Test` Sandbox profile. The local API process reported `NODE_ENV=test`, a loopback `sow2_current_demo_test` database, and local media/storage. No production API or account was used.
+
+The test account's own Tracks and Releases pages began empty. I created the clearly labeled single `SOW2 Sandbox Verification 2026-10-29`, uploaded a generated eight-second WAV and generated square PNG cover, set the song title and genre, and reached Review. The page showed `Artwork uploaded`, `Tracklist is valid`, and `Audio is ready`; I saved the release as a private draft and left it at Review for inspection. Its local URL is `/dashboard/releases/rel_526bbf64f2b14cdf?step=review`. This changed only the isolated test database and local media.
+
+On the account page, the test wallet had 0 XLM and 0 USDC, with no verified ramp routes. Add funds and Cash out were disabled and explained that no verified provider route was enabled. No provider session, quote, payment, payout, wallet signature, trustline transaction, publication, or chain transaction was attempted. The review was checked at a 390-pixel viewport; the document width was 375 pixels, with no horizontal overflow.
+
+The first browser observation after live module reload showed a React `useAuthContext must be used within AuthProvider` error. A full page reload restored the app, the Sandbox session and the account pages; no further browser errors were recorded during the run. The trigger was not reproduced, so its cause remains unknown. Browser screenshots were visually inspected but not saved as evidence files.
+
+The current workspace test run passed admin 23/23, client 200/200, and server 219 passed with 12 database-dependent skips. The ramp repository lifecycle passed against isolated PostgreSQL without skips; fresh disposable migration applied all 27 schema groups, including the new `refund_failed` provider state. Workspace typecheck and production build passed. A sanitized, read-only provider capability snapshot is in [readiness-2026-10-29.json](../ramp-sandbox-evidence/readiness-2026-10-29.json): MoonPay reports native XLM Test Mode support but Stellar USDC remains unavailable, while MoneyGram rejects the configured non-custodial mode. These checks created no provider transactions.
+
+This browser run verifies only a local artist release draft and unavailable-provider behavior. The admin/worker browser matrix, genuine MoonPay buy/sell, MoneyGram account-mode prerequisite, USDC delivery, fresh purchase-to-claim journey, and mobile/keyboard/recovery matrix remain open. Do not mark CO-25 or CO-27 complete on this evidence alone.

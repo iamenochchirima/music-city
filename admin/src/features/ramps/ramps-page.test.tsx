@@ -47,3 +47,13 @@ it("does not display an old conflict after a newer provider observation", async 
   await screen.findByText("Provider status");
   expect(screen.queryByText(/Provider statuses conflict/)).toBeNull();
 });
+
+it("warns admins when a provider refund failed", async () => {
+  const order = { id: "refund-failed", userId: "user", walletAddress: "wallet", provider: "moonpay", direction: "buy", environment: "sandbox", network: "stellar:testnet", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amount: { units: "1250", decimals: 2, currency: "GBP" }, providerState: "refund_failed", chainState: "unobserved", providerTransactionId: "ref", createdAt: "2026-10-29T00:00:00Z", updatedAt: "2026-10-29T00:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps" ? { items: [order] } : { order, events: [], receipts: [], deliveries: [], attempts: [], job: null });
+  const user = userEvent.setup();
+  render(<AdminRampsPage />);
+  await user.click(await screen.findByRole("button", { name: /12.50 GBP/ }));
+  expect((await screen.findByRole("alert")).textContent).toContain("The provider could not return the funds.");
+  expect(screen.queryByText(/Refunded/)).toBeNull();
+});

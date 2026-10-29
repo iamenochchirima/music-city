@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-10-29",
+  "environment": "sandbox",
+  "scope": "Read-only provider capability and authentication checks; no provider sessions or transactions created.",
+  "providers": {
+    "moonpay": {
+      "connection": "verified",
+      "nativeXlmTestMode": true,
+      "stellarUsdcTestMode": false,
+      "countryEligibility": {
+        "ZA": { "buy": true, "sell": true },
+        "GB": { "buy": true, "sell": true },
+        "ZW": { "buy": false, "sell": false }
+      },
+      "methods": {
+        "market": "ZAF/ZAR",
+        "buy": ["Google Pay", "credit/debit card", "Apple Pay"],
+        "sell": ["credit/debit card"]
+      },
+      "transactionCreated": false
+    },
+    "moneygram": {
+      "connection": "rejected",
+      "buy": "blocked",
+      "sell": "blocked",
+      "reason": "non_custodial_partner_required",
+      "transactionCreated": false
+    }
+  },
+  "limits": [
+    "Country eligibility does not guarantee an available quote or payment method.",
+    "XLM capability does not complete the Stellar USDC integration.",
+    "MoneyGram still requires the partner account to support the non-custodial Stellar mode used by Music City."
+  ]
+}

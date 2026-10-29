@@ -221,3 +221,16 @@ it("restores a transaction detail from its URL and lets the user refresh it", as
   await user.click(within(details).getByRole("button", { name: "Refresh status" }));
   await waitFor(() => expect(mock.get.mock.calls.filter(([path]) => path === "/ramps/saved").length).toBeGreaterThanOrEqual(2));
 });
+
+it("shows failed refunds as unresolved and tells the user the funds were not returned", async () => {
+  const order = { id: "refund-failed", direction: "buy", provider: "moonpay", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, launchRequested: true, providerStarted: true, providerState: "refund_failed", chainState: "unobserved", amount: { currency: "GBP", units: "1250", decimals: 2 }, createdAt: "2026-10-29T09:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : path === "/ramps" ? { items: [order] } : { order });
+  const user = userEvent.setup();
+  renderActivity(<WalletRampActivity token="session" />);
+  expect(await screen.findByText("Refund failed · Transfer unconfirmed")).toBeTruthy();
+  expect(screen.getByText("Check your pending transaction before starting another.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
+  await user.click(await screen.findByRole("button", { name: "View funding 12.50 GBP" }));
+  const details = await screen.findByRole("dialog", { name: "Funding details" });
+  expect(within(details).getByRole("alert").textContent).toBe("The provider could not return the funds. Contact support; no refund is confirmed.");
+});

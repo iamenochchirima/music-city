@@ -14,6 +14,7 @@ export const rampProviderStateSchema = z.enum([
   "cancelled",
   "refund_pending",
   "refunded",
+  "refund_failed",
   "unknown",
 ]);
 export const rampChainStateSchema = z.enum([

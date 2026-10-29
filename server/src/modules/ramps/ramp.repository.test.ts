@@ -15,6 +15,7 @@ import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
 import { rampCashOutRecoveryStatements } from "./ramp-cashout-recovery-migration.js";
 import { rampLaunchStatements } from "./ramp-launch-migration.js";
+import { rampRefundFailureStatements } from "./ramp-refund-failure-migration.js";
 import { settlementSchemaStatements } from "../settlements/settlement-schema.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
@@ -161,9 +162,9 @@ test(
           "INSERT INTO settlement_events(batch_id,actor,action,payload) VALUES($1,'GTEST','claim_confirmed',$2)",
           [claimBatchId, JSON.stringify({ ledgerId: claimedLedgerId, transactionHash: "e".repeat(64) })],
         );
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements])
           await c.query(sql);
       });
       const financialHistorySnapshot = () => db.transaction(async (c) => {
@@ -459,7 +460,7 @@ test(
         state: "processing", originalStatus: "pending", updatedAt: "2026-10-28T00:00:00.000Z" });
       await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET chain_state='unknown' WHERE id=$1", [launched.id]); });
       await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
-      for (const [providerState, chainState] of [["processing", "confirmed"], ["awaiting_user", "unobserved"], ["refund_pending", "unobserved"], ["completed", "unobserved"]]) {
+      for (const [providerState, chainState] of [["processing", "confirmed"], ["awaiting_user", "unobserved"], ["refund_pending", "unobserved"], ["refund_failed", "unobserved"], ["completed", "unobserved"]]) {
         await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state=$2,chain_state=$3 WHERE id=$1", [launched.id, providerState, chainState]); });
         await assert.rejects(repo.issueLaunch(waiting.id, "other", secondWallet), /existing transaction/);
         await assert.rejects(repo.saveLaunchSession(waiting.id, "other", secondWallet, Buffer.alloc(40), false), /existing transaction/);
@@ -644,7 +645,7 @@ test(
       } }]]), () => when, async () => quoteAllowed);
       await assert.rejects(expiredDuringQuote.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not available/);
       quoteAllowed = true;
-      for (const status of ["failed", "cancelled", "completed", "unknown", "refund_pending", "refunded"]) {
+      for (const status of ["failed", "cancelled", "completed", "unknown", "refund_pending", "refunded", "refund_failed"]) {
         await db.transaction(async (c) => { await c.query("UPDATE ramp_orders SET provider_state=$2 WHERE id=$1", [cashOrder.id, status]); });
         await assert.rejects(quoteService.request(cashOrder.id, { userId: "other", walletAddress: cashWallet }), /not ready for a quote/);
         await assert.rejects(repo.saveCashOutQuote(cashOrder.id, "other", cashWallet, quote, instructions, when), /not ready for a quote/);
@@ -771,7 +772,7 @@ test(
         async submit(xdr: string) { submissions++; assert.equal(xdr, liveTx.toXDR()); throw new Error("lost response"); } };
       // Provider failure after authorization must prevent a fresh submission,
       // but keep the signed attempt unresolved for receipt and expiry checks.
-      for (const providerState of ["failed", "unknown", "cancelled", "refunded", "completed"]) {
+      for (const providerState of ["failed", "unknown", "cancelled", "refunded", "refund_failed", "completed"]) {
         await db.transaction(async (c) => {
           await c.query("UPDATE ramp_orders SET provider_state=$2 WHERE id=$1", [liveOrder.id, providerState]);
           await c.query("UPDATE ramp_chain_attempts SET due_at=NOW() WHERE id=$1", [liveAttempt.id]);

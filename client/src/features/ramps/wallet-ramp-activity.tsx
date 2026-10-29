@@ -15,7 +15,7 @@ type Order = {
 };
 const providerStatus: Record<string, string> = {
   created: "Not started", awaiting_user: "Action needed", processing: "Processing", ready_for_pickup: "Ready for pickup",
-  completed: "Provider completed", failed: "Failed", cancelled: "Cancelled", refund_pending: "Refund pending", refunded: "Refunded", unknown: "Checking status",
+  completed: "Provider completed", failed: "Failed", cancelled: "Cancelled", refund_pending: "Refund pending", refunded: "Refunded", refund_failed: "Refund failed", unknown: "Checking status",
 };
 const chainStatus: Record<string, string> = {
   unobserved: "Transfer unconfirmed", prepared: "Transfer prepared", submitting: "Transfer pending", confirmed: "Transfer confirmed", failed: "Transfer failed", unknown: "Checking transfer", expired: "Transfer expired",
@@ -137,7 +137,7 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
   }
   const resumeAvailable = resume !== null && (resume.direction === "buy" ? routes : cashOutRoutes).some((route) => routeMatches(resume, route));
   const unresolved = items.some((item) => (item.launchRequested || item.providerStarted) &&
-    (["created", "awaiting_user", "processing", "ready_for_pickup", "refund_pending", "unknown"].includes(item.providerState) ||
+    (["created", "awaiting_user", "processing", "ready_for_pickup", "refund_pending", "refund_failed", "unknown"].includes(item.providerState) ||
       ["submitting", "unknown"].includes(item.chainState) || (item.providerState === "completed" && item.chainState !== "confirmed")));
   function closeDetail() {
     const next = new URLSearchParams(searchParams);
@@ -205,6 +205,7 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
         </dl>
         {detailLoading && <p role="status" className="text-muted-foreground">Refreshing status…</p>}
         {detail.providerState === "completed" && detail.chainState !== "confirmed" && <p role="status" className="text-muted-foreground">Provider completion is recorded; Stellar delivery is still being checked.</p>}
+        {detail.providerState === "refund_failed" && <p role="alert" className="text-destructive">The provider could not return the funds. Contact support; no refund is confirmed.</p>}
         {detail.direction === "sell" && detail.chainState === "confirmed" && detail.providerState !== "completed" && <p role="status" className="text-muted-foreground">The Stellar transfer is confirmed; provider payout is still being checked.</p>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
           <Button type="button" variant="outline" disabled={detailLoading} onClick={() => setDetailRetry((value) => value + 1)}>{detailLoading ? "Refreshing…" : "Refresh status"}</Button>

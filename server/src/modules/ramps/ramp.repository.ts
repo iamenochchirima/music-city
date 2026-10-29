@@ -39,7 +39,7 @@ function hydrate(row: Record<string, unknown>): RampOrder {
 }
 // Keep the history ordering and launch guard aligned so an old blocking order remains visible.
 const unresolvedOrderSql = `(launch_issued_at IS NOT NULL OR provider_transaction_id IS NOT NULL)
-  AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','unknown')
+  AND (provider_state IN ('created','awaiting_user','processing','ready_for_pickup','refund_pending','refund_failed','unknown')
     OR chain_state IN ('submitting','unknown') OR (provider_state='completed' AND chain_state<>'confirmed'))`;
 export function createRampRepository(db: Database) {
   return {
@@ -209,7 +209,7 @@ export function createRampRepository(db: Database) {
           return "stale" as const;
         const terminal = (await c.query(`SELECT data->>'state' AS state FROM ramp_events
           WHERE order_id=$1 AND source='provider_api' AND kind='status_observed'
-          AND data->>'state' IN ('completed','failed','cancelled','refunded') ORDER BY id LIMIT 1`, [id])).rows[0]?.state as string | undefined;
+          AND data->>'state' IN ('completed','failed','cancelled','refunded','refund_failed') ORDER BY id LIMIT 1`, [id])).rows[0]?.state as string | undefined;
         if (terminal && observation.state !== terminal) {
           const key = `conflict:${createHash("sha256").update(JSON.stringify(observation)).digest("hex")}`;
           await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'provider_api',$2,'status_conflict',$3) ON CONFLICT DO NOTHING", [id, key, JSON.stringify(observation)]);
@@ -314,7 +314,7 @@ export function createRampRepository(db: Database) {
              WHEN $3::text IS NOT NULL THEN INTERVAL '10 seconds'*POWER(2,LEAST(attempts,8))
              WHEN EXISTS (SELECT 1 FROM ramp_orders o WHERE o.id=order_id AND
                ((o.provider_state='completed' AND o.chain_state='confirmed') OR
-                (o.provider_state IN ('failed','cancelled','refunded') AND o.chain_state IN ('unobserved','failed','expired'))))
+                (o.provider_state IN ('failed','cancelled','refunded','refund_failed') AND o.chain_state IN ('unobserved','failed','expired'))))
                THEN INTERVAL '6 hours'
              ELSE INTERVAL '15 seconds' END END,last_error_code=$3
            WHERE order_id=$1 AND lease_token=$2 AND leased_until>NOW()`,
