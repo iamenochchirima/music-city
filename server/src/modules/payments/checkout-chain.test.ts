@@ -10,9 +10,9 @@ import type { CheckoutAttempt, PaymentIntentRecord } from "@music-city/shared";
 process.env.DATABASE_URL ??=
   "postgres://unused:unused@127.0.0.1:5432/unused_test";
 const { env } = await import("../../config/env.js");
-const { buildCheckoutTransaction, verifyCheckoutReceipt } = await import(
-  "./checkout-chain.js"
-);
+const { buildCheckoutTransaction, checkoutChain, verifyCheckoutReceipt } =
+  await import("./checkout-chain.js");
+const { supportChain } = await import("../support/support-chain.js");
 const now = new Date("2026-10-17T12:00:00Z");
 const source = Keypair.random(),
   destination = Keypair.random(),
@@ -73,6 +73,21 @@ const build = (
     closed,
     now.getTime(),
   );
+
+test("unfunded purchase wallets get payment-specific guidance", async () => {
+  const originalAccount = supportChain.account;
+  supportChain.account = async (_wallet, missingAccountMessage) => {
+    throw new Error(missingAccountMessage);
+  };
+  try {
+    await assert.rejects(
+      checkoutChain.account(source.publicKey()),
+      /Fund it with XLM before making a payment\./,
+    );
+  } finally {
+    supportChain.account = originalAccount;
+  }
+});
 
 test("checkout pays the advertised amount exactly and binds a short order memo", () => {
   const prepared = build();
