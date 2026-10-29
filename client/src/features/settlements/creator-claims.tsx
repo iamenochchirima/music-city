@@ -18,6 +18,18 @@ const money = (units: string) => {
   const n = BigInt(units);
   return `${n / 10000000n}.${(n % 10000000n).toString().padStart(7, "0").replace(/0+$/, "") || "00"}`;
 };
+const claimErrorMessage = (error: unknown) => {
+  const isServerError =
+    error instanceof Error &&
+    "status" in error &&
+    typeof error.status === "number" &&
+    error.status >= 500;
+  if (isServerError || error instanceof TypeError)
+    return "We couldn’t confirm this claim. Check its status before retrying.";
+  return error instanceof Error
+    ? error.message
+    : "Claim cancelled or unavailable. Your available balance is unchanged.";
+};
 type EarningsBatch = SettlementBatch & { trackTitle?: string | null };
 type Detail = { batch: SettlementBatch; attempts: FinancialAttempt[] };
 export function CreatorClaims() {
@@ -28,6 +40,7 @@ export function CreatorClaims() {
   const [items, setItems] = useState<EarningsBatch[]>([]),
     [attempts, setAttempts] = useState<FinancialAttempt[]>([]);
   const [error, setError] = useState<string | null>(null),
+    [loadError, setLoadError] = useState(false),
     [busy, setBusy] = useState<string | null>(null),
     [loading, setLoading] = useState(true);
   const [review, setReview] = useState<{
@@ -53,6 +66,7 @@ export function CreatorClaims() {
     setPendingUnits(balances.pendingUnits);
     setItems(response.items);
     setAttempts(details.flatMap((d) => d.attempts));
+    setLoadError(false);
   }, [token]);
   useEffect(() => {
     setItems([]);
@@ -60,14 +74,19 @@ export function CreatorClaims() {
     setAttempts([]);
     setReview(null);
     setLoading(true);
+    setLoadError(false);
+  }, [token]);
+  useEffect(() => {
     let active = true;
+    if (loadError) {
+      return () => {
+        active = false;
+      };
+    }
     const update = () =>
       load()
         .catch((e) => {
-          if (active)
-            setError(
-              e instanceof Error ? e.message : "Could not load earnings",
-            );
+          if (active) setLoadError(true);
         })
         .finally(() => {
           if (active) setLoading(false);
@@ -80,7 +99,11 @@ export function CreatorClaims() {
       active = false;
       clearInterval(timer);
     };
-  }, [load]);
+  }, [load, loadError]);
+  function retryLoad() {
+    setLoading(true);
+    setLoadError(false);
+  }
   async function claim() {
     if (!review || !session) return;
     const { batch, index } = review;
@@ -129,11 +152,7 @@ export function CreatorClaims() {
       setReview(null);
       await load();
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Claim cancelled or unavailable. Your available balance is unchanged.",
-      );
+      setError(claimErrorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -162,28 +181,42 @@ export function CreatorClaims() {
         eyebrow="Revenue"
         description="Claim your USDC when it is ready."
       />
+      {loadError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 p-4 text-sm"
+        >
+          <p>We couldn’t load your earnings. Try again.</p>
+          <Button
+            variant="outline"
+            onClick={() => void retryLoad()}
+            disabled={loading}
+          >
+            Try again
+          </Button>
+        </div>
+      )}
       {error && (
         <div
           role="alert"
           className="rounded-xl border border-destructive/30 p-4 text-sm"
         >
           <p>{error}</p>
-          <a className="mt-2 inline-block underline" href="/account">
-            Open wallet settings
-          </a>
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-xl border border-border p-5">
           <p className="text-sm text-muted-foreground">Available</p>
           <p className="mt-2 text-2xl font-semibold">
-            {money(available.toString())} <span className="text-sm">USDC</span>
+            {loading || loadError ? "—" : money(available.toString())}{" "}
+            <span className="text-sm">USDC</span>
           </p>
         </div>
         <div className="rounded-xl border border-border p-5">
           <p className="text-sm text-muted-foreground">Payment pending</p>
           <p className="mt-2 text-2xl font-semibold">
-            {money(pending.toString())} <span className="text-sm">USDC</span>
+            {loading || loadError ? "—" : money(pending.toString())}{" "}
+            <span className="text-sm">USDC</span>
           </p>
         </div>
       </div>
@@ -195,7 +228,7 @@ export function CreatorClaims() {
           <Loader2 className="size-4 animate-spin" />
           Loading earnings
         </p>
-      ) : !claims.length ? (
+      ) : loadError ? null : !claims.length ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
           Your earnings will appear here when they’re ready.
         </p>
