@@ -118,3 +118,11 @@ Discover playback of the synthetic eight-second track advanced its stream count 
 The local admin frontend opened its first-admin setup screen, which requires the operator's setup token. No token was supplied or guessed, so authenticated admin browser checks remain open. The financial worker and genuine provider journeys were not run from this artist account because no route or funds are available. The local app remains on the private release review page; the draft was not published.
 
 Verification for this follow-up: the client suite passed 201/201 and client typecheck passed. CO-25 and U4 remain open for admin authentication, worker browser checks, the remaining mobile/keyboard/recovery matrix, and genuine provider acceptance.
+
+## Listener Sandbox account pass, 29 October 2026
+
+I created a second synthetic Dynamic Sandbox identity, `SOW2 Listener Test`, and completed listener-only onboarding. The first sign-in reported "No Stellar wallet is linked to this account." A retry opened Dynamic's "Wallet not available" prompt; closing it returned to Music City onboarding, which then completed. This is another first-login friction case to investigate. No production identity or personal email was used, and no Dynamic setting was changed.
+
+The listener account opened Discover and Revenue. Revenue showed 0.00 USDC and disabled Add funds and Cash out because no verified provider route is enabled. Opening the artist's private release review URL displayed "Artist access is required to manage releases." The artist dashboard instead offered the path to set up an artist profile. The listener account created no provider order, quote, payment, payout, wallet signature, claim, or chain transaction.
+
+After the role check, I signed back into `SOW2 Artist Test` and restored its private draft at `/dashboard/releases/rel_526bbf64f2b14cdf?step=review`. CO-25 remains open for admin and worker checks, mobile/keyboard/recovery coverage, and real provider acceptance.
