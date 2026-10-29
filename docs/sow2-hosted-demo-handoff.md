@@ -10,9 +10,11 @@ The public account page is [musiccity.pro/account](https://musiccity.pro/account
 
 The [Marketplace](https://musiccity.pro/marketplace) currently says no track purchases are live. It shows a separate Music City Pass offer: three locked tracks for 15 USDC every 30 days. The offer was viewed, not purchased. Do not present it as a completed transaction.
 
-## Owner setup needed before recording SOW 2 transactions
+The [Music City Admin console](https://music-city-admin.vercel.app/console/admins) has one production super-admin, and normal sign-in was verified. Agreements and the royalty ledger are empty. Settlement reconciliation reports **Reconciled** with zero funded, claimed, recovered, unclaimed, or escrow USDC; there are no approved earnings sources or settlement records. This verifies admin access and empty states, not an agreement or settlement transaction.
 
-1. Open [Music City Admin](https://music-city-admin.vercel.app/auth). The page is ready for first-admin setup. The owner must enter their name, email, the one-time setup token configured in Railway, and a password they keep private, then select **Create admin**. Do not put either credential in chat, screenshots, or recordings.
+## Remaining setup before recording SOW 2 transactions
+
+1. Sign in at [Music City Admin](https://music-city-admin.vercel.app/auth) with the production super-admin account. Keep the password out of screenshots and recordings.
 2. Sign in to the artist account and prepare one authorized audio file and artwork. Publish a demo release, then use the track's **Track sales** setting to enable a one-time USDC price. The public Marketplace currently has no purchase-enabled tracks.
 3. Prepare the contributor and fresh buyer accounts. Confirm their Testnet wallets, USDC trustlines, and XLM for fees. Keep the chosen network and asset visible in the recording.
 4. Have both authorized treasury signers available before opening a funding review. Each beneficiary must be available to sign their own claim. Wallet signatures must be made by the account owner in the wallet prompt.
@@ -32,8 +34,10 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 
 - Railway API and workers: `0aa57d9`; Vercel admin: `0aa57d9`.
 - Vercel client: functional fixes `4ec021b` and `13c3154`; the latter deployment was checked live on `musiccity.pro`.
-- API readiness: HTTP 200; all 29 schema groups healthy. Production admin bootstrap still requires the owner to create the first account.
+- API readiness: HTTP 200; all 29 schema groups healthy. Production first-admin setup is complete; the owner signed in and the Admins page shows one super-admin.
 - Railway's media and financial workers are deployed successfully. Existing media jobs are complete with no backlog; a fresh upload still needs an authorized artist and demo file. The Stellar Testnet financial cursor was caught up with zero errors and three ledgers behind Horizon at the latest check.
 - There are currently no production payment intents, confirmed payments, support payments, settlement batches, or claims. There are no hosted financial receipts to use as a completed-transaction demo.
+- The hosted admin's Agreements and Royalties pages are empty. Settlement reconciliation passes with all balances at zero, and there are no approved earnings sources or settlement batches.
+- A Dynamic Sandbox static-OTP identity did not authenticate to the hosted client, which is configured against a different Dynamic environment. Use an account belonging to the hosted environment for the demo; do not present that Sandbox identity as production access.
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
