@@ -188,3 +188,9 @@ On the current local checkout (`c4dc6a6`), I used the signed-in synthetic artist
 On desktop, keyboard Tab traversed the header and Studio navigation links to wallet history; the disabled money actions were not focusable. At the mobile breakpoint, the navigation opened and Escape returned focus to its trigger. Reloading Revenue preserved the Sandbox session and loaded the wallet balance after its normal loading state. Returning to Releases showed the persisted `SOW2 Wallet Retry Test Single 2026-10-29` once, with one published release.
 
 This remains account and interface verification only. The test wallet has no Testnet funds or USDC, no provider route is verified, and no provider order, quote, payment, payout, wallet signature, trustline transaction, claim, or chain transaction was created. Admin setup and worker browser checks are still open. This adds partial U4 coverage but does not close U4, C2, or CO-25.
+
+## Local admin sign-in surface check, 29 October 2026
+
+I started the local admin frontend with its API base explicitly set to `http://localhost:4339/api/v1/admin`. `/auth` showed the existing-admin Login form, not first-admin bootstrap. At 390 × 844 the document fit without horizontal overflow; keyboard Tab reached Email, Password, Show password, and Sign in in order. The browser error log was empty. I did not enter credentials or submit the form, so authenticated admin lists and details were not checked. The admin frontend was stopped after this check.
+
+The financial worker was not running during the local account tests, so its browser-independent startup and reconciliation cycle were not verified in this pass. CO-25 and U4 remain open for authenticated admin review, worker checks, remaining interruption/recovery coverage, and provider acceptance.
