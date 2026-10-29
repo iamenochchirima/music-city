@@ -14,7 +14,7 @@ The [Music City Admin console](https://music-city-admin.vercel.app/console/admin
 
 ## Creator access
 
-The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. On 29 October, the signed-in listener's `/onboarding?intent=artist` route opened step 2, “How will you use Music City?”, with **I’m an artist** preselected. The account remains unchanged until the user continues. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass. This verifies artist setup entry only; the account has not been enrolled or activated. An authorized artist profile, activation, and approved demo audio/artwork are still needed to verify upload and publication.
+The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. On 29 October, computer use clicked **Set up artist profile** on `/dashboard/releases/new`; the signed-in listener reached step 2, “How will you use Music City?”, with **I’m an artist** preselected. At a 390-pixel viewport, the page has no horizontal overflow. Continue was not pressed, so the account remains unchanged and listener-only. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass. This verifies artist setup entry only; an authorized artist profile, activation, and approved demo audio/artwork are still needed to verify upload and publication.
 
 ## Remaining setup before recording SOW 2 transactions
 
