@@ -12,6 +12,8 @@ The local financial worker was stopped. Restarting it with the running API's iso
 
 See the [sanitized chain and database snapshot](current-qa-purchase-2026-10-29.json), [purchased page](current-qa-purchase-2026-10-29.png), and [unsigned funding review](current-qa-funding-review-2026-10-29.png). This advances C2 but does not complete it: new treasury funding, both beneficiary claims, and final reconciliation remain unverified. Provider journeys remain open. No push or deployment occurred.
 
+The [local treasury signing handoff](treasury-signing-handoff.md) identifies the saved E8 Testnet signer state and documents an offline review/signing utility. All three saved public keys match the on-chain treasury signer list. The actual unsigned funding envelope passed review-only mode; no signature was created. Four utility tests passed. The operator must run signing and submit the reviewed transaction.
+
 ## Historical evidence and earlier checkpoints
 
 Verified locally on 17 October 2026. Original verification base `9cd39f0`, branch `main`. The completed implementation is recorded in Git history. No production deployment or push was performed. This is E8 in the [SOW 2 tracker](../sow-2-tracker.md#core-d3-lifecycle-closure), not acceptance of the whole SOW.
