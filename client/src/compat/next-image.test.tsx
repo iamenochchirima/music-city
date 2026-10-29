@@ -34,6 +34,7 @@ it("shows a branded placeholder when an image fails to load", () => {
   const artwork = screen.getByRole("img", { name: "Cover" });
 
   fireEvent.error(artwork);
+  fireEvent.error(artwork);
 
   expect(artwork.getAttribute("src")).toMatch(/^data:image\/svg\+xml,/);
   expect(artwork.getAttribute("srcset")).toBeNull();

@@ -25,8 +25,7 @@ const Image = ({ fill, style, sizes = "100vw", priority = false, maxWidth = 1600
     decoding={props.decoding ?? "async"}
     onError={(event) => {
       const image = event.currentTarget;
-      if (image.dataset.fallbackApplied === "true") return;
-      image.dataset.fallbackApplied = "true";
+      if (image.src === unavailableImage) return;
       image.removeAttribute("srcset");
       image.src = unavailableImage;
       props.onError?.(event);
