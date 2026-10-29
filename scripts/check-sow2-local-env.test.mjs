@@ -4,7 +4,7 @@ import { checkLocalDemoConfig } from "./check-sow2-local-env.mjs";
 
 const sandbox = "2bf133b3-0bd0-4e1d-b956-7e613ed3d319";
 const testnetUsdcIssuer = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
-const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339", CLIENT_ORIGIN: "http://localhost:3000", APP_BASE_URL: "http://localhost:4339", STELLAR_SETTLEMENT_ASSET_CODE: "USDC", STELLAR_SETTLEMENT_ASSET_ISSUER: testnetUsdcIssuer, STELLAR_TREASURY_ADDRESS: "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5" };
+const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339", CLIENT_ORIGIN: "http://localhost:3000", APP_BASE_URL: "http://localhost:4339", STELLAR_SETTLEMENT_ASSET_CODE: "USDC", STELLAR_SETTLEMENT_ASSET_ISSUER: testnetUsdcIssuer, STELLAR_TREASURY_ADDRESS: "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5", AGREEMENT_TREASURY_ADDRESS: "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5", ROYALTY_REGISTRY_CONTRACT_ID: "CDIKALTGUF3XQGHCHUKH3IFNFFRE4ZGMCVTOGO3HUC654WS2XQZQQ3SX", SETTLEMENT_CONTRACT_ID: "CAQNSYYWEMMEYKB4JTSZRKBIQP4MSWURA2FMCBDVPUQ22ENI2BGCKXNW" };
 const client = { VITE_DYNAMIC_ENVIRONMENT_ID: sandbox, VITE_API_BASE_URL: "http://localhost:4339/api/v1", VITE_APP_BASE_URL: "http://localhost:3000" };
 const admin = { VITE_ADMIN_API_BASE_URL: "http://localhost:4339/api/v1/admin" };
 test("accepts an isolated local Sandbox and Testnet configuration", () => assert.deepEqual(checkLocalDemoConfig(server, client, admin), []));
@@ -27,6 +27,12 @@ test("rejects live identity, signing keys, databases, network and API endpoints"
     [{ ...server, STELLAR_SETTLEMENT_ASSET_ISSUER: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF" }, client],
     [{ ...server, STELLAR_TREASURY_ADDRESS: undefined }, client],
     [{ ...server, STELLAR_TREASURY_ADDRESS: "not-a-stellar-address" }, client],
+    [{ ...server, AGREEMENT_TREASURY_ADDRESS: undefined }, client],
+    [{ ...server, AGREEMENT_TREASURY_ADDRESS: "not-a-stellar-address" }, client],
+    [{ ...server, ROYALTY_REGISTRY_CONTRACT_ID: undefined }, client],
+    [{ ...server, ROYALTY_REGISTRY_CONTRACT_ID: "not-a-contract" }, client],
+    [{ ...server, SETTLEMENT_CONTRACT_ID: undefined }, client],
+    [{ ...server, SETTLEMENT_CONTRACT_ID: "not-a-contract" }, client],
     [server, { ...client, VITE_STELLAR_TESTNET_USDC_CODE: "XLM" }],
     [server, { ...client, VITE_STELLAR_TESTNET_USDC_ISSUER: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF" }],
     [{ ...server, STORAGE_PROVIDER: "s3" }, client],

@@ -17,6 +17,8 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export VITE_DYNAMIC_ENVIRONMENT_ID=2bf133b3-0bd0-4e1d-b956-7e613ed3d319
    export STELLAR_SETTLEMENT_ASSET_CODE=USDC
    export STELLAR_SETTLEMENT_ASSET_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+   # Set these from the same verified Stellar Testnet deployment:
+   # AGREEMENT_TREASURY_ADDRESS, ROYALTY_REGISTRY_CONTRACT_ID, SETTLEMENT_CONTRACT_ID
    export VITE_STELLAR_TESTNET_USDC_CODE=USDC
    export VITE_STELLAR_TESTNET_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
    # Set STELLAR_TREASURY_ADDRESS to the approved Testnet treasury public key.
@@ -30,7 +32,7 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    node scripts/check-sow2-local-env.mjs
    ```
 
-   The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters. The preflight checks configured environment values; confirm the running processes use the same values.
+   The preflight verifies the Stellar address formats, not that the contracts are deployed or configured together. Use the exact values from verified Testnet deployment evidence, then confirm the running processes use those same values. The client origin must be allowed by the Dynamic Sandbox and match `CLIENT_ORIGIN`; this checkout uses `http://localhost:3000`. If you use another approved local origin, change both values together. If the API uses a different local port, set `PORT` and change both frontend API URLs to match. Use a PostgreSQL URL without query parameters.
 5. From the repository root, build the shared package and start the services in separate terminals with those overrides:
 
    ```sh

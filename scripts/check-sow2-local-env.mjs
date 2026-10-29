@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const serverRequire = createRequire(resolve(root, "server/package.json"));
+const { StrKey } = serverRequire("@stellar/stellar-sdk");
 const sandboxId = "2bf133b3-0bd0-4e1d-b956-7e613ed3d319";
 const testnet = "Test SDF Network ; September 2015";
 const sandboxJwks = `https://app.dynamic.xyz/api/v0/sdk/${sandboxId}/.well-known/jwks`;
@@ -51,6 +53,12 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
     failures.push("Set STELLAR_SETTLEMENT_ASSET_CODE=USDC for the SOW 2 purchase and earnings lifecycle.");
   if (server.STELLAR_SETTLEMENT_ASSET_ISSUER !== testnetUsdcIssuer)
     failures.push("Set STELLAR_SETTLEMENT_ASSET_ISSUER to the Stellar Testnet USDC issuer.");
+  if (!StrKey.isValidEd25519PublicKey(server.AGREEMENT_TREASURY_ADDRESS || ""))
+    failures.push("Set AGREEMENT_TREASURY_ADDRESS to the approved Stellar Testnet treasury public key.");
+  if (!StrKey.isValidContract(server.ROYALTY_REGISTRY_CONTRACT_ID || ""))
+    failures.push("Set ROYALTY_REGISTRY_CONTRACT_ID to the deployed Stellar Testnet agreement registry.");
+  if (!StrKey.isValidContract(server.SETTLEMENT_CONTRACT_ID || ""))
+    failures.push("Set SETTLEMENT_CONTRACT_ID to the deployed Stellar Testnet earnings contract.");
   const clientUsdcCode = client.VITE_STELLAR_TESTNET_USDC_CODE || testnetUsdcCode;
   const clientUsdcIssuer = client.VITE_STELLAR_TESTNET_USDC_ISSUER || testnetUsdcIssuer;
   if (clientUsdcCode !== testnetUsdcCode || clientUsdcIssuer !== testnetUsdcIssuer)
@@ -86,7 +94,6 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
 }
 
 async function main() {
-  const serverRequire = createRequire(resolve(root, "server/package.json"));
   const dotenv = serverRequire("dotenv");
   const server = { ...process.env };
   const localServerEnv = resolve(root, "server/.env");
