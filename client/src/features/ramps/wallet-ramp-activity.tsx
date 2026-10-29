@@ -36,7 +36,7 @@ function showsChainState(order: Order) {
   return order.launchRequested || order.providerStarted || order.chainState !== "unobserved" || !["created", "cancelled"].includes(order.providerState);
 }
 
-export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string }) {
+export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTransactions = true }: { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string; showTransactions?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Order[]>([]);
   const [error, setError] = useState(false);
@@ -49,6 +49,9 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState(false);
   const [detailRetry, setDetailRetry] = useState(0);
+  const [routesRetry, setRoutesRetry] = useState(0);
+  const [routesLoading, setRoutesLoading] = useState(true);
+  const [routesError, setRoutesError] = useState(false);
   const [funding, setFunding] = useState(false);
   const [cashOut, setCashOut] = useState(false);
   const [cashOutRoutes, setCashOutRoutes] = useState<CashOutRoute[]>([]);
@@ -56,6 +59,8 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
   const detailId = searchParams.get("ramp");
   useEffect(() => {
     let active = true;
+    setRoutesLoading(true);
+    setRoutesError(false);
     setRoutes([]); setCashOutRoutes([]);
     void httpClient.get<{ routes: Array<FundingRoute | CashOutRoute> }>("/ramps/capabilities", token).then((result) => {
       if (active && Array.isArray(result.routes)) {
@@ -63,9 +68,13 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
         // Only an implemented client handoff can be offered, even if a server adapter is added.
         setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell" && route.provider === "moonpay" && route.assetCode === "USDC"));
       }
-    }).catch(() => {});
+    }).catch(() => {
+      if (active) setRoutesError(true);
+    }).finally(() => {
+      if (active) setRoutesLoading(false);
+    });
     return () => { active = false; };
-  }, [token]);
+  }, [token, routesRetry]);
   useEffect(() => {
     let active = true;
     let pending = false;
@@ -143,12 +152,24 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0" }: { token
   }
   return <section aria-label="Funding and cash-out" className="space-y-3 border-t border-white/10 pt-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><h3 className="text-sm font-medium text-white">Funding and cash-out</h3>{routes.length === 0 && cashOutRoutes.length === 0 && <p className="mt-1 text-sm text-slate-400">MoonPay and MoneyGram are unavailable</p>}</div>
+      <div>
+        <h3 className="text-sm font-medium text-white">Funding and cash-out</h3>
+        {routesLoading ? (
+          <p role="status" className="mt-1 text-sm text-slate-400">Checking available options…</p>
+        ) : routesError ? (
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+            <span>Could not check provider availability.</span>
+            <Button type="button" variant="outline" onClick={() => setRoutesRetry((value) => value + 1)}>Try again</Button>
+          </div>
+        ) : routes.length === 0 && cashOutRoutes.length === 0 ? (
+          <p className="mt-1 text-sm text-slate-400">No verified provider route is enabled yet. Your wallet balance stays unchanged.</p>
+        ) : null}
+      </div>
       <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={!routes.length || unresolved || error || loading} onClick={() => setFunding(true)}>Add funds</Button><Button type="button" variant="outline" disabled={!cashOutRoutes.length || !sign || !/[1-9]/.test(spendableUsdc) || unresolved || error || loading} onClick={() => setCashOut(true)}>Cash out</Button></div>
     </div>
     {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-slate-300">Could not load transaction history. <Button type="button" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div>}
     {unresolved && <p className="text-sm text-slate-400">Check your pending transaction before starting another.</p>}
-    {items.length > 0 && <div className="space-y-2">
+    {showTransactions && items.length > 0 && <div className="space-y-2">
       <h4 className="text-sm font-medium text-white">Transactions</h4>
       <ul className="divide-y divide-white/10">
         {items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { TrackSale } from "@music-city/shared";
 import { CreatorClaims } from "@/features/settlements/creator-claims";
+import { RevenueWalletCashout } from "@/features/ramps/revenue-wallet-cashout";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export const DashboardRevenueOverview = () => {
   return (
     <div className="space-y-8">
       <CreatorClaims />
+      <RevenueWalletCashout />
       {artist && (
         <section
           className="space-y-4 border-t border-border pt-6"

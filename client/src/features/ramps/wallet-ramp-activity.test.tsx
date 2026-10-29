@@ -20,6 +20,7 @@ it("keeps unavailable options disabled and distinguishes provider completion fro
   expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(true);
   expect(await screen.findByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
+  expect(await screen.findByText("No verified provider route is enabled yet. Your wallet balance stays unchanged.")).toBeTruthy();
   expect(screen.getByText("Add funds · 100.00 GBP")).toBeTruthy();
   expect(mock.get).toHaveBeenCalledWith("/ramps", "session");
 });
@@ -34,6 +35,23 @@ it("offers retry when transaction history cannot be loaded", async () => {
   await userEvent.setup().click(await screen.findByRole("button", { name: "Try again" }));
   expect(screen.queryByRole("alert")).toBeNull();
   expect(historyCalls).toBe(2);
+});
+it("retries provider capability checks and distinguishes loading failures from no routes", async () => {
+  let capabilityCalls = 0;
+  mock.get.mockImplementation(async (path: string) => {
+    if (path === "/ramps/capabilities") {
+      capabilityCalls += 1;
+      if (capabilityCalls === 1) throw new Error("offline");
+      return { routes: [] };
+    }
+    return { items: [] };
+  });
+  const user = userEvent.setup();
+  renderActivity(<WalletRampActivity token="session" />);
+  expect(await screen.findByText("Could not check provider availability.")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByText("No verified provider route is enabled yet. Your wallet balance stays unchanged.")).toBeTruthy();
+  expect(capabilityCalls).toBe(2);
 });
 it("offers funding only when the server provides a buy route", async () => {
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [{ provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" }] } : { items: [] });

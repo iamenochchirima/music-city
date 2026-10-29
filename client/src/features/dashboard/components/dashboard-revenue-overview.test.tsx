@@ -14,6 +14,9 @@ vi.mock("@/features/payments/lib/payments-api", () => ({
 vi.mock("@/features/settlements/creator-claims", () => ({
   CreatorClaims: () => <p>Claim earnings</p>,
 }));
+vi.mock("@/features/ramps/revenue-wallet-cashout", () => ({
+  RevenueWalletCashout: () => <p>Wallet cash-out</p>,
+}));
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 it("shows incoming song sales with exact amounts and the receipt's original network", async () => {
