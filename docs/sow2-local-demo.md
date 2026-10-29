@@ -2,6 +2,8 @@
 
 This guide follows the creator-to-purchase-to-claim journey recorded in [E8](core-lifecycle-evidence/README.md). E8 is historical evidence from 17 October 2026. A new demonstration needs new transactions and its own evidence. Reviewer acceptance and the rollout of the current checkout remain open in the [SOW 2 tracker](sow-2-tracker.md).
 
+**Local database safety gate:** the API loads `server/.env` when present, otherwise the repository root `.env`. The root file may point to the hosted Railway database. Export an explicit loopback-only `DATABASE_URL` in every API and worker process, then run `node scripts/check-sow2-local-env.mjs` in that same environment before starting services. Do not start a demo API if the preflight fails. Confirm the readiness response and the running process use the intended local database, local storage, and local media settings.
+
 ## Prepare the local environment
 
 1. Use an isolated local PostgreSQL database and local application configuration. Confirm that the API, client, admin and financial worker use Stellar Testnet and the same Testnet USDC issuer, agreement registry and settlement contracts. Do not point the demo at production data.
