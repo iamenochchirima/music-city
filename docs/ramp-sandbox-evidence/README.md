@@ -26,7 +26,9 @@ MoneyGram's current [non-custodial Stellar widget quickstart](https://xramps.mon
 - [Official SDK error screenshot](moonpay-official-sdk-error.jpg): diagnostic evidence from the earlier signing investigation; use the IP-binding audit for the resolved widget-load cause.
 - [Sanitized signing investigation record](moonpay-signing-2026-10-26.json): records the correction and explicitly says buy and sell were not completed and funds did not move.
 
-No verified provider transaction reference, completed payout, provider-confirmed buy delivery, or ramp-specific Stellar Testnet receipt exists in this evidence package. Historical SOW2 marketplace and settlement receipts are documented separately in the [core lifecycle evidence](../core-lifecycle-evidence/README.md) and must not be presented as ramp transactions.
+On 29 October, the signed-in MoonPay Partner Dashboard was in Test Mode. Its transaction list showed three failed US$100 XLM buys and no completed transaction in the displayed date range. The latest order, `9b2f74b9-0164-4692-b7c3-5afc4c30b3c9`, had external ID `38423219-78e5-458c-bbc7-dca25762268a`, country GBR, and failure reason `Payment authorization declined`. The dashboard did not expose a more specific authorization cause. An existing support ticket was submitted in the partner dashboard; no human diagnosis was visible during this check. No transaction was submitted from this investigation.
+
+This failed-order record has a provider dashboard reference, but no completed payout, provider-confirmed buy delivery, or ramp-specific Stellar Testnet receipt exists in this evidence package. Historical SOW2 marketplace and settlement receipts are documented separately in the [core lifecycle evidence](../core-lifecycle-evidence/README.md) and must not be presented as ramp transactions.
 
 ## Local application and test evidence
 
