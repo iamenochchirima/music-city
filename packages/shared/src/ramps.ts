@@ -4,6 +4,29 @@ import { stellarWalletAddressSchema } from "./commerce.js";
 
 export const rampProviderSchema = z.enum(["moonpay", "moneygram"]);
 export const rampDirectionSchema = z.enum(["buy", "sell"]);
+export type RampProvider = z.infer<typeof rampProviderSchema>;
+export type RampDirection = z.infer<typeof rampDirectionSchema>;
+
+// Sandbox handoff targets are fixed; providers must never choose arbitrary link origins.
+export const rampSandboxLaunchTargets: Record<
+  RampProvider,
+  Record<RampDirection, { origin: string; pathname: string }>
+> = {
+  moonpay: {
+    buy: { origin: "https://buy-sandbox.moonpay.com", pathname: "/" },
+    sell: { origin: "https://sell-sandbox.moonpay.com", pathname: "/" },
+  },
+  moneygram: {
+    buy: {
+      origin: "https://playground.xramps.moneygram.com",
+      pathname: "/widget.html",
+    },
+    sell: {
+      origin: "https://playground.xramps.moneygram.com",
+      pathname: "/widget.html",
+    },
+  },
+};
 export const rampProviderStateSchema = z.enum([
   "created",
   "awaiting_user",

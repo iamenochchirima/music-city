@@ -67,3 +67,26 @@ it("unlocks funding terms after a safe retry is definitively rejected", async ()
   expect(creates[2]?.[1]).toMatchObject({ amount: "13.00" });
   expect(creates[2]?.[1]?.requestId).not.toBe(firstRequestId);
 });
+
+it("supports a MoneyGram sandbox handoff only on its exact widget origin", async () => {
+  const user = userEvent.setup();
+  const moneygram: FundingRoute = { ...route, provider: "moneygram", assetCode: "USDC", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" } };
+  mock.post.mockResolvedValueOnce({ order: { id: "order" } }).mockResolvedValueOnce({ url: "https://playground.xramps.moneygram.com/widget.html?mode=on-ramp" });
+  render(<AddFundsDialog token="session" routes={[moneygram]} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.type(screen.getByLabelText("Amount in ZAR"), "20");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(await screen.findByText("Continue to MoneyGram to complete your purchase.")).toBeTruthy();
+  expect((await screen.findByRole("link", { name: "Continue to provider" })).getAttribute("href"))
+    .toBe("https://playground.xramps.moneygram.com/widget.html?mode=on-ramp");
+});
+
+it("does not expose a handoff for an untrusted MoneyGram origin", async () => {
+  const user = userEvent.setup();
+  const moneygram: FundingRoute = { ...route, provider: "moneygram", assetCode: "USDC", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" } };
+  mock.post.mockResolvedValueOnce({ order: { id: "order" } }).mockResolvedValueOnce({ url: "https://playground.xramps.moneygram.com.evil.test/widget.html" });
+  render(<AddFundsDialog token="session" routes={[moneygram]} onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.type(screen.getByLabelText("Amount in ZAR"), "20");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(screen.queryByRole("link", { name: "Continue to provider" })).toBeNull();
+});

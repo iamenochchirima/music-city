@@ -4,9 +4,11 @@ import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { httpClient } from "@/lib/api/http-client";
 import { isDefinitivelyRejectedRequest } from "./request-outcome";
+import { rampProviderName, validateRampProviderUrl } from "./provider-handoff";
+import type { RampProvider } from "@music-city/shared";
 
 export type CashOutRoute = {
-  provider: "moonpay" | "moneygram"; direction: "sell"; assetCode: "USDC"; assetIssuer: string;
+  provider: RampProvider; direction: "sell"; assetCode: "USDC"; assetIssuer: string;
   market: { country: string; currency: string; method: string };
   amountDecimals: number; minUnits: string; maxUnits: string;
 };
@@ -64,16 +66,13 @@ export function CashOutStartDialog({ token, routes, available, onClose, onChange
     }
     try {
       const result = await httpClient.post<{ url: string }>(`/ramps/${encodeURIComponent(orderId)}/launch`, {}, token);
-      const destination = new URL(result.url);
-      if (route.provider !== "moonpay" || destination.origin !== "https://sell-sandbox.moonpay.com" || destination.username || destination.password || destination.hash)
-        throw new Error("Invalid provider destination");
-      setUrl(destination.href);
+      setUrl(validateRampProviderUrl(route.provider, "sell", result.url));
     } catch { setUncertain(true); setError("Check this cash-out in transactions before trying again."); }
     finally { setBusy(false); lock.current = false; onChanged(); }
   }
   return <Dialog title="Cash out" onClose={onClose} busy={busy}>
-    {url ? <div className="space-y-4"><p>{opened ? "Check your transactions for updates." : "Continue to MoonPay to set up your cash-out."}</p><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Close</Button>{!opened && <Button asChild><a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => { if (lock.current) { event.preventDefault(); return; } lock.current = true; setOpened(true); onChanged(); }}>Continue to provider</a></Button>}</div></div> : <div className="space-y-5">
-      <fieldset disabled={busy || uncertain || createUncertain}><legend className="mb-2 text-sm font-medium">Choose a payout option</legend><div className="grid gap-2">{routes.map((option, i) => <label key={`${option.provider}-${option.market.country}-${option.market.currency}-${option.market.method}`} className={`cursor-pointer rounded-md border p-3 text-left text-sm focus-within:ring-2 focus-within:ring-ring ${index === i ? "border-primary bg-primary/10" : "border-border"}`}><input className="sr-only" type="radio" name="cashout-option" checked={index === i} onChange={() => { setIndex(i); setError(null); requestId.current = crypto.randomUUID(); }} /><span className="font-medium">{country(option.market.country)} · {option.market.currency} · {labels[option.market.method] ?? option.market.method}</span><span className="mt-1 block text-muted-foreground">{option.provider === "moonpay" ? "MoonPay" : "MoneyGram"}</span></label>)}</div></fieldset>
+    {url ? <div className="space-y-4"><p>{opened ? "Check your transactions for updates." : `Continue to ${rampProviderName(route.provider)} to set up your cash-out.`}</p><div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose}>Close</Button>{!opened && <Button asChild><a href={url} target="_blank" rel="noopener noreferrer" onClick={(event) => { if (lock.current) { event.preventDefault(); return; } lock.current = true; setOpened(true); onChanged(); }}>Continue to provider</a></Button>}</div></div> : <div className="space-y-5">
+      <fieldset disabled={busy || uncertain || createUncertain}><legend className="mb-2 text-sm font-medium">Choose a payout option</legend><div className="grid gap-2">{routes.map((option, i) => <label key={`${option.provider}-${option.market.country}-${option.market.currency}-${option.market.method}`} className={`cursor-pointer rounded-md border p-3 text-left text-sm focus-within:ring-2 focus-within:ring-ring ${index === i ? "border-primary bg-primary/10" : "border-border"}`}><input className="sr-only" type="radio" name="cashout-option" checked={index === i} onChange={() => { setIndex(i); setError(null); requestId.current = crypto.randomUUID(); }} /><span className="font-medium">{country(option.market.country)} · {option.market.currency} · {labels[option.market.method] ?? option.market.method}</span><span className="mt-1 block text-muted-foreground">{rampProviderName(option.provider)}</span></label>)}</div></fieldset>
       <label className="block space-y-2 text-sm"><span>Amount in USDC</span><Input aria-label="Amount in USDC" aria-describedby={balanceId} inputMode="decimal" value={amount} disabled={busy || uncertain || createUncertain} onChange={(event) => { setAmount(event.target.value); setError(null); requestId.current = crypto.randomUUID(); }} /><span id={balanceId} className="block text-muted-foreground">{available} USDC available{route ? ` · ${displayUnits(route.minUnits)}–${displayUnits(route.maxUnits)} USDC per cash-out` : ""}</span></label>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="outline" disabled={busy} onClick={onClose}>Close</Button><Button type="button" disabled={!route || busy || uncertain || !validAmount(amount, route, available)} onClick={() => void start()}>{busy ? createUncertain ? "Checking…" : "Preparing…" : createUncertain ? "Retry safely" : "Continue"}</Button></div>

@@ -1,4 +1,5 @@
 import type { RampOrder } from "@music-city/shared";
+import { rampSandboxLaunchTargets } from "@music-city/shared";
 import { HttpError } from "../../utils/http-error.js";
 import type { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import type { createRampRepository } from "./ramp.repository.js";
@@ -22,8 +23,8 @@ function validateUrl(order: RampOrder, raw: string, adapter: RampLaunchAdapter) 
 
 export function validateMoonpayLaunch(order: RampOrder, url: URL) {
   if (order.terms.provider !== "moonpay") throw new HttpError(503, "This payment option is not available yet");
-  const expectedOrigin = `https://${order.terms.direction === "buy" ? "buy" : "sell"}-sandbox.moonpay.com`;
-  if (url.origin !== expectedOrigin || url.pathname !== "/" || url.username || url.password || url.hash)
+  const target = rampSandboxLaunchTargets.moonpay[order.terms.direction];
+  if (url.origin !== target.origin || url.pathname !== target.pathname || url.username || url.password || url.hash)
     throw new HttpError(502, "The payment link could not be verified");
   const params = url.searchParams;
   const single = (key: string, value: string) => params.getAll(key).length === 1 && params.get(key) === value;

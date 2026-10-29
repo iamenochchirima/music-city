@@ -75,3 +75,14 @@ it("unlocks cash-out terms after a safe retry is definitively rejected", async (
   expect(creates[2]?.[1]).toMatchObject({ amount: "2" });
   expect(creates[2]?.[1]?.requestId).not.toBe(firstRequestId);
 });
+
+it("uses MoneyGram for a validated sandbox cash-out handoff", async () => {
+  const user = userEvent.setup();
+  const moneygram: CashOutRoute = { ...route, provider: "moneygram", market: { country: "ZA", currency: "ZAR", method: "cash_pickup" } };
+  mock.post.mockResolvedValueOnce({ order: { id: "saved" } }).mockResolvedValueOnce({ url: "https://playground.xramps.moneygram.com/widget.html?mode=off-ramp" });
+  render(<CashOutStartDialog token="session" routes={[moneygram]} available="3" onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.type(screen.getByRole("textbox", { name: "Amount in USDC" }), "1.5");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(await screen.findByText("Continue to MoneyGram to set up your cash-out.")).toBeTruthy();
+  expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
+});

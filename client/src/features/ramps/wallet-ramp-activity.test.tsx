@@ -115,9 +115,9 @@ it("offers funding only when the server provides a buy route", async () => {
   expect(await screen.findByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(true);
 });
-it("hides buy routes without a validated client handoff", async () => {
+it("shows every buy provider included in verified server capabilities", async () => {
   const routes = [
-    { provider: "moneygram", direction: "buy", assetCode: "USDC", market: { country: "ZA", currency: "ZAR", method: "cash_pickup" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" },
+    { provider: "moneygram", direction: "buy", assetCode: "USDC", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" },
     { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" },
   ];
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes } : { items: [] });
@@ -126,8 +126,23 @@ it("hides buy routes without a validated client handoff", async () => {
   await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
   await user.click(screen.getByRole("button", { name: "Add funds" }));
   expect(screen.getByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
-  expect(screen.queryByRole("radio", { name: /South Africa/ })).toBeNull();
-  expect(screen.getAllByRole("radio")).toHaveLength(1);
+  expect(screen.getByRole("radio", { name: /South Africa/ })).toBeTruthy();
+  expect(screen.getAllByRole("radio")).toHaveLength(2);
+});
+
+it("resumes a MoneyGram order with its matching verified route", async () => {
+  const order = { id: "saved-mg", direction: "buy", provider: "moneygram", assetCode: "USDC", market: { country: "ZA", currency: "ZAR", method: "cash_deposit" }, launchRequested: false, providerState: "created", chainState: "unobserved", amount: { currency: "ZAR", units: "2000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
+  const route = { provider: "moneygram", direction: "buy", assetCode: "USDC", market: order.market, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
+  mock.post.mockResolvedValue({ url: "https://playground.xramps.moneygram.com/widget.html?mode=on-ramp" });
+  const user = userEvent.setup();
+  renderActivity(<WalletRampActivity token="session" />);
+  await user.click(await screen.findByRole("button", { name: "Manage" }));
+  const dialog = await screen.findByRole("dialog", { name: "Add funds" });
+  expect(within(dialog).getByText("Continue this transaction with MoneyGram.")).toBeTruthy();
+  await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+  expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
+  expect(mock.post).toHaveBeenCalledWith("/ramps/saved-mg/launch", {}, "session");
 });
 it("resumes an unlaunched saved order without creating another", async () => {
   const order = { id: "saved", direction: "buy", provider: "moonpay", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, launchRequested: false, providerState: "created", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };

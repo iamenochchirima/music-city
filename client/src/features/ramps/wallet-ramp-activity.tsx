@@ -8,9 +8,11 @@ import { AddFundsDialog, type FundingRoute } from "./add-funds-dialog";
 import { ResumeFundingDialog } from "./resume-funding-dialog";
 import { CashOutStartDialog, type CashOutRoute } from "./cash-out-start-dialog";
 import { CashOutQuoteDialog } from "./cash-out-quote-dialog";
+import type { RampProvider } from "@music-city/shared";
+import { rampProviderName } from "./provider-handoff";
 
 type Order = {
-  id: string; direction: "buy" | "sell"; provider: string; providerState: string; chainState: string; launchRequested: boolean; providerStarted: boolean;
+  id: string; direction: "buy" | "sell"; provider: RampProvider; providerState: string; chainState: string; launchRequested: boolean; providerStarted: boolean;
   amount: { currency: string; units: string; decimals: number }; assetCode: string; market: { country: string; currency: string; method: string }; createdAt: string; updatedAt?: string;
 };
 const providerStatus: Record<string, string> = {
@@ -64,10 +66,8 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
     setRoutes([]); setCashOutRoutes([]);
     void httpClient.get<{ routes: Array<FundingRoute | CashOutRoute> }>("/ramps/capabilities", token).then((result) => {
       if (active && Array.isArray(result.routes)) {
-        // Add-funds currently validates and opens only MoonPay's sandbox URL.
-        // Keep other provider routes hidden until their client handoff exists.
-        setRoutes(result.routes.filter((route): route is FundingRoute => route.direction === "buy" && route.provider === "moonpay"));
-        setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell" && route.provider === "moonpay" && route.assetCode === "USDC"));
+        setRoutes(result.routes.filter((route): route is FundingRoute => route.direction === "buy"));
+        setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell" && route.assetCode === "USDC"));
       }
     }).catch(() => {
       if (active) setRoutesError(true);
@@ -198,7 +198,7 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
       {detail && <div className="space-y-4 text-sm">
         <p className="font-medium text-white">{money(detail.amount)} · {detail.market.country} · {methodLabel[detail.market.method] ?? detail.market.method}</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-          <dt className="text-muted-foreground">Provider</dt><dd>{detail.provider === "moonpay" ? "MoonPay" : "MoneyGram"}</dd>
+          <dt className="text-muted-foreground">Provider</dt><dd>{rampProviderName(detail.provider)}</dd>
           <dt className="text-muted-foreground">Provider status</dt><dd>{providerLabel(detail)}</dd>
           <dt className="text-muted-foreground">Stellar status</dt><dd>{chainLabel(detail)}</dd>
           <dt className="text-muted-foreground">Started</dt><dd>{new Date(detail.createdAt).toLocaleString()}</dd>
