@@ -590,3 +590,60 @@ test("completion requires only display name and intent and is idempotent", async
     cleanup.reverse().forEach((fn) => fn());
   }
 });
+
+test("an unpaid artist can finish registration but still cannot use artist tools", async () => {
+  let stored = createProfile({
+    primaryIntent: "artist",
+    onboardingStatus: "in_progress",
+    onboardingStep: "personalize",
+  });
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 2000,
+        campaignCode: null,
+        termsRevision: null,
+        status: "payment_required",
+        profileExists: true,
+        artistAccess: false,
+        activatedAt: null,
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+  ];
+
+  try {
+    const completed = await usersService.completeOnboarding(walletAddress);
+
+    assert.equal(completed?.onboardingStatus, "complete");
+    assert.equal(completed?.onboardingStep, "complete");
+    assert.equal(completed?.artistAccess, false);
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create your artist profile first",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});

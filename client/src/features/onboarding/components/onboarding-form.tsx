@@ -1550,12 +1550,16 @@ export const OnboardingForm = ({
             >
               {primaryIntent === "listener"
                 ? "Your listening space is ready."
-                : "Your artist workspace is ready."}
+                : artistActivationQuote?.artistAccess
+                  ? "Your artist workspace is ready."
+                  : "Your account is ready."}
             </h2>
             <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
               {primaryIntent === "listener"
                 ? "Start with a fresh release, follow an artist, or build your first playlist."
-                : "Your profile is ready. Continue into the studio whenever you want to release music."}
+                : artistActivationQuote?.artistAccess
+                  ? "Your profile is ready. Continue into the studio whenever you want to release music."
+                  : "You can listen now. Artist tools unlock after you complete activation, which you can review when you create your first release."}
             </p>
           </div>
         ) : null}

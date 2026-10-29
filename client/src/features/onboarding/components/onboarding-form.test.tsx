@@ -122,6 +122,7 @@ it("completes the listener branch with genres and follows only at the end", asyn
 });
 it.each(["artist", "both"] as const)("completes %s with genres asked once and artist recommendations last", async intent => {
   const user = userEvent.setup(); const completed = await open(); await identity(user);
+  mocks.quote.mockResolvedValueOnce(quote).mockResolvedValue({ ...quote, status: "sponsored", artistAccess: true });
   await user.click(screen.getAllByRole("radio")[intent === "artist" ? 1 : 2]);
   await waitFor(() => expect(screen.getByRole("button", {name:"Continue"}).hasAttribute("disabled")).toBe(false));
   await user.click(screen.getByRole("button", {name:"Continue"}));
@@ -157,6 +158,38 @@ it.each(["artist", "both"] as const)("completes %s with genres asked once and ar
   await screen.findByText("Your artist workspace is ready.");
   await user.click(screen.getByRole("button",{name:"Create your first release"}));
   expect(completed).toHaveBeenCalledWith(intent,"/dashboard/create");
+});
+it("finishes registration without activation while keeping artist tools locked", async () => {
+  const user = userEvent.setup();
+  mocks.quote.mockResolvedValue({
+    ...quote,
+    discountAmountMinor: 0,
+    discountPercent: 0,
+    amountDueMinor: 2000,
+    campaignCode: null,
+    termsRevision: null,
+    status: "payment_required",
+    artistAccess: false,
+  });
+  await open();
+  await identity(user);
+  await user.click(screen.getAllByRole("radio")[1]);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(false),
+  );
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByText(/No discount is available for this account/);
+  await user.click(screen.getByRole("button", { name: "Continue to artist profile" }));
+  await screen.findByLabelText("Short biography");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Header image");
+  await user.click(screen.getByRole("button", { name: "Skip for now" }));
+  await screen.findByRole("heading", { name: "Find your artists" });
+  await user.click(screen.getByRole("button", { name: "Finish setup" }));
+
+  await screen.findByText("Your account is ready.");
+  expect(screen.getByText(/Artist tools unlock after you complete activation/)).toBeTruthy();
+  expect(mocks.complete).toHaveBeenCalledOnce();
 });
 it("offers activation retry before continuing when the quote request fails", async () => {
   const user = userEvent.setup(); await open(); await identity(user);

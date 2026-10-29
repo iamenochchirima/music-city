@@ -533,9 +533,7 @@ export const usersService = {
       updatedAt: nowIso(),
     };
 
-    return withArtistAccess(await usersRepository.upsert(completed, {
-      requireArtistAccess: isArtistIntent(completed.primaryIntent),
-    }));
+    return withArtistAccess(await usersRepository.upsert(completed));
   },
 
   async requireArtistOnboardingAccess(

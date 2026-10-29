@@ -70,6 +70,28 @@ it("keeps the dedicated activation step focused on the offer and amount due", ()
   expect(summary.textContent).not.toContain("Amount due $0.00");
 });
 
+it("explains that an artist can finish registration before paying activation", () => {
+  render(
+    <ArtistActivationSummary
+      quote={{
+        ...eligibleQuote,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 2000,
+        campaignCode: null,
+        termsRevision: null,
+        status: "payment_required",
+      }}
+      variant="step"
+    />,
+  );
+  const summary = screen.getByLabelText("Artist activation");
+
+  expect(summary.textContent).toContain(
+    "No discount is available for this account. Finish setup now; artist tools unlock after activation.",
+  );
+});
+
 it("does not prepare or sign a payment when the server says activation is sponsored", async () => {
   mocks.getActivation.mockResolvedValue(eligibleQuote);
   const { result } = renderHook(() => useArtistOnboardingPayment());
