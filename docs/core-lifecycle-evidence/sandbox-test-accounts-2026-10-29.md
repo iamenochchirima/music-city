@@ -75,3 +75,20 @@ A fresh synthetic artist identity completed Dynamic Sandbox sign-in and the Musi
 The account pages do not establish provider readiness: the local capabilities response had no routes, so no quote, provider session, payment, payout, or signature could be started. No release, playlist, agreement, or chain transaction was created for the new identity. The browser was left at `/dashboard/releases` under the synthetic artist so the empty release state is available for local review.
 
 The cash-out review now shows one compact total grouped by currency, with the fee breakdown and network/provider transaction identifiers inside collapsed disclosures. Its focused UI tests passed 7/7, all ramp UI tests passed 36/36, and client typecheck passed. The required identity action remains unverified because no provider adapter or quote is enabled. CO-19 therefore remains open.
+
+## Current checkout test-account rerun, 29 October 2026
+
+Computer use rechecked the local app using the signed-in Dynamic Sandbox profile `SOW2 Artist Test`. The local API process used `NODE_ENV=test`, the `sow2_current_demo_test` database on localhost, the Music City Dynamic Sandbox, Stellar Testnet, local storage/media, and ramps disabled. The API readiness endpoint reported a healthy database and applied schema groups. Dynamic's Test Accounts setting was already enabled; no authentication settings were changed. The SOW2 environment preflight passed when run with the same explicit local Sandbox/Testnet overrides.
+
+The account's Studio pages showed normal empty states for its own tracks and releases. Agreements and playlists also loaded their empty states. Discover contained the synthetic public release `SOW2 Sandbox Lifecycle Test` and its eight-second `Lifecycle Test Tone`. The database clone referenced local masters that were absent from `server/data/media`; playback preload initially failed for those missing files. I recreated only this named synthetic WAV in ignored local media storage. Preload then returned HTTP 200, the browser played the recording through to 0:08, and its stream count advanced from two to three. This changed only the isolated test database. Other cloned catalog assets remain absent, so this check does not prove playback for every catalog item.
+
+Revenue settled to 0.00 USDC available, 0.00 USDC pending, and 0 USDC spendable. The page displayed the explicit treasury/finalized-registry setup requirement because `/settlements/balances` returned 503 without `AGREEMENT_TREASURY_ADDRESS`. The ramps capability endpoint returned no routes; Add funds and Cash out stayed disabled. No claim, provider session, quote, payment, payout, wallet signature, or chain transaction was attempted. The current Sandbox artist has no funds, and fresh claims remain blocked on verifying the Testnet treasury and registry configuration. After playback ended, the track-details button still said `Playing` while the global player offered `Play`; this is a separate playback-state UI inconsistency to investigate.
+
+Verification on this checkout:
+
+- `pnpm test`: 218 server tests passed, 13 database-backed server tests skipped by the default runner, 199 client tests passed, and 22 admin tests passed.
+- Server tests with dedicated disposable PostgreSQL databases: 321 passed, zero skipped, including agreement finalization, checkout recovery, settlement and claim history, direct support, and ramp persistence.
+- `pnpm typecheck` and `pnpm build` passed. The client build retains its existing large-chunk warning.
+- `migrate-production.ts` applied all 27 schema groups to a fresh disposable PostgreSQL database with no missing relations, indexes, columns, or constraints.
+
+This run verifies one real local Sandbox account path and one synthetic playback. It does not complete CASH-01 through CASH-12 or a fresh purchase-to-claim journey. CO-25 remains open for the admin/worker browser checks, mobile/keyboard and recovery matrix, and genuine provider integration. CO-26 is complete for the current checkout; CO-27 remains open because the browser matrix and provider evidence are incomplete. No screenshot artifact was saved.
