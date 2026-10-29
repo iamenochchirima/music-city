@@ -264,6 +264,14 @@ Read-only browser checks used the existing artist Sandbox account and the existi
 
 The contributor's historical agreements remained readable, while the earnings view showed no new claimable balance and required explicit treasury/split-registry configuration. No new agreement, purchase, settlement, claim, provider session, quote, transfer, or payout was created. This fixes an analytics defect and verifies account read paths; it does not close C2 or the broader U4 browser matrix. The full workspace tests, typecheck, and build passed; the default suite skipped 13 database-backed server tests.
 
+### 29 October 2026: mobile navigation and transaction recovery browser check
+
+Computer use verified the local Account and Revenue pages at 390 pixels. The mobile navigation is keyboard reachable, opens with Enter, and closes with Escape while restoring focus. Both pages fit without horizontal overflow. The Revenue page keeps available earnings and pending payments at 0.00 USDC, shows the missing treasury/finalized-registry setup reason, and leaves funding and cash-out disabled while no verified routes exist.
+
+An existing cancelled GBP sandbox fixture opened at its saved `?ramp=` detail URL. Provider status stayed Cancelled and Stellar status stayed Transfer unconfirmed after manual refresh and browser reload; closing returned to the account page. This was read-only local fixture evidence, not a provider or chain result.
+
+The root `.env` lacks `AGREEMENT_TREASURY_ADDRESS`; its configured registry differs from the historical E8 registry, and its current Testnet validity has not been established. No environment or contract setting was changed. C2 remains open pending correct current Testnet configuration and a real user-authorized claim. U4 remains open for the actual quote, review, signing, provider overlay, slow-response, and cancellation matrix. No screenshot artifact was saved.
+
 Focused capability tests, the existing isolated PostgreSQL order and recovery suite, and server typecheck passed. No payment route was enabled. B2 and U2 remain open for verified adapters and their complete user journeys.
 
 ### 29 October 2026: unavailable saved funding route

@@ -752,3 +752,11 @@ The wallet history now opens owner-scoped transaction details at `/account?ramp=
 The local artist account showed two playback sessions but four completion events because the player could report completion at both the near-end threshold and the media `ended` event. Completion reporting is now deduplicated per playback session, and analytics counts distinct sessions with a corresponding start. Analytics also resolves track-to-release membership from the authoritative relation. The local browser now shows two streams, the correct release and track grouping, and a 100% completion rate.
 
 An existing contributor/listener Sandbox account could read historical agreements. Its earnings page showed no new claimable amount and an explicit treasury/split-registry configuration requirement. No agreement acceptance, purchase, settlement, claim, provider transaction, or wallet transfer occurred. The full workspace tests, typechecks, and build passed, with 13 database-backed server tests skipped by the default runner. This is an analytics correction and read-only account verification; it does not complete C2, provider journeys, or U4.
+
+### Mobile navigation and transaction recovery check, 29 October 2026
+
+At 390 pixels, the local Account and Revenue pages had no horizontal overflow. Keyboard focus reached the mobile navigation; Enter opened it and Escape closed it with focus restored. Revenue kept wallet funds separate from unclaimed earnings, showed the missing treasury/finalized-registry setup reason, and left Add funds and Cash out disabled because no provider route is verified.
+
+An existing cancelled GBP fixture opened at its saved transaction URL. Manual refresh and browser reload preserved MoonPay Cancelled and Stellar Transfer unconfirmed; Close returned to the account page. No provider or wallet action occurred. U4 remains open for real provider flows, quote/review/signing, slow responses, and their mobile recovery.
+
+The root local environment has no `AGREEMENT_TREASURY_ADDRESS`, and its configured registry does not match historical E8 evidence; current Testnet validity has not been verified. No contract configuration changed. C2 remains open until the correct current Testnet configuration and a new user-authorized lifecycle are verified. No screenshot file was saved.
