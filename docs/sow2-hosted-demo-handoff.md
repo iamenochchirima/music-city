@@ -24,7 +24,7 @@ This is a read-only product walkthrough, not a completed SOW 2 transaction demo:
 
 1. Open [Discover](https://musiccity.pro/discover) and show the three current live releases and featured tracks.
 2. Open [Delight’s artist profile](https://musiccity.pro/artists/usr_0d9124aacde146c9), then open its single, [Isgubhu](https://musiccity.pro/releases/rel_0fcde14a70674ad2).
-3. Open [Isgubhu track details](https://musiccity.pro/stream/trk_f9cc725f7966466b). The current page shows a 4:39 published track and 4 streams. The page and its Support amount dialog fit a 390-pixel viewport; cancel the dialog before **Review support** because no support transfer is being demonstrated.
+3. Open [Isgubhu track details](https://musiccity.pro/stream/trk_f9cc725f7966466b). The current page shows a 4:39 published track and 4 streams. The Support dialog offers 1, 5, and 10 USDC presets with 5 USDC selected. Computer use confirmed that **Cancel** closes the dialog before **Review support**; no payment is created. The page and dialog were previously checked at a 390-pixel viewport.
 4. For an admin readiness clip, open [Settlements](https://music-city-admin.vercel.app/console/settlements) after signing in. It shows a reconciled, empty production ledger, not a funded settlement.
 
 The artist-directory filter is live in production as commit `d1d032a`. Computer use verified that both `/artists` and Discover's **Artists in motion** now show only Delight, Axe Ray, and 360 Buzz, each with a published release. The empty `SOW2 QA Listener` profile is hidden from those public lists; artist selection for onboarding and credits is unchanged. Avoid playing a production track for five seconds or longer during an unplanned take; that can add a public stream.
