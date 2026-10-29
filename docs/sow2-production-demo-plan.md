@@ -10,6 +10,7 @@ The [SOW 2 tracker](sow-2-tracker.md) remains the scope and acceptance record. T
 - Live release check at 13:42 SAST on 29 October 2026: Railway's API and both workers run `0aa57d9`; the Vercel admin runs `0aa57d9`; the Vercel client runs `4ec021b`. The client change only hides empty Discover sections. API readiness returns HTTP 200 with all 29 schema groups healthy. Admin bootstrap still reports `bootstrapRequired: true`.
 - Computer-use check on `musiccity.pro`: three unique releases and their artwork load; the empty playlists section is hidden. A track starts, pauses, and exposes working mute and volume controls. A listen under five seconds did not count. A second test crossed five seconds and raised Isgubhu from three to four streams. That test added one counted stream to the public catalog.
 - Google sign-in through Dynamic completed on `musiccity.pro` on 29 October. The signed-in listener's account page opened and showed a Testnet wallet with XLM and USDC enabled. The Marketplace reports that no track purchases are live; its separate Music City Pass offers access to three locked tracks for 15 USDC every 30 days. Public release and track pages show playback, support, and social actions, but no track purchase action. Add funds and Cash out remain disabled as expected while no provider route is enabled.
+- Follow-up copy fix `13c3154` deployed to `musiccity.pro` at 13:52 SAST. Reloading the signed-in account confirmed the clearer unavailable-funding message, with both actions still disabled.
 - MoonPay and MoneyGram remain unavailable for a verified funding/cash-out journey. Keep those routes disabled. Their external approval and testing do not hold up the other demos.
 - Preserve the unrelated, untracked `docs/core-lifecycle-evidence/checkpoint.json` and all existing customer and financial records.
 
@@ -42,7 +43,7 @@ Execute the rollout after the release candidate is reviewed and deployment is au
 - [x] Deploy the Railway API with the registered migration command. Verify readiness against the current schema manifest, including all 29 groups at this baseline.
 - [x] Deploy the media worker and financial worker from the same backend revision (`0aa57d9`).
 - [ ] Verify real media-job progress and financial-index freshness, not only process status.
-- [x] Deploy the Vercel admin (`0aa57d9`) and client (`4ec021b`). The later client commit only changes Discover section visibility.
+- [x] Deploy the Vercel admin (`0aa57d9`) and client (`4ec021b`); the follow-up client release `13c3154` also clarifies the unavailable funding and cash-out message.
 - [x] Verify listener sign-in on the hosted client. Google OAuth through Dynamic returned to `musiccity.pro`, the signed-in account appeared in the header, and `/account` loaded with the Testnet wallet. No account email or wallet address is included in this evidence.
 - [ ] Verify production admin sign-in and first-admin setup. Admin bootstrap still reports `bootstrapRequired: true`; the owner must set their own password with the one-time setup token.
 - [ ] Open first-admin setup for the owner to set the production password. Complete normal sign-in and verify access to Agreements, Royalties, Settlements, and reconciliation. Keep setup credentials out of the demo.
