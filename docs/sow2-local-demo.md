@@ -4,6 +4,8 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
 
 **Local database safety gate:** the API loads `server/.env` when present, otherwise the repository root `.env`. The root file may point to the hosted Railway database. API and worker startup now refuses `DATABASE_URL` values outside production unless they use loopback PostgreSQL and a database name ending in `_test`. Startup also rejects PostgreSQL URLs whose `host` query parameter overrides a loopback hostname. Export an explicit local test URL in every API and worker process, then run `node scripts/check-sow2-local-env.mjs` in that same environment before starting services. Do not start a demo API if the preflight fails. Confirm the readiness response and the running process use the intended local database, local storage, and local media settings.
 
+**Current rehearsal:** the verified browser session uses the Dynamic Sandbox at `http://localhost:3000`, an isolated loopback `_test` database, and API port `4339`. The local admin Vite app uses port `4318` and its ignored `admin/.env.local` points to the same API. The local admin currently shows its sign-in form; no authenticated admin session is verified. Do not copy ignored environment files into this guide.
+
 ## Prepare the local environment
 
 1. Use an isolated local PostgreSQL database and local application configuration. Confirm that the API, client, admin and financial worker use Stellar Testnet and the same Testnet USDC issuer, agreement registry and settlement contracts. Do not point the demo at production data.
@@ -23,10 +25,12 @@ This guide follows the creator-to-purchase-to-claim journey recorded in [E8](cor
    export VITE_STELLAR_TESTNET_USDC_CODE=USDC
    export VITE_STELLAR_TESTNET_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
    # Set STELLAR_TREASURY_ADDRESS to the approved Testnet treasury public key.
+   export PORT=4339
    export CLIENT_ORIGIN=http://localhost:3000
+   export APP_BASE_URL=http://localhost:4339
    export VITE_APP_BASE_URL=http://localhost:3000
-   export VITE_API_BASE_URL=http://localhost:4319/api/v1
-   export VITE_ADMIN_API_BASE_URL=http://localhost:4319/api/v1/admin
+   export VITE_API_BASE_URL=http://localhost:4339/api/v1
+   export VITE_ADMIN_API_BASE_URL=http://localhost:4339/api/v1/admin
    export RAMPS_SANDBOX_ENABLED=false
    export STORAGE_PROVIDER=local
    export MEDIA_PROVIDER=local
@@ -58,8 +62,8 @@ These are public Testnet identifiers, not signing keys. They passed the read-onl
    pnpm dev:admin
    ```
 
-   The default addresses are `http://localhost:4317` for the client, `http://localhost:4318` for the admin and `http://localhost:4319` for the API. Local configuration can change them. The media worker processes uploads; the financial worker reconciles payments, settlements and claims.
-6. Confirm that the API readiness endpoint at `/api/v1/health/ready` responds successfully and that both frontends load against the local API. Record the current Git revision with `git rev-parse HEAD`.
+   The default addresses are `http://localhost:4317` for the client, `http://localhost:4318` for the admin, and `http://localhost:4319` for the API. This rehearsal overrides the client to port `3000` and the API to port `4339`. The media worker processes uploads; start it when you will upload or publish a new test recording. Start the financial worker only for a separately planned Testnet lifecycle run, after confirming that the isolated database contains only the intended test work.
+6. Confirm that `http://localhost:4339/api/v1/health/ready` responds successfully and both frontends load against the local API. The current admin check reaches the sign-in form only; it does not prove authenticated admin access. Record the current Git revision with `git rev-parse HEAD`.
 
 ## Publish music and approve the agreement
 
