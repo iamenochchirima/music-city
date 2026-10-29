@@ -258,6 +258,12 @@ The isolated PostgreSQL test covered each blocked state, recovery when the provi
 
 Capability discovery now checks route combinations against the actual order contract, pins Testnet USDC to Circle's issuer, excludes cash-out assets unsupported by the current transfer path, and hides ambiguous duplicate choices. Invalid provider-supplied route data is excluded before it reaches the wallet or order creation. This does not certify a provider's geographic coverage, fees or availability; those still require provider evidence.
 
+### 29 October 2026: analytics verification with existing Sandbox accounts
+
+Read-only browser checks used the existing artist Sandbox account and the existing contributor/listener account `Kwame`. The artist analytics page exposed duplicate completion events: two playback sessions had two starts and four completions. The client now records one completion per playback session, database analytics counts distinct sessions with a corresponding start, and completion rate is capped at 100% as a guard. Track-to-release analytics now uses the authoritative release-track relation. Local browser verification showed two streams, the correct release and track grouping, and 100% completion.
+
+The contributor's historical agreements remained readable, while the earnings view showed no new claimable balance and required explicit treasury/split-registry configuration. No new agreement, purchase, settlement, claim, provider session, quote, transfer, or payout was created. This fixes an analytics defect and verifies account read paths; it does not close C2 or the broader U4 browser matrix. The full workspace tests, typecheck, and build passed; the default suite skipped 13 database-backed server tests.
+
 Focused capability tests, the existing isolated PostgreSQL order and recovery suite, and server typecheck passed. No payment route was enabled. B2 and U2 remain open for verified adapters and their complete user journeys.
 
 ### 29 October 2026: unavailable saved funding route

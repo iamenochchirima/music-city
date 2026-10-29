@@ -469,7 +469,7 @@ test("recordReleaseView stores a release analytics event for anonymous or signed
   }
 });
 
-test("getArtistAnalytics returns save totals and selected window metrics", async () => {
+test("getArtistAnalytics returns save totals and caps duplicate completion reports at 100%", async () => {
   const cleanup = [
     restore(
       usersService,
@@ -485,8 +485,6 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "First",
           artistId: "usr-artist",
           artistName: "Artist",
-          releaseId: "rel-1",
-          releaseTitle: "Release One",
           genre: "Pop",
           runtime: "3:00",
           priceLabel: "Public",
@@ -500,8 +498,6 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "Second",
           artistId: "usr-artist",
           artistName: "Artist",
-          releaseId: "rel-2",
-          releaseTitle: "Release Two",
           genre: "Soul",
           runtime: "4:00",
           priceLabel: "Subscribers",
@@ -516,6 +512,14 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
       tracksRepository,
       "listPublicTrackIds",
       (async () => ["trk-1"]) as typeof tracksRepository.listPublicTrackIds,
+    ),
+    restore(
+      tracksRepository,
+      "findReleaseContexts",
+      (async () => [
+        { trackId: "trk-1", releaseId: "rel-1", releaseTitle: "Release One", releaseArtistName: "Artist", trackNumber: 1, discNumber: 1, isFocusTrack: false },
+        { trackId: "trk-2", releaseId: "rel-2", releaseTitle: "Release Two", releaseArtistName: "Artist", trackNumber: 1, discNumber: 1, isFocusTrack: false },
+      ]) as typeof tracksRepository.findReleaseContexts,
     ),
     restore(
       releasesRepository,
@@ -561,7 +565,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
     restore(
       engagementRepository,
       "countPlaybackCompletionsByTrack",
-      (async (trackId: string) => (trackId === "trk-1" ? 8 : 1)) as typeof engagementRepository.countPlaybackCompletionsByTrack,
+      (async (trackId: string) => (trackId === "trk-1" ? 8 : 4)) as typeof engagementRepository.countPlaybackCompletionsByTrack,
     ),
     restore(
       engagementRepository,
@@ -640,7 +644,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           trackId: "trk-2",
           saves: 2,
           uniqueListeners: 6,
-          completionRate: 33.3,
+          completionRate: 100,
         },
       ],
     );

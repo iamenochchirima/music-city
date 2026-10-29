@@ -964,7 +964,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     const actor = playbackActorRef.current;
     if (track.id === activeTrack?.id && audioRef.current) {
       if (audioRef.current.ended) {
-        await recordPlaybackEvent("completed", audioRef.current.currentTime, true);
+        if (!completionReportedRef.current) {
+          completionReportedRef.current = true;
+          await recordPlaybackEvent("completed", audioRef.current.currentTime, true);
+        }
         await startTrackSession(track);
         return;
       }
@@ -1056,7 +1059,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   advanceQueueRef.current = async () => {
     const index = playbackQueue.findIndex((track) => track.id === activeTrackRef.current?.id);
     const next = index >= 0 ? playbackQueue[index + 1] : undefined;
-    await recordPlaybackEvent("completed", audioRef.current?.currentTime ?? currentTime, true);
+    if (!completionReportedRef.current) {
+      completionReportedRef.current = true;
+      await recordPlaybackEvent("completed", audioRef.current?.currentTime ?? currentTime, true);
+    }
     if (!next) return;
     await playTrack(next);
   };
@@ -1143,7 +1149,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     if (!audio) return;
 
     if (audio.ended && activeTrackRef.current) {
-      await recordPlaybackEvent("completed", audio.currentTime, true);
+      if (!completionReportedRef.current) {
+        completionReportedRef.current = true;
+        await recordPlaybackEvent("completed", audio.currentTime, true);
+      }
       await startTrackSession(activeTrackRef.current);
       return;
     }

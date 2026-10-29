@@ -36,6 +36,9 @@ it("automatically advances through ready songs and stops at the end of the relea
   await act(async () => { fireEvent.ended(audio); });
   await vi.waitFor(() => expect(screen.getByTestId("active").textContent).toBe("two"));
   expect(m.create.mock.calls.map((args) => args[1])).toEqual(["one", "two"]);
+  expect(m.record.mock.calls.filter(([, session, input]) =>
+    session.id === "session-one-1" && input.eventType === "completed",
+  )).toHaveLength(1);
   await act(async () => { fireEvent.ended(audio); });
   expect(m.create).toHaveBeenCalledTimes(2);
 });

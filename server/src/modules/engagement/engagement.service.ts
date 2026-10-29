@@ -453,8 +453,14 @@ export const engagementService = {
     const publicTrackIds = new Set(
       await tracksRepository.listPublicTrackIds(profile.id),
     );
+    const releaseContexts = new Map(
+      (
+        await tracksRepository.findReleaseContexts(tracks.map((track) => track.id))
+      ).map(({ trackId, ...context }) => [trackId, context]),
+    );
     const trackAnalytics = await Promise.all(
       tracks.map(async (track) => {
+        const releaseContext = releaseContexts.get(track.id);
         const [saves, uniqueListeners, playbackStarts, playbackCompletions] =
           await Promise.all([
             engagementRepository.countTrackSaves(track.id),
@@ -466,8 +472,8 @@ export const engagementService = {
         return {
           trackId: track.id,
           title: track.title,
-          releaseId: track.releaseId,
-          releaseTitle: track.releaseTitle,
+          releaseId: releaseContext?.releaseId,
+          releaseTitle: releaseContext?.releaseTitle,
           visibility: publicTrackIds.has(track.id) ? "published" : "unpublished",
           status: track.status,
           plays: track.plays,
@@ -476,7 +482,10 @@ export const engagementService = {
           uniqueListeners,
           completionRate:
             playbackStarts > 0
-              ? Number(((playbackCompletions / playbackStarts) * 100).toFixed(1))
+              ? Math.min(
+                  100,
+                  Number(((playbackCompletions / playbackStarts) * 100).toFixed(1)),
+                )
               : 0,
         };
       }),

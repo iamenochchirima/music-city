@@ -746,3 +746,9 @@ Sandbox guards, provider-readiness checks, order contracts, and additive ramp pe
 ### Reloadable ramp transaction details, 29 October 2026
 
 The wallet history now opens owner-scoped transaction details at `/account?ramp=<orderId>`, refreshes the saved status automatically, and restores the same view from its URL. Computer use against the local artist account verified the separate provider and Stellar states, including provider completion while Stellar delivery remained unconfirmed. The database row was a local simulated fixture and was removed after the check; no provider or chain action occurred. Client tests and typecheck passed. This advances U2 but does not complete the provider flow, mobile/keyboard matrix, or U4.
+
+### Analytics regression found during Sandbox account testing, 29 October 2026
+
+The local artist account showed two playback sessions but four completion events because the player could report completion at both the near-end threshold and the media `ended` event. Completion reporting is now deduplicated per playback session, and analytics counts distinct sessions with a corresponding start. Analytics also resolves track-to-release membership from the authoritative relation. The local browser now shows two streams, the correct release and track grouping, and a 100% completion rate.
+
+An existing contributor/listener Sandbox account could read historical agreements. Its earnings page showed no new claimable amount and an explicit treasury/split-registry configuration requirement. No agreement acceptance, purchase, settlement, claim, provider transaction, or wallet transfer occurred. The full workspace tests, typechecks, and build passed, with 13 database-backed server tests skipped by the default runner. This is an analytics correction and read-only account verification; it does not complete C2, provider journeys, or U4.

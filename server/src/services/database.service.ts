@@ -2075,7 +2075,7 @@ export const databaseService = {
 
   async countPlaybackStartsByTrack(trackId: string) {
     const result = await pool.query<CountRow>(
-      `SELECT COUNT(*)::text AS count
+      `SELECT COUNT(DISTINCT playback_session_id)::text AS count
        FROM playback_events
        WHERE track_id = $1 AND event_type = 'started'`,
       [trackId],
@@ -2098,9 +2098,17 @@ export const databaseService = {
 
   async countPlaybackCompletionsByTrack(trackId: string) {
     const result = await pool.query<CountRow>(
-      `SELECT COUNT(*)::text AS count
-       FROM playback_events
-       WHERE track_id = $1 AND event_type = 'completed'`,
+      `SELECT COUNT(DISTINCT completed.playback_session_id)::text AS count
+       FROM playback_events completed
+       WHERE completed.track_id = $1
+         AND completed.event_type = 'completed'
+         AND EXISTS (
+           SELECT 1
+           FROM playback_events started
+           WHERE started.playback_session_id = completed.playback_session_id
+             AND started.track_id = completed.track_id
+             AND started.event_type = 'started'
+         )`,
       [trackId],
     );
 
