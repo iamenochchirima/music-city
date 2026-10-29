@@ -14,7 +14,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
-    session: { token: "token", walletAddress: "GSENDER" },
+    session: { token: "token", walletAddress: "GSENDER", displayName: "Sender" },
     connectWallet: vi.fn(),
   }),
 }));
@@ -75,12 +75,29 @@ it("reviews the server-resolved amount and destination before signing the exact 
   expect(screen.queryByRole("button", { name: "Sign and send" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Review support" }));
   expect(await screen.findByText("GRECIPIENT")).toBeTruthy();
+  expect(screen.getByText("From Sender")).toBeTruthy();
+  expect(screen.getByText("GSENDER")).toBeTruthy();
   expect(m.sign).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Sign and send" }));
   await screen.findByText("Support sent");
   expect(m.sign).toHaveBeenCalledWith("exact-xdr");
   expect(m.authorize).toHaveBeenCalledWith("token", "payment", "signed-xdr");
   expect(m.submit).toHaveBeenCalledTimes(1);
+});
+it("shows the recipient wallet setup error without opening a signing step", async () => {
+  const user = userEvent.setup();
+  m.prepare.mockRejectedValueOnce(
+    new Error(
+      "The recipient’s Stellar wallet is not active yet. Ask them to activate it before sending support.",
+    ),
+  );
+  render(<SupportDialog recipient={recipient} onClose={vi.fn()} />);
+  await user.click(screen.getByRole("button", { name: "Review support" }));
+  expect(
+    await screen.findByText(/recipient’s Stellar wallet is not active yet/),
+  ).toBeTruthy();
+  expect(m.sign).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: "Sign and send" })).toBeNull();
 });
 it("wallet cancellation records no authorization or submission and permits retrying the same review", async () => {
   const user = userEvent.setup();

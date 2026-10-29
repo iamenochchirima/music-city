@@ -189,6 +189,10 @@ export function SupportDialog({
             {supportAmount(payment.amount)}{" "}
             <span className="text-base">USDC</span>
           </p>
+          <p>From {session?.displayName || "your connected wallet"}</p>
+          <p className="break-all font-mono text-xs text-muted-foreground">
+            {payment.sender}
+          </p>
           <p>To {payment.recipient.name}</p>
           <p className="break-all font-mono text-xs text-muted-foreground">
             {payment.recipient.walletAddress}

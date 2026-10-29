@@ -139,6 +139,22 @@ test(
     };
     try {
       let p: SupportPayment;
+      await t.test("an inactive recipient wallet gets an actionable message", async () => {
+        const fundedAccount = chain.account;
+        chain.account = async (wallet, missingAccountMessage) => {
+          if (wallet === artist.publicKey())
+            throw new Error(missingAccountMessage);
+          return fundedAccount(wallet, missingAccountMessage);
+        };
+        try {
+          await assert.rejects(
+            s.prepare(sender.publicKey(), input()),
+            /The recipient’s Stellar wallet is not active yet/,
+          );
+        } finally {
+          chain.account = fundedAccount;
+        }
+      });
       await t.test(
         "concurrent duplicate preparation returns one exact payment",
         async () => {

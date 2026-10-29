@@ -256,13 +256,13 @@ export function verifySupportReceipt(
     throw new HttpError(502, "Payment confirmation could not be verified");
 }
 export const supportChain = {
-  async account(wallet: string): Promise<SupportAccount> {
+  async account(
+    wallet: string,
+    missingAccountMessage = "Fund your Stellar wallet with XLM before sending support",
+  ): Promise<SupportAccount> {
     const response = await horizon(`/accounts/${encodeURIComponent(wallet)}`);
     if (response.status === 404)
-      throw new HttpError(
-        409,
-        "Fund the Stellar wallet with XLM before sending support",
-      );
+      throw new HttpError(409, missingAccountMessage);
     if (!response.ok)
       throw new HttpError(502, "Could not check the wallet. Try again");
     return response.json() as Promise<SupportAccount>;
