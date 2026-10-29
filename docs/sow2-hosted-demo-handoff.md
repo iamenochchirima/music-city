@@ -16,6 +16,17 @@ The [Music City Admin console](https://music-city-admin.vercel.app/console/admin
 
 The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. On 29 October, computer use clicked **Set up artist profile** on `/dashboard/releases/new`; the signed-in listener reached step 2, “How will you use Music City?”, with **I’m an artist** preselected. At a 390-pixel viewport, the page has no horizontal overflow. Continue was not pressed, so the account remains unchanged and listener-only. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass. This verifies artist setup entry only; an authorized artist profile, activation, and approved demo audio/artwork are still needed to verify upload and publication.
 
+## Short production walkthrough that is ready now
+
+This is a read-only product walkthrough, not a completed SOW 2 transaction demo:
+
+1. Open [Discover](https://musiccity.pro/discover) and show the three current live releases and featured tracks.
+2. Open [Delight’s artist profile](https://musiccity.pro/artists/usr_0d9124aacde146c9), then open its single, [Isgubhu](https://musiccity.pro/releases/rel_0fcde14a70674ad2).
+3. Open [Isgubhu track details](https://musiccity.pro/stream/trk_f9cc725f7966466b). The current page shows a 4:39 published track and 4 streams. The page and its Support amount dialog fit a 390-pixel viewport; cancel the dialog before **Review support** because no support transfer is being demonstrated.
+4. For an admin readiness clip, open [Settlements](https://music-city-admin.vercel.app/console/settlements) after signing in. It shows a reconciled, empty production ledger, not a funded settlement.
+
+The artist directory currently exposes an empty `SOW2 QA Listener` profile with no releases or tracks. Do not use that profile in the walkthrough. Its visibility should be resolved before a public-facing directory recording. Avoid playing a production track for five seconds or longer during an unplanned take; that can add a public stream.
+
 ## Remaining setup before recording SOW 2 transactions
 
 1. Sign in at [Music City Admin](https://music-city-admin.vercel.app/auth) with the production super-admin account. Keep the password out of screenshots and recordings.
