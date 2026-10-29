@@ -1,5 +1,15 @@
 # Core music-to-earnings verification
 
+## Current funding confirmed and live event compatibility fixed, 29 October 2026
+
+The user authorized running the local Testnet commands. The CLI signed the existing funding envelope with two saved treasury test keys, and the authenticated local API verified both signatures and submitted once. Horizon confirms transaction [08463be2…](https://horizon-testnet.stellar.org/transactions/08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36), ledger `5448972`, with a fee of 252038 stroops. Batch `b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069` is Funded; both new allocations are available. No private key entered the browser or repository.
+
+This real funding exposed a live event-index compatibility failure. The RPC omitted `inSuccessfulContractCall`, which Stellar deprecated and scheduled for removal in its [Protocol 23 upgrade guide](https://stellar.org/blog/developers/protocol-23-upgrade-guide). The indexer now accepts an omitted flag while rejecting an explicit false or malformed flag, diagnostic events, foreign contracts, unsuccessful receipts, envelope-hash mismatches, and receipt-ledger mismatches. It still independently verifies the successful transaction receipt. A regression test first reproduced the failure, then passed with the fix. All six focused live/archive event tests, the full default server suite with 238 passed and 13 database-only skips, and server typecheck passed.
+
+After restarting only the isolated local financial worker with the fix, it independently indexed the new funding event exactly once, caught up, and restored reconciliation `ok: true`. Computer use showed Reconciled and the confirmed funding receipt. Normal Sandbox sign-in restored Kwame's actual Dynamic wallet, whose Revenue page shows the new 0.0003 USDC claim separately from the historical received payment. Its unsigned claim review is open. The saved treasury test keys do not match either beneficiary wallet, so they cannot sign beneficiary claims.
+
+See the [sanitized funding snapshot](current-qa-funded-2026-10-29.json), [funded admin page](current-qa-funded-2026-10-29.png), and [contributor claim review](current-qa-contributor-claim-review-2026-10-29.png). C2 remains open for both new beneficiary claims and final reconciliation. Provider routes remain disabled. No push or deployment occurred.
+
 ## Current signed purchase and settlement preparation, 29 October 2026
 
 At application revision `501b6d9`, the user completed Dynamic Sandbox wallet authorization for the separate `SOW2 QA Listener`. Stellar Testnet confirmed the 0.0010000 USDC purchase of **Core Journey** in ledger `5448808`, transaction [2bd73d77…](https://horizon-testnet.stellar.org/transactions/2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44). Independent Horizon checks verified the successful payment, exact USDC issuer, QA source wallet, E8 treasury destination, intent memo, and 100-stroop network fee.

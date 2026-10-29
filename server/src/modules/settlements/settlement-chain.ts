@@ -261,7 +261,9 @@ export const settlementChain = {
       for(const [hash,receipt] of chunk)receipts.set(hash,receipt);
     }
     const live:IndexedSettlementEvent[]=result.events.map(event=>{
-        if(event.contractId?.contractId()!==config.contractId || !event.inSuccessfulContractCall) throw new HttpError(409,"Unexpected contract event identity");
+        // Newer Stellar RPCs omit this deprecated flag. Success is also
+        // verified against the transaction receipt above.
+        if(event.type!=="contract" || event.contractId?.contractId()!==config.contractId || (event.inSuccessfulContractCall!==undefined && event.inSuccessfulContractCall!==true)) throw new HttpError(409,"Unexpected contract event identity");
         if(receipts.get(event.txHash)?.ledger!==event.ledger) throw new HttpError(409,"Contract event and transaction receipt ledgers differ");
         const topics=event.topic.map(scValToNative);
         if(topics[0]!=="music_city" || !["settlement_funded","claim_consumed"].includes(topics[1]) || !(topics[2] instanceof Uint8Array) || topics[2].length!==32) throw new HttpError(409,"Unsupported settlement event format");
