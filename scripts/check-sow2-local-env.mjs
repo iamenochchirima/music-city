@@ -59,6 +59,9 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
     failures.push("Set ROYALTY_REGISTRY_CONTRACT_ID to the deployed Stellar Testnet agreement registry.");
   if (!StrKey.isValidContract(server.SETTLEMENT_CONTRACT_ID || ""))
     failures.push("Set SETTLEMENT_CONTRACT_ID to the deployed Stellar Testnet earnings contract.");
+  const settlementDeploymentLedger = Number(server.SETTLEMENT_DEPLOYMENT_LEDGER);
+  if (!Number.isSafeInteger(settlementDeploymentLedger) || settlementDeploymentLedger <= 0)
+    failures.push("Set SETTLEMENT_DEPLOYMENT_LEDGER to the confirmed Stellar Testnet settlement deployment ledger.");
   const clientUsdcCode = client.VITE_STELLAR_TESTNET_USDC_CODE || testnetUsdcCode;
   const clientUsdcIssuer = client.VITE_STELLAR_TESTNET_USDC_ISSUER || testnetUsdcIssuer;
   if (clientUsdcCode !== testnetUsdcCode || clientUsdcIssuer !== testnetUsdcIssuer)
