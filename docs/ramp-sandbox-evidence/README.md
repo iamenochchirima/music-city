@@ -30,6 +30,8 @@ On 29 October, the signed-in MoonPay Partner Dashboard was in Test Mode. Its tra
 
 This failed-order record has a provider dashboard reference, but no completed payout, provider-confirmed buy delivery, or ramp-specific Stellar Testnet receipt exists in this evidence package. Historical SOW2 marketplace and settlement receipts are documented separately in the [core lifecycle evidence](../core-lifecycle-evidence/README.md) and must not be presented as ramp transactions.
 
+The [29 October status audit](known-order-status-2026-10-29.json) queried that existing order through MoonPay's real API and the current `MoonpaySandbox.lookup` adapter. The API returned one failed XLM transaction. Provider ID, external ID, customer ID, wallet, asset, fiat currency, and the $100 total charge matched the saved test attempt. The adapter returned `failed` with no chain hash or delivered asset amount. This read-only check created no order and changed no capability. At 09:10 UTC, partner ticket `#39343117` still showed “Submitted” with no human diagnosis visible. R3 and V5 remain open for the authenticated launch and provider journey checks.
+
 ## Local application and test evidence
 
 - [Provider-independent implementation plan and dated checkpoints](../sow2-provider-independent-implementation-plan.md): shared order model, ownership, persistence, retry and recovery behavior, worker reconciliation, status polling, current local test results, and unresolved provider dependencies.
@@ -38,7 +40,7 @@ This failed-order record has a provider dashboard reference, but no completed pa
 - [Sandbox test-account evidence](../core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md): actual Dynamic Sandbox artist/listener route checks, wallet and earnings separation, mobile Revenue behavior, and explicit absence of a verified provider route.
 - [Local SOW2 demo procedure](../sow2-local-demo.md): isolated local setup and the available core lifecycle demonstration.
 
-The latest recorded automated evidence includes a full client run at 216/216, a 45/45 ramp UI suite with timer-driven status updates, and a full server run at 328/328 against a disposable PostgreSQL database with no skips. The local API reported all 28 schema groups healthy. These tests verify application behavior and controlled provider fixtures; they do not establish provider-side payment, payout, or delivery.
+The latest client check passed all 225 tests and client typecheck. The local API reported all 29 schema groups healthy. The [dated account log](../core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) records the separate server and disposable PostgreSQL runs with their revisions. These tests verify application behavior and controlled provider fixtures; they do not establish provider-side payment, payout, or delivery.
 
 ## Remaining provider conditions
 

@@ -1,0 +1,45 @@
+{
+  "recordedAt": "2026-10-29T09:10:36Z",
+  "provider": "moonpay",
+  "environment": "sandbox",
+  "journey": "separate XLM buy diagnostic",
+  "operation": "read existing transaction by external ID",
+  "httpStatus": 200,
+  "providerRows": 1,
+  "verifiedBindings": {
+    "providerTransactionId": true,
+    "externalTransactionId": true,
+    "externalCustomerId": true,
+    "walletAddress": true,
+    "assetCode": "xlm",
+    "fiatCurrency": "usd"
+  },
+  "charge": {
+    "currency": "USD",
+    "baseUnits": "9581",
+    "providerFeeUnits": "399",
+    "extraFeeUnits": "0",
+    "networkFeeUnits": "20",
+    "totalUnits": "10000",
+    "decimals": 2
+  },
+  "applicationAdapterResult": {
+    "state": "failed",
+    "originalStatus": "failed",
+    "providerUpdatedAt": "2026-10-28T20:28:06.419Z",
+    "hasChainHash": false,
+    "hasQuotedAssetUnits": false
+  },
+  "support": {
+    "ticket": "39343117",
+    "dashboardStatus": "Submitted",
+    "humanDiagnosisVisible": false
+  },
+  "effects": {
+    "createdProviderOrder": false,
+    "submittedPurchase": false,
+    "changedCapabilities": false,
+    "wroteApplicationDatabase": false
+  },
+  "scope": "Confirms parsing and binding of one real failed sandbox response. It does not verify a completed buy, sell, delivery, refund, or supported Stellar USDC route."
+}

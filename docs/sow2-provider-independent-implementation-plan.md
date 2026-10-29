@@ -678,3 +678,7 @@ A controlled 15-second pause of the isolated local API verified visible earnings
 ### 29 October 2026: session isolation and transaction error recovery
 
 Ramp UI state now resets when its session token changes. A regression first reproduced history and details from the prior session surviving a token change; it now confirms those records disappear before new requests finish or fail. A local saved-URL browser check also found and fixed the missing visible Close action on loading and failed transaction details. Retry, mobile width, keyboard focus, closing, and URL cleanup passed. All 225 client tests and client typecheck passed. U4 remains open for the populated provider flows. See the [session and error recovery evidence](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md#session-isolation-and-unavailable-transaction-recovery-29-october-2026).
+
+### 29 October 2026: real failed MoonPay order lookup
+
+The current MoonPay adapter successfully parsed a read-only response for the existing failed XLM sandbox order. The provider returned one record, all saved identity and monetary bindings matched, and the normalized state was `failed` without a chain receipt. The partner support ticket remains submitted with no visible human diagnosis. No provider order, application database row, capability, or payment was changed. R3 and V5 remain open for authenticated launch and genuine provider journeys. See the [sanitized status audit](ramp-sandbox-evidence/known-order-status-2026-10-29.json).
