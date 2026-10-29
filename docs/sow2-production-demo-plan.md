@@ -11,6 +11,8 @@ The [SOW 2 tracker](sow-2-tracker.md) remains the scope and acceptance record. T
 - Computer-use check on `musiccity.pro`: three unique releases and their artwork load; the empty playlists section is hidden. A track starts, pauses, and exposes working mute and volume controls. A listen under five seconds did not count. A second test crossed five seconds and raised Isgubhu from three to four streams. That test added one counted stream to the public catalog.
 - Google sign-in through Dynamic completed on `musiccity.pro` on 29 October. The signed-in listener's account page opened and showed a Testnet wallet with XLM and USDC enabled. The Marketplace reports that no track purchases are live; its separate Music City Pass offers access to three locked tracks for 15 USDC every 30 days. Public release and track pages show playback, support, and social actions, but no track purchase action. Add funds and Cash out remain disabled as expected while no provider route is enabled.
 - Follow-up copy fix `13c3154` deployed to `musiccity.pro` at 13:52 SAST. Reloading the signed-in account confirmed the clearer unavailable-funding message, with both actions still disabled.
+- At 13:59 SAST, Railway reported the API and both workers on successful deployment `0aa57d9`. A read-only production check found no queued, running, or failed media jobs; all existing jobs are done, with the latest update on 26 October. The financial worker's Stellar Testnet cursor was caught up with zero recorded errors: it had indexed ledger `5450302` when Horizon had closed ledger `5450305` 13 seconds later. The production database currently has no payment intents, confirmed payments, support payments, settlement batches, or claims to inspect. This verifies index freshness and current record state, but not a new upload or a hosted purchase/settlement.
+- A first hosted recording handoff is now drafted in [SOW 2 hosted demo handoff](sow2-hosted-demo-handoff.md). It includes the verified listener clip, owner setup steps, recording order, Testnet labels, and the current provider limitation; account roles and the hosted financial journey remain outstanding.
 - MoonPay and MoneyGram remain unavailable for a verified funding/cash-out journey. Keep those routes disabled. Their external approval and testing do not hold up the other demos.
 - Preserve the unrelated, untracked `docs/core-lifecycle-evidence/checkpoint.json` and all existing customer and financial records.
 
@@ -42,13 +44,15 @@ Execute the rollout after the release candidate is reviewed and deployment is au
 - [x] Take a private production database backup before migrations. Record the backup location privately and capture baseline record counts.
 - [x] Deploy the Railway API with the registered migration command. Verify readiness against the current schema manifest, including all 29 groups at this baseline.
 - [x] Deploy the media worker and financial worker from the same backend revision (`0aa57d9`).
-- [ ] Verify real media-job progress and financial-index freshness, not only process status.
+- [x] Verify financial-index freshness against Testnet Horizon. At 13:59 SAST, the production cursor was caught up, had zero errors, and was three ledgers behind Horizon.
+- [x] Check existing media-job progress. Production has no queued, running, or failed jobs, and all existing jobs are done; the latest update was 26 October.
+- [ ] Verify a fresh production media job through an authorized artist upload. This remains dependent on artist access and approved demo audio/artwork.
 - [x] Deploy the Vercel admin (`0aa57d9`) and client (`4ec021b`); the follow-up client release `13c3154` also clarifies the unavailable funding and cash-out message.
 - [x] Verify listener sign-in on the hosted client. Google OAuth through Dynamic returned to `musiccity.pro`, the signed-in account appeared in the header, and `/account` loaded with the Testnet wallet. No account email or wallet address is included in this evidence.
 - [ ] Verify production admin sign-in and first-admin setup. Admin bootstrap still reports `bootstrapRequired: true`; the owner must set their own password with the one-time setup token.
 - [ ] Open first-admin setup for the owner to set the production password. Complete normal sign-in and verify access to Agreements, Royalties, Settlements, and reconciliation. Keep setup credentials out of the demo.
 - [x] Restore the pre-migration backup into a disposable PostgreSQL 18 database and rehearse the migration. Existing table counts stayed unchanged; the live API now reports all 29 schema groups.
-- [ ] Spot-check existing releases, payments, and claims in production. Record deployed revisions and migration results. Keep the previous application deployment available for rollback if the release fails.
+- [x] Spot-check existing releases, payments, and claims in production. Three public releases load; no production payment intents, payments, support payments, settlement batches, or claims exist to inspect. The API/migration results and deployed revisions are recorded above; previous deployments remain available for rollback.
 
 Ready when: the hosted client, admin, API, and both workers run the intended release; current migrations pass; admin sign-in works; existing records remain available.
 
@@ -73,10 +77,11 @@ Use the actual hosted applications through computer use. For each row, perform t
 
 Fix these usability issues when the rehearsal exposes them:
 
-- [ ] Use short, familiar labels. Replace user-facing phrases such as “verified provider route” with plain availability copy. Keep implementation explanations in the evidence document.
-- [ ] Check form spacing, mobile overflow, tap targets, focus, readable amounts, and one clear next action. Keep transaction details available without crowding the main flow.
+- [x] Replace the account page's “verified provider route” wording with plain availability copy. Continue checking other labels during the remaining hosted rehearsal.
+- [x] Check the account and Marketplace at 390-pixel width. Neither page has horizontal overflow; keyboard focus reaches the Marketplace membership link and traverses the first-admin form through **Create admin** without submitting it.
+- [ ] Check remaining creator, agreement, checkout, and review forms for spacing, mobile overflow, tap targets, focus, readable amounts, and one clear next action. Keep transaction details available without crowding the main flow.
 - [ ] Make wallet handoffs explicit: show the amount, destination, current account, and what the user must click. Prepare the review immediately before signing so it does not expire while instructions are given.
-- [ ] Keep unavailable Add funds/Cash out actions understandable and prevent a failed checkout path. Present their provider status honestly in the demo notes.
+- [x] Keep Add funds/Cash out disabled without a verified route, explain their availability in plain language, and present their provider status honestly in the demo notes.
 
 Ready when: each core row passes on the intended hosted environment, any remaining row has an explicit reason, and no known blocker interrupts the selected recording paths. A local result does not count as hosted verification. Provider buy/sell success remains a separate requirement.
 
@@ -85,7 +90,7 @@ Ready when: each core row passes on the intended hosted environment, any remaini
 - [ ] Rehearse these clips once, in order: artist creation/publication; agreement/admin finalization; purchase/funding/both claims; direct support and history. Aim for 3–5 minutes per clip, with transaction waits edited or shown honestly.
 - [ ] Prepare fresh inputs for actions that cannot be repeated: an unpurchased recording/buyer pair, future claim deadlines, and sufficient network fees. Retain the completed receipts for the results portion. Prepare each expiring signature review only when the signer is ready.
 - [ ] Leave the exact application tabs open in recording order. Supply one-line click instructions for each wallet handoff. Hide credentials, OTP setup screens, unrelated test fixtures, and private signer files from the recording.
-- [ ] Update the demo guide with the current hosted URLs, account roles, button names, and successful rehearsal results. Clearly distinguish hosted production behavior, Testnet receipts, and the earlier local evidence.
+- [ ] Complete the [hosted demo handoff](sow2-hosted-demo-handoff.md) after the owner sets up admin access and the artist, buyer, contributor, and treasury signer accounts are verified. Clearly distinguish hosted production behavior, Testnet receipts, and the earlier local evidence.
 - [ ] Package the deployed revision, contract IDs/network, passing checks, transaction receipts, screenshots, and final reconciliation. Update the canonical SOW tracker only for demonstrated results.
 - [ ] Provide the owner a short recording handoff in this chat with ready links, clip order, and remaining provider limitations. Record reviewer acceptance when the reviewer supplies it; it does not block preparing the demos.
 
