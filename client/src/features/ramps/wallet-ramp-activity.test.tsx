@@ -1,13 +1,22 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { WalletRampActivity } from "./wallet-ramp-activity";
 const mock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/lib/api/http-client", () => ({ httpClient: { get: mock.get, post: mock.post } }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
+function renderActivity(child: ReactNode, initialEntries = ["/account"]) {
+  function LocationProbe() {
+    const location = useLocation();
+    return <output data-testid="current-url">{location.pathname}{location.search}</output>;
+  }
+  return render(<MemoryRouter initialEntries={initialEntries}>{child}<LocationProbe /></MemoryRouter>);
+}
 it("keeps unavailable options disabled and distinguishes provider completion from delivery", async () => {
   mock.get.mockResolvedValue({ items: [{ id: "one", direction: "buy", providerState: "completed", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" }] });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(true);
   expect(await screen.findByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
@@ -21,7 +30,7 @@ it("offers retry when transaction history cannot be loaded", async () => {
     if (++historyCalls === 1) throw new Error("offline");
     return { items: [] };
   });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   await userEvent.setup().click(await screen.findByRole("button", { name: "Try again" }));
   expect(screen.queryByRole("alert")).toBeNull();
   expect(historyCalls).toBe(2);
@@ -29,7 +38,7 @@ it("offers retry when transaction history cannot be loaded", async () => {
 it("offers funding only when the server provides a buy route", async () => {
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [{ provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" }] } : { items: [] });
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
   await user.click(screen.getByRole("button", { name: "Add funds" }));
   expect(await screen.findByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
@@ -40,7 +49,7 @@ it("resumes an unlaunched saved order without creating another", async () => {
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [{ provider: "moonpay", direction: "buy", assetCode: "XLM", market: order.market, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" }] } : { items: [order] });
   mock.post.mockResolvedValue({ url: "https://buy-sandbox.moonpay.com/?signature=test" });
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Not started")).toBeTruthy();
   await user.click(await screen.findByRole("button", { name: "Manage" }));
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Continue" }));
@@ -52,7 +61,7 @@ it("shows unresolved launches as checking and blocks another funding request", a
   const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: true, providerState: "created", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
   const route = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Checking status · Transfer unconfirmed")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
   expect(screen.queryByRole("button", { name: "Manage" })).toBeNull();
@@ -60,7 +69,7 @@ it("shows unresolved launches as checking and blocks another funding request", a
 it("does not reopen an order with an existing provider reference", async () => {
   const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: false, providerStarted: true, providerState: "created", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Checking status · Transfer unconfirmed")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Manage" })).toBeNull();
 });
@@ -69,7 +78,7 @@ it("cancels an unlaunched funding request without opening the provider", async (
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
   mock.post.mockResolvedValue({});
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   await user.click(await screen.findByRole("button", { name: "Manage" }));
   await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel funding" }));
   expect(await screen.findByText("Funding request cancelled.")).toBeTruthy();
@@ -83,7 +92,7 @@ it("allows cancellation but hides provider launch when the saved route is unavai
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
   mock.post.mockResolvedValue({});
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   await user.click(await screen.findByRole("button", { name: "Manage" }));
   const dialog = within(screen.getByRole("dialog"));
   expect(dialog.getByText("This payment option is unavailable.")).toBeTruthy();
@@ -97,7 +106,7 @@ it("blocks new funding while a started transaction is pending or delivery is unc
   const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: true, providerStarted: true, providerState: "completed", chainState: "unobserved", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
   const route = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByText("Check your pending transaction before starting another.")).toBeTruthy();
@@ -107,7 +116,7 @@ it("allows new funding once both provider and transfer are confirmed", async () 
   const order = { id: "saved", direction: "buy", provider: "moonpay", launchRequested: true, providerStarted: true, providerState: "completed", chainState: "confirmed", amount: { currency: "GBP", units: "10000", decimals: 2 }, createdAt: "2026-10-28T00:00:00Z" };
   const route = { provider: "moonpay", direction: "buy", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, amountDecimals: 2, minUnits: "1000", maxUnits: "100000" };
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
-  render(<WalletRampActivity token="session" />);
+  renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Provider completed · Transfer confirmed")).toBeTruthy();
   await waitFor(() => expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(false));
 });
@@ -117,7 +126,7 @@ it("offers cash-out only for a supported sell route and spendable USDC", async (
   const route = { provider: "moonpay", direction: "sell", assetCode: "USDC", assetIssuer: "issuer", market: { country: "GB", currency: "GBP", method: "bank" }, amountDecimals: 7, minUnits: "10000000", maxUnits: "100000000" };
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [] });
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2.5" />);
+  renderActivity(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2.5" />);
   await waitFor(() => expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(false));
   await user.click(screen.getByRole("button", { name: "Cash out" }));
   expect(screen.getByRole("radio", { name: /United Kingdom/ })).toBeTruthy();
@@ -130,7 +139,7 @@ it("lets an unlaunched cash-out be cancelled even when the route is unavailable"
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : { items: [order] });
   mock.post.mockResolvedValue({});
   const user = userEvent.setup();
-  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
+  renderActivity(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
   await user.click(await screen.findByRole("button", { name: "Manage" }));
   const dialog = within(screen.getByRole("dialog", { name: "Cash out" }));
   expect(dialog.getByText("This payment option is unavailable.")).toBeTruthy();
@@ -145,7 +154,7 @@ it("offers a quote only for a started, processing cash-out with a matching route
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : { items: [order] });
   const user = userEvent.setup();
   mock.post.mockRejectedValue(new Error("not ready"));
-  render(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
+  renderActivity(<WalletRampActivity token="session" sign={vi.fn()} spendableUsdc="2" />);
   await user.click(await screen.findByRole("button", { name: "Get quote" }));
   expect((await within(screen.getByRole("dialog", { name: "Cash out" })).findByRole("alert")).textContent).toContain("Quote not available yet");
   expect(mock.post).toHaveBeenCalledWith("/ramps/saved-sell/cashout/quotes", {}, "session");
@@ -159,10 +168,38 @@ it("takes a provider-ready cash-out from quote to review without signing", async
   mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [route] } : path.endsWith("/transfer") ? { transfer } : path.endsWith("/quotes/quote") ? { quote, expiresAt: "2099-01-01T00:00:00Z" } : { items: [order] });
   mock.post.mockResolvedValueOnce({ quote: { id: "quote" }, confirmationHash: "hash" }).mockResolvedValueOnce({ transfer });
   const sign = vi.fn(), user = userEvent.setup();
-  render(<WalletRampActivity token="session" sign={sign} spendableUsdc="2" />);
+  renderActivity(<WalletRampActivity token="session" sign={sign} spendableUsdc="2" />);
   await user.click(await screen.findByRole("button", { name: "Get quote" }));
   expect(await screen.findByText("0.75 GBP")).toBeTruthy();
   expect(screen.getByText("Bank ending 1234")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Confirm cash-out" })).toBeTruthy();
   expect(sign).not.toHaveBeenCalled();
+});
+
+it("opens an owner-scoped, reloadable detail URL from transaction history", async () => {
+  const order = { id: "saved", direction: "buy", provider: "moonpay", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "card" }, launchRequested: true, providerStarted: true, providerState: "completed", chainState: "unobserved", amount: { currency: "GBP", units: "1250", decimals: 2 }, createdAt: "2026-10-29T09:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : path === "/ramps" ? { items: [order] } : { order });
+  const user = userEvent.setup();
+  renderActivity(<WalletRampActivity token="session" />);
+  await user.click(await screen.findByRole("button", { name: "View funding 12.50 GBP" }));
+  expect(screen.getByTestId("current-url").textContent).toBe("/account?ramp=saved");
+  const details = await screen.findByRole("dialog", { name: "Funding details" });
+  expect(within(details).getByText("Provider completed")).toBeTruthy();
+  expect(within(details).getByText("Transfer unconfirmed")).toBeTruthy();
+  expect(within(details).getByText("Provider completion is recorded; Stellar delivery is still being checked.")).toBeTruthy();
+  expect(mock.get).toHaveBeenCalledWith("/ramps/saved", "session");
+  await user.click(within(details).getByRole("button", { name: "Close" }));
+  expect(screen.getByTestId("current-url").textContent).toBe("/account");
+});
+
+it("restores a transaction detail from its URL and lets the user refresh it", async () => {
+  const order = { id: "saved", direction: "sell", provider: "moonpay", assetCode: "USDC", market: { country: "GB", currency: "GBP", method: "bank" }, launchRequested: true, providerStarted: true, providerState: "processing", chainState: "confirmed", amount: { currency: "USDC", units: "1250000", decimals: 7 }, createdAt: "2026-10-29T09:00:00Z" };
+  mock.get.mockImplementation(async (path: string) => path === "/ramps/capabilities" ? { routes: [] } : path === "/ramps" ? { items: [order] } : { order });
+  const user = userEvent.setup();
+  renderActivity(<WalletRampActivity token="session" />, ["/account?ramp=saved"]);
+  const details = await screen.findByRole("dialog", { name: "Cash-out details" });
+  expect(within(details).getByText("Processing")).toBeTruthy();
+  expect(within(details).getByText("Transfer confirmed")).toBeTruthy();
+  await user.click(within(details).getByRole("button", { name: "Refresh status" }));
+  await waitFor(() => expect(mock.get.mock.calls.filter(([path]) => path === "/ramps/saved").length).toBeGreaterThanOrEqual(2));
 });

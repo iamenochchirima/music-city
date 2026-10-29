@@ -742,3 +742,7 @@ The listener Sandbox identity also signed in on the local app. Discover showed t
 The [combined plan](ramp-sandbox-implementation-plan.md#current-execution-decision) records the owner's later instruction to defer MoneyGram and test MoonPay with native XLM separately. The USDC flow remains open. Fresh provider checks found MoonPay Stellar USDC unavailable in test mode and the MoneyGram key configured for custodial sessions.
 
 Sandbox guards, provider-readiness checks, order contracts, and additive ramp persistence are implemented locally. CO-07 now has schema and repository evidence, but its complete claim linkage and chain-submission lifecycle remain open. The new readiness report and focused PostgreSQL tests do not establish any completed ramp journey. No production changes or payment transfers occurred.
+
+### Reloadable ramp transaction details, 29 October 2026
+
+The wallet history now opens owner-scoped transaction details at `/account?ramp=<orderId>`, refreshes the saved status automatically, and restores the same view from its URL. Computer use against the local artist account verified the separate provider and Stellar states, including provider completion while Stellar delivery remained unconfirmed. The database row was a local simulated fixture and was removed after the check; no provider or chain action occurred. Client tests and typecheck passed. This advances U2 but does not complete the provider flow, mobile/keyboard matrix, or U4.
