@@ -564,7 +564,7 @@ test(
       assert.equal((await repo.get(deliveryOrder.id))?.providerState, "unknown");
       assert.equal((await repo.get(deliveryOrder.id))?.chainState, "confirmed");
       assert.equal((await repo.events(deliveryOrder.id)).filter((event) => event.kind === "status_conflict").length, 1);
-      assert.equal(await repo.observe(deliveryOrder.id, deliveryObservation), "stale");
+      assert.equal(await repo.observe(deliveryOrder.id, deliveryObservation), undefined);
       const anotherOrder = (await repo.reserve({ ...deliveryOrder.terms, requestId: randomUUID() })).order;
       await assert.rejects(repo.issueLaunch(anotherOrder.id, "other", serviceWallet), /existing transaction/);
       await repo.observe(deliveryOrder.id, { ...deliveryObservation, updatedAt: "2026-10-28T00:03:00.000Z" });
@@ -580,6 +580,59 @@ test(
       await repo.observe(duplicateOrder.id, duplicateObservation, duplicateLease!.token);
       await assert.rejects(repo.recordIncomingDelivery(duplicateOrder.id, duplicateObservation, delivery, duplicateLease!.token), /unique constraint/);
       assert.equal((await repo.get(duplicateOrder.id))?.chainState, "unobserved");
+
+      const refundOrder = (await repo.reserve(terms({ requestId: randomUUID() }))).order;
+      const refundProviderId = `refund-${randomUUID()}`;
+      const completedObservation = {
+        id: refundProviderId,
+        externalId: refundOrder.id,
+        state: "completed" as const,
+        originalStatus: "completed",
+        updatedAt: "2026-10-29T12:00:00.000Z",
+      };
+      await repo.observe(refundOrder.id, completedObservation);
+      await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "refund_pending",
+        originalStatus: "refund_pending",
+        updatedAt: "2026-10-29T12:01:00.000Z",
+      });
+      await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "refunded",
+        originalStatus: "refunded",
+        updatedAt: "2026-10-29T12:02:00.000Z",
+      });
+      assert.equal((await repo.get(refundOrder.id))?.providerState, "refunded");
+      await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "unknown",
+        originalStatus: "new_provider_status",
+        updatedAt: "2026-10-29T12:02:15.000Z",
+      });
+      assert.equal((await repo.events(refundOrder.id)).filter((event) => event.kind === "status_observed").length, 4);
+      assert.equal(await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "refunded",
+        originalStatus: "refunded",
+        updatedAt: "2026-10-29T12:02:10.000Z",
+      }), "stale");
+      const conflictingRefundRegression = await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "processing",
+        originalStatus: "processing",
+        updatedAt: "2026-10-29T12:03:00.000Z",
+      });
+      assert.equal(conflictingRefundRegression, "conflict");
+      assert.equal((await repo.get(refundOrder.id))?.providerState, "unknown");
+      const recoveredRefund = await repo.observe(refundOrder.id, {
+        ...completedObservation,
+        state: "refunded",
+        originalStatus: "refunded",
+        updatedAt: "2026-10-29T12:02:30.000Z",
+      });
+      assert.notEqual(recoveredRefund, "stale");
+      assert.equal((await repo.get(refundOrder.id))?.providerState, "refunded");
 
       const cancelWallet = Keypair.random().publicKey();
       const cancelOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cancelWallet }))).order;

@@ -389,6 +389,8 @@ The 390-pixel Revenue view had no horizontal overflow: the document width was 37
 
 With the funded Sandbox wallet, the local browser opened the published `Core Journey` purchase review for 0.001 USDC. The review stated that the network fee is paid separately in XLM. I left the review open at `Confirm and pay` for the user to authorize the Stellar Testnet transaction. The UI reached review, but no payment was signed or submitted, so purchase, settlement and claim remain unverified in this pass.
 
+The Dynamic Sandbox test identity also reached the local Music City account with both listener and artist access. The account page showed its Testnet balance and the provider-independent empty state; Add funds and Cash out stayed disabled because the capability API returned no verified routes. This verifies local authentication, wallet display, and safe route gating, but it does not stand in for a provider order or signed payment.
+
 ## Non-production database startup guard, 29 October 2026
 
 The database service now rejects database initialization in development or test mode unless `DATABASE_URL` uses loopback PostgreSQL and a database name ending in `_test`. It also rejects a PostgreSQL `host` query override. A focused child-process test confirmed that the service stops before its first schema query when a non-production process targets a remote database.

@@ -84,6 +84,10 @@ The admin transaction screen now lists and opens ramp orders, separates provider
 
 Added an additive lease-token migration. Expired workers can no longer persist observations or release a newer worker's lease, and a notification received during a lease keeps the job due for another check. The worker unit tests and isolated PostgreSQL race and repeated-migration tests passed; migration initialization also passed on an existing cloned local database. This advances R5 and V1 without establishing provider delivery or chain confirmation.
 
+### 29 October 2026: refund status recovery
+
+Provider reconciliation now reads accepted status events rather than conflicting payloads when checking timestamps and transitions. Unknown provider statuses remain visible without erasing the last known state. A completed order can advance through `refund_pending`, `refunded`, or `refund_failed`; a pending refund can end as refunded or refund-failed; and invalid regressions remain recorded as conflicts. Two transition tests, the isolated PostgreSQL ramp repository test, all 70 ramp and cash-out tests, and server typecheck passed. R5 remains open until provider status mapping, notifications, and a real sandbox journey are verified.
+
 ### 28 October 2026: authenticated intent creation
 
 Added authenticated capability and intent-creation endpoints with server-derived account and wallet, exact decimal handling, current route limits, and recovery by request ID. Existing orders remain retrievable after a route becomes unavailable; changed terms or wallets are rejected. The application capability registry currently exposes no verified routes, regardless of sandbox flags, and therefore cannot create new orders yet. Test capabilities exist only in the isolated PostgreSQL suite. Concurrent create, retry, unsupported and expired capability, precision, limit, and ownership tests passed along with HTTP authorization and shared/server typechecks. This advances R1 and R2; provider capability discovery, launch recovery and actual provider processing remain open.
@@ -632,6 +636,8 @@ The first API restart in this follow-up omitted `DATABASE_URL`; because the serv
 This adds local wallet-balance, empty-ramp-state, and qualified-playback evidence to U4/V3. It does not complete a provider on-ramp or off-ramp, a purchase-to-claim cycle, or the remaining browser recovery matrix. C2, U2, U4, R3-R9, CO-25, and V5 remain open.
 
 The 390-pixel Revenue page had no horizontal overflow. Tab moved from the Music City link to Studio and then to the account menu, and the page logged no browser errors. With the funded Sandbox wallet, the browser opened the `Core Journey` review for 0.001 USDC and showed that XLM covers the separate network fee. I stopped before `Confirm and pay`, which requires the user's wallet authorization. No payment or settlement was submitted. U4 and C2 remain open.
+
+The Dynamic Sandbox test identity also reached the local Music City account with both listener and artist access. The account page showed its Testnet balance and the provider-independent empty state; Add funds and Cash out stayed disabled because the capability API returned no verified routes. This verifies local authentication, wallet display, and safe route gating, but it does not stand in for a provider order or signed payment.
 
 ### 29 October 2026: block hosted databases in non-production services
 

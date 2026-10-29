@@ -15,6 +15,7 @@ import { prepareCashOutTransfer, verifyCashOutEnvelope, type CashOutSigningAccou
 import type { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
 import { Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { verifyCashOutReceipt, type CashOutLedger } from "../cashout/cashout-chain.js";
+import { canTransitionProviderState } from "./provider-state-transition.js";
 
 type Database = {
   transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T>;
@@ -201,19 +202,42 @@ export function createRampRepository(db: Database) {
           row.provider_transaction_id !== observation.id
         )
           throw new HttpError(409, "Conflicting provider reference");
-        const previous = row.provider_observation;
+        const statusHistory = (
+          await c.query(
+            `SELECT
+              (SELECT data FROM ramp_events WHERE order_id=$1 AND source='provider_api' AND kind='status_observed' ORDER BY id DESC LIMIT 1) AS latest_observation,
+              (SELECT data FROM ramp_events WHERE order_id=$1 AND source='provider_api' AND kind='status_observed' AND data->>'state'<>'unknown' ORDER BY id DESC LIMIT 1) AS latest_known_observation`,
+            [id],
+          )
+        ).rows[0];
+        const legacyObservation = row.provider_state === "unknown"
+          ? undefined
+          : row.provider_observation;
+        const previous = statusHistory.latest_observation ?? legacyObservation;
+        const previousKnown =
+          statusHistory.latest_known_observation ??
+          (legacyObservation?.state === "unknown" ? undefined : legacyObservation);
         if (
           previous &&
           Date.parse(observation.updatedAt) < Date.parse(previous.updatedAt)
         )
           return "stale" as const;
-        const terminal = (await c.query(`SELECT data->>'state' AS state FROM ramp_events
-          WHERE order_id=$1 AND source='provider_api' AND kind='status_observed'
-          AND data->>'state' IN ('completed','failed','cancelled','refunded','refund_failed') ORDER BY id LIMIT 1`, [id])).rows[0]?.state as string | undefined;
-        if (terminal && observation.state !== terminal) {
+        const previousState = previousKnown
+          ? rampProviderObservationSchema.parse(previousKnown).state
+          : undefined;
+        if (
+          previousState &&
+          !canTransitionProviderState(previousState, observation.state)
+        ) {
           const key = `conflict:${createHash("sha256").update(JSON.stringify(observation)).digest("hex")}`;
-          await c.query("INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'provider_api',$2,'status_conflict',$3) ON CONFLICT DO NOTHING", [id, key, JSON.stringify(observation)]);
-          await c.query("UPDATE ramp_orders SET provider_state='unknown',provider_observation=$2,updated_at=NOW() WHERE id=$1", [id, JSON.stringify(observation)]);
+          await c.query(
+            "INSERT INTO ramp_events(order_id,source,event_key,kind,data) VALUES($1,'provider_api',$2,'status_conflict',$3) ON CONFLICT DO NOTHING",
+            [id, key, JSON.stringify(observation)],
+          );
+          await c.query(
+            "UPDATE ramp_orders SET provider_state='unknown',provider_observation=$2,updated_at=NOW() WHERE id=$1",
+            [id, JSON.stringify(observation)],
+          );
           return "conflict" as const;
         }
         if (previous && observation.updatedAt === previous.updatedAt) {
