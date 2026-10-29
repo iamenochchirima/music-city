@@ -33,6 +33,23 @@ export const rampMarketSchema = z.object({
   method: z.enum(["card", "bank", "apple_pay", "google_pay", "cash_pickup", "cash_deposit", "mobile_money"]),
 }).strict();
 
+export const rampClaimReferenceSchema = z.object({
+  batchId: z.string().regex(/^[a-f0-9]{64}$/),
+  claimIndex: z.number().int().min(0).max(19),
+}).strict();
+
+const claimReferenceDirectionRefinement = (
+  value: { direction: string; associatedClaim?: unknown },
+  context: z.RefinementCtx,
+) => {
+  if (value.associatedClaim && value.direction !== "sell")
+    context.addIssue({
+      code: "custom",
+      path: ["associatedClaim"],
+      message: "An earnings claim can only be linked to a cash-out",
+    });
+};
+
 export const createRampOrderSchema = z.object({
   requestId: z.string().uuid().toLowerCase(),
   provider: rampProviderSchema,
@@ -40,7 +57,8 @@ export const createRampOrderSchema = z.object({
   assetCode: z.enum(["USDC", "XLM"]),
   market: rampMarketSchema,
   amount: z.string().max(40).regex(/^(0|[1-9][0-9]*)(\.[0-9]+)?$/),
-}).strict();
+  associatedClaim: rampClaimReferenceSchema.optional(),
+}).strict().superRefine(claimReferenceDirectionRefinement);
 export type CreateRampOrder = z.infer<typeof createRampOrderSchema>;
 
 // These are server-resolved terms, not an authorization to create a provider order.
@@ -57,11 +75,13 @@ export const rampOrderTermsSchema = z
     assetIssuer: stellarWalletAddressSchema.optional(),
     market: rampMarketSchema,
     amount: cashOutMoneySchema,
+    associatedClaim: rampClaimReferenceSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {
     const issue = (path: string[], message: string) =>
       context.addIssue({ code: "custom", path, message });
+    claimReferenceDirectionRefinement(value, context);
     if (value.assetCode === "USDC" && !value.assetIssuer)
       issue(["assetIssuer"], "USDC requires its exact issuer");
     if (value.assetCode === "XLM" && value.assetIssuer)

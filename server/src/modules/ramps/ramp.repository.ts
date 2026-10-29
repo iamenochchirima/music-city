@@ -340,8 +340,8 @@ export function createRampRepository(db: Database) {
       const hash = termsHash(terms);
       return db.transaction(async (client) => {
         const inserted = await client.query(
-          `INSERT INTO ramp_orders(id,user_id,wallet_address,request_id,provider,direction,environment,network,terms_hash,terms)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(user_id,request_id) DO NOTHING RETURNING *`,
+          `INSERT INTO ramp_orders(id,user_id,wallet_address,request_id,provider,direction,environment,network,terms_hash,terms,associated_claim_batch_id,associated_claim_index)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(user_id,request_id) DO NOTHING RETURNING *`,
           [
             randomUUID(),
             terms.userId,
@@ -353,6 +353,8 @@ export function createRampRepository(db: Database) {
             terms.network,
             hash,
             JSON.stringify(terms),
+            terms.associatedClaim?.batchId ?? null,
+            terms.associatedClaim?.claimIndex ?? null,
           ],
         );
         let row = inserted.rows[0];

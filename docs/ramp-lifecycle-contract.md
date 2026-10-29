@@ -6,6 +6,8 @@ This contract describes the current sandbox foundation and the work an adapter m
 
 The server binds each order to an authenticated user, wallet, provider, direction, market, environment and Stellar network. The user supplies an idempotency key and an amount, not a wallet or provider instruction. The capability source supplies the permitted route and limits. A repeated key returns the original order only when its terms match. An unverified or expired route cannot create an order.
 
+A cash-out may optionally reference a claimed earnings allocation by its settlement batch ID and allocation index. The server verifies that the allocation is already claimed by the authenticated source wallet before reserving the order. The reference is an immutable audit link only: it does not reserve or transfer earnings, alter the royalty ledger, or change settlement/claim state. Existing settlement and claim records remain authoritative and unchanged.
+
 Amounts are stored as integer unit strings and a decimal scale. Funding amounts use the selected fiat currency. Cash-out amounts use Stellar asset units at seven decimal places. The current cash-out transfer validator accepts USDC. The capability filter pins Testnet USDC to the Circle issuer. A quote and instructions must match the order, wallet, provider, network, amount, market and provider reference. The user confirms the hash of the saved quote and instructions before signing.
 
 ## Separate observations

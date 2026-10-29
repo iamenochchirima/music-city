@@ -1,5 +1,6 @@
 import { rampLaunchStatements } from "../modules/ramps/ramp-launch-migration.js";
 import { rampRefundFailureStatements } from "../modules/ramps/ramp-refund-failure-migration.js";
+import { rampClaimLinkStatements } from "../modules/ramps/ramp-claim-link-migration.js";
 import { rampCashOutRecoveryStatements } from "../modules/ramps/ramp-cashout-recovery-migration.js";
 import { rampCashOutAttemptStatements } from "../modules/ramps/ramp-cashout-attempt-migration.js";
 import { rampQuoteStatements } from "../modules/ramps/ramp-quote-migration.js";
@@ -445,6 +446,7 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-17-agreement-recovery", statements: agreementRecoveryStatements },
   { name: "2026-10-15-earnings-settlement", statements: settlementSchemaStatements },
   { name: "2026-10-15-settlement-chain-events", statements: settlementChainEventSchemaStatements },
+  { name: "2026-10-29-ramp-claim-link", statements: rampClaimLinkStatements },
   {
     name: "2026-10-05-single-use-stellar-auth-challenges",
     statements: [
@@ -925,6 +927,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-29-ramp-claim-link", migrationName: "2026-10-29-ramp-claim-link", relations: ["ramp_orders", "settlement_batches"], columns: ["ramp_orders.associated_claim_batch_id", "ramp_orders.associated_claim_index"], constraints: ["ramp_orders_associated_claim_pair_check", "ramp_orders_associated_claim_batch_fk"], statements: rampClaimLinkStatements },
   { name: "2026-10-29-ramp-refund-failure", migrationName: "2026-10-29-ramp-refund-failure", relations: ["ramp_orders"], constraints: ["ramp_orders_provider_state_check"], statements: rampRefundFailureStatements },
   { name: "2026-10-28-ramp-launch-session", migrationName: "2026-10-28-ramp-launch-session", relations: ["ramp_launch_sessions"], columns: ["ramp_launch_sessions.encrypted_session", "ramp_launch_sessions.resumable"], statements: rampLaunchStatements },
   { name: "2026-10-28-ramp-cashout-recovery", migrationName: "2026-10-28-ramp-cashout-recovery", relations: ["ramp_chain_attempts"], columns: ["ramp_chain_attempts.submission_count", "ramp_chain_attempts.last_submitted_at", "ramp_chain_attempts.due_at", "ramp_chain_attempts.leased_until", "ramp_chain_attempts.lease_token", "ramp_chain_attempts.last_error_code"], indexes: ["ramp_cashout_recovery_due"], statements: rampCashOutRecoveryStatements },

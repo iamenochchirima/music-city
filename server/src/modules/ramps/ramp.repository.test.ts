@@ -16,6 +16,7 @@ import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.j
 import { rampCashOutRecoveryStatements } from "./ramp-cashout-recovery-migration.js";
 import { rampLaunchStatements } from "./ramp-launch-migration.js";
 import { rampRefundFailureStatements } from "./ramp-refund-failure-migration.js";
+import { rampClaimLinkStatements } from "./ramp-claim-link-migration.js";
 import { settlementSchemaStatements } from "../settlements/settlement-schema.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
@@ -70,6 +71,12 @@ test("shared ramp terms reject mismatched money, modes and methods", () => {
       }),
     ).success,
     true,
+  );
+  assert.equal(
+    rampOrderTermsSchema.safeParse(
+      terms({ associatedClaim: { batchId: "a".repeat(64), claimIndex: 0 } }),
+    ).success,
+    false,
   );
 });
 
@@ -162,9 +169,9 @@ test(
           "INSERT INTO settlement_events(batch_id,actor,action,payload) VALUES($1,'GTEST','claim_confirmed',$2)",
           [claimBatchId, JSON.stringify({ ledgerId: claimedLedgerId, transactionHash: "e".repeat(64) })],
         );
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements, ...rampClaimLinkStatements])
           await c.query(sql);
-        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements])
+        for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements, ...rampRefundFailureStatements, ...rampClaimLinkStatements])
           await c.query(sql);
       });
       const financialHistorySnapshot = () => db.transaction(async (c) => {
@@ -180,6 +187,30 @@ test(
       await assert.rejects(repo.list("", ""), /User and wallet are required/);
       await assert.rejects(repo.list("artist", ""), /User and wallet are required/);
       const input = terms();
+      const associatedClaim = { batchId: claimBatchId, claimIndex: 0 };
+      const linkedCashOutTerms = terms({
+        walletAddress: input.walletAddress,
+        direction: "sell",
+        assetCode: "USDC",
+        amount: { currency: "USDC", units: "5000000", decimals: 7 },
+        associatedClaim,
+      });
+      const linkedCashOut = await repo.reserve(linkedCashOutTerms);
+      const linkedColumns = await db.transaction(async (c) => (await c.query(
+        "SELECT associated_claim_batch_id,associated_claim_index FROM ramp_orders WHERE id=$1",
+        [linkedCashOut.order.id],
+      )).rows[0]);
+      assert.deepEqual(linkedColumns, { associated_claim_batch_id: claimBatchId, associated_claim_index: 0 });
+      assert.deepEqual((await repo.get(linkedCashOut.order.id))?.terms.associatedClaim, associatedClaim);
+      await assert.rejects(db.transaction(async (c) => {
+        await c.query("UPDATE ramp_orders SET associated_claim_index=1 WHERE id=$1", [linkedCashOut.order.id]);
+      }), /immutable/);
+      await assert.rejects(repo.reserve(terms({
+        direction: "sell",
+        assetCode: "USDC",
+        amount: { currency: "USDC", units: "5000000", decimals: 7 },
+        associatedClaim: { batchId: "f".repeat(64), claimIndex: 0 },
+      })), /foreign key/);
       const outcomes = await Promise.all(
         Array.from({ length: 8 }, () => repo.reserve(input)),
       );
@@ -334,7 +365,7 @@ test(
       );
       assert.ok((await repo.get(launchOrder.id))?.launchIssuedAt);
       assert.equal((await repo.list("other", input.walletAddress)).length, 0);
-      assert.equal((await repo.list("artist", input.walletAddress)).length, 3);
+      assert.equal((await repo.list("artist", input.walletAddress)).length, 4);
       const observed = {
         id: "reference",
         externalId: id,
@@ -439,7 +470,7 @@ test(
       assert.equal("prepared_envelope" in adminDetail.attempts[0], false);
       assert.equal("data" in adminDetail.events[0], false);
       assert.equal(await repo.detailForAdmin("missing"), null);
-      assert.equal((await repo.listForAdmin()).length, 4);
+      assert.equal((await repo.listForAdmin()).length, 5);
 
       // Different request IDs and providers cannot race past an unresolved launch.
       const secondWallet = Keypair.random().publicKey();

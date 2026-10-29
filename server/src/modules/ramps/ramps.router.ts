@@ -8,6 +8,7 @@ import { HttpError } from "../../utils/http-error.js";
 import { usersRepository } from "../users/users.repository.js";
 import { createRampRepository } from "./ramp.repository.js";
 import { createRampService, operationalRampCapabilities } from "./ramp-service.js";
+import { settlementRepository } from "../settlements/settlement-repository.js";
 
 type Repository = Pick<ReturnType<typeof createRampRepository>, "list" | "getForOwner" | "cancelUnlaunchedRamp">;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
@@ -23,6 +24,7 @@ export function publicOrder(order: RampOrder) {
     assetCode: order.terms.assetCode,
     market: order.terms.market,
     amount: order.terms.amount,
+    ...(order.terms.associatedClaim ? { associatedClaim: order.terms.associatedClaim } : {}),
     providerState: order.providerState,
     chainState: order.chainState,
     launchRequested: Boolean(order.launchIssuedAt),
@@ -74,4 +76,9 @@ export function createRampsRouter(repository: Repository, findUser: FindUser, se
 }
 
 const repository = createRampRepository(databaseService);
-export const rampsRouter = createRampsRouter(repository, usersRepository.findByWallet, createRampService(repository, operationalRampCapabilities));
+export const rampsRouter = createRampsRouter(repository, usersRepository.findByWallet, createRampService(
+  repository,
+  operationalRampCapabilities,
+  Date.now,
+  (reference, walletAddress) => settlementRepository.hasClaimedAllocation(reference.batchId, reference.claimIndex, walletAddress),
+));

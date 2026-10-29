@@ -37,6 +37,8 @@ export function routeSupportsOrder(route: VerifiedRampRoute, order: RampOrder) {
 }
 type Repository = Pick<ReturnType<typeof createRampRepository>, "getByRequest" | "reserve">;
 type Owner = { userId: string; walletAddress: string };
+type ClaimReference = { batchId: string; claimIndex: number };
+type ClaimResolver = (reference: ClaimReference, walletAddress: string) => Promise<boolean>;
 
 function units(amount: string, decimals: number): string {
   const [whole, fraction = ""] = amount.split(".");
@@ -46,13 +48,18 @@ function units(amount: string, decimals: number): string {
   return digits;
 }
 function matches(input: CreateRampOrder, terms: RampOrder["terms"]) {
+  const sameAssociatedClaim = input.associatedClaim
+    ? input.associatedClaim.batchId === terms.associatedClaim?.batchId &&
+      input.associatedClaim.claimIndex === terms.associatedClaim.claimIndex
+    : !terms.associatedClaim;
   return input.provider === terms.provider && input.direction === terms.direction &&
     input.assetCode === terms.assetCode && input.market.country === terms.market.country &&
     input.market.currency === terms.market.currency && input.market.method === terms.market.method &&
-    units(input.amount, terms.amount.decimals) === terms.amount.units;
+    units(input.amount, terms.amount.decimals) === terms.amount.units &&
+    sameAssociatedClaim;
 }
 
-export function createRampService(repository: Repository, capabilities: RampCapabilitySource, now: () => number = Date.now) {
+export function createRampService(repository: Repository, capabilities: RampCapabilitySource, now: () => number = Date.now, resolveClaim?: ClaimResolver) {
   async function routes() {
     const time = now();
     const candidates = z.array(z.unknown()).max(1000).parse(await capabilities.routes());
@@ -85,12 +92,17 @@ export function createRampService(repository: Repository, capabilities: RampCapa
     routes,
     async create(owner: Owner, raw: unknown) {
       const input = createRampOrderSchema.parse(raw);
+      if (input.associatedClaim && input.direction !== "sell")
+        throw new HttpError(400, "An earnings claim can only be linked to a cash-out");
       const previous = await repository.getByRequest(owner.userId, input.requestId);
       if (previous) {
         if (previous.terms.walletAddress !== owner.walletAddress || !matches(input, previous.terms))
           throw new HttpError(409, "This request already exists with different terms");
         return { order: previous, created: false };
       }
+      if (input.associatedClaim &&
+          (!resolveClaim || !await resolveClaim(input.associatedClaim, owner.walletAddress)))
+        throw new HttpError(409, "The selected earning claim is not confirmed for this wallet");
       const matching = (await routes()).filter((route) => route.provider === input.provider &&
         route.direction === input.direction && route.assetCode === input.assetCode &&
         route.market.country === input.market.country && route.market.currency === input.market.currency &&
@@ -104,6 +116,7 @@ export function createRampService(repository: Repository, capabilities: RampCapa
         userId: owner.userId, walletAddress: owner.walletAddress, requestId: input.requestId,
         provider: route.provider, direction: route.direction, environment: route.environment, network: route.network,
         assetCode: route.assetCode, assetIssuer: route.assetIssuer, market: route.market,
+        ...(input.associatedClaim ? { associatedClaim: input.associatedClaim } : {}),
         amount: { currency: route.direction === "buy" ? route.market.currency : route.assetCode,
           units: amountUnits, decimals: route.amountDecimals },
       });
