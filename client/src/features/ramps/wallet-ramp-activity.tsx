@@ -64,8 +64,9 @@ export function WalletRampActivity({ token, sign, spendableUsdc = "0", showTrans
     setRoutes([]); setCashOutRoutes([]);
     void httpClient.get<{ routes: Array<FundingRoute | CashOutRoute> }>("/ramps/capabilities", token).then((result) => {
       if (active && Array.isArray(result.routes)) {
-        setRoutes(result.routes.filter((route): route is FundingRoute => route.direction === "buy"));
-        // Only an implemented client handoff can be offered, even if a server adapter is added.
+        // Add-funds currently validates and opens only MoonPay's sandbox URL.
+        // Keep other provider routes hidden until their client handoff exists.
+        setRoutes(result.routes.filter((route): route is FundingRoute => route.direction === "buy" && route.provider === "moonpay"));
         setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell" && route.provider === "moonpay" && route.assetCode === "USDC"));
       }
     }).catch(() => {
