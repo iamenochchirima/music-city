@@ -682,3 +682,7 @@ Ramp UI state now resets when its session token changes. A regression first repr
 ### 29 October 2026: real failed MoonPay order lookup
 
 The current MoonPay adapter successfully parsed a read-only response for the existing failed XLM sandbox order. The provider returned one record, all saved identity and monetary bindings matched, and the normalized state was `failed` without a chain receipt. The partner support ticket remains submitted with no visible human diagnosis. No provider order, application database row, capability, or payment was changed. R3 and V5 remain open for authenticated launch and genuine provider journeys. See the [sanitized status audit](ramp-sandbox-evidence/known-order-status-2026-10-29.json).
+
+### 29 October 2026: prevent expired checkout signatures
+
+The marketplace payment review now expires visibly and checks validity before opening wallet authorization and again before requesting a signature. Three regression tests reproduced the old behavior and now confirm that expired reviews cannot request signatures. All 228 client tests and client typecheck passed. A Dynamic Sandbox verification prompt interrupted the browser expiry check and was left untouched. C2 and U4 remain open. See the [expiry guard evidence](core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md#prepared-checkout-expiry-guard-29-october-2026).

@@ -27,6 +27,11 @@ type Checkout = (intent: PaymentIntentRecord) => Promise<string>;
 type Pending = { intent: PaymentIntentRecord; attempt: CheckoutAttempt };
 const StellarCheckoutContext = createContext<Checkout | null>(null);
 
+function reviewHasExpired(expiresAt: string) {
+  const expiry = Date.parse(expiresAt);
+  return !Number.isFinite(expiry) || Date.now() >= expiry;
+}
+
 export const useStellarCheckout = () => {
   const checkout = useContext(StellarCheckoutContext);
   return useCallback(
@@ -54,12 +59,24 @@ export const StellarCheckoutProvider = ({
   const [busy, setBusy] = useState(false);
   const [walletSigning, setWalletSigning] = useState(false);
   const [uncertain, setUncertain] = useState(false);
+  const [reviewExpired, setReviewExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const completion = useRef<{
     resolve: (hash: string) => void;
     reject: (error: Error) => void;
   } | null>(null);
   const starting = useRef(false);
+
+  useEffect(() => {
+    if (!pending || pending.attempt.status !== "prepared" || uncertain) {
+      setReviewExpired(false);
+      return;
+    }
+    const check = () => setReviewExpired(reviewHasExpired(pending.attempt.expiresAt));
+    check();
+    const timer = window.setInterval(check, 1000);
+    return () => window.clearInterval(timer);
+  }, [pending?.attempt.id, pending?.attempt.expiresAt, pending?.attempt.status, uncertain]);
 
   const finish = useCallback((attempt: CheckoutAttempt) => {
     if (attempt.status === "confirmed") {
@@ -166,6 +183,10 @@ export const StellarCheckoutProvider = ({
       pending.attempt.status !== "prepared"
     )
       return;
+    if (reviewHasExpired(pending.attempt.expiresAt)) {
+      setReviewExpired(true);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -178,6 +199,10 @@ export const StellarCheckoutProvider = ({
         throw new Error("Connect your Stellar wallet to complete this payment");
       setWalletSigning(true);
       await authorizeWallet(wallet);
+      if (reviewHasExpired(pending.attempt.expiresAt)) {
+        setReviewExpired(true);
+        return;
+      }
       const signed = await wallet.signTransaction(pending.attempt.transaction);
       setWalletSigning(false);
       setUncertain(true);
@@ -234,7 +259,7 @@ export const StellarCheckoutProvider = ({
           ? "Checking payment"
           : pending.attempt.status === "submitting"
             ? "Confirming payment"
-            : "Review payment",
+            : reviewExpired ? "Review expired" : "Review payment",
         onClose: close,
         busy,
         suspended: walletSigning,
@@ -265,7 +290,11 @@ export const StellarCheckoutProvider = ({
                 }),
                 "Waiting for confirmation…",
               )
-            : createElement(
+            : reviewExpired ? createElement(
+                "p",
+                { role: "alert", className: "text-sm text-muted-foreground" },
+                "This payment review has expired. Close it and start again.",
+              ) : createElement(
                 Button,
                 {
                   onClick: () => void sign(),
@@ -274,7 +303,7 @@ export const StellarCheckoutProvider = ({
                 },
                 busy ? "Authorizing…" : "Confirm and pay",
               ),
-          error &&
+          error && !reviewExpired &&
             createElement(
               "p",
               { role: "alert", className: "text-sm text-destructive" },

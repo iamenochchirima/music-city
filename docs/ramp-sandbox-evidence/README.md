@@ -40,7 +40,7 @@ The [29 October status audit](known-order-status-2026-10-29.json) queried that e
 - [Sandbox test-account evidence](../core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md): actual Dynamic Sandbox artist/listener route checks, wallet and earnings separation, mobile Revenue behavior, and explicit absence of a verified provider route.
 - [Local SOW2 demo procedure](../sow2-local-demo.md): isolated local setup and the available core lifecycle demonstration.
 
-The latest client check passed all 225 tests and client typecheck. The local API reported all 29 schema groups healthy. The [dated account log](../core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) records the separate server and disposable PostgreSQL runs with their revisions. These tests verify application behavior and controlled provider fixtures; they do not establish provider-side payment, payout, or delivery.
+The latest client check passed all 228 tests and client typecheck. The local API reported all 29 schema groups healthy. The [dated account log](../core-lifecycle-evidence/sandbox-test-accounts-2026-10-29.md) records the separate server and disposable PostgreSQL runs with their revisions. These tests verify application behavior and controlled provider fixtures; they do not establish provider-side payment, payout, or delivery.
 
 ## Remaining provider conditions
 

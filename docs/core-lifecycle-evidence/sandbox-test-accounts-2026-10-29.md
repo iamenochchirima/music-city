@@ -484,3 +484,11 @@ The ramp history and detail component could retain the previous session's record
 Computer use opened `http://localhost:3000/account?ramp=qa-missing-order` under the existing Dynamic Sandbox account. The local API rejected that unavailable ID. The dialog initially offered Retry without a visible Close button. It now offers Close while loading and after failure. The browser verified retry, a 390-pixel viewport with a 358-pixel dialog and no horizontal overflow, keyboard focus from Retry to Close, and Enter closing the dialog and removing `ramp` from the URL. The temporary tab was closed and the viewport override reset.
 
 The 23 ramp activity tests, all 225 client tests, and client typecheck pass. No fixture provider record, provider route, wallet signature, or payment was created. This covers the unavailable transaction-detail path. Actual provider quotes, launch, populated transaction details, and cash-out reviews still need browser verification under U4.
+
+## Prepared checkout expiry guard, 29 October 2026
+
+The pending marketplace checkout remained `prepared` in the local database after its transaction expiry, with no saved signature. Its browser review could still offer Confirm and pay. The checkout provider now checks expiry while the review is open, before wallet authorization, and again after authorization returns. An expired or invalid expiry replaces the payment action with an expiry message and Close review. This is a UI guard; the server remains authoritative for transaction validity.
+
+Three regression tests first reproduced the missing guards, then passed after the fix. They cover automatic expiry, a click after expiry before the display timer fires, and expiry while wallet authorization is pending. The tests assert that no signature or authorization submission occurs. All nine checkout tests, all 228 client tests, and client typecheck passed.
+
+The browser check reached an existing Dynamic Sandbox verification prompt. I left that prompt untouched and did not claim browser verification of the new expiry view. The local checkout still has no saved signature. C2 and the remaining U4 matrix stay open.

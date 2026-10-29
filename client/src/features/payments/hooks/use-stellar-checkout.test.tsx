@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PaymentIntentRecord } from "@music-city/shared";
 import {
@@ -54,6 +54,7 @@ const attempt = {
   transaction: "exact-xdr",
   transactionHash: "hash",
   status: "prepared",
+  expiresAt: "2099-01-01T00:00:00.000Z",
 };
 beforeEach(() => {
   vi.clearAllMocks();
@@ -62,12 +63,13 @@ beforeEach(() => {
     signTransaction: mocks.sign,
   });
   mocks.sign.mockResolvedValue("signed-xdr");
+  mocks.active.mockResolvedValue(undefined);
   mocks.prepare.mockResolvedValue(attempt);
   mocks.authorize.mockResolvedValue({ ...attempt, status: "submitting" });
   mocks.submit.mockResolvedValue({ ...attempt, status: "confirmed" });
   mocks.get.mockResolvedValue({ ...attempt, status: "submitting" });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 function Pay() {
   const checkout = useStellarCheckout();
   const [result, setResult] = useState("");
@@ -94,6 +96,46 @@ it("explicitly rejects checkout without a wallet provider", async () => {
     "require a configured Dynamic provider",
   );
   expect(mocks.sign).not.toHaveBeenCalled();
+});
+it("automatically removes payment authorization when the review expires", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-29T09:00:00Z"));
+  mocks.prepare.mockResolvedValue({ ...attempt, expiresAt: "2026-10-29T09:00:02Z" });
+  render(<StellarCheckoutProvider><Pay /></StellarCheckoutProvider>);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Pay" })); });
+  expect(screen.getByRole("button", { name: "Confirm and pay" })).toBeTruthy();
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(screen.getByRole("alert").textContent).toBe("This payment review has expired. Close it and start again.");
+  expect(screen.queryByRole("button", { name: "Confirm and pay" })).toBeNull();
+  expect(mocks.sign).not.toHaveBeenCalled();
+  expect(mocks.authorize).not.toHaveBeenCalled();
+});
+it("checks expiry before opening the wallet even if the display timer has not fired", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-29T09:00:00Z"));
+  mocks.prepare.mockResolvedValue({ ...attempt, expiresAt: "2026-10-29T09:00:02Z" });
+  render(<StellarCheckoutProvider><Pay /></StellarCheckoutProvider>);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Pay" })); });
+  vi.setSystemTime(new Date("2026-10-29T09:00:03Z"));
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Confirm and pay" })); });
+  expect(mocks.active).not.toHaveBeenCalled();
+  expect(mocks.sign).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert").textContent).toContain("expired");
+});
+it("checks expiry again after wallet authorization before requesting a signature", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-29T09:00:00Z"));
+  mocks.prepare.mockResolvedValue({ ...attempt, expiresAt: "2026-10-29T09:00:02Z" });
+  let release!: () => void;
+  mocks.active.mockReturnValue(new Promise<void>((resolve) => { release = resolve; }));
+  render(<StellarCheckoutProvider><Pay /></StellarCheckoutProvider>);
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Pay" })); });
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Confirm and pay" })); });
+  vi.setSystemTime(new Date("2026-10-29T09:00:03Z"));
+  await act(async () => { release(); });
+  expect(mocks.sign).not.toHaveBeenCalled();
+  expect(mocks.authorize).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert").textContent).toContain("expired");
 });
 it("reviews the exact amount and authorizes the persisted envelope before submission", async () => {
   const user = userEvent.setup();
