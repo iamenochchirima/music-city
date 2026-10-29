@@ -12,9 +12,9 @@ The [Marketplace](https://musiccity.pro/marketplace) currently says no track pur
 
 The [Music City Admin console](https://music-city-admin.vercel.app/console/admins) has one production super-admin, and normal sign-in was verified. Agreements and the royalty ledger are empty. Settlement reconciliation reports **Reconciled** with zero funded, claimed, recovered, unclaimed, or escrow USDC; there are no approved earnings sources or settlement records. This verifies admin access and empty states, not an agreement or settlement transaction.
 
-## Creator access blocker
+## Creator access
 
-The signed-in production account is listener-only and its Artist access is not unlocked. In the live site, **Set up artist profile** opens the completed listener onboarding page (“Your listening space is ready”) instead of the artist path. The local fix in `1dfad1b` routes to the intent step with Artist selected; it does not change the account until the user continues. Nine focused onboarding tests, client typecheck, client production build, and a server regression test pass in local candidate `193b883`. The fix has not been pushed or deployed, so do not record the hosted creator journey yet. After deployment, an authorized artist profile, artist activation, and approved demo audio/artwork are still needed to verify upload and publication.
+The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. On 29 October, the signed-in listener's `/onboarding?intent=artist` route opened step 2, “How will you use Music City?”, with **I’m an artist** preselected. The account remains unchanged until the user continues. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass. This verifies artist setup entry only; the account has not been enrolled or activated. An authorized artist profile, activation, and approved demo audio/artwork are still needed to verify upload and publication.
 
 ## Remaining setup before recording SOW 2 transactions
 
@@ -44,5 +44,5 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 - The hosted admin's Agreements and Royalties pages are empty. Settlement reconciliation passes with all balances at zero, and there are no approved earnings sources or settlement batches.
 - A Dynamic Sandbox static-OTP identity did not authenticate to the hosted client, which is configured against a different Dynamic environment. Use an account belonging to the hosted environment for the demo; do not present that Sandbox identity as production access.
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
-- Local demo candidate `193b883` includes the artist-entry fix `1dfad1b` reproduced in computer use. It is committed locally, not pushed or deployed; client focused onboarding tests (9), typecheck, build, and the server regression test pass. The browser route was loaded against an isolated local `_test` database and showed the expected sign-in gate; the authenticated hosted recheck remains outstanding.
+- Artist-entry fix `1dfad1b`, regression test `193b883`, and QA notes are included in pushed production commit `f2b8445`. Vercel deployment `v0-music-city-dg1tbf6fa-iamenochchirimas-projects.vercel.app` is Ready and aliases `musiccity.pro`. Computer use confirmed the live listener account now reaches step 2 with **I’m an artist** selected; the user did not continue, so no account change was made. Upload and publication still need an authorized artist profile and approved demo media.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
