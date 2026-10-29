@@ -607,7 +607,7 @@ const AuthPage = () => {
               Music City Admin
             </p>
             <h1 className="text-4xl font-semibold tracking-[-0.05em] text-white">
-              Login
+              {bootstrapRequired ? "Set up admin access" : "Admin sign in"}
             </h1>
             <p className="max-w-sm text-sm text-slate-400">
               {bootstrapRequired
@@ -619,7 +619,9 @@ const AuthPage = () => {
 
         <Card className={cn(shellPanelClassName, "rounded-none shadow-none")}>
           <CardHeader className="space-y-2 border-b border-white/8 pb-4">
-            <CardTitle className="text-xl text-white">Login</CardTitle>
+            <CardTitle className="text-xl text-white">
+              {mode === "bootstrap" ? "Create admin account" : "Admin sign in"}
+            </CardTitle>
             <CardDescription className="text-slate-400">
               {mode === "bootstrap"
                 ? "Set up the first admin account."

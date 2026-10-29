@@ -4,7 +4,7 @@ Music City runs its API on Railway and its client and admin applications on Verc
 
 | Service | Production URL |
 | --- | --- |
-| Client | https://music-city.vercel.app |
+| Client | https://musiccity.pro |
 | Admin | https://music-city-admin.vercel.app |
 | API | https://server-production-d758.up.railway.app/api/v1 |
 | Admin API | https://server-production-d758.up.railway.app/api/v1/admin |

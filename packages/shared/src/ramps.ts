@@ -175,4 +175,3 @@ export const rampOrderSchema = z
   })
   .strict();
 export type RampOrder = z.infer<typeof rampOrderSchema>;
-
