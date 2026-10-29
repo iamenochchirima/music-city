@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect, useRef } from "react";
 
 const mocks = vi.hoisted(() => ({
   dynamicToken: "dynamic-jwt",
@@ -95,8 +96,31 @@ const session = {
   },
 };
 
-function LoginControls() {
+function LoginControls({ showTestModal = false }: { showTestModal?: boolean }) {
   const auth = useAuthContext();
+  const testModalHostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = testModalHostRef.current;
+
+    if (!showTestModal || !host) {
+      return;
+    }
+
+    const shadowRoot = host.attachShadow({ mode: "open" });
+    const modal = document.createElement("div");
+    modal.dataset.testid = "dynamic-auth-modal";
+    const emailInput = document.createElement("input");
+    emailInput.type = "email";
+    const continueButton = document.createElement("button");
+    continueButton.textContent = "Continue";
+    modal.append(emailInput);
+    modal.append(continueButton);
+    shadowRoot.append(modal);
+
+    return () => shadowRoot.replaceChildren();
+  }, [showTestModal]);
+
   return (
     <>
       {auth.walletLinkRequired && (
@@ -107,6 +131,7 @@ function LoginControls() {
       </button>
       {auth.session && <p role="status">Signed in as {auth.session.walletAddress}</p>}
       {auth.error && <p role="alert">{auth.error}</p>}
+      {showTestModal && <div ref={testModalHostRef} className="dynamic-shadow-dom" />}
     </>
   );
 }
@@ -139,6 +164,61 @@ it("opens Dynamic's configured sign-in flow without requesting Freighter", async
 
   expect(mocks.setShowAuthFlow).toHaveBeenCalledWith(true);
   expect(mocks.createDynamicSession).not.toHaveBeenCalled();
+});
+
+it("moves keyboard focus into Dynamic sign-in and returns it to the trigger", async () => {
+  const view = render(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+  const trigger = screen.getByRole("button", { name: "Sign in" });
+  trigger.focus();
+  await userEvent.click(trigger);
+
+  mocks.showAuthFlow = true;
+  view.rerender(
+    <AuthProvider>
+      <LoginControls showTestModal />
+    </AuthProvider>,
+  );
+
+  const modalHost = view.container.querySelector(".dynamic-shadow-dom");
+  const emailInput = modalHost?.shadowRoot?.querySelector("input");
+  const continueButton = modalHost?.shadowRoot?.querySelector("button");
+  expect(emailInput).toBeTruthy();
+  expect(continueButton).toBeTruthy();
+  await waitFor(() => expect(modalHost?.shadowRoot?.activeElement).toBe(emailInput));
+
+  continueButton?.focus();
+  const forwardTab = new KeyboardEvent("keydown", {
+    key: "Tab",
+    bubbles: true,
+    cancelable: true,
+  });
+  document.dispatchEvent(forwardTab);
+  expect(forwardTab.defaultPrevented).toBe(true);
+  expect(modalHost?.shadowRoot?.activeElement).toBe(emailInput);
+
+  emailInput?.focus();
+  const reverseTab = new KeyboardEvent("keydown", {
+    key: "Tab",
+    shiftKey: true,
+    bubbles: true,
+    cancelable: true,
+  });
+  document.dispatchEvent(reverseTab);
+  expect(reverseTab.defaultPrevented).toBe(true);
+  expect(modalHost?.shadowRoot?.activeElement).toBe(continueButton);
+
+  mocks.showAuthFlow = false;
+  view.rerender(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  await waitFor(() => expect(document.activeElement).toBe(trigger));
 });
 
 it("verifies a Dynamic login, creates the app session, and binds a referral to its Stellar wallet", async () => {

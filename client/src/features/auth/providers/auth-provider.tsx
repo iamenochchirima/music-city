@@ -39,6 +39,45 @@ const AUTH_STORAGE_KEY = "music-city-auth-session";
 const DYNAMIC_FAILED_SYNC_KEY = "music-city-dynamic-failed-sync-key";
 const DYNAMIC_SYNC_RETRY_COUNT = 12;
 const DYNAMIC_SYNC_RETRY_DELAY_MS = 250;
+const DYNAMIC_AUTH_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const queryAcrossShadowRoots = (
+  root: ParentNode,
+  selector: string,
+): HTMLElement | null => {
+  const match = root.querySelector(selector);
+
+  if (match instanceof HTMLElement) {
+    return match;
+  }
+
+  for (const host of root.querySelectorAll<HTMLElement>("*")) {
+    if (!host.shadowRoot) {
+      continue;
+    }
+
+    const nestedMatch = queryAcrossShadowRoots(host.shadowRoot, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+};
+
+const getDeepActiveElement = (root: Document | ShadowRoot): HTMLElement | null => {
+  const activeElement = root.activeElement;
+
+  if (!(activeElement instanceof HTMLElement)) {
+    return null;
+  }
+
+  return activeElement.shadowRoot?.activeElement instanceof HTMLElement
+    ? getDeepActiveElement(activeElement.shadowRoot)
+    : activeElement;
+};
 
 export const DYNAMIC_AUTH_SUCCESS_EVENT = "music-city:dynamic-auth-success";
 export const DYNAMIC_AUTH_FAILURE_EVENT = "music-city:dynamic-auth-failure";
@@ -317,6 +356,95 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   } = useBaseSessionState();
   const userRef = useRef(user);
   const primaryWalletRef = useRef(primaryWallet);
+  const authTriggerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!showAuthFlow) {
+      const trigger = authTriggerRef.current;
+      authTriggerRef.current = null;
+
+      if (trigger?.isConnected) {
+        trigger.focus({ preventScroll: true });
+      }
+
+      return;
+    }
+
+    let attempts = 0;
+    let frame = 0;
+    const handleTabBoundary = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const modal = queryAcrossShadowRoots(
+        document,
+        '[data-testid="dynamic-auth-modal"]',
+      );
+      const focusableElements = modal
+        ? Array.from(
+            modal.querySelectorAll<HTMLElement>(DYNAMIC_AUTH_FOCUSABLE_SELECTOR),
+          ).filter((element) => {
+            const style = window.getComputedStyle(element);
+            return style.display !== "none" && style.visibility !== "hidden";
+          })
+        : [];
+      const first = focusableElements[0];
+      const last = focusableElements.at(-1);
+
+      if (!modal || !first || !last) {
+        return;
+      }
+
+      const activeElement = getDeepActiveElement(document);
+      const focusIsOutsideModal =
+        !activeElement ||
+        (activeElement !== modal && !modal.contains(activeElement));
+      const reachedTabBoundary = event.shiftKey
+        ? activeElement === first
+        : activeElement === last;
+
+      if (!focusIsOutsideModal && !reachedTabBoundary) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      (event.shiftKey ? last : first).focus({ preventScroll: true });
+    };
+
+    document.addEventListener("keydown", handleTabBoundary, true);
+    const focusWhenReady = () => {
+      const modal = queryAcrossShadowRoots(
+        document,
+        '[data-testid="dynamic-auth-modal"]',
+      );
+      const emailInput = modal?.querySelector<HTMLElement>(
+        'input[type="email"]:not([disabled])',
+      );
+      const firstAction = modal?.querySelector<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      );
+
+      const target = emailInput ?? firstAction;
+
+      if (target) {
+        target.focus({ preventScroll: true });
+        return;
+      }
+
+      if (attempts++ < 30) {
+        frame = window.requestAnimationFrame(focusWhenReady);
+      }
+    };
+
+    frame = window.requestAnimationFrame(focusWhenReady);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", handleTabBoundary, true);
+    };
+  }, [showAuthFlow]);
 
   useEffect(() => {
     userRef.current = user;
@@ -724,6 +852,12 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setWalletLinkRequired(false);
+    authTriggerRef.current =
+      typeof document !== "undefined" &&
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body
+        ? document.activeElement
+        : null;
     setShowAuthFlow(true);
   }, [
     setError,
