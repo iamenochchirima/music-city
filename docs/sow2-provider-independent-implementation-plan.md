@@ -14,8 +14,8 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 
 ## Backend and transaction lifecycle
 
-- [ ] R1. Implement authenticated capability, order creation, detail, history, and resume routes. Bind user, wallet, network, provider, and direction on the server.
-- [ ] R2. Persist intent before launch, serialize duplicate creates, and recover the same order after a lost response. Prevent another transaction while an outcome remains unknown.
+- [x] R1. Implement authenticated capability, order creation, detail, history, and resume routes. Bind user, wallet, network, provider, and direction on the server. Provider routes remain empty until verified account-specific capabilities exist.
+- [x] R2. Persist intent before launch, serialize duplicate creates, and recover the same order after a lost response. Prevent another transaction while an outcome remains unknown. Retry and unresolved-order behavior is covered by ramp service and isolated PostgreSQL tests.
 - [ ] R3. Connect verified MoonPay sandbox URL creation and lookup to the provider interface. Restrict URLs and parameters to server-controlled values.
 - [ ] R4. Verify provider notifications from raw payloads, deduplicate and record observations, preserve unknown statuses, and reject unrelated events.
 - [ ] R5. Reconcile provider status in the financial worker with bounded retries and restart recovery. Keep paid, chain confirmed, delivered, failed, expired, and refunded states distinct.
@@ -420,3 +420,9 @@ Computer use verified the real local artist account and wallet page against an i
 ### 29 October 2026: Revenue cash-out entry point
 
 Commit `19550fe` adds the wallet's spendable USDC and the existing funding/cash-out actions directly to Revenue, visibly separate from claimable earnings. It reuses the Account flow and wallet signer; transaction history remains on Account. Empty verified capabilities now have a clear unavailable state, and failed capability requests can be retried. The new component tests verify issuer-scoped spendable USDC and retry behavior. The full client suite passed 199 tests, client typecheck passed, and the production build passed with the existing large-bundle warning. Dynamic Test Accounts are disabled in the app's configured Sandbox environment, so authenticated computer-use visual verification remains pending under U4/CO-22. No provider route or financial transaction was created.
+
+### 29 October 2026: provider-independent ramp routes and concurrency checks
+
+Reviewed the current authenticated ramp API and launch path. Capability, creation, history, detail, cancellation and launch/resume operations are session protected and owner scoped. Order terms are selected from server-verified routes; provider URLs and launch parameters are server built and validated. Persisted request IDs return the original order on retry, duplicate reservations and launches serialize, and unresolved launched orders block another transaction. Provider routes intentionally remain empty until an account-specific route is verified.
+
+Ran all ramp and cash-out server tests against the isolated local `sow2_current_demo_test` PostgreSQL database. The suite passed 65 tests with no skips, including persistence, ownership, concurrent idempotency, append-only events, worker restart and unknown-outcome recovery, cash-out quote/transfer validation, provider callback checks, and chain receipt verification. This completes R1, R2, and the automated coverage in CO-23. CO-24 remains open for an explicit assertion that ramp activity leaves earnings and claim history unchanged; R3-R9 and real provider flows remain open.

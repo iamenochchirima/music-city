@@ -640,7 +640,7 @@ If access is unavailable, finish applicable design and automated failure checks,
 
 #### Phase 5. Verify and package local acceptance
 
-- [ ] CO-23 Add contract-validation and provider-mapping tests for amounts, limits, stale quotes, unsupported markets, altered transfer instructions, callbacks, and complete status transitions. Use explicit provider fixtures for simulated transport cases.
+- [x] CO-23 Add contract-validation and provider-mapping tests for amounts, limits, stale quotes, unsupported markets, altered transfer instructions, callbacks, and complete status transitions. Use explicit provider fixtures for simulated transport cases. The current ramp/cash-out suites passed 65 tests against the isolated local test database; provider fixtures are not real provider outcomes.
 - [ ] CO-24 Add isolated PostgreSQL checks for duplicate requests, lost responses, concurrent submissions, immutable audit events, worker restarts, cross-user access, and preserved earnings and claim history.
 - [ ] CO-25 Run the browser matrix below against the actual local client, API, admin, and worker. Use real Dynamic Sandbox signing and the real provider sandbox for integration acceptance. Keep synthetic identities and funds out of production.
 - [ ] CO-26 Run affected suites, workspace typecheck, production builds, and fresh-database migrations. Verify that agreements, claims, settlements, and direct support retain their existing behavior.
@@ -760,6 +760,10 @@ At 390 pixels, the local Account and Revenue pages had no horizontal overflow. K
 An existing cancelled GBP fixture opened at its saved transaction URL. Manual refresh and browser reload preserved MoonPay Cancelled and Stellar Transfer unconfirmed; Close returned to the account page. No provider or wallet action occurred. U4 remains open for real provider flows, quote/review/signing, slow responses, and their mobile recovery.
 
 The root local environment has no `AGREEMENT_TREASURY_ADDRESS`, and its configured registry does not match historical E8 evidence; current Testnet validity has not been verified. No contract configuration changed. C2 remains open until the correct current Testnet configuration and a new user-authorized lifecycle are verified. No screenshot file was saved.
+
+### Provider-independent ramp API and recovery verification, 29 October 2026
+
+The authenticated API, server-bound order terms, persisted idempotency, launch guards, and recovery behavior were rechecked against current code. The ramp/cash-out server suite passed 65 tests with the ramp repository suite connected to the isolated local `sow2_current_demo_test` database; no tests were skipped. This closes CO-23's automated contract and provider-mapping coverage and confirms the provider-independent route/concurrency work for R1 and R2. The operational capability registry still returns no provider routes, so no provider payment, quote, or payout can be started. CO-24 remains open for an explicit regression assertion protecting existing earnings and claim history; real provider transactions and the browser acceptance matrix also remain open.
 
 ### Revenue wallet cash-out entry point, 29 October 2026
 
