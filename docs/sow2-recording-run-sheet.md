@@ -44,6 +44,8 @@ Use the dated [E7 agreement lifecycle evidence](contributor-agreements-evidence/
 
 Use the saved receipts for the completed local Testnet cycle. Label it **Stellar Testnet, local app and database**; it is not a production transaction.
 
+Optional buyer-entry shot: the local Marketplace lists **Core Journey** at 0.001 USDC. The current Sandbox wallet has no Testnet XLM or USDC, so Buy stops before payment review. Use the saved receipts for purchase-to-claim proof; do not present this unfunded account as a completed buyer journey.
+
 1. Show the [purchase](core-lifecycle-evidence/current-qa-purchase-2026-10-29.png). One 0.0010000 USDC purchase created the listening entitlement and two royalty entries.
 2. Show the [funded batch](core-lifecycle-evidence/current-qa-funded-2026-10-29.png). Two treasury signatures funded 0.0010000 USDC.
 3. Show the [closed batch](core-lifecycle-evidence/current-qa-closed-2026-10-29.png) and the [artist's received payment](core-lifecycle-evidence/current-qa-artist-received-2026-10-29.png). The beneficiary claims were 0.0003000 and 0.0007000 USDC. Reconciliation passed with no remaining obligation from this purchase.
