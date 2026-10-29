@@ -15,6 +15,7 @@ import { rampQuoteStatements } from "./ramp-quote-migration.js";
 import { rampCashOutAttemptStatements } from "./ramp-cashout-attempt-migration.js";
 import { rampCashOutRecoveryStatements } from "./ramp-cashout-recovery-migration.js";
 import { rampLaunchStatements } from "./ramp-launch-migration.js";
+import { settlementSchemaStatements } from "../settlements/settlement-schema.js";
 import { createRampService, verifiedRampCapabilities, type VerifiedRampRoute } from "./ramp-service.js";
 import { createCashOutQuoteService } from "../cashout/cashout-quote.service.js";
 import { createCashOutEnvelopeCipher } from "../cashout/cashout-envelope.js";
@@ -77,7 +78,7 @@ test("the configured application exposes no unverified payment routes", async ()
 
 const url = process.env.RAMP_TEST_DATABASE_URL;
 test(
-  "ramp persistence preserves ownership, idempotency, append-only events and original references",
+  "ramp persistence preserves ownership, idempotency, append-only events, references and settlement history",
   { skip: !url },
   async () => {
     const target = new URL(url!);
@@ -106,15 +107,74 @@ test(
         }
       },
     };
+    const claimedLedgerId = "historical-claimed-earning";
+    const openLedgerId = "historical-approved-earning";
+    const claimBatchId = "c".repeat(64);
+    const claimSourceKey = "d".repeat(64);
     try {
       await db.transaction(async (c) => {
         await c.query("CREATE TABLE users(id TEXT PRIMARY KEY)");
         await c.query("INSERT INTO users VALUES('artist'),('other')");
+        await c.query("CREATE TABLE agreement_versions(agreement_id TEXT NOT NULL,version INTEGER NOT NULL,PRIMARY KEY(agreement_id,version))");
+        await c.query("CREATE TABLE royalty_ledger(id TEXT PRIMARY KEY,track_id TEXT NOT NULL,recipient_wallet_address TEXT NOT NULL,status TEXT NOT NULL,source_type TEXT NOT NULL,source_id TEXT NOT NULL,recipient_chain TEXT NOT NULL,payload JSONB NOT NULL)");
+        await c.query("CREATE TABLE royalty_payouts(id TEXT PRIMARY KEY,payload JSONB NOT NULL)");
+        for (const sql of settlementSchemaStatements) await c.query(sql);
+        await c.query("INSERT INTO agreement_versions VALUES('agreement-fixture',1)");
+        await c.query(
+          "INSERT INTO royalty_ledger(id,track_id,recipient_wallet_address,status,source_type,source_id,recipient_chain,payload) VALUES($1,'track-fixture','GTEST','paid','manual_adjustment','source-fixture','stellar',$2),($3,'track-fixture','GTEST','approved','manual_adjustment','source-open','stellar',$4)",
+          [
+            claimedLedgerId,
+            JSON.stringify({ id: claimedLedgerId, status: "paid", netAmount: "90" }),
+            openLedgerId,
+            JSON.stringify({ id: openLedgerId, status: "approved", netAmount: "25" }),
+          ],
+        );
+        await c.query(
+          "INSERT INTO settlement_batches(id,source_key,agreement_id,version,state,payload) VALUES($1,$2,'agreement-fixture',1,'funded',$3)",
+          [
+            claimBatchId,
+            claimSourceKey,
+            JSON.stringify({
+              id: claimBatchId,
+              sourceKey: claimSourceKey,
+              state: "funded",
+              trackId: "track-fixture",
+              sourceType: "manual_adjustment",
+              sourceId: "source-fixture",
+              allocations: [
+                {
+                  ledgerId: claimedLedgerId,
+                  status: "claimed",
+                  amountUnits: "90",
+                  transactionHash: "e".repeat(64),
+                  updatedLedger: 902,
+                },
+              ],
+            }),
+          ],
+        );
+        await c.query(
+          "INSERT INTO settlement_reservations(ledger_id,batch_id,allocation_index) VALUES($1,$2,0)",
+          [claimedLedgerId, claimBatchId],
+        );
+        await c.query(
+          "INSERT INTO settlement_events(batch_id,actor,action,payload) VALUES($1,'GTEST','claim_confirmed',$2)",
+          [claimBatchId, JSON.stringify({ ledgerId: claimedLedgerId, transactionHash: "e".repeat(64) })],
+        );
         for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
           await c.query(sql);
         for (const sql of [...rampSchemaStatements, ...rampProgressStatements, ...rampLeaseStatements, ...rampDeliveryStatements, ...rampQuoteStatements, ...rampCashOutAttemptStatements, ...rampCashOutRecoveryStatements, ...rampLaunchStatements])
           await c.query(sql);
       });
+      const financialHistorySnapshot = () => db.transaction(async (c) => {
+        const ledger = await c.query("SELECT id,track_id,recipient_wallet_address,status,source_type,source_id,recipient_chain,payload FROM royalty_ledger ORDER BY id");
+        const batches = await c.query("SELECT id,source_key,agreement_id,version,state,payload FROM settlement_batches ORDER BY id");
+        const reservations = await c.query("SELECT ledger_id,batch_id,allocation_index FROM settlement_reservations ORDER BY ledger_id");
+        const claims = await c.query("SELECT id,batch_id,actor,action,payload,created_at::text FROM settlement_events ORDER BY id");
+        const attempts = await c.query("SELECT id,batch_id,transaction_hash,status,payload FROM financial_attempts ORDER BY id");
+        return { ledger: ledger.rows, batches: batches.rows, reservations: reservations.rows, claims: claims.rows, attempts: attempts.rows };
+      });
+      const existingFinancialHistory = await financialHistorySnapshot();
       const repo = createRampRepository(db);
       await assert.rejects(repo.list("", ""), /User and wallet are required/);
       await assert.rejects(repo.list("artist", ""), /User and wallet are required/);
@@ -788,6 +848,11 @@ test(
       assert.equal(history.length, 100);
       assert.equal(history[0].id, oldOrder.id);
       assert.equal((await repo.list("artist", historyWallet)).length, 0);
+      assert.deepEqual(
+        await financialHistorySnapshot(),
+        existingFinancialHistory,
+        "ramp activity must not change existing royalty earnings, claims, reservations, or financial attempts",
+      );
     } finally {
       await pool.query(`DROP SCHEMA ${schema} CASCADE`);
       await pool.end();
