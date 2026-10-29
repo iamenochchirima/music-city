@@ -20,6 +20,8 @@ For the admin view, open [Settlements](https://music-city-admin.vercel.app/conso
 
 Use the [local creator upload evidence](sow2-hosted-demo-handoff.md#local-creator-upload-smoke-test) on the isolated Sandbox app and database. Show release details, an authorized audio file and artwork, **Audio ready**, review, publication, and playback. Label the recording **Local app and isolated database**. This verifies the creator flow locally, not production artist access. The live account is stopped at the $20 artist-activation screen.
 
+Local playback verification on 29 October also used a synthetic six-track EP in the isolated database. Release-level Play advanced through all six tracks, and the stream counts remained after reload. Keep this as technical evidence only; it is test content and does not establish hosted playback or a zero-gap transition.
+
 ## Clip 3: Agreement and treasury controls
 
 Use the dated [E7 agreement lifecycle evidence](contributor-agreements-evidence/lifecycle-review/README.md) to show the signed contributor proposal and the admin's two-signature finalization. Label the recording **Stellar Testnet**. Explain that the contributor signatures are separate from the treasury's 2-of-3 authorization. Do not show private signer material.
