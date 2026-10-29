@@ -67,4 +67,15 @@ describe("DiscoverOverview", () => {
     expect(screen.queryByRole("heading", { name: "Featured tracks" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Artists in motion" })).toBeNull();
   });
+
+  it("does not show the artist section when listed profiles have no public releases", async () => {
+    mocks.listArtists.mockResolvedValue([{ id: "qa-profile" }]);
+    mocks.listReleases.mockResolvedValue([
+      { id: "draft-release", artistId: "qa-profile", status: "draft" },
+    ]);
+    open();
+
+    await waitFor(() => expect(screen.queryByText("Loading catalog...")).toBeNull());
+    expect(screen.queryByRole("heading", { name: "Artists in motion" })).toBeNull();
+  });
 });

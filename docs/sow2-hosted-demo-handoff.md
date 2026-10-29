@@ -25,7 +25,7 @@ This is a read-only product walkthrough, not a completed SOW 2 transaction demo:
 3. Open [Isgubhu track details](https://musiccity.pro/stream/trk_f9cc725f7966466b). The current page shows a 4:39 published track and 4 streams. The page and its Support amount dialog fit a 390-pixel viewport; cancel the dialog before **Review support** because no support transfer is being demonstrated.
 4. For an admin readiness clip, open [Settlements](https://music-city-admin.vercel.app/console/settlements) after signing in. It shows a reconciled, empty production ledger, not a funded settlement.
 
-The artist directory currently exposes an empty `SOW2 QA Listener` profile with no releases or tracks. Do not use that profile in the walkthrough. Its visibility should be resolved before a public-facing directory recording. Avoid playing a production track for five seconds or longer during an unplanned take; that can add a public stream.
+The current production artist directory still exposes an empty `SOW2 QA Listener` profile. A local client fix limits Discover and Artists to profiles with a published or scheduled release, and a production-shaped browser check showed only the three artists with live releases. That fix is not deployed yet; avoid showing `/artists` in a public recording until it is. Avoid playing a production track for five seconds or longer during an unplanned take; that can add a public stream.
 
 ## Remaining setup before recording SOW 2 transactions
 
