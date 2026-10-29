@@ -42,6 +42,8 @@ The [SOW 2 tracker](sow-2-tracker.md) remains the scope and acceptance record. T
 
 - Fresh local release-candidate verification on 29 October: pnpm test passed all 240 client and 23 admin tests plus 242 server tests; 13 opt-in PostgreSQL cases skipped in the default run. pnpm typecheck and pnpm build passed. bash scripts/verify-track-credits.sh passed 59 disposable-PostgreSQL checks covering track metadata, durable media publication, agreements, finalization, and settlements. bash scripts/verify-referrals.sh passed 59 server tests, 11 client tests, 23 admin tests, and workspace typechecks against a disposable loopback PostgreSQL container. Separate isolated-database checkout and direct-support lifecycle suites passed 8 and 12 tests; they mock the chain boundary and send no transactions. The build emitted a Vite advisory that the largest client chunk is 4.77 MB raw (1.28 MB gzip). No production sign-in, provider order, production database write, or new chain transaction was part of these checks.
 
+- Read-only deployment recheck at 19:07 SAST on 29 October: origin/main remains `3a75988`. Vercel's production client and admin are Ready on `3a75988`; Railway's API, media worker, and financial worker are Success and Online on the same revision. The production API readiness endpoint returns HTTP 200 with all 29 schema groups healthy; `musiccity.pro` and the admin sign-in route return HTTP 200. Local `main` is `9bc047c`, 22 commits ahead and unpushed. The demo remains local; this was a read-only check with no production sign-in, data change, or transaction.
+
 ## Follow this order
 
 | Work | Budget | Visible result |
