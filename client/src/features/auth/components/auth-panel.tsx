@@ -11,7 +11,7 @@ import { clientEnv } from "@/lib/config/env";
 
 export const AuthPanel = () => {
   const router = useRouter();
-  const { connectWallet, error, isLoading, session } = useAuth();
+  const { connectWallet, error, isLoading, session, walletLinkRequired } = useAuth();
   const dynamicConfigured = clientEnv.isDynamicConfigured;
 
   useEffect(() => {
@@ -42,6 +42,8 @@ export const AuthPanel = () => {
           </div>
           {session ? (
             <p>Connected. Redirecting you now.</p>
+          ) : walletLinkRequired ? (
+            <p>Link your Stellar wallet to finish signing in.</p>
           ) : dynamicConfigured ? (
             <p>Ready to sign in.</p>
           ) : (
@@ -51,7 +53,7 @@ export const AuthPanel = () => {
           )}
         </div>
 
-        {error ? (
+        {error && !walletLinkRequired ? (
           <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-200">
             {error}
           </div>
@@ -62,7 +64,11 @@ export const AuthPanel = () => {
           onClick={() => void connectWallet()}
           disabled={isLoading || !dynamicConfigured}
         >
-          {isLoading ? "Opening login..." : "Login"}
+          {isLoading
+            ? "Connecting..."
+            : walletLinkRequired
+              ? "Connect Stellar wallet"
+              : "Login"}
         </Button>
       </CardContent>
     </Card>

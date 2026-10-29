@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
     email: string;
     verifiedCredentials: { chain: string; address: string }[];
   },
+  userWithMissingInfo: false,
+  primaryWalletAddress: null as string | null,
   showAuthFlow: false,
   setShowAuthFlow: vi.fn(),
   setShowLinkNewWalletModal: vi.fn(),
@@ -19,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   bindReferralWallet: vi.fn(),
   clearReferral: vi.fn(),
   toast: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("@dynamic-labs/sdk-react-core", () => ({
@@ -26,9 +29,13 @@ vi.mock("@dynamic-labs/sdk-react-core", () => ({
   useDynamicContext: () => ({
     sdkHasLoaded: true,
     user: mocks.user,
-    userWithMissingInfo: false,
+    userWithMissingInfo: mocks.userWithMissingInfo,
     primaryWallet: mocks.user
-      ? { address: mocks.user.verifiedCredentials[0]?.address, connector: {} }
+      ? {
+          address:
+            mocks.primaryWalletAddress ?? mocks.user.verifiedCredentials[0]?.address,
+          connector: {},
+        }
       : null,
     showAuthFlow: mocks.showAuthFlow,
     setShowAuthFlow: mocks.setShowAuthFlow,
@@ -58,8 +65,14 @@ vi.mock("@/lib/config/env", () => ({
   },
 }));
 vi.mock("sonner", () => ({ toast: { error: mocks.toast } }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.routerPush }) }));
 
-import { AuthProvider, useAuthContext } from "./auth-provider";
+import {
+  AuthProvider,
+  DYNAMIC_AUTH_CANCEL_EVENT,
+  useAuthContext,
+} from "./auth-provider";
+import { AuthPanel } from "../components/auth-panel";
 
 const walletAddress = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const session = {
@@ -84,7 +97,10 @@ function LoginControls() {
   const auth = useAuthContext();
   return (
     <>
-      <button onClick={() => void auth.connectWallet()}>Sign in</button>
+      {auth.walletLinkRequired && <p role="status">Link your Stellar wallet to finish signing in.</p>}
+      <button onClick={() => void auth.connectWallet()}>
+        {auth.walletLinkRequired ? "Connect Stellar wallet" : "Sign in"}
+      </button>
       {auth.session && <p role="status">Signed in as {auth.session.walletAddress}</p>}
       {auth.error && <p role="alert">{auth.error}</p>}
     </>
@@ -95,6 +111,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   mocks.user = null;
+  mocks.userWithMissingInfo = false;
+  mocks.primaryWalletAddress = null;
   mocks.showAuthFlow = false;
   mocks.dynamicToken = "dynamic-jwt";
   mocks.createDynamicSession.mockResolvedValue(session);
@@ -138,6 +156,107 @@ it("verifies a Dynamic login, creates the app session, and binds a referral to i
   expect(mocks.bindReferralWallet).toHaveBeenCalledWith(walletAddress);
   expect(JSON.parse(localStorage.getItem("music-city-auth-session") ?? "{}"))
     .toMatchObject({ walletAddress, token: session.token });
+});
+
+it("offers wallet linking when Dynamic login arrives before its Stellar credential", async () => {
+  mocks.user = {
+    userId: "dynamic-user-without-stellar",
+    email: "artist@example.com",
+    verifiedCredentials: [],
+  };
+  mocks.userWithMissingInfo = true;
+
+  const view = render(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  expect((await screen.findByRole("status")).textContent).toContain(
+    "Link your Stellar wallet to finish signing in.",
+  );
+  expect(mocks.createDynamicSession).not.toHaveBeenCalled();
+
+  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
+  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
+  act(() => window.dispatchEvent(new Event(DYNAMIC_AUTH_CANCEL_EVENT)));
+  expect(screen.getByRole("button", { name: "Connect Stellar wallet" })).toBeTruthy();
+
+  mocks.userWithMissingInfo = false;
+  mocks.user = {
+    userId: "dynamic-user-with-stellar",
+    email: "artist@example.com",
+    verifiedCredentials: [{ chain: "stellar", address: walletAddress }],
+  };
+  view.rerender(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText(`Signed in as ${walletAddress}`)).toBeTruthy();
+  expect(mocks.createDynamicSession).toHaveBeenCalledWith(
+    { walletAddress },
+    "dynamic-jwt",
+  );
+});
+
+it("shows a clear connect-wallet action instead of a raw missing-credential error", async () => {
+  mocks.user = {
+    userId: "dynamic-user-without-stellar",
+    email: "artist@example.com",
+    verifiedCredentials: [],
+  };
+  mocks.userWithMissingInfo = true;
+
+  render(
+    <AuthProvider>
+      <AuthPanel />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
+  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
+  expect(screen.getByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
+});
+
+it("retries a rejected first session after the user links the matching Stellar wallet", async () => {
+  mocks.user = {
+    userId: "dynamic-user-with-stellar-pending",
+    email: "artist@example.com",
+    verifiedCredentials: [],
+  };
+  mocks.primaryWalletAddress = walletAddress;
+  mocks.createDynamicSession.mockRejectedValueOnce(
+    new Error("Requested Stellar wallet is not linked to this Dynamic user"),
+  );
+
+  const view = render(
+    <AuthProvider>
+      <AuthPanel />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText("Link your Stellar wallet to finish signing in.")).toBeTruthy();
+  expect(mocks.createDynamicSession).toHaveBeenCalledTimes(1);
+
+  await userEvent.click(screen.getByRole("button", { name: "Connect Stellar wallet" }));
+  expect(mocks.setShowLinkNewWalletModal).toHaveBeenCalledWith(true);
+
+  mocks.user = {
+    userId: "dynamic-user-with-stellar-pending",
+    email: "artist@example.com",
+    verifiedCredentials: [{ chain: "stellar", address: walletAddress }],
+  };
+  view.rerender(
+    <AuthProvider>
+      <AuthPanel />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText("Connected. Redirecting you now.")).toBeTruthy();
+  expect(mocks.createDynamicSession).toHaveBeenCalledTimes(2);
 });
 
 it("preserves provider reauthentication prompts for an existing user", async () => {

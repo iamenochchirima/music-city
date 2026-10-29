@@ -29,6 +29,7 @@ type AuthContextValue = {
   session: AuthSession | null;
   isLoading: boolean;
   error: string | null;
+  walletLinkRequired: boolean;
   connectWallet: () => Promise<void>;
   refreshSessionProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -154,6 +155,7 @@ const useBaseSessionState = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [walletLinkRequired, setWalletLinkRequired] = useState(false);
   const lastSyncedKeyRef = useRef<string | null>(null);
   const failedSyncKeyRef = useRef<string | null>(null);
   const syncInFlightRef = useRef(false);
@@ -168,6 +170,7 @@ const useBaseSessionState = () => {
   const clearSession = useCallback(() => {
     setSession(null);
     setError(null);
+    setWalletLinkRequired(false);
     persistSession(null);
     lastSyncedKeyRef.current = null;
     failedSyncKeyRef.current = null;
@@ -183,6 +186,8 @@ const useBaseSessionState = () => {
     setIsLoading,
     error,
     setError,
+    walletLinkRequired,
+    setWalletLinkRequired,
     clearSession,
     lastSyncedKeyRef,
     failedSyncKeyRef,
@@ -197,6 +202,7 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
     setSession,
     isLoading,
     error,
+    walletLinkRequired,
     setError,
     clearSession,
     autoProfileRefreshTokenRef,
@@ -272,11 +278,12 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       isLoading,
       error,
+      walletLinkRequired,
       connectWallet,
       refreshSessionProfile,
       logout,
     }),
-    [connectWallet, error, isLoading, logout, refreshSessionProfile, session],
+    [connectWallet, error, isLoading, logout, refreshSessionProfile, session, walletLinkRequired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -300,6 +307,8 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading,
     error,
     setError,
+    walletLinkRequired,
+    setWalletLinkRequired,
     clearSession,
     lastSyncedKeyRef,
     failedSyncKeyRef,
@@ -478,12 +487,10 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (userWithMissingInfo && !stellarCredentialAddress) {
-      const message =
-        "Dynamic login is incomplete. No Stellar wallet credential is present in the verified token yet.";
-
-      setError(message);
+      setWalletLinkRequired(true);
+      setError(null);
       setIsLoading(false);
-      logDynamicAuth("sync stopped: missing Stellar credential", { message });
+      logDynamicAuth("sync stopped: missing Stellar credential; wallet link required");
       return;
     }
 
@@ -558,6 +565,8 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
         onboardingStatus: verifiedSession.onboardingStatus,
       });
       setSession(verifiedSession);
+      setWalletLinkRequired(false);
+      setError(null);
       persistSession(verifiedSession);
       bindReferralWallet(verifiedSession.walletAddress);
       lastSyncedKeyRef.current = syncKey;
@@ -573,8 +582,12 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
         message.includes("Requested Stellar wallet is not linked to this Dynamic user") ||
         message.includes("No Stellar wallet is linked to this account")
       ) {
+        setWalletLinkRequired(true);
         failedSyncKeyRef.current = syncKey;
         persistFailedSyncKey(syncKey);
+        setError(null);
+        logDynamicAuth("backend session needs Stellar wallet link", { syncKey });
+        return;
       }
       logDynamicAuth("backend session failed", {
         message,
@@ -594,8 +607,10 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setError,
     setIsLoading,
     setSession,
+    setWalletLinkRequired,
     resolveRequestedWalletAddress,
     syncInFlightRef,
+    userWithMissingInfo,
     waitForDynamicToken,
     waitForDynamicWalletAddress,
   ]);
@@ -679,12 +694,23 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     setIsLoading(true);
     if (user) {
+      failedSyncKeyRef.current = null;
+      persistFailedSyncKey(null);
       setShowLinkNewWalletModal(true);
       return;
     }
 
+    setWalletLinkRequired(false);
     setShowAuthFlow(true);
-  }, [setError, setIsLoading, setShowAuthFlow, setShowLinkNewWalletModal, user]);
+  }, [
+    setError,
+    setIsLoading,
+    setShowAuthFlow,
+    setShowLinkNewWalletModal,
+    setWalletLinkRequired,
+    failedSyncKeyRef,
+    user,
+  ]);
 
   const logout = useCallback(async () => {
     clearReferral();
@@ -698,11 +724,12 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       isLoading,
       error,
+      walletLinkRequired,
       connectWallet,
       refreshSessionProfile,
       logout,
     }),
-    [connectWallet, error, isLoading, logout, refreshSessionProfile, session],
+    [connectWallet, error, isLoading, logout, refreshSessionProfile, session, walletLinkRequired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
