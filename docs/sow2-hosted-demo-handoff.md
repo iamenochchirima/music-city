@@ -12,6 +12,10 @@ The [Marketplace](https://musiccity.pro/marketplace) currently says no track pur
 
 The [Music City Admin console](https://music-city-admin.vercel.app/console/admins) has one production super-admin, and normal sign-in was verified. Agreements and the royalty ledger are empty. Settlement reconciliation reports **Reconciled** with zero funded, claimed, recovered, unclaimed, or escrow USDC; there are no approved earnings sources or settlement records. This verifies admin access and empty states, not an agreement or settlement transaction.
 
+## Creator access blocker
+
+The signed-in production account is listener-only and its Artist access is not unlocked. In the live site, **Set up artist profile** opens the completed listener onboarding page (“Your listening space is ready”) instead of the artist path. The local fix in `1dfad1b` routes to the intent step with Artist selected; it does not change the account until the user continues. Nine focused onboarding tests, client typecheck, and client production build pass. The fix has not been pushed or deployed, so do not record the hosted creator journey yet. After deployment, an authorized artist profile, artist activation, and approved demo audio/artwork are still needed to verify upload and publication.
+
 ## Remaining setup before recording SOW 2 transactions
 
 1. Sign in at [Music City Admin](https://music-city-admin.vercel.app/auth) with the production super-admin account. Keep the password out of screenshots and recordings.
@@ -34,10 +38,11 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 
 - Railway API and workers: `0aa57d9`; Vercel admin: `0aa57d9`.
 - Vercel client: functional fixes `4ec021b` and `13c3154`; the latter deployment was checked live on `musiccity.pro`.
-- API readiness: HTTP 200; all 29 schema groups healthy. Production first-admin setup is complete; the owner signed in and the Admins page shows one super-admin.
+- Fresh check at 15:15 SAST: Railway API, media worker, and financial worker are Online; readiness returns HTTP 200 with all 29 schema groups applied. Latest client and admin Vercel production deployments are Ready, but CLI inspection did not expose their source SHAs. Production first-admin setup is complete; the owner signed in and the Admins page shows one super-admin.
 - Railway's media and financial workers are deployed successfully. Existing media jobs are complete with no backlog; a fresh upload still needs an authorized artist and demo file. The Stellar Testnet financial cursor was caught up with zero errors and three ledgers behind Horizon at the latest check.
 - There are currently no production payment intents, confirmed payments, support payments, settlement batches, or claims. There are no hosted financial receipts to use as a completed-transaction demo.
 - The hosted admin's Agreements and Royalties pages are empty. Settlement reconciliation passes with all balances at zero, and there are no approved earnings sources or settlement batches.
 - A Dynamic Sandbox static-OTP identity did not authenticate to the hosted client, which is configured against a different Dynamic environment. Use an account belonging to the hosted environment for the demo; do not present that Sandbox identity as production access.
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
+- Local demo candidate `1dfad1b` fixes the hosted artist-entry route reproduced in computer use. It is committed locally, not pushed or deployed; client focused onboarding tests (9), typecheck, and build pass.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
