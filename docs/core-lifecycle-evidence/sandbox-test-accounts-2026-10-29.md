@@ -401,6 +401,14 @@ The safety suite passed 3/3. The full server suite passed 230/230 with 13 opt-in
 
 The ramp repository PostgreSQL test passed 3/3 against a separate disposable local `_test` database with no skips. It checked persisted ownership and idempotency, append-only events, cash-out attempt recovery and expiry, and unchanged earnings and claim history. The test database was dropped afterward. It did not contact MoonPay or create a provider order.
 
+## Read-only production deployment and migration audit, 29 October 2026
+
+The live Music City site at `https://musiccity.pro` returned HTTP 200. Its `/api/v1/health/ready` path served frontend HTML rather than API readiness, so I checked the configured Railway API directly: `https://server-production-d758.up.railway.app/api/v1/health/ready` returned HTTP 200 with database and schema readiness true and 19 migration groups. Railway reports the server, media worker, financial worker, and Postgres online. Their latest successful deployments are from 26 October at commit `5190cd955b4a1e4215a0c78af754b15a2ef85229`; each deployment has `pnpm --filter server db:migrate` configured as its pre-deploy command.
+
+The current local checkout is 155 commits ahead of `origin/main`. Local API readiness reports 29 schema groups. Production is missing these 10 current ramp groups: `2026-10-26-ramp-orders`, `2026-10-26-ramp-progress`, `2026-10-28-ramp-lease`, `2026-10-28-ramp-delivery`, `2026-10-28-ramp-quote-integrity`, `2026-10-28-ramp-cashout-attempt`, `2026-10-28-ramp-cashout-recovery`, `2026-10-28-ramp-launch-session`, `2026-10-29-ramp-refund-failure`, and `2026-10-29-ramp-claim-link`. Vercel reports the `musiccity.pro` deployment Ready, created 26 October; the deployment metadata available during this read-only check did not identify its source commit.
+
+This audit establishes that the deployed stack is healthy at its older revision and that the current ramp implementation and migrations are not live. It does not establish a rollout or production migration. No deployment, data write, or production transaction was performed.
+
 ## Second Sandbox listener and local configuration check, 29 October 2026
 
 I restarted the local Vite client on `http://localhost:3000` with explicit API settings for the healthy local API on port 4339. The API process used the loopback `sow2_current_demo_test` database, Dynamic Sandbox, Stellar Testnet, local storage and media, and no enabled ramp provider. Readiness returned HTTP 200 with all 29 schema groups applied. Dynamic Sandbox Test Accounts was already enabled.

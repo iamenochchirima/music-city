@@ -37,7 +37,7 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 - [x] C1. Audit every specified protected treasury action and verify its required threshold. Record evidence or the exact remaining gap.
 - [ ] C2. Re-run the creator-to-purchase-to-settlement-to-claim lifecycle locally against current code with real Dynamic Sandbox and Stellar Testnet where available. Preserve the historical evidence and distinguish fixtures.
 - [x] C3a. Prepare the current local evidence package with tested revisions, contract IDs, Testnet receipts, screenshots, results, and rollout requirements. See [core lifecycle evidence](core-lifecycle-evidence/README.md).
-- [ ] C3b. Verify the deployed client, API, worker, and migration state before making live claims. No current deployment has been authorized or verified.
+- [x] C3b. Audit the deployed client, API, workers, and migration state on 29 October 2026. The live services are healthy at their deployed revision, but that revision is `5190cd9` from 26 October; the current checkout is 155 commits ahead and the live API is missing all 10 current ramp migration groups. Current ramp changes are not live. No deployment was performed.
 - [x] C4. Resolve or document the production admin setup and historical migration-before-backup exception. Do not claim reviewer acceptance without the reviewer.
 
 ## Verification and handoff
