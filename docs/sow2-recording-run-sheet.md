@@ -48,7 +48,7 @@ Use the dated [E7 agreement lifecycle evidence](contributor-agreements-evidence/
 
 Use the saved receipts for the completed local Testnet cycle. Label it **Stellar Testnet, local app and database**; it is not a production transaction.
 
-Optional buyer-entry shot: the local Marketplace lists **Core Journey** at 0.001 USDC. The current Sandbox wallet has no Testnet XLM or USDC, so Buy stops before payment review. Use the saved receipts for purchase-to-claim proof; do not present this unfunded account as a completed buyer journey.
+Skip the local Marketplace buyer-entry shot for now. **Core Journey** appears at 0.001 USDC, but its audio master is missing from local storage and Play preloading returns HTTP 500. Buy created a pending local intent, then checkout preparation returned HTTP 409 because the Sandbox wallet is not active on Testnet without XLM. The isolated database has no checkout or payment for this intent. No wallet signature or chain transaction occurred. Use the saved receipts for purchase-to-claim proof; do not present this local account as a completed buyer journey.
 
 1. Show the [purchase](core-lifecycle-evidence/current-qa-purchase-2026-10-29.png). One 0.0010000 USDC purchase created the listening entitlement and two royalty entries.
 2. Show the [funded batch](core-lifecycle-evidence/current-qa-funded-2026-10-29.png). Two treasury signatures funded 0.0010000 USDC.
