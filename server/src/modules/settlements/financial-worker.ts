@@ -8,10 +8,9 @@ import { logger } from "../../utils/logger.js";
 import { errorMessage } from "../../utils/error-message.js";
 import { rampCycle } from "../ramps/ramp-worker.js";
 import { cashOutCycle } from "../cashout/cashout-worker.js";
-export async function financialCycle() {
-  await reconcileAgreementFinalizations();
-  await supportService.cycle();
-  await checkoutService.cycle();
+import { createFinancialWorkerTasks, runFinancialWorkerTasks } from "./financial-worker-tasks.js";
+
+async function settlementCycle() {
   // A transaction advisory lock prevents overlapping scans across worker replicas.
   await databaseService.transaction(async (client) => {
     const lock = await client.query(
@@ -55,8 +54,25 @@ export async function financialCycle() {
     }
     try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:errorMessage(error,"Financial reconciliation failed")});}
   });
-  try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
-  try { await cashOutCycle(); } catch { logger.error("Cash-out reconciliation needs attention", {code: "cashout_configuration_invalid"}); }
+}
+
+export async function financialCycle(options: { settlementReady?: boolean } = {}) {
+  const tasks = createFinancialWorkerTasks(
+    {
+      agreementFinalization: reconcileAgreementFinalizations,
+      supportPayments: () => supportService.cycle(),
+      trackCheckout: () => checkoutService.cycle(),
+      settlement: settlementCycle,
+      ramp: rampCycle,
+      cashOut: cashOutCycle,
+    },
+    options,
+  );
+  await runFinancialWorkerTasks(tasks, (name, error) => {
+    logger.error(`${name} reconciliation needs attention`, {
+      error: errorMessage(error, `${name} reconciliation failed`),
+    });
+  });
 }
 async function recordDiscrepancy(id: string, error: unknown) {
   const message = errorMessage(error, "Financial reconciliation failed");
