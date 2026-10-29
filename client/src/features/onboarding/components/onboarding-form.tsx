@@ -36,6 +36,7 @@ import { ArtistActivationSummary } from "@/features/sponsorships/artist-activati
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
+  startArtistSetup?: boolean;
   onBusyChange?: (busy: boolean) => void;
   footerActions?: ReactNode;
   onCompleted?: (intent: PrimaryIntent, destination: string) => void;
@@ -422,6 +423,7 @@ const prepareImageFile = (
 
 export const OnboardingForm = ({
   mode = "page",
+  startArtistSetup = false,
   onCompleted,
   onBusyChange,
   footerActions,
@@ -550,7 +552,13 @@ export const OnboardingForm = ({
 
         const profile = state.profile;
         setProfileId(profile.id);
-        setPrimaryIntent(profile.primaryIntent);
+        const shouldStartArtistSetup =
+          startArtistSetup && state.onboardingStatus === "complete";
+        setPrimaryIntent(
+          shouldStartArtistSetup && !isArtistIntent(profile.primaryIntent)
+            ? "artist"
+            : profile.primaryIntent,
+        );
         setDisplayName(
           isEmailDerivedDisplayName(profile.displayName, profile.email)
             ? ""
@@ -587,7 +595,7 @@ export const OnboardingForm = ({
         setRemoveHeaderImage(false);
 
         if (state.onboardingStatus === "complete") {
-          setStep("complete");
+          setStep(shouldStartArtistSetup ? "intent" : "complete");
         } else if (
           [
             "identity",
@@ -616,7 +624,7 @@ export const OnboardingForm = ({
     return () => {
       cancelled = true;
     };
-  }, [session?.token, loadRetry]);
+  }, [session?.token, loadRetry, startArtistSetup]);
 
   useEffect(() => {
     if (!session?.onboardingStep || session.onboardingStatus === "complete") {

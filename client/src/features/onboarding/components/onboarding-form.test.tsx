@@ -22,6 +22,31 @@ async function open(onCompleted = vi.fn()) {
   await screen.findByLabelText("Display name");
   return onCompleted;
 }
+const completedListenerProfile = {
+  id: "profile-1",
+  walletAddress: "GTEST",
+  email: "",
+  displayName: "Listener",
+  primaryIntent: "listener" as const,
+  artistAccess: false,
+  onboardingStatus: "complete" as const,
+  onboardingStep: "complete" as const,
+  onboardingVersion: 1,
+  location: "",
+  genres: [],
+  favoriteArtistIds: [],
+  interestedInLocalMusic: false,
+  notificationPreferences: {
+    releaseNotifications: true,
+    artistUpdates: true,
+    productUpdates: false,
+  },
+  bio: "",
+  socialLinks: {},
+  verified: false,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+};
 async function identity(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Display name"), "New Artist");
   await user.click(screen.getByRole("button", { name: "Continue" }));
@@ -42,6 +67,26 @@ it("shows a profile-load retry instead of an editable partial form", async () =>
   await user.click(screen.getByRole("button", { name: "Retry profile load" }));
   await screen.findByLabelText("Display name");
   expect(mocks.state).toHaveBeenCalledTimes(2);
+});
+it("opens the artist choice for a completed listener without changing their profile", async () => {
+  mocks.state.mockResolvedValue({
+    profile: completedListenerProfile,
+    onboardingStatus: "complete",
+    onboardingStep: "complete",
+  });
+  render(
+    <MemoryRouter>
+      <OnboardingForm startArtistSetup />
+    </MemoryRouter>,
+  );
+
+  await screen.findByRole("heading", { name: "How will you use Music City?" });
+  expect(
+    (screen.getByRole("radio", { name: /I’m an artist/ }) as HTMLInputElement)
+      .checked,
+  ).toBe(true);
+  expect(mocks.save).not.toHaveBeenCalled();
+  expect(mocks.complete).not.toHaveBeenCalled();
 });
 it("retains identity values after a failed save and permits retry", async () => {
   const user = userEvent.setup(); await open();

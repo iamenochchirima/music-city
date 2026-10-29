@@ -23,12 +23,12 @@ export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
       return;
     }
 
-    if (hasArtistIntent) {
+    if (hasArtistIntent && hasArtistAccess) {
       router.push("/dashboard");
       return;
     }
 
-    router.push("/onboarding");
+    router.push("/onboarding?intent=artist");
   };
 
   return (
@@ -63,7 +63,7 @@ export const ArtistAccessGate = ({ action }: ArtistAccessGateProps) => {
           : hasArtistIntent && hasArtistAccess
             ? "Open artist studio"
             : hasArtistIntent
-              ? "Open artist setup"
+              ? "Continue artist setup"
               : "Set up artist profile"}
       </Button>
     </section>
