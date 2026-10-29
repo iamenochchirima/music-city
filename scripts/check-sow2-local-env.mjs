@@ -34,13 +34,19 @@ export function checkLocalDemoConfig(server, client, admin = {}) {
   ];
   if (expectedNetworks.some(([actual, expected]) => actual && actual.replace(/\/$/, "") !== expected))
     failures.push("Use the Stellar Testnet Horizon and Soroban endpoints.");
+  const port = server.PORT || "4319";
+  let appBase;
+  try { appBase = new URL(server.APP_BASE_URL || `http://localhost:${port}`); } catch { failures.push("Set APP_BASE_URL to the local API origin."); }
+  if (appBase && (appBase.protocol !== "http:" ||
+      !["localhost", "127.0.0.1", "[::1]"].includes(appBase.hostname) ||
+      (appBase.port || "80") !== port || appBase.pathname !== "/" || appBase.search || appBase.hash || appBase.username || appBase.password))
+    failures.push("APP_BASE_URL must use the configured local API origin because playback streams are served there.");
   let api;
   try { api = new URL(client.VITE_API_BASE_URL || "http://localhost:4319/api/v1"); } catch { failures.push("Set the client API URL to the local server."); }
   if (api && !["localhost", "127.0.0.1", "[::1]"].includes(api.hostname)) failures.push("The client API URL must use localhost.");
   let adminApi;
   try { adminApi = new URL(admin.VITE_ADMIN_API_BASE_URL || "http://localhost:4319/api/v1/admin"); } catch { failures.push("Set the admin API URL to the local server."); }
   if (adminApi && !["localhost", "127.0.0.1", "[::1]"].includes(adminApi.hostname)) failures.push("The admin API URL must use localhost.");
-  const port = server.PORT || "4319";
   for (const [url, path, label] of [[api, "/api/v1", "client"], [adminApi, "/api/v1/admin", "admin"]]) {
     if (url && (url.protocol !== "http:" || (url.port || "80") !== port || url.pathname.replace(/\/$/, "") !== path || url.search || url.hash || url.username || url.password))
       failures.push(`The ${label} API URL must use the configured local server port and expected API path.`);

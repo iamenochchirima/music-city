@@ -3,7 +3,7 @@ import test from "node:test";
 import { checkLocalDemoConfig } from "./check-sow2-local-env.mjs";
 
 const sandbox = "2bf133b3-0bd0-4e1d-b956-7e613ed3d319";
-const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339" };
+const server = { DATABASE_URL: "postgres://test:password@127.0.0.1:5432/demo_test", DYNAMIC_ENVIRONMENT_ID: sandbox, DYNAMIC_JWKS_URL: `https://app.dynamic.xyz/api/v0/sdk/${sandbox}/.well-known/jwks`, RAMPS_SANDBOX_ENABLED: "false", PORT: "4339", APP_BASE_URL: "http://localhost:4339" };
 const client = { VITE_DYNAMIC_ENVIRONMENT_ID: sandbox, VITE_API_BASE_URL: "http://localhost:4339/api/v1" };
 const admin = { VITE_ADMIN_API_BASE_URL: "http://localhost:4339/api/v1/admin" };
 test("accepts an isolated local Sandbox and Testnet configuration", () => assert.deepEqual(checkLocalDemoConfig(server, client, admin), []));
@@ -17,6 +17,9 @@ test("rejects live identity, signing keys, databases, network and API endpoints"
     [{ ...server, DATABASE_URL: "https://localhost/demo_test" }, client],
     [{ ...server, STELLAR_NETWORK_PASSPHRASE: "Public Global Stellar Network ; September 2015" }, client],
     [{ ...server, STELLAR_HORIZON_URL: "https://horizon.stellar.org" }, client],
+    [{ ...server, APP_BASE_URL: "http://localhost:3000" }, client],
+    [{ ...server, APP_BASE_URL: "https://example.test" }, client],
+    [{ ...server, APP_BASE_URL: "http://localhost:4339/api/v1" }, client],
     [{ ...server, RAMPS_SANDBOX_ENABLED: "true" }, client],
     [{ ...server, STORAGE_PROVIDER: "s3" }, client],
     [{ ...server, MEDIA_PROVIDER: "mux" }, client],
