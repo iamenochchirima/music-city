@@ -17,17 +17,18 @@ Music City exposes a locally tested, authenticated funding and cash-out lifecycl
 - [x] R1. Implement authenticated capability, order creation, detail, history, and resume routes. Bind user, wallet, network, provider, and direction on the server. Provider routes remain empty until verified account-specific capabilities exist.
 - [x] R2. Persist intent before launch, serialize duplicate creates, and recover the same order after a lost response. Prevent another transaction while an outcome remains unknown. Retry and unresolved-order behavior is covered by ramp service and isolated PostgreSQL tests.
 - [ ] R3. Connect verified MoonPay sandbox URL creation and lookup to the provider interface. Restrict URLs and parameters to server-controlled values.
-- [ ] R4. Verify provider notifications from raw payloads, deduplicate and record observations, preserve unknown statuses, and reject unrelated events.
-- [ ] R5. Reconcile provider status in the financial worker with bounded retries and restart recovery. Keep paid, chain confirmed, delivered, failed, expired, and refunded states distinct.
-- [ ] R6. Bind outgoing transfers to authoritative provider instructions, validate the asset, issuer, source, destination, memo, amount, fee, network and expiry, and persist signed envelopes and hashes before submission.
-- [ ] R7. Verify incoming delivery using chain evidence before reflecting wallet funds. Never generate wallet credit, earnings or entitlements from sandbox simulation.
-- [ ] R8. Implement cancellation and failure recovery without overwriting financial history. Support refunds only where actual provider behavior is documented and tested.
+- [x] R4. Verify provider notifications from raw payloads, deduplicate and record observations, preserve unknown statuses, and reject unrelated events.
+- [x] R5. Reconcile provider status in the financial worker with bounded retries and restart recovery. Keep paid, chain confirmed, delivered, failed, expired, and refunded states distinct.
+- [x] R6. Bind outgoing transfers to authoritative provider instructions, validate the asset, issuer, source, destination, memo, amount, fee, network and expiry, and persist signed envelopes and hashes before submission.
+- [x] R7. Verify incoming delivery using chain evidence before reflecting wallet funds. Never generate wallet credit, earnings or entitlements from sandbox simulation.
+- [x] R8a. Implement cancellation and failure recovery without overwriting financial history.
+- [ ] R8b. Support refunds only where actual provider behavior is documented and tested.
 - [ ] R9. If a verified route requires conversion, design and validate the quote, slippage, fees and separate wallet authorization. Do not add an unverified conversion path.
 
 ## Creator and admin experience
 
 - [x] U1. Add funding and cash-out entry points next to spendable wallet funds, separate from unclaimed earnings. Show unavailable providers clearly.
-- [ ] U2. Build the amount, quote, provider action and status flow with automatic progress, history and resumable URLs. Do not expose fixtures as live options.
+- [x] U2. Build the amount, quote, provider action and status flow with automatic progress, history and resumable URLs. Do not expose fixtures as live options.
 - [x] U3. Build authorized read-only admin list and detail views for status, chain receipts and reconciliation exceptions.
 - [ ] U4. Verify desktop, mobile, keyboard, cancellation, slow responses, reload and recovery through computer use against the local app.
 
@@ -86,7 +87,13 @@ Added an additive lease-token migration. Expired workers can no longer persist o
 
 ### 29 October 2026: refund status recovery
 
-Provider reconciliation now reads accepted status events rather than conflicting payloads when checking timestamps and transitions. Unknown provider statuses remain visible without erasing the last known state. A completed order can advance through `refund_pending`, `refunded`, or `refund_failed`; a pending refund can end as refunded or refund-failed; and invalid regressions remain recorded as conflicts. Two transition tests, the isolated PostgreSQL ramp repository test, all 70 ramp and cash-out tests, and server typecheck passed. R5 remains open until provider status mapping, notifications, and a real sandbox journey are verified.
+Provider reconciliation now reads accepted status events rather than conflicting payloads when checking timestamps and transitions. Unknown provider statuses remain visible without erasing the last known state. A completed order can advance through `refund_pending`, `refunded`, or `refund_failed`; a pending refund can end as refunded or refund-failed; and invalid regressions remain recorded as conflicts. Two transition tests, the isolated PostgreSQL ramp repository test, all 70 ramp and cash-out tests, and server typecheck passed.
+
+### 29 October 2026: provider-independent lifecycle implementation verified
+
+The raw-body MoonPay webhook path verifies signatures, age, ownership and event type; records deduplicated notifications; and leaves status decisions to authenticated provider lookup. The financial worker polls bounded jobs, backs off on errors, verifies incoming Stellar Testnet payments against the saved wallet and exact asset/amount, and records chain evidence without crediting an internal balance. Cash-out code validates an authenticated provider quote and its transfer instructions, prepares and stores the exact USDC transfer, binds wallet authorization to the prepared envelope, and recovers uncertain submission by the saved hash. The account flow includes amount/route selection, provider handoff, automatic status refresh, history, details, and resume; the capability API still returns no unverified routes.
+
+All 70 ramp and cash-out server tests passed, including isolated PostgreSQL persistence and recovery checks; all 51 ramp UI tests passed; server, client, and admin typechecks passed. The local API readiness endpoint reported 29 healthy schema groups. Browser verification with the Dynamic Sandbox account showed the provider-unavailable state and reached the 0.001 USDC Core Journey review. No provider transaction or wallet-signed purchase was submitted. R4-R7, R8a, and U2 are complete as local implementation items; real provider enablement remains open under R3/V5, refund behavior remains open under R8b, and browser matrix, purchase-to-claim, and deployment evidence remain open under U4/C2/C3.
 
 ### 28 October 2026: authenticated intent creation
 
