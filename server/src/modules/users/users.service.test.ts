@@ -273,6 +273,72 @@ test("artist activation is a saved onboarding step between intent and artist pro
   }
 });
 
+test("a completed listener can start artist setup without receiving artist access", async () => {
+  let stored = createProfile({
+    displayName: "Existing Listener",
+    onboardingStatus: "complete",
+    onboardingStep: "complete",
+    onboardingCompletedAt: new Date(0).toISOString(),
+  });
+  let upsertCalls = 0;
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        upsertCalls += 1;
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 2000,
+        campaignCode: null,
+        termsRevision: null,
+        status: "payment_required",
+        profileExists: true,
+        artistAccess: false,
+        activatedAt: null,
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+  ];
+
+  try {
+    const selected = await usersService.saveOnboardingStep(walletAddress, {
+      step: "intent",
+      primaryIntent: "artist",
+    });
+
+    assert.equal(upsertCalls, 1);
+    assert.equal(selected?.primaryIntent, "artist");
+    assert.equal(selected?.onboardingStatus, "complete");
+    assert.equal(selected?.onboardingStep, "complete");
+    assert.equal(selected?.artistAccess, false);
+
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create an artist profile first",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
 test("saving welcome details creates the profile before intent selection", async () => {
   let stored: UserProfile | null = null;
   const cleanup = [
