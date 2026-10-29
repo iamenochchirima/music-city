@@ -28,6 +28,6 @@ The [evidence log](core-lifecycle-evidence/README.md#current-local-financial-cyc
 
 ## Creator and provider limits
 
-Do not record artist setup or publication as a hosted success yet. The production listener is still at the unsaved artist-intent step. The production upload and publication path needs an authorized artist account and approved demo media. For a local creator rehearsal, follow the [isolated local demo guide](sow2-local-demo.md) and confirm its database preflight before writing.
+Do not record artist setup or publication as a hosted success yet. The production account has Listener access and remains at onboarding step 2, with **I’m an artist** selected. Continue has not been pressed. The production upload and publication path needs artist access and approved demo media. For a local creator rehearsal, follow the [isolated local demo guide](sow2-local-demo.md) and confirm its database preflight before writing.
 
 Do not claim a successful on-ramp or off-ramp. MoonPay has no successful sandbox order, and MoneyGram still lacks the required non-custodial Stellar partner mode. Keep both routes disabled in the demo.
