@@ -13,11 +13,13 @@ it("validates exact sandbox launch targets for each provider and direction", () 
     validateRampProviderUrl(
       "moneygram",
       "sell",
-      "https://playground.xramps.moneygram.com/widget.html?mode=off-ramp",
+      "https://playground.xramps.moneygram.com/sdk/widget.html?mode=off-ramp",
     ),
   ).toBe(
-    "https://playground.xramps.moneygram.com/widget.html?mode=off-ramp",
+    "https://playground.xramps.moneygram.com/sdk/widget.html?mode=off-ramp",
   );
+  expect(validateRampProviderUrl("moneygram", "buy", "https://playground.xramps.moneygram.com/widget.html?mode=on-ramp"))
+    .toBe("https://playground.xramps.moneygram.com/widget.html?mode=on-ramp");
   expect(rampProviderName("moneygram")).toBe("MoneyGram");
 });
 

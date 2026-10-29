@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-29T14:54:19.249Z",
+  "environment": "sandbox",
+  "scope": "Session and partner configuration checks used a stable synthetic QA customer identifier. No provider transaction, payment, cash deposit, or wallet transfer was created.",
+  "nonCustodialSessionAttempt": {
+    "httpStatus": 400,
+    "result": "custodial_customer_identifier_required"
+  },
+  "custodialSession": {
+    "httpStatus": 201,
+    "walletType": "custodial",
+    "widgetPath": "/sdk/widget.html"
+  },
+  "partnerConfiguration": {
+    "httpStatus": 200,
+    "environment": "sandbox",
+    "walletType": "custodial",
+    "requiredBlockchainNetwork": "testnet",
+    "supportedChains": [
+      "ethereum",
+      "polygon",
+      "solana"
+    ],
+    "supportedAssets": [
+      "USDC",
+      "USDT"
+    ],
+    "products": {
+      "cashIn": true,
+      "cashOut": true
+    },
+    "custodyWalletsConfigured": {
+      "cashIn": false,
+      "cashOut": false
+    },
+    "depositWalletCount": 0
+  },
+  "conclusion": "The credentials authenticate. This account does not currently expose Stellar, and the configured custodial wallet model does not match Music City's Dynamic user wallets. MoneyGram cash-in and cash-out cannot be verified end to end with this configuration."
+}

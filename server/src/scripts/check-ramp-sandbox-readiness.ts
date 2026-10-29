@@ -50,6 +50,11 @@ console.log(
       providers: report.providers.map((p) => ({
         provider: p.provider,
         connection: p.connection,
+        ...(p.walletModel ? { walletModel: p.walletModel } : {}),
+        ...(p.supportedChains ? { supportedChains: p.supportedChains } : {}),
+        ...(p.supportedAssets ? { supportedAssets: p.supportedAssets } : {}),
+        ...(p.products ? { products: p.products } : {}),
+        ...(p.custodyWalletsConfigured ? { custodyWalletsConfigured: p.custodyWalletsConfigured } : {}),
         flows: p.flows,
       })),
     },

@@ -8,7 +8,7 @@ This plan supplies the implementation detail for the provider-readiness work in 
 
 ## Current execution decision
 
-The owner deferred MoneyGram until its partner mode is resolved. Focus current execution on MoonPay. The owner also approved a separate native XLM sandbox buy and sell demonstration because MoonPay reports `supportsTestMode: false` for `usdc_xlm` and `true` for `xlm`. This does not complete Stellar USDC acceptance or authorize a production asset change. Keep the MoneyGram requirements below for resumption.
+The owner reopened MoneyGram integration on 29 October. Its configured Sandbox account authenticates but is custodial, supports Ethereum, Polygon, and Solana (not Stellar), and has no configured Stellar omnibus wallets. Music City's existing wallet flow is non-custodial Dynamic on Stellar. Continue with that intended model only after MoneyGram provisions non-custodial Stellar Sandbox access; do not silently switch the app to custodial operation. See the [current partner configuration evidence](ramp-sandbox-evidence/moneygram-config-2026-10-29.json). The owner also approved a separate native XLM sandbox buy and sell demonstration because MoonPay reports `supportsTestMode: false` for `usdc_xlm` and `true` for `xlm`. This does not complete Stellar USDC acceptance or authorize a production asset change.
 
 ## Deliver the four journeys
 
@@ -28,7 +28,7 @@ Prioritize MoonPay's online flows. Keep MoneyGram's physical cash options lower 
 - [x] R-03 Confirm the agreed delivery order: MoonPay online funding and withdrawals first, followed by MoneyGram cash deposits and collection. Both providers and both directions remain in scope.
 - [ ] R-04 Capture a fresh, redacted readiness report for both accounts. Check authentication, enabled products, allowed local origins, and sandbox callback configuration without printing keys or customer history.
 - [ ] R-05 Build a capability table for each provider and direction. Record country, fiat currency, payment or payout method, minimum, maximum, precision, asset, issuer, network, identity requirements, and verification date. Use account APIs where available. Record documented or dashboard-only checks explicitly.
-- [ ] R-06 Verify Stellar USDC buy and sell separately for MoonPay. Verify MoneyGram's cash-in and cash-out combinations separately. General provider coverage does not establish account-enabled support.
+- [x] R-06 Verify the account capability for each required USDC direction. MoonPay's current account has Stellar USDC Test Mode disabled, so buy and sell are blocked. MoneyGram's current partner config lists no Stellar chain, so both cash-in and cash-out are blocked. This verifies the provider-side blockers; all four transaction journeys remain open until the required capabilities are enabled.
 - [ ] R-07 Record what each sandbox simulates, which network it uses, how transactions advance, and whether it delivers actual test assets. Do not send Testnet assets to an unverified or mainnet deposit address.
 - [ ] R-08 Select one verified country, currency, and method for each of the four initial browser journeys. Do not hardcode that selection as the only product option.
 

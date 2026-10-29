@@ -23,6 +23,7 @@ function transport(
     custodial?: boolean;
     widget?: string;
     missingAsset?: boolean;
+    supportedChains?: string[];
   } = {},
 ) {
   const calls: Array<{ url: URL; init?: RequestInit }> = [];
@@ -51,33 +52,41 @@ function transport(
       );
     }
     assert.equal(url.origin, "https://playground.xramps.moneygram.com");
-    assert.deepEqual(JSON.parse(String(init?.body)), {
-      walletAddress: wallet,
-      chain: "stellar",
-      walletType: "non-custodial",
-    });
-    if (options.custodial ?? true)
-      return Response.json(
-        {
-          error: "Bad Request",
-          message:
-            "customerIdentifier is required for custodial partners. Secret must never be returned: ramps_sk_sbox_fixture",
-        },
-        { status: 400 },
-      );
+    if (url.pathname === "/api/v1/partners/config") {
+      assert.equal(init?.headers && new Headers(init.headers).get("authorization"), "Bearer private-provider-token");
+      const custodial = options.custodial ?? true;
+      return Response.json({
+        walletType: custodial ? "custodial" : "non-custodial",
+        supportedChains: options.supportedChains ?? (custodial ? ["ethereum", "polygon", "solana"] : ["stellar"]),
+        supportedAssets: ["USDC", "USDT"],
+        custodianCashInWallet: null,
+        custodianCashOutWallet: null,
+        productAvailability: { products: { cash_in: { enabled: true }, cash_out: { enabled: true } } },
+      });
+    }
+    const body = JSON.parse(String(init?.body));
+    if (body.walletAddress) {
+      assert.deepEqual(body, { walletAddress: wallet, chain: "stellar" });
+      if (options.custodial ?? true)
+        return Response.json(
+          { error: "Bad Request", message: "customerIdentifier is required for custodial partners. Secret must never be returned: ramps_sk_sbox_fixture" },
+          { status: 400 },
+        );
+    } else {
+      assert.deepEqual(body, { customerIdentifier: "music-city-sandbox-readiness", chain: "stellar" });
+    }
+    const custodial = options.custodial ?? true;
     return Response.json({
-      walletType: "non-custodial",
+      walletType: custodial ? "custodial" : "non-custodial",
       sessionId: "session",
       sessionToken: "private-provider-token",
-      widgetUrl:
-        options.widget ??
-        "https://playground.xramps.moneygram.com/widget.html?mode=off-ramp",
+      widgetUrl: options.widget ?? "https://playground.xramps.moneygram.com/sdk/widget.html?mode=off-ramp",
     });
   }) as typeof fetch;
   return { fetcher, calls };
 }
 
-test("blocks both real readiness failures without promoting general country support", async () => {
+test("reports the custodial account's missing Stellar capability without exposing session data", async () => {
   const { fetcher, calls } = transport();
   const report = await checkRampSandboxReadiness(
     configuration(),
@@ -91,14 +100,21 @@ test("blocks both real readiness failures without promoting general country supp
         "stellar_usdc_test_mode_unavailable",
         "stellar_usdc_test_mode_unavailable",
       ],
-      ["non_custodial_partner_required", "non_custodial_partner_required"],
+      ["stellar_not_enabled_for_partner", "stellar_not_enabled_for_partner"],
     ],
   );
+  const moneygram = report.providers[1];
+  assert.equal(moneygram.connection, "verified");
+  assert.equal(moneygram.walletModel, "custodial");
+  assert.deepEqual(moneygram.supportedChains, ["ethereum", "polygon", "solana"]);
+  assert.deepEqual(moneygram.supportedAssets, ["USDC", "USDT"]);
+  assert.deepEqual(moneygram.products, { cashIn: true, cashOut: true });
+  assert.deepEqual(moneygram.custodyWalletsConfigured, { cashIn: false, cashOut: false });
   assert.equal(
     report.providers[0].countries?.find((c) => c.code === "ZW")?.buyAllowed,
     false,
   );
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 5);
   assert.ok(calls.every((c) => c.init?.redirect === "error"));
   const serialized = JSON.stringify(report);
   for (const secret of [
@@ -106,6 +122,7 @@ test("blocks both real readiness failures without promoting general country supp
     "sk_test_fixture",
     "ramps_sk_sbox_fixture",
     "private-provider-token",
+    "music-city-sandbox-readiness",
     wallet,
   ])
     assert.ok(!serialized.includes(secret));
@@ -125,6 +142,14 @@ test("a valid provider connection still requires origin, market and transfer pro
     ),
   );
   assert.ok(!JSON.stringify(report).includes("private-provider-token"));
+  assert.equal(report.providers[1].walletModel, "non-custodial");
+});
+
+test("custodial Stellar support remains blocked until the wallet model is approved", async () => {
+  const { fetcher } = transport({ custodial: true, supportedChains: ["stellar"] });
+  const { providers } = await checkRampSandboxReadiness(configuration(), wallet, fetcher);
+  assert.equal(providers[1].flows[0].reason, "custodial_stellar_mode_requires_approved_wallet_model");
+  assert.equal(providers[1].flows[1].reason, "custodial_stellar_mode_requires_approved_wallet_model");
 });
 
 test("buy availability does not imply sell availability", async () => {

@@ -26,10 +26,13 @@ export function validateRampProviderUrl(
   }
 
   const target = rampSandboxLaunchTargets[provider][direction];
+  const supportedPath = provider === "moneygram"
+    ? [target.pathname, "/widget.html"].includes(url.pathname)
+    : url.pathname === target.pathname;
   if (
     url.protocol !== "https:" ||
     url.origin !== target.origin ||
-    url.pathname !== target.pathname ||
+    !supportedPath ||
     url.username ||
     url.password ||
     url.hash

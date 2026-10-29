@@ -20,6 +20,11 @@ export type RampReadiness = {
     provider: "moonpay" | "moneygram";
     connection: "verified" | "not_configured" | "rejected" | "unavailable";
     flows: Flow[];
+    walletModel?: "custodial" | "non-custodial";
+    supportedChains?: string[];
+    supportedAssets?: string[];
+    products?: { cashIn: boolean | null; cashOut: boolean | null };
+    custodyWalletsConfigured?: { cashIn: boolean; cashOut: boolean };
     asset?: {
       code: string;
       testMode: boolean;
@@ -198,64 +203,103 @@ async function checkMoneygram(
       flows: pending("sandbox_credentials_missing"),
     };
   try {
-    const result = await providerRequest(
-      fetcher,
-      new URL("/api/v1/sessions", rampSandboxHosts.moneygramApi),
-      {
+    const sessionUrl = new URL("/api/v1/sessions", rampSandboxHosts.moneygramApi);
+    const requestSession = (body: Record<string, string>) =>
+      providerRequest(fetcher, sessionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": config.MONEYGRAM_SEC_KEY,
+          "x-api-key": config.MONEYGRAM_SEC_KEY!,
         },
-        body: JSON.stringify({
-          walletAddress,
-          chain: "stellar",
-          walletType: "non-custodial",
-        }),
-      },
-    );
+        body: JSON.stringify(body),
+      });
+    // The wallet model is fixed on the MoneyGram partner account, not per session.
+    // Try the documented non-custodial request first, then identify a custodial
+    // partner with a stable synthetic QA customer ID so we can read its config.
+    let result = await requestSession({ walletAddress, chain: "stellar" });
+    let requestedCustodial = false;
     if (!result.ok) {
-      const error = z
-        .object({ message: z.string().optional() })
-        .safeParse(result.body);
-      const custodial =
-        result.status === 400 &&
-        error.success &&
-        error.data.message?.includes(
-          "customerIdentifier is required for custodial partners",
-        );
-      return {
-        ...base,
-        connection: "rejected",
-        flows: pending(
-          custodial
-            ? "non_custodial_partner_required"
-            : "session_request_rejected",
-        ),
-      };
+      const error = z.object({ message: z.string().optional() }).safeParse(result.body);
+      const custodial = result.status === 400 && error.success &&
+        error.data.message?.includes("customerIdentifier is required for custodial partners");
+      if (!custodial) {
+        return { ...base, connection: "rejected", flows: pending("session_request_rejected") };
+      }
+      requestedCustodial = true;
+      result = await requestSession({ customerIdentifier: "music-city-sandbox-readiness", chain: "stellar" });
+      if (!result.ok)
+        return { ...base, connection: "rejected", flows: pending("custodial_session_request_rejected") };
     }
-    const session = z
-      .object({
-        walletType: z.literal("non-custodial"),
-        sessionToken: z.string().min(1),
-        sessionId: z.string().min(1),
-        widgetUrl: z.string().url(),
-      })
-      .parse(result.body);
+    const session = z.object({
+      walletType: z.enum(["custodial", "non-custodial"]),
+      sessionToken: z.string().min(1),
+      sessionId: z.string().min(1),
+      widgetUrl: z.string().url(),
+    }).parse(result.body);
+    if ((requestedCustodial && session.walletType !== "custodial") ||
+        (!requestedCustodial && session.walletType !== "non-custodial"))
+      throw new Error("Unexpected MoneyGram wallet model");
     const widget = new URL(session.widgetUrl);
-    if (
-      widget.origin !== rampSandboxHosts.moneygramApi ||
-      widget.pathname !== "/widget.html"
-    )
+    if (widget.origin !== rampSandboxHosts.moneygramApi ||
+        !["/widget.html", "/sdk/widget.html"].includes(widget.pathname))
       throw new Error("Unexpected widget destination");
+
+    const partnerResponse = await providerRequest(
+      fetcher,
+      new URL("/api/v1/partners/config", rampSandboxHosts.moneygramApi),
+      { headers: { Authorization: `Bearer ${session.sessionToken}` } },
+    );
+    if (!partnerResponse.ok)
+      return { ...base, connection: "verified", flows: pending("partner_configuration_unavailable") };
+    const partner = z.object({
+      walletType: z.enum(["custodial", "non-custodial"]),
+      supportedChains: z.array(z.string()).optional(),
+      supportedAssets: z.array(z.string()).optional(),
+      custodianCashInWallet: z.unknown().optional(),
+      custodianCashOutWallet: z.unknown().optional(),
+      productAvailability: z.object({
+        products: z.object({
+          cash_in: z.object({ enabled: z.boolean().optional() }).passthrough().optional(),
+          cash_out: z.object({ enabled: z.boolean().optional() }).passthrough().optional(),
+        }).passthrough().optional(),
+      }).passthrough().optional(),
+    }).passthrough().parse(partnerResponse.body);
+    if (partner.walletType !== session.walletType)
+      throw new Error("MoneyGram session and partner wallet models differ");
+    const supportedChains = partner.supportedChains ?? [];
+    const supportedAssets = partner.supportedAssets ?? [];
+    const products = partner.productAvailability?.products;
+    const cashIn = products?.cash_in?.enabled ?? null;
+    const cashOut = products?.cash_out?.enabled ?? null;
+    const hasWallet = (value: unknown) => value !== null && value !== undefined &&
+      (typeof value !== "object" || Object.keys(value).length > 0);
+    const custodyWalletsConfigured = {
+      cashIn: hasWallet(partner.custodianCashInWallet),
+      cashOut: hasWallet(partner.custodianCashOutWallet),
+    };
+    const reason = !supportedChains.includes("stellar")
+      ? "stellar_not_enabled_for_partner"
+      : !supportedAssets.includes("USDC")
+        ? "stellar_usdc_not_enabled_for_partner"
+        : session.walletType === "custodial"
+          ? "custodial_stellar_mode_requires_approved_wallet_model"
+          : undefined;
     return {
       ...base,
       connection: "verified",
-      flows: (["buy", "sell"] as const).map((direction) => ({
-        direction,
-        status: "needs_verification",
-        reason: "verify_origin_market_network_and_provider_flow",
-      })),
+      walletModel: session.walletType,
+      supportedChains,
+      supportedAssets,
+      products: { cashIn, cashOut },
+      ...(session.walletType === "custodial" ? { custodyWalletsConfigured } : {}),
+      flows: (["buy", "sell"] as const).map((direction) => {
+        const productEnabled = direction === "buy" ? cashIn : cashOut;
+        return reason
+          ? { direction, status: "blocked" as const, reason }
+          : productEnabled === false
+            ? { direction, status: "blocked" as const, reason: direction === "buy" ? "cash_in_product_disabled" : "cash_out_product_disabled" }
+            : { direction, status: "needs_verification" as const, reason: "verify_origin_market_network_and_provider_flow" };
+      }),
     };
   } catch {
     return {

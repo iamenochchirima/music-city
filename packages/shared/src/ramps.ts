@@ -19,11 +19,11 @@ export const rampSandboxLaunchTargets: Record<
   moneygram: {
     buy: {
       origin: "https://playground.xramps.moneygram.com",
-      pathname: "/widget.html",
+      pathname: "/sdk/widget.html",
     },
     sell: {
       origin: "https://playground.xramps.moneygram.com",
-      pathname: "/widget.html",
+      pathname: "/sdk/widget.html",
     },
   },
 };
