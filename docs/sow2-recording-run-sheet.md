@@ -30,7 +30,7 @@ Use synthetic or otherwise authorized media. Keep test content labeled **Local a
 
 Start at [local Releases](http://localhost:3000/dashboard/releases). Show **Sandbox QA EP** once, its published status, and the preview link. Open [Create](http://localhost:3000/dashboard/create) to show the five-step release setup: release type and name, songs, song details, artwork and release details, then review and publish. Label the clip **Local Sandbox app and isolated database**. This shows the current local release UI; it does not establish hosted artist access.
 
-Studio Analytics is optional. It currently reports six streams from one unique listener on the synthetic EP; say that these are QA playback counts if you include the screen. The local artist's Agreements page is empty, so use the saved E7/E8 evidence for agreement and treasury controls.
+Studio Analytics is optional. It currently reports ten streams from one unique listener on the synthetic EP; say that these are QA playback counts if you include the screen. The local artist's Agreements page is empty, so use the saved E7/E8 evidence for agreement and treasury controls.
 
 Open [local Revenue](http://localhost:3000/dashboard/revenue) only if you want to show the unavailable funding state. It displays zero earnings and spendable balance; Add funds and Cash out are disabled. Do not describe either provider flow as completed.
 
