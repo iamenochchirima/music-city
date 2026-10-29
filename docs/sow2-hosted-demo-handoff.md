@@ -16,7 +16,7 @@ The [Music City Admin console](https://music-city-admin.vercel.app/console/admin
 
 ## Creator access
 
-The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. On 29 October, computer use clicked **Set up artist profile** on `/dashboard/releases/new`; the signed-in listener reached step 2, “How will you use Music City?”, with **I’m an artist** preselected. At a 390-pixel viewport, the page has no horizontal overflow. Continue was not pressed, so the account remains unchanged and listener-only. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass. This verifies artist setup entry only; an authorized artist profile, activation, and approved demo audio/artwork are still needed to verify upload and publication.
+The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. Computer use verified that **Set up artist profile** opens onboarding. With the user's approval, **Continue** saved the artist intent and moved the production account to step 3, **Artist activation**. The screen shows **$20.00 due today** and says the early-user offer is unavailable for this account. I stopped before activation or payment. Artist access, approved demo audio/artwork, hosted upload, and publication are still unverified. The step 2 page fit at a 390-pixel viewport. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass.
 
 ## Short production walkthrough that is ready now
 
@@ -32,7 +32,7 @@ The artist-directory filter is live in production as commit `d1d032a`. Computer 
 ## Remaining setup before recording SOW 2 transactions
 
 1. Sign in at [Music City Admin](https://music-city-admin.vercel.app/auth) with the production super-admin account. Keep the password out of screenshots and recordings.
-2. Sign in to the artist account and prepare one authorized audio file and artwork. Publish a demo release, then use the track's **Track sales** setting to enable a one-time USDC price. The public Marketplace currently has no purchase-enabled tracks.
+2. Resolve the artist activation price gate with the project owner before continuing: the production screen currently shows $20 due and the early-user offer unavailable. Once artist access is active, prepare one authorized audio file and artwork. Publish a demo release, then use the track's **Track sales** setting to enable a one-time USDC price. The public Marketplace currently has no purchase-enabled tracks.
 3. Prepare the contributor and fresh buyer accounts. Confirm their Testnet wallets, USDC trustlines, and XLM for fees. Keep the chosen network and asset visible in the recording.
 4. Have both authorized treasury signers available before opening a funding review. Each beneficiary must be available to sign their own claim. Wallet signatures must be made by the account owner in the wallet prompt.
 
@@ -57,7 +57,7 @@ Use the earlier [local SOW 2 demo guide](sow2-local-demo.md) and [E8 evidence](c
 - The hosted admin's Agreements and Royalties pages are empty. Settlement reconciliation passes with all balances at zero, and there are no approved earnings sources or settlement batches.
 - A Dynamic Sandbox static-OTP identity did not authenticate to the hosted client, which is configured against a different Dynamic environment. Use an account belonging to the hosted environment for the demo; do not present that Sandbox identity as production access.
 - Client checks for `13c3154`: 23 focused ramp tests, client typecheck, and production build passed.
-- Artist-entry fix `1dfad1b`, regression test `193b883`, and QA notes are included in pushed production commit `f2b8445`. Vercel deployment `v0-music-city-dg1tbf6fa-iamenochchirimas-projects.vercel.app` is Ready and aliases `musiccity.pro`. Computer use confirmed the live listener account now reaches step 2 with **I’m an artist** selected; the user did not continue, so no account change was made. Upload and publication still need an authorized artist profile and approved demo media.
+- Artist-entry fix `1dfad1b`, regression test `193b883`, and QA notes are included in pushed production commit `f2b8445`. Vercel deployment `v0-music-city-dg1tbf6fa-iamenochchirimas-projects.vercel.app` is Ready and aliases `musiccity.pro`. Computer use confirmed the live listener can enter onboarding. After the user's approval to continue, the account reached Artist activation at step 3, showing $20 due and no early-user offer. I stopped before payment. Upload and publication still need active artist access and approved demo media.
 - The complete hosted agreement, purchase, settlement, and claim journey has not yet been rehearsed.
 
 ## Local creator upload smoke test
