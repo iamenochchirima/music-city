@@ -632,7 +632,7 @@ If access is unavailable, finish applicable design and automated failure checks,
 
 #### Phase 4. Complete creator and admin interfaces
 
-- [ ] CO-18 Add **Cash out** to Revenue for eligible spendable wallet funds. Keep claimable earnings and wallet funds distinct. Display supported payout options openly and explain an unavailable option with one actionable reason.
+- [x] CO-18 Add **Cash out** to Revenue for eligible spendable wallet funds. Keep claimable earnings and wallet funds distinct. Display supported payout options openly and explain an unavailable option with one actionable reason. Local implementation and client tests: `19550fe`.
 - [ ] CO-19 Build a compact amount, quote, review, and authorization flow. Display the amount the user receives, total fees, destination, expiry, and required identity action before payment. Keep technical transaction details in a disclosure.
 - [ ] CO-20 Show automatic progress, pickup instructions or payout receipt, and recoverable failures. Restore the same transaction from a detail URL after reload or sign-in. Keep the user from signing again when a transfer was already submitted.
 - [ ] CO-21 Add an authorized admin cash-out list and detail view with provider status, chain receipt, event history, and reconciliation exceptions. Keep ordinary admins read-only. Add no server-held user signing key or single-admin override for protected treasury actions.
@@ -760,3 +760,9 @@ At 390 pixels, the local Account and Revenue pages had no horizontal overflow. K
 An existing cancelled GBP fixture opened at its saved transaction URL. Manual refresh and browser reload preserved MoonPay Cancelled and Stellar Transfer unconfirmed; Close returned to the account page. No provider or wallet action occurred. U4 remains open for real provider flows, quote/review/signing, slow responses, and their mobile recovery.
 
 The root local environment has no `AGREEMENT_TREASURY_ADDRESS`, and its configured registry does not match historical E8 evidence; current Testnet validity has not been verified. No contract configuration changed. C2 remains open until the correct current Testnet configuration and a new user-authorized lifecycle are verified. No screenshot file was saved.
+
+### Revenue wallet cash-out entry point, 29 October 2026
+
+Commit `19550fe` adds a Wallet funds panel to Revenue, showing spendable USDC separately from unclaimed earnings and reusing the account wallet's verified-route, wallet-signing, and cash-out flow. Transaction history remains on the Account page to avoid duplicating the list. When no route is returned, the panel explains that no verified route is enabled and the balance remains unchanged. A failed capability check is now visible and retryable instead of silently leaving disabled buttons.
+
+The new balance panel and capability retry are covered by client tests. The full client suite passed 199 tests, client typecheck passed, and the client production build passed with the existing large-bundle warning. Computer-use review of Revenue with an authenticated test account is pending because Dynamic Test Accounts are disabled in the app's configured Sandbox environment; enabling them requires action-time confirmation. CO-18 is implemented. CO-22 and U4 remain open for responsive, keyboard, and end-to-end browser verification; provider quotes, signing, payouts, and C2 remain unverified.
