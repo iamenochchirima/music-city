@@ -5,14 +5,14 @@ Use this run sheet to separate the live product walkthrough from the completed S
 ## Before recording
 
 - Use the hosted app for the product walkthrough and admin empty state.
-- Do not show `/artists` or the Discover page's **Artists in motion** section yet. Both include an empty QA profile in production. The filter fix is committed locally but not deployed.
+- The public artist directory is now clean: `/artists` and Discover's **Artists in motion** show the three profiles with published releases. This was deployed and checked on 29 October 2026.
 - Keep playback under five seconds unless you intend to add a public stream.
 - Do not present the Marketplace as a completed purchase. It has no track sale enabled. The 15 USDC Music City Pass was viewed but not purchased.
 - Do not show Add funds or Cash out as working. No provider route has a verified successful transaction.
 
 ## Clip 1: Hosted product walkthrough
 
-Open [Discover](https://musiccity.pro/discover) and show the three live-release cards. Stop before the **Artists in motion** section. Open [Delight's Isgubhu release](https://musiccity.pro/releases/rel_0fcde14a70674ad2) and its [track page](https://musiccity.pro/stream/trk_f9cc725f7966466b). The track page shows a published 4:39 recording. Avoid playing it for five seconds or longer during the recording.
+Open [Discover](https://musiccity.pro/discover), show the three live-release cards and the three release-backed profiles in **Artists in motion**, then open the [artist directory](https://musiccity.pro/artists). Open [Delight's Isgubhu release](https://musiccity.pro/releases/rel_0fcde14a70674ad2) and its [track page](https://musiccity.pro/stream/trk_f9cc725f7966466b). The track page shows a published 4:39 recording. Avoid playing it for five seconds or longer during the recording.
 
 For the admin view, open [Settlements](https://music-city-admin.vercel.app/console/settlements). Say that production reconciliation is healthy and empty. There are no production earnings sources or settlement records to process.
 
