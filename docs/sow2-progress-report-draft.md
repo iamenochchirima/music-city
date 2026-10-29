@@ -8,7 +8,7 @@ This report follows the submitted [Music City Instawards SOW - 2](https://docs.g
 
 The core SOW 2 scope has substantial implementation and Stellar Testnet evidence across D1, D2, and D3. The strongest end-to-end result is a locally rehearsed music purchase through royalty allocation, two-signer treasury funding, both beneficiary claims, and final reconciliation. Agreement consent, disputes, amendments, direct fan support, expiry recovery, and protected treasury actions also have separate real-wallet Testnet evidence.
 
-The hosted application is deployed and its public music experience, listener sign-in, admin access, and empty-state reconciliation have been checked. No production purchase, support payment, agreement, settlement, or claim was present at the latest recorded inspection. Hosted artist setup currently stops at an activation page showing **$20 due today** and saying the early-user offer is unavailable. No activation or payment was made.
+The hosted application is deployed and its public music experience, listener sign-in, admin access, and empty-state reconciliation have been checked. No production purchase, support payment, agreement, settlement, or claim was present at the latest recorded inspection. The existing production account advanced through Artist activation to the blank Artist profile screen. The activation screen showed **$20 due today** and said the early-user offer was unavailable. No artist access, profile details, or payment was saved.
 
 Reviewer acceptance has not been recorded. The SOW treats the 50-artist and 200-listener figures as validation targets, not technical completion gates. MoonPay and MoneyGram are part of the separately budgeted $1,300 provider-readiness scope, not a dependency for core D1–D3 acceptance. Neither provider has a verified end-to-end Stellar USDC buy or sell result.
 
@@ -43,7 +43,7 @@ Record short clips with an opening label naming the environment. Do not splice T
 | Clip | Target | What to show | Say clearly |
 | --- | --- | --- | --- |
 | 1. Public product walkthrough | 1–2 minutes | Production Discover, unique release cards, Artists directory, a release and track page, then the admin's Settlements empty state. | These pages are live production; the admin ledger is healthy and currently empty. Keep track playback under five seconds to avoid adding a public stream. |
-| 2. Creator upload and release | 2–3 minutes | Local isolated Sandbox: create a release, upload a supported audio format and artwork, wait for **Audio ready**, review, publish, and play the resulting track. | This is a local app and isolated database. The audio and release flow is verified locally; production artist activation is still gated by the $20 screen. |
+| 2. Creator upload and release | 2–3 minutes | Local isolated Sandbox: create a release, upload a supported audio format and artwork, wait for **Audio ready**, review, publish, and play the resulting track. | This is a local app and isolated database. The audio and release flow is verified locally; production artist access and upload remain unverified. |
 | 3. Agreements and treasury | 2–3 minutes | Use the dated E7 Testnet/browser evidence to show contributor responses, the finalized agreement, and the two-signature threshold. | Wallet signatures and registry finalization are real Stellar Testnet actions; they are not production transactions. |
 | 4. Purchase through claims | 3–5 minutes | Use the current E8 local Testnet screenshots and receipts: purchase and entitlement, reserved/funded batch, both claim receipts, and final reconciliation. Open the corresponding explorer receipts where useful. | This is a completed local Testnet lifecycle, not a production purchase. The two beneficiaries received 0.0007 and 0.0003 USDC from the 0.001 USDC source. |
 
@@ -61,7 +61,7 @@ The existing [recording run sheet](sow2-recording-run-sheet.md) has the ready li
 
 ## Current limitations to disclose
 
-- Hosted artist activation displays $20 due today and says the early-user offer is unavailable for the current account. The setup was not activated or paid.
+- The current production account is at the blank Artist profile step. Its activation screen showed $20 due today and said the early-user offer was unavailable. No artist access, profile details, or payment was saved.
 - Production has not been used for a purchase, support transfer, settlement, or beneficiary claim; the financial Testnet journey was performed in an isolated local environment.
 - MoonPay and MoneyGram have no verified end-to-end Stellar USDC on-ramp or off-ramp. Provider readiness is separate from the submitted core acceptance criteria and remains open in its own plan.
 - D1, D2, and D3 reviewer acceptance remains outstanding.

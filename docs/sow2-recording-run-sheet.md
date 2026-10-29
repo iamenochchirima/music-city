@@ -18,7 +18,7 @@ For the admin view, open [Settlements](https://music-city-admin.vercel.app/conso
 
 ## Clip 2: Local creator upload and release
 
-Use the [local creator upload evidence](sow2-hosted-demo-handoff.md#local-creator-upload-smoke-test) on the isolated Sandbox app and database. Show release details, an authorized audio file and artwork, **Audio ready**, review, publication, and playback. Label the recording **Local app and isolated database**. This verifies the creator flow locally, not production artist access. The live account is stopped at the $20 artist-activation screen.
+Use the [local creator upload evidence](sow2-hosted-demo-handoff.md#local-creator-upload-smoke-test) on the isolated Sandbox app and database. Show release details, an authorized audio file and artwork, **Audio ready**, review, publication, and playback. Label the recording **Local app and isolated database**. This verifies the creator flow locally, not production artist access. The production account is now at step 4, **Artist profile**; its previous activation screen showed $20 due and no early-user offer. The profile fields remain blank.
 
 Local playback verification on 29 October also used a synthetic six-track EP in the isolated database. Release-level Play advanced through all six tracks, and the stream counts remained after reload. Keep this as technical evidence only; it is test content and does not establish hosted playback or a zero-gap transition.
 
@@ -38,6 +38,6 @@ The [evidence log](core-lifecycle-evidence/README.md#current-local-financial-cyc
 
 ## Creator and provider limits
 
-Do not record artist setup or publication as a hosted success yet. With the user's approval, **Continue** saved the artist intent on the production account. It is now at step 3, **Artist activation**, which shows **$20.00 due today** and says the early-user offer is unavailable. Stop here: no activation, payment, legal acceptance, or publication was completed. The production upload and publication path still needs artist access and approved demo media. For a local creator rehearsal, follow the [isolated local demo guide](sow2-local-demo.md) and confirm its database preflight before writing.
+Do not record artist setup or publication as a hosted success yet. With the user's approval, **Continue** saved the artist intent and advanced onboarding through the activation screen to step 4, **Artist profile**. The activation screen showed **$20.00 due today** and said the early-user offer was unavailable. The Artist profile form is blank and unsaved. No artist access, payment, legal acceptance, or publication was completed. The production upload and publication path still needs artist access and approved demo media. For a local creator rehearsal, follow the [isolated local demo guide](sow2-local-demo.md) and confirm its database preflight before writing.
 
 Do not claim a successful on-ramp or off-ramp. MoonPay has no successful sandbox order, and MoneyGram still lacks the required non-custodial Stellar partner mode. Keep both routes disabled in the demo.
