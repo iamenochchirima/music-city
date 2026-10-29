@@ -10,6 +10,14 @@ The [29 October readiness snapshot](readiness-2026-10-29.json) is a read-only Sa
 
 The 26 October snapshot is historical capability evidence. It records unavailable `usdc_xlm` Test Mode and is superseded for account readiness by the 29 October snapshot; neither snapshot records a provider transaction.
 
+## Sandbox behavior from provider documentation
+
+MoonPay's [official Sandbox guide](https://dev.moonpay.com/widget/sandbox-testing) says to use a US or UK address, does not verify Sandbox KYC data, and lists Stellar Testnet support. It identifies Visa ending 6584 as the UK frictionless 3DS test card. The attempted UK-address checkout used that documented card, so the address country and card number alone do not explain its decline. The widget displayed only a generic decline. MoonPay lists wrong test-card details, limited testnet wallet funds, unsupported region, rate limiting, and a restricted/production user account among possible failure reasons; the available screenshot and our account API response do not distinguish them. Do not infer the cause or retry with a fresh purchase without a provider-side transaction diagnosis. The guide also warns that Sandbox purchases may deliver only 1/100th of the quoted amount due to limited Testnet liquidity. That simulation has not been observed on this account.
+
+MoonPay separately documents Visa Direct test-card support for off-ramp payouts. Its existence does not prove that the account's Stellar USDC sell route or card payout is enabled; the current account snapshot does not verify either route.
+
+MoneyGram's current [non-custodial Stellar widget quickstart](https://xramps.moneygram.com/ops/developer/quickstarts/web-stellar) uses a server-created wallet-bound session, public widget key, allowlisted domain, Stellar Testnet USDC, and wallet signing for cash-out. The official [status and webhook guide](https://xramps.moneygram.com/ops/developer/reference/transaction-status-webhooks) distinguishes a cash-out transfer/ready-for-pickup state from the later `paid_out` collection state; cash-in requires a physical cash deposit before the provider sends USDC. The partner credentials checked for Music City were rejected as the wrong partner mode, so these documented widget behaviors have not been exercised with this account.
+
 ## Provider diagnostics
 
 - [MoonPay IP-binding investigation](moonpay-ip-binding-audit.md): real verification requests identified the missing `allowedIpAddress` HMAC as the widget-load failure. Correctly IP-bound buy and sell URLs reached the sandbox widget. This fixed widget loading; it did not establish a completed payment or payout.
@@ -33,8 +41,9 @@ The latest recorded automated evidence includes a full client run at 216/216, a 
 ## Remaining provider conditions
 
 1. MoonPay must enable or document a supported Stellar USDC Sandbox buy and sell route, including account-specific limits, quote behavior, test payment/payout outcomes, and how a test USDC delivery is observed. The tested native XLM path remains a separate demonstration and did not complete an end-to-end transaction.
-2. MoneyGram must enable the non-custodial Stellar partner mode for this account and provide its supported Sandbox cash-in and cash-out procedures, including exact memo handling and simulated collection outcomes.
-3. After those prerequisites are available, capture the four genuine provider journeys, authoritative provider state progression, any supported chain receipt, callbacks, restart/recovery behavior, and redacted browser evidence.
-4. Complete the remaining local admin/worker browser matrix and responsive, keyboard, validation, and interruption checks tracked under CO-22 and CO-25. Provider-specific work remains open under R-04 through R-08, R-12, R-15 through R-20, MP-01 through MP-06, and MG-01 through MG-06.
+2. MoonPay must diagnose the declined Sandbox transaction from provider-side logs. The published UK test card and UK address were used; the generic decline screen is insufficient to identify whether the remaining cause was account restrictions, rate limits, available Testnet funds, or another provider-side failure.
+3. MoneyGram must issue or enable the non-custodial Stellar widget-partner Sandbox mode for this account, allowlist the client domain, and provide its supported Sandbox cash-in and cash-out procedures, including exact memo handling and simulated collection outcomes.
+4. After those prerequisites are available, capture the four genuine provider journeys, authoritative provider state progression, any supported chain receipt, callbacks, restart/recovery behavior, and redacted browser evidence.
+5. Complete the remaining local admin/worker browser matrix and responsive, keyboard, validation, and interruption checks tracked under CO-22 and CO-25. Provider-specific work remains open under R-04 through R-08, R-12, R-15 through R-20, MP-01 through MP-06, and MG-01 through MG-06.
 
 Do not place credentials, session tokens, raw customer IP addresses, signed URLs, identity documents, bank details, payment-card data, or usable pickup references in this index or its linked public evidence.
