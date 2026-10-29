@@ -49,6 +49,6 @@ The [evidence log](core-lifecycle-evidence/README.md#current-local-financial-cyc
 
 ## Limits to state clearly
 
-MoonPay has no successful sandbox order, and MoneyGram still lacks the required non-custodial Stellar partner mode. Funding and cash-out stay disabled. The local admin sign-in has not been reverified after the API restart; rely on dated admin screenshots for now. Do not present artist activation, provider funding, cash-out, or a new hosted transaction as complete.
+MoonPay has no successful sandbox order, and MoneyGram still lacks the required non-custodial Stellar partner mode. Funding and cash-out stay disabled. The local admin shows its sign-in form, but no authenticated local admin session is available. Use the dated E7 and E8 admin evidence for protected screens, and label it as saved Testnet evidence. Do not present artist activation, provider funding, cash-out, or a new hosted transaction as complete.
 
 Production checks are documented separately in the [SOW 2 production demo plan](sow2-production-demo-plan.md). The current recording rehearsal remains local.
