@@ -16,7 +16,7 @@ The [Music City Admin console](https://music-city-admin.vercel.app/console/admin
 
 ## Creator access
 
-The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. Computer use verified that **Set up artist profile** opens onboarding. With the user's approval, **Continue** saved the artist intent and moved the production account to step 3, **Artist activation**. The screen shows **$20.00 due today** and says the early-user offer is unavailable for this account. I stopped before activation or payment. Artist access, approved demo audio/artwork, hosted upload, and publication are still unverified. The step 2 page fit at a 390-pixel viewport. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass.
+The artist-entry fix was pushed in `f2b8445` and is live on `musiccity.pro`. Computer use verified that **Set up artist profile** opens onboarding. With the user's approval, **Continue** saved the artist intent and moved the production account to step 3, **Artist activation**. The screen shows **$20.00 due today** and says the early-user offer is unavailable for this account. A read-only production admin check shows `EARLYUSER` is active with 10 of 20 grants used and 10 remaining. Eligibility is captured at first registration and is not retroactive, so this existing account cannot use the offer. A fresh production account can still qualify while the campaign is active. I stopped before activation or payment. Artist access, approved demo audio/artwork, hosted upload, and publication are still unverified. The step 2 page fit at a 390-pixel viewport. Focused onboarding tests (9), client typecheck, client production build, and the server regression test pass.
 
 ## Short production walkthrough that is ready now
 
@@ -32,7 +32,7 @@ The artist-directory filter is live in production as commit `d1d032a`. Computer 
 ## Remaining setup before recording SOW 2 transactions
 
 1. Sign in at [Music City Admin](https://music-city-admin.vercel.app/auth) with the production super-admin account. Keep the password out of screenshots and recordings.
-2. Resolve the artist activation price gate with the project owner before continuing: the production screen currently shows $20 due and the early-user offer unavailable. Once artist access is active, prepare one authorized audio file and artwork. Publish a demo release, then use the track's **Track sales** setting to enable a one-time USDC price. The public Marketplace currently has no purchase-enabled tracks.
+2. Use a fresh production account the owner can access to qualify for the active `EARLYUSER` offer; the existing account is ineligible because it predates registration capture. The admin summary showed 10 of 20 grants used, with 10 remaining. After the owner selects and signs into that account, complete the $0 sponsored activation, then prepare authorized audio and artwork. Publish a demo release, then use the track's **Track sales** setting to enable a one-time USDC price. The public Marketplace currently has no purchase-enabled tracks.
 3. Prepare the contributor and fresh buyer accounts. Confirm their Testnet wallets, USDC trustlines, and XLM for fees. Keep the chosen network and asset visible in the recording.
 4. Have both authorized treasury signers available before opening a funding review. Each beneficiary must be available to sign their own claim. Wallet signatures must be made by the account owner in the wallet prompt.
 
