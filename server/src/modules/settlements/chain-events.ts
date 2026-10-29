@@ -1,5 +1,6 @@
 import { databaseService } from "../../services/database.service.js";
 import { HttpError } from "../../utils/http-error.js";
+import { errorMessage } from "../../utils/error-message.js";
 import { settlementChain } from "./settlement-chain.js";
 
 export async function indexSettlementEvents() {
@@ -22,7 +23,7 @@ export async function indexSettlementEvents() {
       return result;
     });
   } catch(error) {
-    await databaseService.transaction(client=>client.query("UPDATE settlement_chain_cursors SET error=$3,checked_at=NOW(),caught_up=FALSE WHERE network_passphrase=$1 AND contract_id=$2",[config.networkPassphrase,config.contractId,error instanceof Error?error.message:"Financial event indexing failed"]));
+    await databaseService.transaction(client=>client.query("UPDATE settlement_chain_cursors SET error=$3,checked_at=NOW(),caught_up=FALSE WHERE network_passphrase=$1 AND contract_id=$2",[config.networkPassphrase,config.contractId,errorMessage(error,"Financial event indexing failed")]));
     throw error;
   }
 }

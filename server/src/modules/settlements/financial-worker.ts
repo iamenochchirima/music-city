@@ -5,6 +5,7 @@ import { indexSettlementEvents } from "./chain-events.js";
 import { databaseService } from "../../services/database.service.js";
 import { settlementService } from "./settlement.service.js";
 import { logger } from "../../utils/logger.js";
+import { errorMessage } from "../../utils/error-message.js";
 import { rampCycle } from "../ramps/ramp-worker.js";
 import { cashOutCycle } from "../cashout/cashout-worker.js";
 export async function financialCycle() {
@@ -17,7 +18,7 @@ export async function financialCycle() {
       "SELECT pg_try_advisory_xact_lock(hashtext('music-city-financial-worker')) AS acquired",
     );
     if (!lock.rows[0].acquired) return;
-    try {await indexSettlementEvents();} catch(error) {logger.error("Financial event index needs attention",{error:error instanceof Error?error.message:String(error)});}
+    try {await indexSettlementEvents();} catch(error) {logger.error("Financial event index needs attention",{error:errorMessage(error,"Financial event indexing failed")});}
     const attempts = await client.query(
       "SELECT id,batch_id FROM financial_attempts WHERE status IN ('awaiting_signatures','submitting','submitted') ORDER BY checked_at NULLS FIRST LIMIT 20",
     );
@@ -52,14 +53,13 @@ export async function financialCycle() {
         [row.id],
       );
     }
-    try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:error instanceof Error?error.message:String(error)});}
+    try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:errorMessage(error,"Financial reconciliation failed")});}
   });
   try { await rampCycle(); } catch { logger.error("Ramp reconciliation needs attention", {code: "ramp_configuration_invalid"}); }
   try { await cashOutCycle(); } catch { logger.error("Cash-out reconciliation needs attention", {code: "cashout_configuration_invalid"}); }
 }
 async function recordDiscrepancy(id: string, error: unknown) {
-  const message =
-    error instanceof Error ? error.message : "Financial reconciliation failed";
+  const message = errorMessage(error, "Financial reconciliation failed");
   logger.error("Financial reconciliation needs attention", {
     batchId: id,
     error: message,
