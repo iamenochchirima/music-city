@@ -17,6 +17,7 @@ import { releasesApi } from "@/features/music/lib/releases-api";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { usersApi } from "@/features/users/lib/users-api";
+import { artistsWithPublicReleases } from "@/features/artists/lib/artist-directory";
 
 const DiscoverSection = ({
   title,
@@ -93,6 +94,7 @@ export const DiscoverOverview = () => {
 
   const scheduledReleases = releases.filter((release) => release.status === "scheduled");
   const liveReleases = releases.filter((release) => release.status === "published");
+  const discoverableArtists = artistsWithPublicReleases(artists, releases);
 
   return (
     <div className="space-y-12">
@@ -136,14 +138,14 @@ export const DiscoverOverview = () => {
           <PlaylistGrid playlists={playlists.slice(0, 3)} />
         </DiscoverSection>
       ) : null}
-      {artists.length > 0 ? (
+      {discoverableArtists.length > 0 ? (
         <DiscoverSection
           title="Artists in motion"
           description="Explore artists and the music they are sharing."
           href="/artists"
           linkLabel="View all artists"
         >
-          <ArtistGrid artists={artists.slice(0, 6)} />
+          <ArtistGrid artists={discoverableArtists.slice(0, 6)} />
         </DiscoverSection>
       ) : null}
     </div>

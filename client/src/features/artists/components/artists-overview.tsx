@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import type { ArtistSummary } from "@music-city/shared";
 
 import { ArtistGrid } from "@/features/music/components/artist-grid";
+import { releasesApi } from "@/features/music/lib/releases-api";
 import { usersApi } from "@/features/users/lib/users-api";
+import { artistsWithPublicReleases } from "../lib/artist-directory";
 
 export const ArtistsOverview = () => {
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
@@ -15,10 +17,13 @@ export const ArtistsOverview = () => {
 
     const load = async () => {
       try {
-        const nextArtists = await usersApi.listArtists();
+        const [nextArtists, nextReleases] = await Promise.all([
+          usersApi.listArtists(),
+          releasesApi.listReleases(),
+        ]);
 
         if (!cancelled) {
-          setArtists(nextArtists);
+          setArtists(artistsWithPublicReleases(nextArtists, nextReleases));
         }
       } finally {
         if (!cancelled) {
