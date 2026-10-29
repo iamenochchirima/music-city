@@ -59,7 +59,7 @@ it("keeps unavailable options disabled and distinguishes provider completion fro
   expect(screen.getByRole("button", { name: "Add funds" }).hasAttribute("disabled")).toBe(true);
   expect(screen.getByRole("button", { name: "Cash out" }).hasAttribute("disabled")).toBe(true);
   expect(await screen.findByText("Provider completed · Transfer unconfirmed")).toBeTruthy();
-  expect(await screen.findByText("No verified provider route is enabled yet. Your wallet balance stays unchanged.")).toBeTruthy();
+  expect(await screen.findByText("Add funds and cash out aren't available yet. Your wallet balance is unchanged.")).toBeTruthy();
   expect(screen.getByText("Add funds · 100.00 GBP")).toBeTruthy();
   expect(mock.get).toHaveBeenCalledWith("/ramps", "session");
 });
@@ -142,7 +142,7 @@ it("retries provider capability checks and distinguishes loading failures from n
   renderActivity(<WalletRampActivity token="session" />);
   expect(await screen.findByText("Could not check provider availability.")).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "Try again" }));
-  expect(await screen.findByText("No verified provider route is enabled yet. Your wallet balance stays unchanged.")).toBeTruthy();
+  expect(await screen.findByText("Add funds and cash out aren't available yet. Your wallet balance is unchanged.")).toBeTruthy();
   expect(capabilityCalls).toBe(2);
 });
 it("offers funding only when the server provides a buy route", async () => {

@@ -169,7 +169,7 @@ function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions 
             <Button type="button" variant="outline" onClick={() => setRoutesRetry((value) => value + 1)}>Try again</Button>
           </div>
         ) : routes.length === 0 && cashOutRoutes.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-400">No verified provider route is enabled yet. Your wallet balance stays unchanged.</p>
+          <p className="mt-1 text-sm text-slate-400">Add funds and cash out aren't available yet. Your wallet balance is unchanged.</p>
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={!routes.length || unresolved || error || loading} onClick={() => setFunding(true)}>Add funds</Button><Button type="button" variant="outline" disabled={!cashOutRoutes.length || !sign || !/[1-9]/.test(spendableUsdc) || unresolved || error || loading} onClick={() => setCashOut(true)}>Cash out</Button></div>
