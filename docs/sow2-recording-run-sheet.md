@@ -7,8 +7,9 @@ Keep this rehearsal on the local Sandbox app and isolated database. The hosted p
 Checked on 29 October 2026:
 
 - The local client at `http://localhost:3000` is signed in as **SOW2 Sandbox Artist**. Studio shows one published synthetic release, **Sandbox QA EP** (two tracks). The release setup page is available at `/dashboard/create`.
-- Both tracks are marked **Ready**. Studio Analytics currently shows six streams and one unique listener from synthetic QA playback; label those values as test data if the page is shown, not as audience results.
+- Both tracks are marked **Ready**. Studio Analytics currently shows ten streams and one unique listener from synthetic QA playback; label those values as test data if the page is shown, not as audience results.
 - Computer use started `music-city-sandbox-qa`, paused it at 0:01, and reloaded the page. Its stream count remained 4; the volume and mute controls appeared, and the browser reported no console errors. This verifies start/pause and the short-listen threshold for this fixture, not zero-gap transitions.
+- Release playback recheck at 18:46 SAST: the two-track EP auto-advanced at the first track's 8-second end. The media element stayed in playback, and the second track was at 0.05 seconds by the next one-second sample; both tracks then completed normally. Each isolated test count increased once (3→4 and 5→6). This confirms automatic queue progression and stream qualification, but does not establish an imperceptible gap between tracks.
 - At a 390-pixel viewport, local Studio Releases, Create setup, Analytics, Revenue, and release details stacked without horizontal overflow. Analytics and Revenue scroll vertically as expected.
 - The local API at port `4339` returns HTTP 200 from `/api/v1/health/ready`. The database and all 29 schema groups are healthy; storage and media use local providers.
 - The local Revenue screen resolves earnings and spendable balance to `0 USDC`. Add funds and Cash out are disabled with an explanation that those routes are unavailable; this is an honest empty state, not a provider demo.
