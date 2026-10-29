@@ -180,3 +180,11 @@ Computer use reproduced the delayed-credential state with a fresh synthetic Sand
 The track page initially kept its `Playing` label after the audio ended, while the global player showed Play at 0:08. Commit `c4dc6a6` makes the track action follow the actual playback state. The local browser then showed Play on the ended track, and its stream count remained one.
 
 The focused auth suite passed 6/6, the focused track-action suite passed 6/6, the full client suite passed 212/212, and client typecheck passed. The local API readiness route returned HTTP 200 with the database, storage, and all 28 schema groups healthy. No provider request, payment, payout, wallet signature, trustline, claim, or chain transaction was created. C2 remains open for a fresh purchase-to-claim run. U4 remains open for the other responsive, keyboard, cancellation, slow-response, and recovery cases.
+
+## Current Sandbox account surface recheck, 29 October 2026
+
+On the current local checkout (`c4dc6a6`), I used the signed-in synthetic artist account to recheck Revenue and Account at a 390 × 844 viewport, then restored the browser to `/dashboard/releases`. Revenue settled to 0.00 USDC available, pending, and spendable, explained that no verified provider route is enabled, and kept Add funds and Cash out disabled. Account showed the $0 EARLYUSER activation, an unfunded Testnet wallet with 0 XLM and 0 USDC, and disabled trustline, send, funding, and cash-out actions. Neither page had horizontal overflow. The browser error log was empty.
+
+On desktop, keyboard Tab traversed the header and Studio navigation links to wallet history; the disabled money actions were not focusable. At the mobile breakpoint, the navigation opened and Escape returned focus to its trigger. Reloading Revenue preserved the Sandbox session and loaded the wallet balance after its normal loading state. Returning to Releases showed the persisted `SOW2 Wallet Retry Test Single 2026-10-29` once, with one published release.
+
+This remains account and interface verification only. The test wallet has no Testnet funds or USDC, no provider route is verified, and no provider order, quote, payment, payout, wallet signature, trustline transaction, claim, or chain transaction was created. Admin setup and worker browser checks are still open. This adds partial U4 coverage but does not close U4, C2, or CO-25.
