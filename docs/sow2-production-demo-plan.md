@@ -97,7 +97,7 @@ Ready when: each core row passes on the intended hosted environment, any remaini
 - [ ] Leave the exact application tabs open in recording order. Supply one-line click instructions for each wallet handoff. Hide credentials, OTP setup screens, unrelated test fixtures, and private signer files from the recording.
 - [ ] Complete the [hosted demo handoff](sow2-hosted-demo-handoff.md) after the owner sets up admin access and the artist, buyer, contributor, and treasury signer accounts are verified. Clearly distinguish hosted production behavior, Testnet receipts, and the earlier local evidence.
 - [ ] Package the deployed revision, contract IDs/network, passing checks, transaction receipts, screenshots, and final reconciliation. Update the canonical SOW tracker only for demonstrated results.
-- [ ] Provide the owner a short recording handoff in this chat with ready links, clip order, and remaining provider limitations. Record reviewer acceptance when the reviewer supplies it; it does not block preparing the demos.
+- [x] Provide the owner a short recording handoff in this chat with ready links, clip order, and remaining provider limitations. The available product walkthrough and local Testnet evidence are distinguished; hosted creator and financial clips still need the right production accounts and authorization. Reviewer acceptance remains separate.
 
 ## Keep provider work separate from the recording deadline
 
