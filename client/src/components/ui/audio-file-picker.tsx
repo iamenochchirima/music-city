@@ -23,11 +23,12 @@ export function AudioFilePicker({
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      {/* A generic file picker keeps audio with missing mobile MIME associations selectable. */}
+      {/* Extensions keep audio selectable when mobile MIME metadata is missing. */}
       <input
         ref={input}
         id={id}
         type="file"
+        accept=".mp3,.wav,.wave,.flac,.m4a,.aac,.ogg,.oga,audio/*"
         aria-label={inputLabel}
         multiple={multiple}
         disabled={disabled}

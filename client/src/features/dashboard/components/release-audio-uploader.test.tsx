@@ -110,7 +110,9 @@ it.each([
       />,
     );
     const input = screen.getByLabelText("Audio files");
-    expect(input.getAttribute("accept")).toBeNull();
+    expect(input.getAttribute("accept")).toBe(
+      ".mp3,.wav,.wave,.flac,.m4a,.aac,.ogg,.oga,audio/*",
+    );
     expect(
       screen.getByRole("button", { name: "Upload audio from device" }),
     ).toBeTruthy();
