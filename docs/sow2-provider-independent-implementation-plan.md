@@ -584,3 +584,5 @@ The ramp UI polls transaction history and an open transaction detail every 15 se
 ### 29 October 2026: test-account mobile Revenue recheck
 
 In a temporary local browser tab with the signed-in Dynamic Sandbox artist, Revenue at 390×844 had a 375-pixel document width and no horizontal overflow. Spendable balance resolved to 0.014 USDC; Add funds and Cash out stayed disabled with the no-verified-route explanation. Keyboard Tab from the earnings retry button focused wallet history. The browser viewport was reset and the temporary tab closed. This extends CO-22/U4 mobile and keyboard evidence; authenticated admin, provider dialog focus return, and the complete validation/interruption matrix remain open.
+
+At the same mobile width, Overview, Create, Tracks, Releases, Analytics, Royalty agreements, Revenue, and Account all rendered their expected headings without horizontal overflow or a `Failed to fetch` message. The widest document was Royalty agreements at 390 pixels; the other routes measured 375 pixels. CO-22 remains open for the authenticated admin UI and complete modal/failure matrix.
