@@ -2,6 +2,14 @@
 
 Verified locally on 17 October 2026. Original verification base `9cd39f0`, branch `main`. The completed implementation is recorded in Git history. No production deployment or push was performed. This is E8 in the [SOW 2 tracker](../sow-2-tracker.md#core-d3-lifecycle-closure), not acceptance of the whole SOW.
 
+## Latest local verification, 29 October 2026
+
+The latest application code under test is commit `23c034a` (`fix(onboarding): persist selected artist follows`); the account, mobile, and full server-database evidence is recorded in the [dated test-account log](sandbox-test-accounts-2026-10-29.md). The local Dynamic Sandbox artist and a separate synthetic listener completed the available account and role checks. Onboarding follows persisted on the artist profile, a private listener playlist survived reload and stayed out of the public list, and Revenue at 390 pixels had no horizontal overflow. The spendable 0.014 USDC remained separate from earnings. No verified ramp route was available, so funding and cash-out stayed disabled.
+
+`pnpm test` passed 225 server, 214 client, and 23 admin tests. Workspace typecheck and production build passed. The entire server suite then passed 328/328 against a new disposable local PostgreSQL database with all database integration checks enabled and no skips; that database was removed. No provider transaction, wallet signature, purchase-to-claim journey, or fresh Testnet receipt was produced in this pass. E8 receipts below remain historical evidence only.
+
+CO-25 remains open for admin/worker browser verification and the complete responsive, keyboard, interruption, and recovery matrix. U2 and R3–R9/V5 remain open for genuine provider journeys; current providers are not enabled. C2 remains open for a new creator-to-claim cycle. C3 remains open because no current deployment versions or migrations were verified and this pass did not save new screenshots. No production deployment or push is claimed.
+
 ## Current local SOW2 checkpoint, 29 October 2026
 
 This checkpoint is separate from the historical E8 Testnet journey below. The application code was tested at revision `c4dc6a6`; E8's older chain receipts are not presented as a fresh run on this revision.
