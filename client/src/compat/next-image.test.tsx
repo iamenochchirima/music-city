@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import Image from "./next-image";
 import { imageSources } from "@/lib/images/image-sources";
 afterEach(cleanup);
@@ -27,4 +27,14 @@ it("keeps local previews, SVGs and external avatars as their original resource t
     expect(imageSources(src).src).toBe(src);
     expect(imageSources(src)).not.toHaveProperty("srcSet");
   }
+});
+
+it("shows a branded placeholder when an image fails to load", () => {
+  render(<Image src={image} alt="Cover" sizes="48px" width={48} height={48} />);
+  const artwork = screen.getByRole("img", { name: "Cover" });
+
+  fireEvent.error(artwork);
+
+  expect(artwork.getAttribute("src")).toMatch(/^data:image\/svg\+xml,/);
+  expect(artwork.getAttribute("srcset")).toBeNull();
 });
