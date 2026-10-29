@@ -1,5 +1,22 @@
 # Core music-to-earnings verification
 
+## Current local financial cycle closed, 29 October 2026
+
+The new QA Listener purchase completed treasury funding and both real Dynamic Sandbox beneficiary claims. Horizon independently confirms all four transactions below. Each funding or claim attempt has one submission. The local database has one purchase payment, one listening entitlement, two paid royalty entries, and a Closed settlement batch with both allocations claimed. The event index contains exactly one funding event and two claim events for this batch, is caught up, and global reconciliation reports `ok: true` with no discrepancies.
+
+| Action | Testnet USDC | Ledger | Receipt |
+| --- | --- | --- | --- |
+| QA Listener purchase | 0.0010000 | 5448808 | [2bd73d77…](https://horizon-testnet.stellar.org/transactions/2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44) |
+| Two-signature treasury funding | 0.0010000 | 5448972 | [08463be2…](https://horizon-testnet.stellar.org/transactions/08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36) |
+| Kwame claim | 0.0003000 | 5449138 | [89813d21…](https://horizon-testnet.stellar.org/transactions/89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46) |
+| Ngoni claim | 0.0007000 | 5449170 | [5c6ae05d…](https://horizon-testnet.stellar.org/transactions/5c6ae05db1c98a594fb9ba35d783dcf7b04b184412fb0c34b54e578f29f55151) |
+
+Horizon effects independently identify each beneficiary's exact USDC credit and Circle Testnet issuer. After reload, both Revenue pages show Received with the new receipt. Kwame's spendable USDC increased from 0.0073 to 0.0076; Ngoni's increased from 0.0087 to 0.0094. Admin shows Closed, 0.0010000 claimed, zero unclaimed, and Reconciled. The global escrow and open obligations remain equal at 0.0100000 USDC, which belongs to an older separate batch. No obligation from this new purchase remains.
+
+See the [complete sanitized closure snapshot](current-qa-closed-2026-10-29.json), [artist received page](current-qa-artist-received-2026-10-29.png), and [closed batch](current-qa-closed-2026-10-29.png). This financial rerun uses the existing Core Journey release and finalized agreement. It does not claim a newly created Core Journey agreement; current creator onboarding/upload/publication checks are separately dated in the [Sandbox account log](sandbox-test-accounts-2026-10-29.md#first-login-stellar-wallet-recovery-29-october-2026). The original 17 October E8 receipts remain historical. Treasury signing used the user-authorized CLI; the user completed the actual Dynamic purchase and beneficiary wallet signatures.
+
+C2 is complete as a local lifecycle verification item with those scope distinctions. Provider-specific acceptance, refund behavior, any required conversion, and the populated provider browser matrix remain open. No fiat provider success, production acceptance, push, or deployment is claimed. The earlier checkpoints below record intermediate states, not the latest status.
+
 ## Current contributor claim confirmed, 29 October 2026
 
 The user completed Kwame's Dynamic wallet authorization for the new 0.0003000 USDC claim. Horizon independently confirms [89813d21…](https://horizon-testnet.stellar.org/transactions/89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46), ledger `5449138`, with Kwame as transaction source and a fee of 10213 stroops. The local attempt is confirmed with one submission, the matching royalty entry is paid, and the event index contains one matching claim event. Reconciliation remains `ok: true`. After reload, the browser shows Received with the new receipt, zero available earnings, and spendable USDC increased from 0.0073 to 0.0076. See the [claim snapshot](current-qa-contributor-claim-2026-10-29.json) and [received page](current-qa-contributor-received-2026-10-29.png).
