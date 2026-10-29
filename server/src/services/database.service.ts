@@ -24,6 +24,7 @@ import { guestPlaybackSchemaStatements, expandedGuestPlaybackSchemaStatements } 
 
 import { liveRecording } from "../modules/releases/live-recording.js";
 import { env } from "../config/env.js";
+import { assertDatabaseTargetAllowed } from "../config/database-safety.js";
 
 type PersistedRow = {
   id: string;
@@ -1263,6 +1264,7 @@ export const databaseService = {
   },
 
   async initialize(options?: { repair?: boolean }) {
+    assertDatabaseTargetAllowed(env.DATABASE_URL, env.NODE_ENV);
     await pool.query(schemaMigrationTableStatement);
 
     for (const statement of baseSchemaStatements) {

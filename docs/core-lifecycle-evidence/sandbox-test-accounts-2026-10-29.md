@@ -388,3 +388,9 @@ This verifies the Testnet faucet balance in the wallet UI, the empty provider ga
 The 390-pixel Revenue view had no horizontal overflow: the document width was 375 pixels and no element exceeded the viewport. Keyboard Tab moved from the Music City link to Studio and then to the account menu. The page reported no browser console errors. These checks cover the Revenue mobile empty-provider state only; the full U4 matrix remains open.
 
 With the funded Sandbox wallet, the local browser opened the published `Core Journey` purchase review for 0.001 USDC. The review stated that the network fee is paid separately in XLM. I left the review open at `Confirm and pay` for the user to authorize the Stellar Testnet transaction. The UI reached review, but no payment was signed or submitted, so purchase, settlement and claim remain unverified in this pass.
+
+## Non-production database startup guard, 29 October 2026
+
+The database service now rejects database initialization in development or test mode unless `DATABASE_URL` uses loopback PostgreSQL. It also rejects a PostgreSQL `host` query override. A focused child-process test confirmed that the service stops before its first schema query when a non-production process targets a remote database.
+
+The safety suite passed 3/3 and server typecheck passed. The local SOW 2 preflight passed with an explicit loopback URL. After restarting the local API with the guard, readiness returned `ok: true` with 29 healthy schema groups and local storage and media. The purchase review remained open in the authenticated browser. No Testnet payment was signed or submitted.

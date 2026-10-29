@@ -632,3 +632,9 @@ The first API restart in this follow-up omitted `DATABASE_URL`; because the serv
 This adds local wallet-balance, empty-ramp-state, and qualified-playback evidence to U4/V3. It does not complete a provider on-ramp or off-ramp, a purchase-to-claim cycle, or the remaining browser recovery matrix. C2, U2, U4, R3-R9, CO-25, and V5 remain open.
 
 The 390-pixel Revenue page had no horizontal overflow. Tab moved from the Music City link to Studio and then to the account menu, and the page logged no browser errors. With the funded Sandbox wallet, the browser opened the `Core Journey` review for 0.001 USDC and showed that XLM covers the separate network fee. I stopped before `Confirm and pay`, which requires the user's wallet authorization. No payment or settlement was submitted. U4 and C2 remain open.
+
+### 29 October 2026: block hosted databases in non-production services
+
+The database service now refuses to initialize in development or test mode unless `DATABASE_URL` points to loopback PostgreSQL. It also rejects a PostgreSQL `host` query override. Production remains able to use its configured database. The guard runs before the first schema query, so API and worker startup cannot begin against a hosted database when a local environment file supplies one.
+
+The focused safety tests passed 3/3, including a child-process check that proves the service rejects a remote target before database I/O. Server typecheck passed. The local SOW 2 preflight passed with an explicit loopback URL, and the restarted local API reported `ok: true`, 29 healthy schema groups, and local storage and media. This addresses accidental API or worker startup against the hosted Railway database. The one-time metadata migration still requires an explicit URL and is not loaded from project environment files.
