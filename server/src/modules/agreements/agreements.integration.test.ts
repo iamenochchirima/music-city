@@ -22,7 +22,7 @@ test("PostgreSQL contributor agreement workflow", { skip: !testUrl }, async t =>
       }
     });
     const terms = { recipients: [{ walletAddress: a.publicKey(), role: "artist", shareBps: 7000 }, { walletAddress: b.publicKey(), role: "producer", shareBps: 3000 }], terms: "Master split" };
-    async function create(input = terms) {
+    async function create(input: typeof terms & { submitForApproval?: boolean } = terms) {
       const trackId = randomUUID();
       await databaseService.transaction(async client => { await client.query("INSERT INTO tracks(id,artist_id,status,visibility,payload) VALUES($1,$2,'draft','unpublished',$3)", [trackId,ownerId,{}]); });
       return agreementsService.create(a.publicKey(),{ trackId,...input });
@@ -34,6 +34,24 @@ test("PostgreSQL contributor agreement workflow", { skip: !testUrl }, async t =>
       const before = await agreementsService.list(a.publicKey());
       await assert.rejects(create({ ...terms, recipients: terms.recipients.map(r => ({ ...r,shareBps: 1 })) }));
       assert.equal((await agreementsService.list(a.publicKey())).length,before.length);
+    });
+    await t.test("creator can send a new agreement directly for contributor approval", async () => {
+      const submitted = await create({ ...terms, submitForApproval: true });
+      const id = submitted.proposal.agreementId;
+      assert.equal(submitted.state, "proposed");
+      assert.equal((await agreementsService.get(id, b.publicKey())).versions[0]!.state, "proposed");
+      const events = (await agreementsService.get(id, a.publicKey())).events;
+      assert.equal(events.filter(event => event.action === "proposed").length, 1);
+      assert.equal(events.filter(event => event.action === "draft_created").length, 0);
+
+      const retry = await agreementsService.create(a.publicKey(), {
+        trackId: submitted.proposal.trackId,
+        ...terms,
+        submitForApproval: true,
+      });
+      assert.equal(retry.proposal.agreementId, id);
+      assert.equal(retry.state, "proposed");
+      assert.equal((await agreementsService.get(id, a.publicKey())).events.filter(event => event.action === "proposed").length, 1);
     });
     await t.test("unknown contributor FK rolls back the complete draft and audit event", async () => {
       const before = await agreementsService.list(a.publicKey());

@@ -182,10 +182,9 @@ export function AgreementEditor({
       if (!Object.keys(invalid).length) setStep(3);
       return;
     }
-    void save(event);
+    void save(false);
   }
-  async function save(event: FormEvent) {
-    event.preventDefault();
+  async function save(submitForApproval: boolean) {
     setError(null);
     const invalid = validateShares();
     setErrors(invalid);
@@ -199,7 +198,7 @@ export function AgreementEditor({
       })),
       terms: terms.trim(),
       ...(mode === "create"
-        ? { trackId }
+        ? { trackId, ...(submitForApproval ? { submitForApproval: true } : {}) }
         : {
             expectedVersion: detail!.currentVersion,
             expectedHash: current!.proposalHash,
@@ -220,6 +219,11 @@ export function AgreementEditor({
         mode,
         body,
       );
+      if (submitForApproval && mode === "create" && result.version.state !== "proposed") {
+        throw new Error(
+          "The draft was saved, but it was not sent. Open the agreement to send it for approval.",
+        );
+      }
       onSaved(result.version.proposal.agreementId);
     } catch (e) {
       // Recover the saved result before offering another mutation after a lost HTTP response.
@@ -242,8 +246,10 @@ export function AgreementEditor({
                   v.shareBps === r.shareBps,
               ),
             );
+          const sent = next?.state === "proposed";
           if (
             exact &&
+            (!submitForApproval || sent) &&
             (mode !== "revise" ||
               saved.currentVersion === detail!.currentVersion + 1)
           ) {
@@ -278,8 +284,9 @@ export function AgreementEditor({
         </p>
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="text-sm text-muted-foreground">
-          Choose who earns from this recording, set shares that total 100%, then
-          review before saving.
+          {mode === "create"
+            ? "Choose who earns from this recording, set shares that total 100%, then review before sending or saving."
+            : "Choose who earns from this recording, set shares that total 100%, then review your changes."}
         </p>
       </header>
 
@@ -588,8 +595,15 @@ export function AgreementEditor({
             </div>
           </section>
           <p className="text-sm text-muted-foreground">
-            Saving creates a draft only. You can review it, then send it to each
-            contributor for their own approval and signature.
+            {mode === "create" ? (
+              <>
+                Send this split to contributors for approval now, or save a
+                private draft and send it later. It becomes active after every
+                contributor approves and the treasury signatures are complete.
+              </>
+            ) : (
+              "Changes stay in draft until you send them to contributors for approval."
+            )}
           </p>
           {mode === "revise" && (
             <FormField
@@ -644,15 +658,33 @@ export function AgreementEditor({
             </Button>
           )}
         </div>
-        <Button disabled={busy}>
-          {busy
-            ? "Saving…"
-            : step === 1
-              ? "Continue to shares"
-              : step === 2
-                ? "Review split"
-                : "Save draft"}
-        </Button>
+        {step < 3 ? (
+          <Button disabled={busy}>
+            {step === 1 ? "Continue to shares" : "Review split"}
+          </Button>
+        ) : mode === "create" ? (
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void save(false)}
+            >
+              {busy ? "Saving…" : "Save draft"}
+            </Button>
+            <Button
+              type="button"
+              disabled={busy}
+              onClick={() => void save(true)}
+            >
+              {busy ? "Sending…" : "Send for approval"}
+            </Button>
+          </div>
+        ) : (
+          <Button disabled={busy}>
+            {busy ? "Saving…" : mode === "edit" ? "Save changes" : "Save revision"}
+          </Button>
+        )}
       </div>
     </form>
   );

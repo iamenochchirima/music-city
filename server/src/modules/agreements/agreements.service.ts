@@ -69,10 +69,12 @@ export const agreementsService = {
     const request = z
       .object({
         trackId: z.string().min(1),
+        submitForApproval: z.boolean().optional(),
         ...agreementTermsSchema.innerType().shape,
       })
       .strict()
       .parse(input);
+    const submitForApproval = request.submitForApproval ?? false;
     const terms = agreementTermsSchema.parse({
       recipients: request.recipients,
       terms: request.terms,
@@ -99,11 +101,17 @@ export const agreementsService = {
           [existing.rows[0].id],
         );
         const saved = current.rows[0]!.payload;
-        if (
-          saved.state === "draft" &&
+        const matches =
           canonicalProposal({ ...saved.proposal, ...terms }).proposalHash ===
-            saved.proposalHash
-        )
+          saved.proposalHash;
+        if (matches && saved.state === "draft") {
+          if (!submitForApproval) return saved;
+          const submitted = submitVersion(saved, actor);
+          await writeVersion(client, submitted);
+          await recordEvent(client, submitted, actor, "proposed");
+          return submitted;
+        }
+        if (matches && submitForApproval && saved.state === "proposed")
           return saved;
         throw new HttpError(
           409,
@@ -124,7 +132,7 @@ export const agreementsService = {
           "Track release ownership does not match the agreement owner",
         );
       const id = randomUUID();
-      const version = createVersion({
+      const draft = createVersion({
         schemaVersion: 1,
         agreementId: id,
         trackId: request.trackId,
@@ -135,12 +143,20 @@ export const agreementsService = {
         previousHash: null,
         ...terms,
       });
+      const version = submitForApproval
+        ? submitVersion(draft, actor)
+        : draft;
       await client.query(
         "INSERT INTO contributor_agreements(id,track_id,owner_wallet,current_version) VALUES($1,$2,$3,1)",
         [id, request.trackId, actor],
       );
       await writeVersion(client, version, true);
-      await recordEvent(client, version, actor, "draft_created");
+      await recordEvent(
+        client,
+        version,
+        actor,
+        submitForApproval ? "proposed" : "draft_created",
+      );
       return version;
     });
   },

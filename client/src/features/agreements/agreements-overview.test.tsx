@@ -377,11 +377,11 @@ describe("agreement lifecycle UI", () => {
     expect(artistShare.value).toBe("70.00");
     expect(screen.getByText("The split is complete.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Review split" }));
-    expect(screen.getByText(/Saving creates a draft only/)).toBeTruthy();
+    expect(screen.getByText(/Send this split to contributors for approval now/)).toBeTruthy();
     expect(screen.getByText("70.00%", { exact: true })).toBeTruthy();
     expect(screen.getByText("30%", { exact: true })).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await user.click(screen.getByRole("button", { name: "Send for approval" }));
     await waitFor(() =>
       expect(mocks.save).toHaveBeenCalledWith(
         "test-session",
@@ -389,6 +389,7 @@ describe("agreement lifecycle UI", () => {
         "create",
         expect.objectContaining({
           trackId: version.proposal.trackId,
+          submitForApproval: true,
           recipients: expect.arrayContaining([
             expect.objectContaining({
               walletAddress: detail.context.owner.walletAddress,
@@ -406,6 +407,18 @@ describe("agreement lifecycle UI", () => {
       await screen.findByRole("link", { name: "Back to release" }),
     ).toBeTruthy();
   });
+  it("keeps saving a private draft as an optional choice", async () => {
+    const user = open(
+      `/account/agreements/new?track=${version.proposal.trackId}&release=release-1`,
+    );
+    await screen.findByRole("heading", { name: "Who should share the earnings?" });
+    await user.click(screen.getByRole("button", { name: "Continue to shares" }));
+    await user.click(screen.getByRole("button", { name: "Review split" }));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => expect(mocks.save).toHaveBeenCalled());
+    expect(mocks.save.mock.calls[0]?.[3]).not.toHaveProperty("submitForApproval");
+  });
   it("preserves edited fields after a stale draft save is rejected", async () => {
     version.state = "draft";
     configurePermissions();
@@ -420,7 +433,7 @@ describe("agreement lifecycle UI", () => {
     mocks.save.mockRejectedValue(
       new Error("The draft changed. Review latest details"),
     );
-    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
     expect((await screen.findByRole("alert")).textContent).toContain(
       "draft changed",
     );
