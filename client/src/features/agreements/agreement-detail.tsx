@@ -351,7 +351,7 @@ export function AgreementDetailPanel({
                 Edit draft
               </Button>
               <Button disabled={busy} onClick={() => setReview(true)}>
-                Review proposal
+                Review and send
               </Button>
             </div>
           )}
@@ -360,9 +360,10 @@ export function AgreementDetailPanel({
               aria-label="Review proposal"
               className="space-y-4 rounded-lg border border-border bg-card p-5"
             >
-              <h2 className="font-semibold">Send for approval?</h2>
+              <h2 className="font-semibold">Ready to send to contributors?</h2>
               <p className="text-sm text-muted-foreground">
-                Changes after sending need a new version and fresh signatures.
+                Each contributor will review and sign this split. Changes after
+                sending need a new version and fresh signatures.
               </p>
               <div className="flex flex-wrap justify-end gap-3">
                 <Button
@@ -373,7 +374,7 @@ export function AgreementDetailPanel({
                   Back
                 </Button>
                 <Button disabled={busy} onClick={() => void act("submit")}>
-                  Send proposal
+                  Send to contributors
                 </Button>
               </div>
             </section>

@@ -38,6 +38,13 @@ function SignedInAgreements({ session }: { session: Session }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const creating = pathname.endsWith("/new");
+  const releaseId = search.get("release");
+  const releaseReturnPath = releaseId
+    ? `/dashboard/releases/${encodeURIComponent(releaseId)}`
+    : null;
+  const releaseQuery = releaseId
+    ? `?release=${encodeURIComponent(releaseId)}`
+    : "";
   const [editor, setEditor] = useState<"edit" | "revise" | null>(null);
   const [busy, setBusy] = useState(false);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
@@ -94,7 +101,9 @@ function SignedInAgreements({ session }: { session: Session }) {
       .forTrack(token, trackId)
       .then((result) => {
         if (active && result.id)
-          navigate(`/account/agreements/${result.id}`, { replace: true });
+          navigate(`/account/agreements/${result.id}${releaseQuery}`, {
+            replace: true,
+          });
       })
       .catch((e) => {
         if (active)
@@ -108,11 +117,11 @@ function SignedInAgreements({ session }: { session: Session }) {
     return () => {
       active = false;
     };
-  }, [creating, trackId, token, navigate]);
+  }, [creating, trackId, token, navigate, releaseQuery]);
 
   function saved(id: string) {
     setEditor(null);
-    navigate(`/account/agreements/${id}`);
+    navigate(`/account/agreements/${id}${releaseQuery}`);
     void resource.refresh();
     void list.refresh();
   }
@@ -136,11 +145,11 @@ function SignedInAgreements({ session }: { session: Session }) {
     <div className="studio-theme space-y-6 text-foreground">
       {(agreementId || creating) && (
         <Link
-          to="/account/agreements"
+          to={releaseReturnPath ?? "/account/agreements"}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          All agreements
+          {releaseReturnPath ? "Back to release" : "All agreements"}
         </Link>
       )}
       {creating || editor ? (
@@ -169,7 +178,8 @@ function SignedInAgreements({ session }: { session: Session }) {
             onSaved={saved}
             onCancel={() => {
               setEditor(null);
-              if (creating) navigate("/account/agreements");
+              if (creating)
+                navigate(releaseReturnPath ?? "/account/agreements");
             }}
           />
         )

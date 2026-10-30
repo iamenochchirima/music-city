@@ -200,12 +200,12 @@ describe("agreement lifecycle UI", () => {
     configurePermissions();
     const user = open();
     await user.click(
-      await screen.findByRole("button", { name: "Review proposal" }),
+      await screen.findByRole("button", { name: "Review and send" }),
     );
     expect(
       screen.getByRole("region", { name: "Review proposal" }),
     ).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Send proposal" }));
+    await user.click(screen.getByRole("button", { name: "Send to contributors" }));
     await waitFor(() =>
       expect(mocks.act).toHaveBeenCalledWith(
         "test-session",
@@ -353,11 +353,64 @@ describe("agreement lifecycle UI", () => {
     expect(screen.queryByRole("form", { name: "New agreement" })).toBeNull();
     expect(mocks.save).not.toHaveBeenCalled();
   });
+  it("guides a creator from song and contributors through a reviewed 100% split", async () => {
+    const producer = detail.context.people.find(
+      (person) => person.walletAddress !== detail.context.owner.walletAddress,
+    )!;
+    mocks.contributors.mockResolvedValue({ items: [producer] });
+    const user = open(
+      `/account/agreements/new?track=${version.proposal.trackId}&release=release-1`,
+    );
+
+    await screen.findByRole("heading", { name: "Who should share the earnings?" });
+    expect(screen.getByRole("link", { name: "Back to release" })).toBeTruthy();
+    await user.type(screen.getByLabelText("Add a contributor"), "Producer");
+    await user.click(await screen.findByRole("button", { name: /Producer/ }));
+    await user.click(screen.getByRole("button", { name: "Continue to shares" }));
+
+    const shares = screen.getAllByLabelText("Share %");
+    await user.clear(shares[0]!);
+    await user.type(shares[0]!, "70");
+    await user.type(shares[1]!, "30");
+    expect(screen.getByText("The split is complete.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Review split" }));
+    expect(screen.getByText(/Saving creates a draft only/)).toBeTruthy();
+    expect(screen.getByText("70%", { exact: true })).toBeTruthy();
+    expect(screen.getByText("30%", { exact: true })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() =>
+      expect(mocks.save).toHaveBeenCalledWith(
+        "test-session",
+        null,
+        "create",
+        expect.objectContaining({
+          trackId: version.proposal.trackId,
+          recipients: expect.arrayContaining([
+            expect.objectContaining({
+              walletAddress: detail.context.owner.walletAddress,
+              shareBps: 7000,
+            }),
+            expect.objectContaining({
+              walletAddress: producer.walletAddress,
+              shareBps: 3000,
+            }),
+          ]),
+        }),
+      ),
+    );
+    expect(
+      await screen.findByRole("link", { name: "Back to release" }),
+    ).toBeTruthy();
+  });
   it("preserves edited fields after a stale draft save is rejected", async () => {
     version.state = "draft";
     configurePermissions();
     const user = open();
     await user.click(await screen.findByRole("button", { name: "Edit draft" }));
+    await user.click(screen.getByRole("button", { name: "Continue to shares" }));
+    await user.click(screen.getByRole("button", { name: "Review split" }));
+    await user.click(screen.getByText("Optional agreement details"));
     const terms = screen.getByLabelText("Additional terms (optional)");
     await user.clear(terms);
     await user.type(terms, "My revised terms");

@@ -36,6 +36,7 @@ import { ReleaseDetailsEditor } from "./release-details-editor";
 import { ReleaseArtworkEditor } from "./release-artwork-editor";
 import { ReleaseTracklistEditor } from "./release-tracklist-editor";
 import { ReleaseReview, type ReadinessIssue } from "./release-review";
+import { ReleaseAgreementAccess } from "./release-agreement-access";
 
 type ReleaseSection = ReleaseStep;
 const targetSection = (id: string): ReleaseSection =>
@@ -1170,6 +1171,9 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
               : "All changes saved"}
         </p>
       </StudioPageHeader>
+      {session.artistAccess ? (
+        <ReleaseAgreementAccess release={release} token={session.token} />
+      ) : null}
       {release.hasRevision ? (
         <p
           role="status"
