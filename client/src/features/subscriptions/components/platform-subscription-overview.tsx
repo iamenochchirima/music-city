@@ -217,7 +217,7 @@ export const PlatformSubscriptionOverview = ({
     }
 
     if (!plan?.enabled) {
-      toast.error("Music City Pass is not available right now.");
+      toast.error("Subscription is not available right now.");
       return;
     }
 
@@ -229,7 +229,7 @@ export const PlatformSubscriptionOverview = ({
         intentId: intent.id,
         txHash,
       });
-      toast.success("Music City Pass activated.");
+      toast.success("Subscription activated.");
       await load();
       openSelectedTrack();
     } catch (error) {
@@ -325,12 +325,12 @@ export const PlatformSubscriptionOverview = ({
 
       <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 text-white sm:p-8">
         <div className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">{plan.name}</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">Subscription</p>
           <h2 className="text-3xl font-semibold sm:text-4xl">Subscribe</h2>
           <p className="max-w-2xl text-base text-slate-300">
             {selectedTrack
-              ? `Unlock ${selectedTrack.title} and every other subscriber-only track with one pass.`
-              : "One pass unlocks every subscriber-only track across Music City."}
+              ? `Unlock ${selectedTrack.title} and every other subscriber-only track with your subscription.`
+              : "One subscription unlocks every subscriber-only track across Music City."}
           </p>
         </div>
 

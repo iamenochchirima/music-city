@@ -125,7 +125,7 @@ export const envSchema = z
       .string()
       .optional()
       .transform((value) => value !== "false"),
-    PLATFORM_SUBSCRIPTION_NAME: z.string().default("Music City Pass"),
+    PLATFORM_SUBSCRIPTION_NAME: z.string().default("Subscription"),
     PLATFORM_SUBSCRIPTION_DESCRIPTION: z
       .string()
       .default("Subscribe once to unlock every subscriber-only release on Music City."),

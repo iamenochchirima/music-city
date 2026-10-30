@@ -391,7 +391,7 @@ export const AccountOverview = () => {
         {profile?.primaryIntent === "artist" || profile?.primaryIntent === "both" ? (
           <Card className="border-white/10 bg-white/5 text-white shadow-none">
             <CardHeader>
-                  <CardTitle className="text-2xl">Music City Pass</CardTitle>
+                  <CardTitle className="text-2xl">Subscription</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
@@ -400,7 +400,7 @@ export const AccountOverview = () => {
                     Model
                   </p>
                   <p className="mt-2 text-base font-medium text-white">
-                    Music City Pass
+                    Subscription
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
@@ -416,7 +416,7 @@ export const AccountOverview = () => {
                     Member benefit
                   </p>
                   <p className="mt-2 text-base font-medium text-white">
-                    Ad-free listening
+                    Subscriber-only tracks
                   </p>
                 </div>
               </div>
@@ -470,7 +470,7 @@ export const AccountOverview = () => {
                       {payment.productType === "track_purchase"
                         ? "Track purchase"
                         : payment.productType === "platform_subscription"
-                          ? "Music City Pass"
+                          ? "Subscription"
                           : "Artist onboarding fee"}
                     </p>
                     <p className="text-sm text-slate-400">
@@ -502,7 +502,7 @@ export const AccountOverview = () => {
                   className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4"
                 >
                   <div className="space-y-1">
-                    <p className="text-base font-medium text-white">Music City Pass</p>
+                    <p className="text-base font-medium text-white">Subscription</p>
                     <p className="text-sm text-slate-400">
                       Ends {new Date(subscription.endsAt).toLocaleDateString()}
                     </p>

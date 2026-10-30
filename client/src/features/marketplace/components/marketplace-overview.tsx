@@ -7,7 +7,7 @@ import { Ticket } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TrackCommerceActions } from "@/features/music/components/track-commerce-actions";
 import { TrackThumbnail } from "@/features/music/components/track-table";
 import { tracksApi } from "@/features/music/lib/tracks-api";
@@ -90,16 +90,13 @@ export const MarketplaceOverview = () => {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold text-white">Music City Pass</h2>
+          <h2 className="text-2xl font-semibold text-white">Subscription</h2>
           <p className="text-sm text-slate-400">
-            One membership unlocks every subscriber-only release across the platform.
+            One subscription unlocks every subscriber-only release across the platform.
           </p>
         </div>
         <Card className="border-white/10 bg-white/5 text-white shadow-none">
           <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl">
-              {platformPlan?.name ?? "Music City Pass"}
-            </CardTitle>
             <p className="text-sm text-slate-300">
               {platformPlan?.description ??
                 "One subscription unlocks every subscriber-only release across Music City."}

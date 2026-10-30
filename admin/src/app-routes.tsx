@@ -1124,7 +1124,7 @@ const SubscribersPage = () => {
                     ? `${formatBalanceAmount(item.amount)} ${item.assetCode}`
                     : "—"}
                 </div>
-                <div className="text-slate-300">Music City Pass</div>
+                <div className="text-slate-300">Subscription</div>
                 <div className="text-slate-300">{formatDateTime(item.startsAt)}</div>
                 <div className="text-slate-300">{formatDateTime(item.endsAt)}</div>
               </div>
