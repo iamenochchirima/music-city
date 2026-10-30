@@ -368,14 +368,17 @@ describe("agreement lifecycle UI", () => {
     await user.click(await screen.findByRole("button", { name: /Producer/ }));
     await user.click(screen.getByRole("button", { name: "Continue to shares" }));
 
-    const shares = screen.getAllByLabelText("Share %");
-    await user.clear(shares[0]!);
-    await user.type(shares[0]!, "70");
-    await user.type(shares[1]!, "30");
+    const artistShare = screen.getByLabelText(
+      "Your share (auto)",
+    ) as HTMLInputElement;
+    const producerShare = screen.getByLabelText("Share %");
+    expect(artistShare.readOnly).toBe(true);
+    await user.type(producerShare, "30");
+    expect(artistShare.value).toBe("70.00");
     expect(screen.getByText("The split is complete.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Review split" }));
     expect(screen.getByText(/Saving creates a draft only/)).toBeTruthy();
-    expect(screen.getByText("70%", { exact: true })).toBeTruthy();
+    expect(screen.getByText("70.00%", { exact: true })).toBeTruthy();
     expect(screen.getByText("30%", { exact: true })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Save draft" }));

@@ -17,6 +17,42 @@ type Row = {
   role: (typeof royaltyRecipientRoleSchema.options)[number];
   percentage: string;
 };
+
+function percentageToBps(value: string): number | null {
+  if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(value)) return null;
+  const percentage = Number(value);
+  if (percentage <= 0 || percentage > 100) return null;
+  return Math.round(percentage * 100);
+}
+
+function balanceOwnerShare(rows: Row[], ownerWalletAddress: string): Row[] {
+  const ownerIndex = rows.findIndex(
+    (row) => row.person.walletAddress === ownerWalletAddress,
+  );
+  if (ownerIndex < 0) return rows;
+
+  const otherRows = rows.filter((_, index) => index !== ownerIndex);
+  if (!otherRows.length) {
+    return rows.map((row, index) =>
+      index === ownerIndex ? { ...row, percentage: "100" } : row,
+    );
+  }
+
+  const otherShares = otherRows.map((row) => percentageToBps(row.percentage));
+  const ownerShare = otherShares.some((share) => share === null)
+    ? ""
+    : (
+        Math.max(
+          0,
+          10000 - otherShares.reduce<number>((sum, share) => sum + (share ?? 0), 0),
+        ) / 100
+      ).toFixed(2);
+
+  return rows.map((row, index) =>
+    index === ownerIndex ? { ...row, percentage: ownerShare } : row,
+  );
+}
+
 export function AgreementEditor({
   token,
   owner,
@@ -63,6 +99,19 @@ export function AgreementEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  function updateShare(index: number, percentage: string) {
+    setRows((old) =>
+      balanceOwnerShare(
+        old.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, percentage } : row,
+        ),
+        owner.walletAddress,
+      ),
+    );
+    setErrors({});
+  }
+
   useEffect(() => {
     let active = true;
     setMatches([]);
@@ -345,7 +394,14 @@ export function AgreementEditor({
                     variant="ghost"
                     disabled={busy || row.person.walletAddress === owner.walletAddress}
                     aria-label={`Remove ${row.person.name}`}
-                    onClick={() => setRows((old) => old.filter((_, n) => n !== i))}
+                    onClick={() =>
+                      setRows((old) =>
+                        balanceOwnerShare(
+                          old.filter((_, n) => n !== i),
+                          owner.walletAddress,
+                        ),
+                      )
+                    }
                   >
                     Remove
                   </Button>
@@ -397,10 +453,15 @@ export function AgreementEditor({
                           }
                           className="flex w-full flex-wrap justify-between gap-2 p-3 text-left text-sm hover:bg-muted disabled:opacity-50"
                           onClick={() => {
-                            setRows((old) => [
-                              ...old,
-                              { person, role: "producer", percentage: "" },
-                            ]);
+                            setRows((old) =>
+                              balanceOwnerShare(
+                                [
+                                  ...old,
+                                  { person, role: "producer", percentage: "" },
+                                ],
+                                owner.walletAddress,
+                              ),
+                            );
                             setQuery("");
                           }}
                         >
@@ -424,8 +485,8 @@ export function AgreementEditor({
           <div>
             <h2 className="font-semibold">Set each person’s share</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Shares must add up to exactly 100%. Agree on the percentages with
-              contributors before sending the proposal.
+              Enter each contributor’s share. Your artist share updates to fill
+              the remainder, up to 100%.
             </p>
           </div>
           <ul className="divide-y divide-border rounded-md border border-border px-4">
@@ -442,28 +503,28 @@ export function AgreementEditor({
                 </div>
                 <FormField
                   id={`agreement-share-${i}`}
-                  label="Share %"
+                  label={
+                    row.person.walletAddress === owner.walletAddress
+                      ? "Your share (auto)"
+                      : "Share %"
+                  }
                   error={errors[`share-${i}`]}
                 >
                   <Input
                     disabled={busy}
+                    readOnly={row.person.walletAddress === owner.walletAddress}
                     inputMode="decimal"
                     value={row.percentage}
                     aria-describedby="agreement-share-help"
-                    onChange={(e) =>
-                      setRows((old) =>
-                        old.map((r, n) =>
-                          n === i ? { ...r, percentage: e.target.value } : r,
-                        ),
-                      )
-                    }
+                    onChange={(e) => updateShare(i, e.target.value)}
                   />
                 </FormField>
               </li>
             ))}
           </ul>
           <p id="agreement-share-help" className="text-xs text-muted-foreground">
-            Enter a number from 0.01 to 100, with up to 2 decimal places.
+            Enter a contributor share from 0.01 to 100, with up to 2 decimal
+            places. The total must be 100%.
           </p>
           <div className="space-y-2 rounded-md bg-muted/40 p-4" role="status">
             <div className="flex flex-wrap justify-between gap-2 text-sm">
