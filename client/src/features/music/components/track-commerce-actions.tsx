@@ -12,6 +12,7 @@ import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checkout";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
 import { useAuth } from "@/hooks/use-auth";
+import { clientEnv } from "@/lib/config/env";
 
 const formatAmountLabel = (amount?: string, assetCode?: string) => {
   if (!amount) {
@@ -43,10 +44,11 @@ export const TrackCommerceActions = ({
   }, [hidePlay, track.id, track.playbackReady, session?.token]);
   const [purchased, setPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(false);
+  const canPurchase = clientEnv.trackPurchasesEnabled && track.purchaseEnabled;
   useEffect(() => {
     let current = true;
     setPurchased(false);
-    if (!session?.token || !track.purchaseEnabled) return;
+    if (!session?.token || !canPurchase) return;
     setCheckingPurchase(true);
     void paymentsApi
       .listMine(session.token)
@@ -68,7 +70,7 @@ export const TrackCommerceActions = ({
     return () => {
       current = false;
     };
-  }, [session?.token, track.id, track.purchaseEnabled]);
+  }, [session?.token, track.id, canPurchase]);
 
   const purchaseLabel = useMemo(
     () => formatAmountLabel(track.purchasePrice, track.purchaseAssetCode),
@@ -146,12 +148,12 @@ export const TrackCommerceActions = ({
         </Button>
       ) : null}
 
-      {track.purchaseEnabled && purchased ? (
+      {canPurchase && purchased ? (
         <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
           <Check className="h-4 w-4" />
           Purchased
         </span>
-      ) : track.purchaseEnabled ? (
+      ) : canPurchase ? (
         <Button
           ref={buyButton}
           className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"

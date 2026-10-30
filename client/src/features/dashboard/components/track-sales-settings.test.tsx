@@ -24,7 +24,7 @@ afterEach(cleanup);
 it("enables exact-price USDC sales and can disable them independently of metadata", async () => {
   const user = userEvent.setup();
   render(<Settings />);
-  await user.click(screen.getByLabelText("Let listeners buy this song"));
+  await user.click(screen.getByLabelText("Include this song in track sales"));
   await user.type(screen.getByLabelText("Price (USDC)"), "0.0000001");
   await user.click(screen.getByRole("button", { name: "Save sales settings" }));
   await screen.findByText("Sales settings saved");
@@ -32,7 +32,7 @@ it("enables exact-price USDC sales and can disable them independently of metadat
     purchaseEnabled: true,
     purchasePrice: "0.0000001",
   });
-  await user.click(screen.getByLabelText("Let listeners buy this song"));
+  await user.click(screen.getByLabelText("Include this song in track sales"));
   await user.click(screen.getByRole("button", { name: "Save sales settings" }));
   expect(m.save).toHaveBeenLastCalledWith("token", "track", {
     purchaseEnabled: false,
@@ -42,7 +42,7 @@ it("enables exact-price USDC sales and can disable them independently of metadat
 it("invalid precision sends no request and a failed save preserves the entered price", async () => {
   const user = userEvent.setup();
   render(<Settings />);
-  await user.click(screen.getByLabelText("Let listeners buy this song"));
+  await user.click(screen.getByLabelText("Include this song in track sales"));
   await user.type(screen.getByLabelText("Price (USDC)"), "0.00000001");
   await user.click(screen.getByRole("button", { name: "Save sales settings" }));
   expect(m.save).not.toHaveBeenCalled();

@@ -8,9 +8,9 @@ export default function MarketplacePage() {
       <PageContainer>
         <div className="space-y-12">
           <PageHero
-            eyebrow="Marketplace"
-            title="Explore the marketplace"
-            description="Browse releases, discover drops, and unlock access to music."
+            eyebrow="Subscription"
+            title="Subscribe to Music City"
+            description="Unlock subscriber-only releases across the platform."
           />
           <MarketplaceOverview />
         </div>

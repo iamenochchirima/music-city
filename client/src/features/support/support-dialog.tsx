@@ -162,6 +162,10 @@ export function SupportDialog({
     >
       {!payment ? (
         <>
+          <p className="text-sm leading-6 text-muted-foreground">
+            This support goes directly to {recipient.name}. Song earnings are
+            shared separately through the contributor agreement.
+          </p>
           <div className="flex gap-2">
             {[1, 5, 10].map((value) => (
               <Button

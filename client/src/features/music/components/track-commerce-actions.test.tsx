@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { TrackSummary } from "@music-city/shared";
 import { TrackCommerceActions } from "./track-commerce-actions";
-const m = vi.hoisted(() => ({ list: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null, activeTrackId: null as string | null, isPlaying: false }));
+const m = vi.hoisted(() => ({ list: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null, activeTrackId: null as string | null, isPlaying: false, purchasesEnabled: true }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ session: m.session }),
 }));
@@ -17,13 +17,14 @@ vi.mock("@/features/playback/providers/global-playback-provider", () => ({
   useGlobalPlayback: () => ({ activeTrackId: m.activeTrackId, isPlaying: m.isPlaying, playTrack: m.play, setPlaybackQueue: vi.fn() }),
 }));
 vi.mock("@/features/playback/lib/playback-api", () => ({ playbackApi: { preloadTracks: m.preload } }));
+vi.mock("@/lib/config/env", () => ({ clientEnv: { get trackPurchasesEnabled() { return m.purchasesEnabled; } } }));
 const track = {
   id: "track",
   purchaseEnabled: true,
   purchasePrice: "1",
   purchaseAssetCode: "USDC",
 } as TrackSummary;
-beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; m.activeTrackId = null; m.isPlaying = false; });
+beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; m.activeTrackId = null; m.isPlaying = false; m.purchasesEnabled = true; });
 afterEach(cleanup);
 it("shows a retained purchase after reopening without offering another payment", async () => {
   m.list.mockResolvedValue([
@@ -43,6 +44,13 @@ it("does not treat another song or unconfirmed payment as ownership", async () =
   const button = await screen.findByRole("button", { name: "Buy 1 USDC" });
   await vi.waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
   expect(screen.queryByText("Purchased")).toBeNull();
+});
+
+it("hides configured track sales from listeners while public purchases are disabled", () => {
+  m.purchasesEnabled = false;
+  render(<TrackCommerceActions track={track} />);
+  expect(screen.queryByRole("button", { name: "Buy 1 USDC" })).toBeNull();
+  expect(m.list).not.toHaveBeenCalled();
 });
 
 it("lets a guest play a ready song through the shared player", async () => {

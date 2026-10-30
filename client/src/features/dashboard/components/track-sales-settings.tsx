@@ -17,10 +17,14 @@ export function TrackSalesSettings({
   track,
   token,
   onSaved,
+  showHeading = true,
+  compact = false,
 }: {
   track: TrackSummary;
   token: string;
   onSaved: (track: TrackSummary) => void;
+  showHeading?: boolean;
+  compact?: boolean;
 }) {
   const id = useId();
   const [enabled, setEnabled] = useState(track.purchaseEnabled ?? false);
@@ -61,10 +65,14 @@ export function TrackSalesSettings({
   return (
     <form
       onSubmit={(event) => void save(event)}
-      className="max-w-[720px] space-y-4 border-t border-border pt-6"
-      aria-label="Track sales"
+      className={
+        compact ? "space-y-4" : "max-w-[720px] space-y-4 border-t border-border pt-6"
+      }
+      aria-label={`Sales settings for ${track.title}`}
     >
-      <h3 className="text-lg font-semibold">Track sales</h3>
+      {showHeading ? (
+        <h3 className="text-lg font-semibold">Track sales</h3>
+      ) : null}
       <fieldset disabled={busy} className="space-y-4">
         <label className="flex min-h-11 items-center gap-3 text-sm">
           <Checkbox
@@ -74,7 +82,7 @@ export function TrackSalesSettings({
               setSaved(false);
             }}
           />
-          Let listeners buy this song
+          Include this song in track sales
         </label>
         {enabled && (
           <div className="max-w-xs">

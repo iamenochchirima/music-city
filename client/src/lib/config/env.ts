@@ -24,6 +24,8 @@ export const clientEnv = {
   ),
   dynamicEnvironmentId,
   isDynamicConfigured: dynamicEnvironmentId !== "dynamic-environment-id-required",
+  trackPurchasesEnabled:
+    readClientEnv("VITE_TRACK_PURCHASES_ENABLED") === "true",
   stellarHorizonUrl:
     readClientEnv(
       "VITE_STELLAR_HORIZON_URL",

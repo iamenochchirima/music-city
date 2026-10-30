@@ -13,14 +13,17 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
   revision: vi.fn(),
   delete: vi.fn(),
+  sales: vi.fn(),
+  artistAccess: false,
 }));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ session: { token: "token" } }),
+  useAuth: () => ({ session: { token: "token", artistAccess: mocks.artistAccess } }),
 }));
 vi.mock("@/features/music/lib/tracks-api", () => ({
   tracksApi: {
     listMyTracks: async () => [],
     updateTrackMetadata: mocks.metadata,
+    updateTrackMonetization: mocks.sales,
   },
 }));
 vi.mock("@/features/music/lib/releases-api", () => ({
@@ -54,6 +57,7 @@ const track = {
   credits: [],
   recordLabel: "",
   isrc: "",
+  purchaseEnabled: false,
 };
 const base = {
   id: "release",
@@ -82,6 +86,7 @@ const pending = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.artistAccess = false;
   window.localStorage.clear();
   mocks.load.mockResolvedValue(base);
   mocks.update.mockImplementation(async (_t, _id, patch) => ({
@@ -89,6 +94,10 @@ beforeEach(() => {
     ...patch,
   }));
   mocks.metadata.mockImplementation(async (_t, _id, patch) => ({
+    ...track,
+    ...patch,
+  }));
+  mocks.sales.mockImplementation(async (_t, _id, patch) => ({
     ...track,
     ...patch,
   }));
@@ -134,6 +143,22 @@ it("starts with release setup and autosaves changed release details", async () =
       ),
     { timeout: 4000 },
   );
+});
+it("lets creators prepare per-track sale prices from the release workspace", async () => {
+  const user = userEvent.setup();
+  mocks.artistAccess = true;
+  await open();
+  expect(
+    screen.getByText(/not visible to listeners yet/i),
+  ).toBeTruthy();
+  await user.click(screen.getByLabelText("Include this song in track sales"));
+  await user.type(screen.getByLabelText("Price (USDC)"), "2.50");
+  await user.click(screen.getByRole("button", { name: "Save sales settings" }));
+  await screen.findByText("Sales settings saved");
+  expect(mocks.sales).toHaveBeenCalledWith("token", "one", {
+    purchaseEnabled: true,
+    purchasePrice: "2.50",
+  });
 });
 it("uploads artwork immediately without a separate upload action", async () => {
   const user = userEvent.setup();

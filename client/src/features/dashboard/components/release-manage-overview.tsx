@@ -37,6 +37,7 @@ import { ReleaseArtworkEditor } from "./release-artwork-editor";
 import { ReleaseTracklistEditor } from "./release-tracklist-editor";
 import { ReleaseReview, type ReadinessIssue } from "./release-review";
 import { ReleaseAgreementAccess } from "./release-agreement-access";
+import { TrackSalesSettings } from "./track-sales-settings";
 
 type ReleaseSection = ReleaseStep;
 const targetSection = (id: string): ReleaseSection =>
@@ -1173,6 +1174,80 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       </StudioPageHeader>
       {session.artistAccess ? (
         <ReleaseAgreementAccess release={release} token={session.token} />
+      ) : null}
+      {session.artistAccess ? (
+        <section
+          aria-labelledby="release-track-sales-title"
+          className="space-y-4 rounded-xl border border-border bg-card p-5"
+        >
+          <div className="space-y-1">
+            <h2 id="release-track-sales-title" className="text-lg font-semibold">
+              Track sales for this release
+            </h2>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+              Choose which songs to sell and set a separate USDC price for each.
+              Sales are being prepared and are not visible to listeners yet.
+            </p>
+          </div>
+          {release.tracks.length ? (
+            <div className="divide-y divide-border">
+              {release.tracks.map(({ trackId, trackNumber, track }) => (
+                <article
+                  key={trackId}
+                  className="grid gap-3 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-start"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {trackNumber}. {track.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {track.purchaseEnabled && track.purchasePrice
+                        ? `Configured at ${track.purchasePrice} USDC`
+                        : "Not included in track sales"}
+                    </p>
+                  </div>
+                  <TrackSalesSettings
+                    key={trackId}
+                    track={track}
+                    token={session.token!}
+                    showHeading={false}
+                    compact
+                    onSaved={(updated) => {
+                      setRelease((current) =>
+                        current
+                          ? {
+                              ...current,
+                              tracks: current.tracks.map((item) =>
+                                item.trackId === trackId
+                                  ? { ...item, track: updated }
+                                  : item,
+                              ),
+                            }
+                          : current,
+                      );
+                      setSavedRelease((current) =>
+                        current
+                          ? {
+                              ...current,
+                              tracks: current.tracks.map((item) =>
+                                item.trackId === trackId
+                                  ? { ...item, track: updated }
+                                  : item,
+                              ),
+                            }
+                          : current,
+                      );
+                    }}
+                  />
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Add songs to this release to configure track sales.
+            </p>
+          )}
+        </section>
       ) : null}
       {release.hasRevision ? (
         <p

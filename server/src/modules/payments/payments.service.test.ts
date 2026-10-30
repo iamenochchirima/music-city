@@ -16,6 +16,7 @@ const { referralsService } = await import("../referrals/referrals.service.js");
 const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
 const { adminService } = await import("../admin/admin.service.js");
 const { checkoutService } = await import("./checkout.service.js");
+const { env } = await import("../../config/env.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -28,6 +29,21 @@ const restore = <T extends object, K extends keyof T>(
     target[key] = original;
   };
 };
+
+test("track purchase checkout stays disabled until the public sales launch", async () => {
+  const original = env.TRACK_PURCHASES_ENABLED;
+  env.TRACK_PURCHASES_ENABLED = false;
+  try {
+    await assert.rejects(
+      () => paymentsService.createTrackPurchaseIntent(walletAddress, "track-1"),
+      (error: { message?: string; statusCode?: number }) =>
+        error.statusCode === 403 &&
+        error.message === "Track purchases are not available yet",
+    );
+  } finally {
+    env.TRACK_PURCHASES_ENABLED = original;
+  }
+});
 
 test("new checkout intents charge the exact listed price and use an order memo within Stellar's limit", async () => {
   const cleanup = [

@@ -257,6 +257,10 @@ export const paymentsService = {
   },
 
   async createTrackPurchaseIntent(walletAddress: string, trackId: string) {
+    if (!env.TRACK_PURCHASES_ENABLED) {
+      throw new HttpError(403, "Track purchases are not available yet");
+    }
+
     const track = await tracksService.getTrackForPlayback(trackId);
 
     if (!track || !track.playbackReady || !(await tracksService.isTrackPublic(track.id))) {
