@@ -1,3 +1,4 @@
+import { notify } from "../notifications/notifications.service.js";
 import { indexedBatchReceipts } from "./chain-receipts.js";
 import { randomUUID } from "node:crypto";
 import { Keypair, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
@@ -196,6 +197,14 @@ async function syncBatch(
   )
     return batch;
   await saveBatch(client, next);
+  for (const allocation of allocations) {
+    if (BigInt(allocation.amountUnits) <= 0n) continue;
+    if (allocation.status === "available" || allocation.status === "claimed") await notify(client,{
+      key: `settlement:${batch.id}:${allocation.index}:${allocation.status}`,
+      kind: allocation.status === "available" ? "earnings.available" : "earnings.claimed",
+      recipients: [allocation.beneficiary], href: "/dashboard/revenue",
+    });
+  }
   for (const a of allocations.filter((a) => a.status === "claimed")) {
     await client.query(
       "UPDATE royalty_ledger SET status='paid',payload=jsonb_set(jsonb_set(payload,'{status}','\"paid\"'),'{updatedAt}',to_jsonb($2::text)) WHERE id=ANY($1::text[]) AND status<>'paid'",

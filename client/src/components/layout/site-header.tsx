@@ -1,5 +1,7 @@
 "use client";
 
+import { NotificationMenu } from "@/features/notifications/notification-menu";
+
 import Image from "next/image";
 
 import Link from "next/link";
@@ -109,6 +111,7 @@ export const SiteHeader = () => {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           {session ? (
             <>
+              <NotificationMenu key={session.walletAddress} token={session.token} />
               <span className="hidden text-sm text-slate-300 xl:inline">
                 {session.displayName ||
                   `${session.walletAddress.slice(0, 6)}...${session.walletAddress.slice(-4)}`}

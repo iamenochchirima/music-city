@@ -468,6 +468,8 @@ test(
           await s.reconcile(a.id);await s.reconcile(a.id);
           const detail = await s.detail(batch!.id);
           assert.equal(detail.batch.state, "funded");
+          const notifications = await db.transaction(c => c.query("SELECT recipient FROM notifications WHERE kind='earnings.available' AND event_key LIKE $1",[`settlement:${batch!.id}:%`]));
+          assert.deepEqual(notifications.rows.map(row => row.recipient).sort(),[...new Set(detail.batch.allocations.filter(a => BigInt(a.amountUnits)>0n).map(a => a.beneficiary))].sort());
           assert.ok(
             detail.batch.allocations.every((a) => a.status === "available"),
           );

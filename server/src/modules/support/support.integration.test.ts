@@ -237,6 +237,10 @@ test(
             ),
           );
           assert.equal(events.rowCount, 1);
+          const notices = await db.transaction(c => c.query("SELECT kind,recipient FROM notifications WHERE event_key=ANY($1::text[])",[[`support:${p.id}:receipt`,`support:${p.id}:received`]]));
+          assert.equal(notices.rowCount,2);
+          assert.ok(notices.rows.some(row => row.kind==='support.receipt' && row.recipient===sender.publicKey()));
+          assert.ok(notices.rows.some(row => row.kind==='support.received' && row.recipient===artist.publicKey()));
           assert.ok(
             (await s.list(sender.publicKey())).some((r) => r.id === p.id),
           );

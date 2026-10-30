@@ -1,3 +1,5 @@
+import { notify } from "../notifications/notifications.service.js";
+import { notificationCatalog, type NotificationKind } from "../notifications/notification-catalog.js";
 import type { PoolClient } from "pg";
 import {
   agreementVersionSchema,
@@ -72,8 +74,8 @@ export async function recordEvent(
   action: string,
   details: object = {},
 ) {
-  await client.query(
-    "INSERT INTO agreement_events(agreement_id,version,actor_wallet,action,payload) VALUES($1,$2,$3,$4,$5)",
+  const event = await client.query(
+    "INSERT INTO agreement_events(agreement_id,version,actor_wallet,action,payload) VALUES($1,$2,$3,$4,$5) RETURNING id",
     [
       version.proposal.agreementId,
       version.proposal.version,
@@ -82,6 +84,19 @@ export async function recordEvent(
       { state: version.state, proposalHash: version.proposalHash, ...details },
     ],
   );
+  const kind = `agreement.${action}` as NotificationKind;
+  if (kind in notificationCatalog) {
+    const owner = (await client.query("SELECT owner_wallet FROM contributor_agreements WHERE id=$1",[version.proposal.agreementId])).rows[0].owner_wallet as string;
+    // Draft revisions only tell the existing participants that preparation has started.
+    const participants = action === "revision_created"
+      ? (await client.query<{ wallet_address: string }>("SELECT DISTINCT wallet_address FROM agreement_contributors WHERE agreement_id=$1 AND version<$2",[version.proposal.agreementId,version.proposal.version])).rows.map(r => r.wallet_address)
+      : version.proposal.recipients.map(r => r.walletAddress);
+    await notify(client, {
+      key: `agreement-event:${event.rows[0].id}`, kind,
+      recipients: [...new Set([owner,...participants])].filter(wallet => wallet !== actor || action === "finalized"),
+      href: `/account/agreements/${encodeURIComponent(version.proposal.agreementId)}`,
+    });
+  }
 }
 export const agreementsRepository = {
   async locked<T>(

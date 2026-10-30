@@ -1,5 +1,7 @@
 "use client";
 
+import { NotificationSettings } from "@/features/notifications/notification-settings";
+
 import Image from "next/image";
 
 import Link from "next/link";
@@ -249,6 +251,18 @@ export const AccountOverview = () => {
           </div>
         </CardContent>
         </Card>
+
+        {profile && session.token && (
+          <NotificationSettings
+            key={profile.id}
+            profile={profile}
+            token={session.token}
+            onSaved={next => {
+              setProfile(next);
+              void refreshSessionProfile();
+            }}
+          />
+        )}
 
         {activationQuote && (
           activationQuote.status !== "payment_required" ||

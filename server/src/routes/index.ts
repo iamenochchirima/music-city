@@ -1,3 +1,4 @@
+import { notificationsRouter } from "../modules/notifications/notifications.router.js";
 import { adminSupportRouter } from "../modules/support/admin-support.router.js";
 import { supportRouter } from "../modules/support/support.router.js";
 import { settlementsRouter, adminSettlementsRouter } from "../modules/settlements/settlements.router.js";
@@ -37,6 +38,7 @@ import { imagesRouter } from "../modules/images/images.router.js";
 const apiRouter = Router();
 apiRouter.use("/images", imagesRouter);
 
+apiRouter.use("/notifications", notificationsRouter);
 apiRouter.use("/health", healthRouter);
 apiRouter.use("/referrals", referralsRouter);
 apiRouter.use("/admin/referrals", adminReferralsRouter);

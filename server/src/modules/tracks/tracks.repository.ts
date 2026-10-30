@@ -1,3 +1,4 @@
+import { notifyTrackProcessing } from "../notifications/notifications.service.js";
 import type { TrackSummary, TrackMetadataUpdateInput } from "@music-city/shared";
 
 import { databaseService } from "../../services/database.service.js";
@@ -36,14 +37,19 @@ export const tracksRepository = {
   },
 
   async upsert(track: TrackSummary) {
-    await databaseService.upsertTrack(
-      track.id,
-      track.artistId,
-      track.status,
-      track.visibility ?? "unpublished",
-      track.mediaProvider ?? null,
-      track,
-    );
+    await databaseService.transaction(async client => {
+      const current = (await client.query<{ payload: TrackSummary }>("SELECT payload FROM tracks WHERE id=$1 FOR UPDATE",[track.id])).rows[0]?.payload;
+      await databaseService.upsertTrack(
+        track.id,
+        track.artistId,
+        track.status,
+        track.visibility ?? "unpublished",
+        track.mediaProvider ?? null,
+        track,
+        client,
+      );
+      await notifyTrackProcessing(client,current,track);
+    });
     return track;
   },
 

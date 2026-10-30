@@ -1,3 +1,4 @@
+import { notifyTrackProcessing } from "../notifications/notifications.service.js";
 import { ZodError } from "zod";
 import {
   trackMonetizationUpdateSchema,
@@ -534,6 +535,7 @@ export const tracksService = {
         "UPDATE tracks SET status=$2,payload=$3::jsonb WHERE id=$1",
         [trackId, next.status, JSON.stringify(next)],
       );
+      await notifyTrackProcessing(client,current,next);
       return next;
     });
   },

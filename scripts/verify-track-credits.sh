@@ -32,7 +32,10 @@ TRACK_METADATA_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter ser
 MEDIA_WORKER_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/publication/publication.integration.test.ts
 AGREEMENTS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test --test-concurrency=1 src/modules/agreements/agreements.integration.test.ts src/modules/agreements/finalization.integration.test.ts
 SETTLEMENTS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/settlements/settlement.integration.test.ts
-if [[ "${1:-}" != "--browser" && "${1:-}" != "--studio" && "${1:-}" != "--audit" && "${1:-}" != "--release" ]]; then exit 0; fi
+if [[ "${1:-}" == "--notifications" ]]; then
+  NOTIFICATIONS_TEST_DATABASE_URL="$database_url" NODE_ENV=test pnpm --filter server exec tsx --test src/modules/notifications/notifications.integration.test.ts
+fi
+if [[ "${1:-}" != "--browser" && "${1:-}" != "--studio" && "${1:-}" != "--audit" && "${1:-}" != "--release" && "${1:-}" != "--notifications" ]]; then exit 0; fi
 
 python3 - <<'PY' > "$task_root/ports"
 import socket
@@ -50,9 +53,9 @@ console.log(require('@stellar/stellar-sdk').Keypair.random().secret());
 NODE
 read -r signing_key < "$task_root/signing-key"
 mkdir -p "$task_root/runtime/server"
-(cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" PORT="$api_port" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" STORAGE_PROVIDER=local MEDIA_PROVIDER=local REFERRALS_ENABLED=true ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/main.ts" > "$task_root/server.log" 2>&1) &
+(cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" PORT="$api_port" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" NOTIFICATION_EMAIL_PROVIDER=sink STORAGE_PROVIDER=local MEDIA_PROVIDER=local REFERRALS_ENABLED=true ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/main.ts" > "$task_root/server.log" 2>&1) &
 server_pid=$!
-(cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" STORAGE_PROVIDER=local MEDIA_PROVIDER=local ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/worker.ts" > "$task_root/worker.log" 2>&1) &
+(cd "$task_root/runtime/server" && env NODE_ENV=test DATABASE_URL="$database_url" CLIENT_ORIGIN="http://127.0.0.1:$client_port" ADMIN_CLIENT_ORIGIN="http://127.0.0.1:$client_port" APP_BASE_URL="http://127.0.0.1:$api_port" STELLAR_SEP10_SECRET="$signing_key" NOTIFICATION_EMAIL_PROVIDER=sink STORAGE_PROVIDER=local MEDIA_PROVIDER=local ARTIST_ONBOARDING_FEE_PRICE=0 "$repo/server/node_modules/.bin/tsx" "$repo/server/src/worker.ts" > "$task_root/worker.log" 2>&1) &
 worker_pid=$!
 
 (cd "$repo/client" && env VITE_API_BASE_URL="http://127.0.0.1:$api_port/api/v1" VITE_APP_BASE_URL="http://127.0.0.1:$client_port" VITE_DYNAMIC_ENVIRONMENT_ID=dynamic-environment-id-required ./node_modules/.bin/vite --host 127.0.0.1 --port "$client_port" --strictPort > "$task_root/client.log" 2>&1) &
@@ -77,5 +80,9 @@ fi
 if [[ "${1:-}" == "--release" ]]; then
   verification_script="$repo/scripts/release-flow-browser.mjs"
   evidence_dir="$repo/docs/music-creation-ux-evidence"
+fi
+if [[ "${1:-}" == "--notifications" ]]; then
+  verification_script="$repo/scripts/notifications-browser.mjs"
+  evidence_dir="${NOTIFICATIONS_EVIDENCE_DIR:-$repo/docs/notification-evidence}"
 fi
 TEST_DATABASE_URL="$database_url" TEST_API_URL="http://127.0.0.1:$api_port/api/v1" TEST_CLIENT_URL="http://127.0.0.1:$client_port" TEST_EVIDENCE_DIR="$evidence_dir" node "$verification_script"

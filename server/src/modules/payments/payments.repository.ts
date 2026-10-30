@@ -1,3 +1,4 @@
+import { notify } from "../notifications/notifications.service.js";
 import type {
   PaymentIntentRecord,
   PaymentRecord,
@@ -70,16 +71,23 @@ export const paymentsRepository = {
   },
 
   async upsertPayment(payment: PaymentRecord) {
-    await databaseService.upsertPayment(
-      payment.id,
-      payment.intentId,
-      payment.walletAddress,
-      payment.txHash,
-      payment.productType,
-      payment.trackId ?? null,
-      payment.confirmedAt,
-      payment,
-    );
+    await databaseService.transaction(async client => {
+      await databaseService.upsertPayment(
+        payment.id,
+        payment.intentId,
+        payment.walletAddress,
+        payment.txHash,
+        payment.productType,
+        payment.trackId ?? null,
+        payment.confirmedAt,
+        payment,
+        client,
+      );
+
+      if (payment.status === "confirmed") await notify(client,{
+        key: `payment:${payment.intentId}:confirmed`, kind: "payment.receipt", recipients: [payment.walletAddress], href: "/account",
+      });
+    });
 
     return payment;
   },

@@ -1,3 +1,4 @@
+import { notifyArtist } from "../notifications/notifications.service.js";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { PoolClient } from "pg";
@@ -19,6 +20,7 @@ type Assignment = {
 };
 type RequestRow = {
   id: string;
+  artist_id: string;
   state: PublicationStatus["state"];
   mode: "published" | "scheduled";
   release_at: Date | null;
@@ -195,6 +197,8 @@ export const publicationService = {
           "UPDATE releases SET status='published',payload=$2::jsonb WHERE id=$1",
           [row.id, JSON.stringify(published)],
         );
+        const artist = (await client.query("SELECT artist_id FROM releases WHERE id=$1",[row.id])).rows[0];
+        await notifyArtist(client,artist.artist_id,{ key: `release-published:${row.id}:${current.publishedAt ?? "first"}`, kind: "release.published", href: `/dashboard/releases/${encodeURIComponent(row.id)}` });
       }
     });
   },
@@ -336,6 +340,10 @@ export const publicationService = {
           "UPDATE publication_requests SET state=$2,error=$3,updated_at=NOW() WHERE id=$1",
           [req.id, state, error],
         );
+        if (state === "published" || state === "failed") await notifyArtist(client,req.artist_id,{
+          key: `publication:${req.id}:${state}`, kind: state === "published" ? "release.published" : "release.failed",
+          href: `/dashboard/releases/${encodeURIComponent(releaseId)}`,
+        });
       };
       const { assignments, tracks } = await assignmentsAndTracks(
         client,

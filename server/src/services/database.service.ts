@@ -1,3 +1,4 @@
+import { notificationSchemaStatements } from "../modules/notifications/notification-schema.js";
 import { rampLaunchStatements } from "../modules/ramps/ramp-launch-migration.js";
 import { rampRefundFailureStatements } from "../modules/ramps/ramp-refund-failure-migration.js";
 import { rampClaimLinkStatements } from "../modules/ramps/ramp-claim-link-migration.js";
@@ -422,6 +423,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-30-notifications", statements: notificationSchemaStatements },
   { name: "2026-10-26-ramp-orders", statements: rampSchemaStatements },
   { name: "2026-10-26-ramp-progress", statements: rampProgressStatements },
   { name: "2026-10-28-ramp-lease", statements: rampLeaseStatements },
@@ -928,6 +930,7 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-30-notifications", migrationName: "2026-10-30-notifications", relations: ["notifications", "notification_deliveries", "notification_email_sink"], indexes: ["notifications_inbox", "notification_deliveries_due"], statements: notificationSchemaStatements },
   { name: "2026-10-29-ramp-claim-link", migrationName: "2026-10-29-ramp-claim-link", relations: ["ramp_orders", "settlement_batches"], columns: ["ramp_orders.associated_claim_batch_id", "ramp_orders.associated_claim_index"], constraints: ["ramp_orders_associated_claim_pair_check", "ramp_orders_associated_claim_batch_fk"], statements: rampClaimLinkStatements },
   { name: "2026-10-29-ramp-refund-failure", migrationName: "2026-10-29-ramp-refund-failure", relations: ["ramp_orders"], constraints: ["ramp_orders_provider_state_check"], statements: rampRefundFailureStatements },
   { name: "2026-10-28-ramp-launch-session", migrationName: "2026-10-28-ramp-launch-session", relations: ["ramp_launch_sessions"], columns: ["ramp_launch_sessions.encrypted_session", "ramp_launch_sessions.resumable"], statements: rampLaunchStatements },
@@ -1733,8 +1736,9 @@ export const databaseService = {
     visibility: string,
     mediaProvider: string | null,
     payload: unknown,
+    client?: PoolClient,
   ) {
-    await pool.query(
+    await (client ?? pool).query(
       `INSERT INTO tracks (id, artist_id, status, visibility, media_provider, payload)
        VALUES ($1, $2, $3, $4, $5, $6::jsonb)
        ON CONFLICT (id) DO UPDATE SET
@@ -2555,8 +2559,9 @@ export const databaseService = {
     trackId: string | null,
     confirmedAt: string,
     payload: unknown,
+    client?: PoolClient,
   ) {
-    await pool.query(
+    await (client ?? pool).query(
       `INSERT INTO payments (id, intent_id, wallet_address, tx_hash, product_type, track_id, confirmed_at, payload)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
        ON CONFLICT (id) DO UPDATE SET

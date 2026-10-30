@@ -119,6 +119,8 @@ test("durable media processing and publication", { skip: !url }, async (t) => {
         );
         await pub.process(r.id);
         assert.equal((await pub.latest(r.id))?.id, request.id);
+        const inbox = await db.transaction(c => c.query("SELECT * FROM notifications WHERE recipient=$1 AND kind='release.published' AND href=$2",[wallet,`/dashboard/releases/${r.id}`]));
+        assert.equal(inbox.rowCount,1);
       },
     );
     await t.test("failed audio blocks the entire collection", async () => {

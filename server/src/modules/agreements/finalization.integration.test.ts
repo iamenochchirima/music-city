@@ -105,6 +105,8 @@ test("PostgreSQL finalization transaction lifecycle (network boundary mocked)", 
       const detail = await agreements.get(id,owner.publicKey());
       assert.equal(detail.effectiveVersion,1); assert.equal(detail.versions[0]!.state,"finalized");
       assert.equal(detail.events.filter(e => e.action === "finalized").length,1);
+      const notifications = await db.transaction(client => client.query("SELECT recipient FROM notifications WHERE kind='agreement.finalized' AND href=$1",[`/account/agreements/${id}`]));
+      assert.deepEqual(notifications.rows.map(row => row.recipient).sort(),[owner.publicKey(),contributor.publicKey()].sort());
       assert.equal(detail.finalizations[0]!.signedBy.length,2);
       const effective = await finalizedSplitsRepository.effective(v.proposal.trackId);
       assert.equal(effective?.agreementId,id); assert.equal(effective?.proposalHash,v.proposalHash);

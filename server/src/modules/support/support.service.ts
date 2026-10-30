@@ -1,3 +1,4 @@
+import { notify } from "../notifications/notifications.service.js";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import {
@@ -62,6 +63,10 @@ async function update(
     [payment.id, payment.status, payment, signed ?? null],
   );
   await event(client, payment, action);
+  if (old.status !== "confirmed" && payment.status === "confirmed") {
+    await notify(client,{ key: `support:${payment.id}:receipt`, kind: "support.receipt", recipients: [payment.sender], href: "/account/support" });
+    await notify(client,{ key: `support:${payment.id}:received`, kind: "support.received", recipients: [payment.recipient.walletAddress], href: "/account/support" });
+  }
   return payment;
 }
 async function withPayment<T>(

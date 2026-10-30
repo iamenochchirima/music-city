@@ -1,3 +1,4 @@
+import { notifyArtist } from "../notifications/notifications.service.js";
 import { muxService } from "../../services/mux.service.js";
 import { storageService } from "../../services/storage.service.js";
 import type { UploadSession } from "@music-city/shared";
@@ -169,6 +170,16 @@ export const mediaWorker = {
             "UPDATE publication_requests SET state='failed',error='Publication could not finish. Review and publish again.',updated_at=NOW() WHERE release_id=$1 AND state IN ('processing','scheduled')",
             [job.payload.releaseId],
           );
+        if (job.attempts >= 12) {
+          if (job.payload.trackId) {
+            const track = (await client.query("SELECT artist_id,payload FROM tracks WHERE id=$1",[job.payload.trackId])).rows[0];
+            if (track && !track.payload.playbackReady) await notifyArtist(client,track.artist_id,{ key: `upload-job:${job.id}:failed`, kind: "upload.failed", href: "/dashboard" });
+          }
+          if (job.payload.releaseId) {
+            const release = (await client.query("SELECT artist_id FROM releases WHERE id=$1",[job.payload.releaseId])).rows[0];
+            if (release) await notifyArtist(client,release.artist_id,{ key: `publication-job:${job.id}:failed`, kind: "release.failed", href: `/dashboard/releases/${encodeURIComponent(job.payload.releaseId)}` });
+          }
+        }
       });
       logger.warn("Background task retry", {
         id: job.id,
