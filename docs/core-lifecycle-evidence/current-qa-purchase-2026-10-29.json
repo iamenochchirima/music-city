@@ -1,0 +1,76 @@
+{
+  "observedAt": "2026-10-29T09:59:52.207066+00:00",
+  "revision": "501b6d9",
+  "environment": "isolated local PostgreSQL + real Dynamic Sandbox + Stellar Testnet",
+  "transaction": {
+    "hash": "2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44",
+    "successful": true,
+    "ledger": 5448808,
+    "created_at": "2026-10-29T09:54:40Z",
+    "source_account": "GBVL2UCJKSSRH7DFHSXU7IO3VRDQLQQCTOW2WMR2S2BC47D73WOO5PHE",
+    "fee_charged": "100",
+    "memo": "payi_19efcd2ad7684661"
+  },
+  "operation": {
+    "type": "payment",
+    "from": "GBVL2UCJKSSRH7DFHSXU7IO3VRDQLQQCTOW2WMR2S2BC47D73WOO5PHE",
+    "to": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "amount": "0.0010000",
+    "asset_code": "USDC",
+    "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  },
+  "localDatabase": {
+    "checkout": {
+      "intentId": "payi_19efcd2ad7684661",
+      "status": "confirmed",
+      "hash": "2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44",
+      "signatureStored": true
+    },
+    "paymentCount": 1,
+    "entitlementCount": 1,
+    "royalties": [
+      {
+        "id": "rled_683d989a95664f74",
+        "status": "approved",
+        "recipient": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+        "amount": "0.0003000",
+        "splitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1"
+      },
+      {
+        "id": "rled_2b11c614ad4447ca",
+        "status": "approved",
+        "recipient": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+        "amount": "0.0007000",
+        "splitId": "agreement:7186e534-47db-4d05-9c2f-1bee561cc67e:1"
+      }
+    ],
+    "batch": {
+      "id": "b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069",
+      "state": "reserved"
+    },
+    "reservations": 2,
+    "fundingAttempt": {
+      "id": "099c7ca3-43ff-4025-a389-27a697a95d3e",
+      "status": "awaiting_signatures",
+      "hash": "08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36",
+      "expiresAt": "2026-10-29T10:08:36.000Z"
+    },
+    "reconciliation": {
+      "updatedAt": "2026-10-29T09:59:31.852577+00:00",
+      "error": null,
+      "ok": true
+    }
+  },
+  "browser": {
+    "purchasedAfterReload": true,
+    "fundingSignatures": 0,
+    "requiredFundingSignatures": 2,
+    "submitDisabled": true
+  },
+  "limitations": [
+    "Treasury funding remains unsigned and unsubmitted.",
+    "Neither beneficiary has claimed this new purchase.",
+    "Historical E8 receipts are separate evidence.",
+    "Provider routes remain disabled."
+  ]
+}

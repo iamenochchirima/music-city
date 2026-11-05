@@ -5,17 +5,19 @@ import { indexSettlementEvents } from "./chain-events.js";
 import { databaseService } from "../../services/database.service.js";
 import { settlementService } from "./settlement.service.js";
 import { logger } from "../../utils/logger.js";
-export async function financialCycle() {
-  await reconcileAgreementFinalizations();
-  await supportService.cycle();
-  await checkoutService.cycle();
+import { errorMessage } from "../../utils/error-message.js";
+import { rampCycle } from "../ramps/ramp-worker.js";
+import { cashOutCycle } from "../cashout/cashout-worker.js";
+import { createFinancialWorkerTasks, runFinancialWorkerTasks } from "./financial-worker-tasks.js";
+
+async function settlementCycle() {
   // A transaction advisory lock prevents overlapping scans across worker replicas.
-  return databaseService.transaction(async (client) => {
+  await databaseService.transaction(async (client) => {
     const lock = await client.query(
       "SELECT pg_try_advisory_xact_lock(hashtext('music-city-financial-worker')) AS acquired",
     );
     if (!lock.rows[0].acquired) return;
-    try {await indexSettlementEvents();} catch(error) {logger.error("Financial event index needs attention",{error:error instanceof Error?error.message:String(error)});}
+    try {await indexSettlementEvents();} catch(error) {logger.error("Financial event index needs attention",{error:errorMessage(error,"Financial event indexing failed")});}
     const attempts = await client.query(
       "SELECT id,batch_id FROM financial_attempts WHERE status IN ('awaiting_signatures','submitting','submitted') ORDER BY checked_at NULLS FIRST LIMIT 20",
     );
@@ -50,12 +52,30 @@ export async function financialCycle() {
         [row.id],
       );
     }
-    try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:error instanceof Error?error.message:String(error)});}
+    try {await settlementService.refreshReconciliation();} catch(error) {logger.error("Global financial reconciliation needs attention",{error:errorMessage(error,"Financial reconciliation failed")});}
+  });
+}
+
+export async function financialCycle(options: { settlementReady?: boolean } = {}) {
+  const tasks = createFinancialWorkerTasks(
+    {
+      agreementFinalization: reconcileAgreementFinalizations,
+      supportPayments: () => supportService.cycle(),
+      trackCheckout: () => checkoutService.cycle(),
+      settlement: settlementCycle,
+      ramp: rampCycle,
+      cashOut: cashOutCycle,
+    },
+    options,
+  );
+  await runFinancialWorkerTasks(tasks, (name, error) => {
+    logger.error(`${name} reconciliation needs attention`, {
+      error: errorMessage(error, `${name} reconciliation failed`),
+    });
   });
 }
 async function recordDiscrepancy(id: string, error: unknown) {
-  const message =
-    error instanceof Error ? error.message : "Financial reconciliation failed";
+  const message = errorMessage(error, "Financial reconciliation failed");
   logger.error("Financial reconciliation needs attention", {
     batchId: id,
     error: message,

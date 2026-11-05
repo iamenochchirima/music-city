@@ -10,6 +10,12 @@ import {
 } from "@music-city/shared";
 import { databaseService } from "../../services/database.service.js";
 import { HttpError } from "../../utils/http-error.js";
+export function settlementClaimMatchesWallet(rawBatch: unknown, claimIndex: number, wallet: string) {
+  const batch = settlementBatchSchema.parse(rawBatch);
+  const allocation = batch.allocations.find((item) => item.index === claimIndex);
+  return allocation?.beneficiary === wallet && allocation.status === "claimed";
+}
+
 export async function loadBatch(client: PoolClient, id: string) {
   const row = await client.query(
     "SELECT payload FROM settlement_batches WHERE id=$1 FOR UPDATE",
@@ -81,6 +87,16 @@ export async function assertSourceAvailable(
     throw new HttpError(409, "This source is already reserved for settlement");
 }
 export const settlementRepository = {
+  async hasClaimedAllocation(batchId: string, claimIndex: number, wallet: string) {
+    return databaseService.transaction(async (client) => {
+      const row = await client.query(
+        "SELECT payload FROM settlement_batches WHERE id=$1",
+        [batchId],
+      );
+      if (!row.rows[0]) return false;
+      return settlementClaimMatchesWallet(row.rows[0].payload, claimIndex, wallet);
+    });
+  },
   async balances(wallet: string) {
     const config = settlementConfig();
     return databaseService.transaction(async (client) => {

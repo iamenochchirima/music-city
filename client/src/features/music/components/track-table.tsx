@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { TrackSummary } from "@music-city/shared";
 
 import { cn } from "@/lib/utils";
+import { TrackStreamCount } from "./track-stream-count";
 
 export const formatTrackStatus = (track: TrackSummary) => {
   if (track.playbackReady) {
@@ -151,7 +152,7 @@ export const TrackTable = ({
                       </h3>
                     )}
                     <p className="text-xs text-slate-400">
-                      {track.plays.toLocaleString()} {track.plays === 1 ? "stream" : "streams"}
+                      <TrackStreamCount track={track} />
                     </p>
                   </div>
                 </div>

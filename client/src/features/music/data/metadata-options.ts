@@ -9,6 +9,4 @@ export const countries = countryCodes
   .filter((name): name is string => Boolean(name))
   .sort((first, second) => first.localeCompare(second));
 
-export const musicGenres = [
-  "Afrobeats", "Afro-fusion", "Amapiano", "Ambient", "Alternative", "Americana", "Arabic Pop", "Bachata", "Baile Funk", "Blues", "Bongo Flava", "Celtic", "Christian & Gospel", "Classical", "Comedy", "Contemporary R&B", "Country", "Dance", "Dancehall", "Deep House", "Disco", "Drum & Bass", "Dub", "Dubstep", "EDM", "Electronic", "Folk", "Funk", "Gqom", "Grime", "Hip-Hop", "House", "Indie", "Instrumental", "Jazz", "K-Pop", "Kwaito", "Latin", "Lo-fi", "Metal", "New Age", "Other", "Piano", "Pop", "Progressive House", "Punk", "R&B", "Reggae", "Reggaeton", "Rock", "Salsa", "Singer-Songwriter", "Soul", "Soundtrack", "Spoken Word", "Techno", "Traditional", "Trap", "World",
-] as const;
+export { MUSIC_GENRES as musicGenres } from "@music-city/shared";

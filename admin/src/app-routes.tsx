@@ -1,3 +1,4 @@
+import { AdminRampsPage } from "@/features/ramps/ramps-page";
 import { AdminSupportPage } from "@/features/support/support-page";
 import { RoyaltyLedgerPage, TreasuryAccountPage } from "@/features/settlements/financial-history";
 import { AdminSettlementsPage } from "@/features/settlements/settlements-page";
@@ -55,6 +56,7 @@ const navItems = [
   { href: "/console/support", label: "Fan support", description: "Direct USDC payments", icon: Wallet },
   { href: "/console/sponsorships", label: "Artist sponsorship", description: "Early-user discount", icon: Ticket },
   { href: "/console/referrals", label: "Referrals", description: "Artist registration", icon: ShieldCheck },
+  { href: "/console/ramps", label: "Funding and cash-out", description: "Transaction history", icon: Wallet },
   { href: "/console/settlements", label: "Settlements", description: "Fund and reconcile earnings", icon: ShieldCheck },
   { href: "/console/agreements", label: "Agreements", description: "Contributor consent", icon: ShieldCheck },
   {
@@ -605,7 +607,7 @@ const AuthPage = () => {
               Music City Admin
             </p>
             <h1 className="text-4xl font-semibold tracking-[-0.05em] text-white">
-              Login
+              {bootstrapRequired ? "Set up admin access" : "Admin sign in"}
             </h1>
             <p className="max-w-sm text-sm text-slate-400">
               {bootstrapRequired
@@ -617,7 +619,9 @@ const AuthPage = () => {
 
         <Card className={cn(shellPanelClassName, "rounded-none shadow-none")}>
           <CardHeader className="space-y-2 border-b border-white/8 pb-4">
-            <CardTitle className="text-xl text-white">Login</CardTitle>
+            <CardTitle className="text-xl text-white">
+              {mode === "bootstrap" ? "Create admin account" : "Admin sign in"}
+            </CardTitle>
             <CardDescription className="text-slate-400">
               {mode === "bootstrap"
                 ? "Set up the first admin account."
@@ -1769,6 +1773,7 @@ export const AppRoutes = () => {
       <Route path="/console/referrals" element={<ProtectedRoute><SidebarLayout><AdminReferralsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/sponsorships" element={<ProtectedRoute><SidebarLayout><AdminSponsorshipsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/support" element={<ProtectedRoute><SidebarLayout><AdminSupportPage /></SidebarLayout></ProtectedRoute>} />
+      <Route path="/console/ramps" element={<ProtectedRoute><SidebarLayout><AdminRampsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/settlements" element={<ProtectedRoute><SidebarLayout><AdminSettlementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/agreements" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />
       <Route path="/console/agreements/:agreementId" element={<ProtectedRoute><SidebarLayout><AdminAgreementsPage /></SidebarLayout></ProtectedRoute>} />

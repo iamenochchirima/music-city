@@ -1,133 +1,145 @@
 {
-  "recordedAt": "2026-10-14T20:47:29.265Z",
-  "browser": "154.0.8037.97",
+  "recordedAt": "2026-10-29T17:18:13.314Z",
+  "browser": "156.0.8078.47",
   "checks": [
-    "Single title and metadata entered once; artwork uploads automatically; publication finishes in the real worker after the browser closes",
-    "Three-file upload suggests EP without interruption; shared label applies once; song exception and saved draft survive reopening at five widths"
+    "Single release was created from the new setup-first flow, uploaded, credited, given artwork, requested for publication, and published by the worker after the browser closed",
+    "EP setup requires its planned song count; three songs upload to one release; shared label and individual song override survive save and reopen at five viewport widths"
   ],
   "captures": [
     {
-      "file": "01-add-music.png",
+      "file": "01-release-setup.png",
       "route": "/dashboard/releases/new",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Music-first release creation",
+      "state": "Release name and format come before song upload",
       "result": "passed"
     },
     {
-      "file": "02-song-details.png",
-      "route": "/dashboard/releases/rel_80ac018190794237",
+      "file": "02-add-music.png",
+      "route": "/dashboard/releases/rel_bf70d71862424007?step=music",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Song metadata collected once",
+      "state": "Single accepts its audio and shows the selected song on the release card",
       "result": "passed"
     },
     {
-      "file": "03-release-details.png",
-      "route": "/dashboard/releases/rel_80ac018190794237",
+      "file": "03-song-details.png",
+      "route": "/dashboard/releases/rel_bf70d71862424007?step=information",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Single reuses title and artwork uploads on selection",
+      "state": "Song credits and identifiers save within the release",
       "result": "passed"
     },
     {
-      "file": "04-review.png",
-      "route": "/dashboard/releases/rel_80ac018190794237",
+      "file": "04-artwork-review.png",
+      "route": "/dashboard/releases/rel_bf70d71862424007?step=review",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Compact review and open publication choices",
+      "state": "Genre and artwork are saved before publication review",
       "result": "passed"
     },
     {
       "file": "05-processing.png",
-      "route": "/dashboard/releases/rel_80ac018190794237",
+      "route": "/dashboard/releases/rel_bf70d71862424007?step=review",
       "viewport": {
         "width": 1440,
         "height": 1000
       },
       "deviceScale": 1,
-      "state": "Durable publication accepted before readiness",
+      "state": "Publication request persists while audio finishes processing",
       "result": "passed"
     },
     {
       "file": "05-processing-mobile.png",
-      "route": "/dashboard/releases/rel_80ac018190794237",
+      "route": "/dashboard/releases/rel_bf70d71862424007?step=review",
       "viewport": {
         "width": 390,
         "height": 844
       },
       "deviceScale": 1,
-      "state": "Mobile processing and accepted publication",
+      "state": "Mobile processing state fits without horizontal scrolling",
       "result": "passed"
     },
     {
-      "file": "06-collection-360.png",
-      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "file": "06-ep-tracklist.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=music",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "deviceScale": 1,
+      "state": "EP count controls a three-song upload on the same release card",
+      "result": "passed"
+    },
+    {
+      "file": "07-ep-details-360.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=information",
       "viewport": {
         "width": 360,
         "height": 900
       },
       "deviceScale": 1,
-      "state": "Reopened collection with an individual metadata override",
+      "state": "Saved EP metadata reopens with its individual label and responsive layout",
       "result": "passed"
     },
     {
-      "file": "06-collection-390.png",
-      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "file": "07-ep-details-390.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=information",
       "viewport": {
         "width": 390,
         "height": 900
       },
       "deviceScale": 1,
-      "state": "Reopened collection with an individual metadata override",
+      "state": "Saved EP metadata reopens with its individual label and responsive layout",
       "result": "passed"
     },
     {
-      "file": "06-collection-768.png",
-      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "file": "07-ep-details-768.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=information",
       "viewport": {
         "width": 768,
         "height": 900
       },
       "deviceScale": 1,
-      "state": "Reopened collection with an individual metadata override",
+      "state": "Saved EP metadata reopens with its individual label and responsive layout",
       "result": "passed"
     },
     {
-      "file": "06-collection-1024.png",
-      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "file": "07-ep-details-1024.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=information",
       "viewport": {
         "width": 1024,
         "height": 900
       },
       "deviceScale": 1,
-      "state": "Reopened collection with an individual metadata override",
+      "state": "Saved EP metadata reopens with its individual label and responsive layout",
       "result": "passed"
     },
     {
-      "file": "06-collection-1440.png",
-      "route": "/dashboard/releases/rel_9d3de2e7bce445ab",
+      "file": "07-ep-details-1440.png",
+      "route": "/dashboard/releases/rel_fc568b0ffd0e4771?step=information",
       "viewport": {
         "width": 1440,
         "height": 900
       },
       "deviceScale": 1,
-      "state": "Reopened collection with an individual metadata override",
+      "state": "Saved EP metadata reopens with its individual label and responsive layout",
       "result": "passed"
     }
   ],
   "pageErrors": [],
-  "processingBoundary": "Local audio readiness was controlled in PostgreSQL; publication and browser-close completion use the actual API, durable requests, and worker."
+  "environment": "Disposable PostgreSQL, local API/client/worker and local media storage; no provider payments or chain transactions.",
+  "processingBoundary": "Local audio readiness was controlled in the disposable PostgreSQL database to reproduce processing. Publication and browser-close completion used the actual API and worker."
 }

@@ -1,0 +1,75 @@
+{
+  "environment": "sandbox",
+  "network": "stellar:testnet",
+  "checkedAt": "2026-10-26T13:27:43.392Z",
+  "providers": [
+    {
+      "provider": "moonpay",
+      "connection": "verified",
+      "asset": {
+        "code": "usdc_xlm",
+        "testMode": false,
+        "sellSupported": true,
+        "suspended": false
+      },
+      "countries": [
+        {
+          "code": "ZA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GB",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "US",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "ZW",
+          "buyAllowed": false,
+          "sellAllowed": false
+        }
+      ],
+      "flows": [
+        {
+          "direction": "buy",
+          "status": "blocked",
+          "reason": "stellar_usdc_test_mode_unavailable"
+        },
+        {
+          "direction": "sell",
+          "status": "blocked",
+          "reason": "stellar_usdc_test_mode_unavailable"
+        }
+      ],
+      "countryCount": 214
+    },
+    {
+      "provider": "moneygram",
+      "connection": "rejected",
+      "flows": [
+        {
+          "direction": "buy",
+          "status": "blocked",
+          "reason": "non_custodial_partner_required"
+        },
+        {
+          "direction": "sell",
+          "status": "blocked",
+          "reason": "non_custodial_partner_required"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    "https://api.moonpay.com/v3/currencies?show=enabled",
+    "https://api.moonpay.com/v3/countries",
+    "https://playground.xramps.moneygram.com/api/v1/sessions"
+  ],
+  "interpretation": "Readiness only. No payment order or transfer was created. MoonPay catalogue and country flags do not establish verified payout methods or sandbox delivery.",
+  "ownerDirection": "MoneyGram deferred. Owner approved a separate XLM sandbox demonstration; Stellar USDC acceptance stays open."
+}

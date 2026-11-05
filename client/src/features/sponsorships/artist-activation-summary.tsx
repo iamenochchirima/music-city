@@ -114,7 +114,9 @@ export const ArtistActivationSummary = ({
         </p>
       ) : (
         <p className="mt-3 leading-6 text-muted-foreground">
-          The early-user offer is not available for this account.
+          {isStep
+            ? "No discount is available for this account. Finish setup now; artist tools unlock after activation."
+            : "The early-user offer is not available for this account."}
         </p>
       )}
       {quote.status === "sponsored" && quote.activatedAt ? (

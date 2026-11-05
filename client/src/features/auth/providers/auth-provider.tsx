@@ -13,7 +13,7 @@ import {
 import {
   getAuthToken,
   useDynamicContext,
-  useDynamicModals,
+  useRefreshUser,
 } from "@dynamic-labs/sdk-react-core";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ type AuthContextValue = {
   session: AuthSession | null;
   isLoading: boolean;
   error: string | null;
+  walletLinkRequired: boolean;
   connectWallet: () => Promise<void>;
   refreshSessionProfile: () => Promise<void>;
   logout: () => Promise<void>;
@@ -38,6 +39,45 @@ const AUTH_STORAGE_KEY = "music-city-auth-session";
 const DYNAMIC_FAILED_SYNC_KEY = "music-city-dynamic-failed-sync-key";
 const DYNAMIC_SYNC_RETRY_COUNT = 12;
 const DYNAMIC_SYNC_RETRY_DELAY_MS = 250;
+const DYNAMIC_AUTH_FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const queryAcrossShadowRoots = (
+  root: ParentNode,
+  selector: string,
+): HTMLElement | null => {
+  const match = root.querySelector(selector);
+
+  if (match instanceof HTMLElement) {
+    return match;
+  }
+
+  for (const host of root.querySelectorAll<HTMLElement>("*")) {
+    if (!host.shadowRoot) {
+      continue;
+    }
+
+    const nestedMatch = queryAcrossShadowRoots(host.shadowRoot, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+};
+
+const getDeepActiveElement = (root: Document | ShadowRoot): HTMLElement | null => {
+  const activeElement = root.activeElement;
+
+  if (!(activeElement instanceof HTMLElement)) {
+    return null;
+  }
+
+  return activeElement.shadowRoot?.activeElement instanceof HTMLElement
+    ? getDeepActiveElement(activeElement.shadowRoot)
+    : activeElement;
+};
 
 export const DYNAMIC_AUTH_SUCCESS_EVENT = "music-city:dynamic-auth-success";
 export const DYNAMIC_AUTH_FAILURE_EVENT = "music-city:dynamic-auth-failure";
@@ -154,6 +194,7 @@ const useBaseSessionState = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [walletLinkRequired, setWalletLinkRequired] = useState(false);
   const lastSyncedKeyRef = useRef<string | null>(null);
   const failedSyncKeyRef = useRef<string | null>(null);
   const syncInFlightRef = useRef(false);
@@ -168,6 +209,7 @@ const useBaseSessionState = () => {
   const clearSession = useCallback(() => {
     setSession(null);
     setError(null);
+    setWalletLinkRequired(false);
     persistSession(null);
     lastSyncedKeyRef.current = null;
     failedSyncKeyRef.current = null;
@@ -183,6 +225,8 @@ const useBaseSessionState = () => {
     setIsLoading,
     error,
     setError,
+    walletLinkRequired,
+    setWalletLinkRequired,
     clearSession,
     lastSyncedKeyRef,
     failedSyncKeyRef,
@@ -197,6 +241,7 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
     setSession,
     isLoading,
     error,
+    walletLinkRequired,
     setError,
     clearSession,
     autoProfileRefreshTokenRef,
@@ -272,11 +317,12 @@ const FallbackAuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       isLoading,
       error,
+      walletLinkRequired,
       connectWallet,
       refreshSessionProfile,
       logout,
     }),
-    [connectWallet, error, isLoading, logout, refreshSessionProfile, session],
+    [connectWallet, error, isLoading, logout, refreshSessionProfile, session, walletLinkRequired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -292,7 +338,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setShowAuthFlow,
     handleLogOut,
   } = useDynamicContext();
-  const { setShowLinkNewWalletModal } = useDynamicModals();
+  const refreshDynamicUser = useRefreshUser();
   const {
     session,
     setSession,
@@ -300,6 +346,8 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading,
     error,
     setError,
+    walletLinkRequired,
+    setWalletLinkRequired,
     clearSession,
     lastSyncedKeyRef,
     failedSyncKeyRef,
@@ -308,6 +356,95 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   } = useBaseSessionState();
   const userRef = useRef(user);
   const primaryWalletRef = useRef(primaryWallet);
+  const authTriggerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!showAuthFlow) {
+      const trigger = authTriggerRef.current;
+      authTriggerRef.current = null;
+
+      if (trigger?.isConnected) {
+        trigger.focus({ preventScroll: true });
+      }
+
+      return;
+    }
+
+    let attempts = 0;
+    let frame = 0;
+    const handleTabBoundary = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const modal = queryAcrossShadowRoots(
+        document,
+        '[data-testid="dynamic-auth-modal"]',
+      );
+      const focusableElements = modal
+        ? Array.from(
+            modal.querySelectorAll<HTMLElement>(DYNAMIC_AUTH_FOCUSABLE_SELECTOR),
+          ).filter((element) => {
+            const style = window.getComputedStyle(element);
+            return style.display !== "none" && style.visibility !== "hidden";
+          })
+        : [];
+      const first = focusableElements[0];
+      const last = focusableElements.at(-1);
+
+      if (!modal || !first || !last) {
+        return;
+      }
+
+      const activeElement = getDeepActiveElement(document);
+      const focusIsOutsideModal =
+        !activeElement ||
+        (activeElement !== modal && !modal.contains(activeElement));
+      const reachedTabBoundary = event.shiftKey
+        ? activeElement === first
+        : activeElement === last;
+
+      if (!focusIsOutsideModal && !reachedTabBoundary) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      (event.shiftKey ? last : first).focus({ preventScroll: true });
+    };
+
+    document.addEventListener("keydown", handleTabBoundary, true);
+    const focusWhenReady = () => {
+      const modal = queryAcrossShadowRoots(
+        document,
+        '[data-testid="dynamic-auth-modal"]',
+      );
+      const emailInput = modal?.querySelector<HTMLElement>(
+        'input[type="email"]:not([disabled])',
+      );
+      const firstAction = modal?.querySelector<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      );
+
+      const target = emailInput ?? firstAction;
+
+      if (target) {
+        target.focus({ preventScroll: true });
+        return;
+      }
+
+      if (attempts++ < 30) {
+        frame = window.requestAnimationFrame(focusWhenReady);
+      }
+    };
+
+    frame = window.requestAnimationFrame(focusWhenReady);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", handleTabBoundary, true);
+    };
+  }, [showAuthFlow]);
 
   useEffect(() => {
     userRef.current = user;
@@ -478,12 +615,10 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (userWithMissingInfo && !stellarCredentialAddress) {
-      const message =
-        "Dynamic login is incomplete. No Stellar wallet credential is present in the verified token yet.";
-
-      setError(message);
+      setWalletLinkRequired(true);
+      setError(null);
       setIsLoading(false);
-      logDynamicAuth("sync stopped: missing Stellar credential", { message });
+      logDynamicAuth("sync stopped: missing Stellar credential; wallet link required");
       return;
     }
 
@@ -558,6 +693,8 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
         onboardingStatus: verifiedSession.onboardingStatus,
       });
       setSession(verifiedSession);
+      setWalletLinkRequired(false);
+      setError(null);
       persistSession(verifiedSession);
       bindReferralWallet(verifiedSession.walletAddress);
       lastSyncedKeyRef.current = syncKey;
@@ -573,8 +710,12 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
         message.includes("Requested Stellar wallet is not linked to this Dynamic user") ||
         message.includes("No Stellar wallet is linked to this account")
       ) {
+        setWalletLinkRequired(true);
         failedSyncKeyRef.current = syncKey;
         persistFailedSyncKey(syncKey);
+        setError(null);
+        logDynamicAuth("backend session needs Stellar wallet link", { syncKey });
+        return;
       }
       logDynamicAuth("backend session failed", {
         message,
@@ -594,8 +735,10 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setError,
     setIsLoading,
     setSession,
+    setWalletLinkRequired,
     resolveRequestedWalletAddress,
     syncInFlightRef,
+    userWithMissingInfo,
     waitForDynamicToken,
     waitForDynamicWalletAddress,
   ]);
@@ -679,12 +822,54 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     setIsLoading(true);
     if (user) {
-      setShowLinkNewWalletModal(true);
+      failedSyncKeyRef.current = null;
+      persistFailedSyncKey(null);
+      try {
+        const refreshedUser = await refreshDynamicUser();
+        if (refreshedUser) {
+          userRef.current = refreshedUser;
+        }
+
+        if (!findStellarCredentialAddress(refreshedUser ?? userRef.current)) {
+          setWalletLinkRequired(true);
+          setIsLoading(false);
+          return;
+        }
+
+        setWalletLinkRequired(false);
+        await syncDynamicSession();
+      } catch (caughtError) {
+        logDynamicAuth("wallet refresh failed", {
+          message:
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Dynamic user refresh failed",
+        });
+        setWalletLinkRequired(true);
+        setIsLoading(false);
+      }
       return;
     }
 
+    setWalletLinkRequired(false);
+    authTriggerRef.current =
+      typeof document !== "undefined" &&
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body
+        ? document.activeElement
+        : null;
     setShowAuthFlow(true);
-  }, [setError, setIsLoading, setShowAuthFlow, setShowLinkNewWalletModal, user]);
+  }, [
+    setError,
+    setIsLoading,
+    setShowAuthFlow,
+    setWalletLinkRequired,
+    failedSyncKeyRef,
+    refreshDynamicUser,
+    syncDynamicSession,
+    userRef,
+    user,
+  ]);
 
   const logout = useCallback(async () => {
     clearReferral();
@@ -698,11 +883,12 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
       session,
       isLoading,
       error,
+      walletLinkRequired,
       connectWallet,
       refreshSessionProfile,
       logout,
     }),
-    [connectWallet, error, isLoading, logout, refreshSessionProfile, session],
+    [connectWallet, error, isLoading, logout, refreshSessionProfile, session, walletLinkRequired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

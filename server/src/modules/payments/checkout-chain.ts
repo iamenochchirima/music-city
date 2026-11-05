@@ -20,7 +20,15 @@ import {
   type SupportReceipt,
 } from "../support/support-chain.js";
 
-export const checkoutChain = { ...supportChain };
+export const checkoutChain = {
+  ...supportChain,
+  account(wallet: string) {
+    return supportChain.account(
+      wallet,
+      "Your Stellar wallet is not active on this network yet. Fund it with XLM before making a payment.",
+    );
+  },
+};
 
 export function buildCheckoutTransaction(
   intent: PaymentIntentRecord,

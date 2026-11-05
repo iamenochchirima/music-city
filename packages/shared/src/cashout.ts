@@ -20,7 +20,7 @@ export const cashOutNetworkSchema = z.enum(["stellar:testnet", "stellar:public"]
 export const cashOutMarketSchema = z.object({
   country: z.string().regex(/^[A-Z]{2}$/),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  payoutMethod: z.enum(["cash_pickup", "bank", "mobile_money"]),
+  payoutMethod: z.enum(["cash_pickup", "bank", "mobile_money", "card"]),
 }).strict();
 
 export const cashOutStatusSchema = z.enum([

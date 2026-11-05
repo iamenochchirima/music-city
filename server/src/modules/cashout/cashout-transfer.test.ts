@@ -181,6 +181,16 @@ test("cash-out authorization respects wallet thresholds and rejects duplicated o
   assert.throws(() => verifyCashOutEnvelope(prepared, tx.toXDR(), account, now));
 });
 
+test("a zero network threshold still requires a valid wallet signature", () => {
+  const prepared = prepare();
+  const account = { account_id: walletAddress, thresholds: { med_threshold: 0 },
+    signers: [{ key: walletAddress, type: "ed25519_public_key", weight: 1 }] };
+  const transaction = TransactionBuilder.fromXDR(prepared.transaction, Networks.TESTNET);
+  assert.throws(() => verifyCashOutEnvelope(prepared, transaction.toXDR(), account, now), { statusCode: 403 });
+  transaction.sign(wallet);
+  assert.equal(verifyCashOutEnvelope(prepared, transaction.toXDR(), account, now), transaction.toXDR());
+});
+
 test("expired quotes, future quotes and expired instructions never produce a transaction", () => {
   assert.throws(() => prepare(instructions, { ...quote, expiresAt: now.toISOString(), createdAt: "2026-10-17T11:00:00.000Z" }));
   assert.throws(() => prepare(instructions, { ...quote, createdAt: "2026-10-17T12:01:00.000Z" }));

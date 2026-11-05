@@ -1,4 +1,5 @@
 import {
+  STREAM_QUALIFICATION_SECONDS,
   artistAnalyticsSummarySchema,
   artistFollowStateSchema,
   trackLikeStateSchema,
@@ -17,9 +18,7 @@ import { tracksRepository } from "../tracks/tracks.repository.js";
 import { usersService } from "../users/users.service.js";
 import { engagementRepository } from "./engagement.repository.js";
 
-const QUALIFIED_STREAM_MIN_SECONDS = 30;
-const QUALIFIED_STREAM_FRACTION = 0.5;
-const MAX_LISTEN_SECONDS_PER_EVENT = 30;
+const MAX_LISTEN_SECONDS_PER_EVENT = 3600;
 const LISTEN_TIME_CLOCK_TOLERANCE_SECONDS = 2;
 const ANALYTICS_WINDOWS = new Set([7, 30, 90]);
 
@@ -75,30 +74,8 @@ const syncTrackPlayCount = async (track: TrackSummary) => {
   return playCount;
 };
 
-const shouldCountQualifiedStream = (
-  listenedSeconds: number,
-  durationSeconds?: number,
-) => {
-  const fractionThreshold =
-    durationSeconds && durationSeconds > 0
-      ? durationSeconds * QUALIFIED_STREAM_FRACTION
-      : Number.POSITIVE_INFINITY;
-
-  return (
-    listenedSeconds >= QUALIFIED_STREAM_MIN_SECONDS ||
-    listenedSeconds >= fractionThreshold
-  );
-};
-
-const getTrackDurationSeconds = (runtime: string | undefined) => {
-  const match = runtime?.match(/^(\d+):(\d{2})$/);
-
-  if (!match) {
-    return undefined;
-  }
-
-  return Number(match[1]) * 60 + Number(match[2]);
-};
+const shouldCountQualifiedStream = (listenedSeconds: number) =>
+  listenedSeconds >= STREAM_QUALIFICATION_SECONDS;
 
 const getCreditedListenSeconds = (
   session: PlaybackSession,
@@ -164,16 +141,22 @@ export const engagementService = {
       throw new Error("You cannot follow yourself");
     }
 
-    await engagementRepository.upsertArtistFollow(profile.id, artist.id, occurredAt);
-    await recordAnalyticsEvent({
-      id: createId("anl"),
-      eventType: "follow_artist",
+    const wasCreated = await engagementRepository.upsertArtistFollow(
+      profile.id,
+      artist.id,
       occurredAt,
-      actorUserId: profile.id,
-      artistId: artist.id,
-      source: ANALYTICS_SOURCE,
-      surface: "artist_profile",
-    });
+    );
+    if (wasCreated) {
+      await recordAnalyticsEvent({
+        id: createId("anl"),
+        eventType: "follow_artist",
+        occurredAt,
+        actorUserId: profile.id,
+        artistId: artist.id,
+        source: ANALYTICS_SOURCE,
+        surface: "artist_profile",
+      });
+    }
     return this.getArtistFollowState(walletAddress, artist.id);
   },
 
@@ -398,10 +381,10 @@ export const engagementService = {
       };
     }
 
+    let streamCount = track.plays;
     const qualifies =
-      !session.guestIdHash &&
       !updatedSession.qualifiedStreamCountedAt &&
-      shouldCountQualifiedStream(listenedSeconds, getTrackDurationSeconds(track.runtime));
+      shouldCountQualifiedStream(listenedSeconds);
 
     if (qualifies) {
       const qualifiedInserted = await engagementRepository.insertQualifiedPlaybackEvent(
@@ -442,7 +425,7 @@ export const engagementService = {
           listenedSeconds,
           qualifiedBy: input.eventType,
         });
-        await syncTrackPlayCount(track);
+        streamCount = await syncTrackPlayCount(track);
       } else {
         updatedSession = {
           ...updatedSession,
@@ -450,12 +433,13 @@ export const engagementService = {
             (await engagementRepository.findQualifiedStreamCountedAt(session.id)) ??
             updatedSession.qualifiedStreamCountedAt,
         };
+        streamCount = await engagementRepository.countQualifiedStreamsByTrack(track.id);
       }
     }
 
     await playbackRepository.upsert(updatedSession);
 
-    return updatedSession;
+    return { ...updatedSession, streamCount };
   },
 
   async getArtistAnalytics(
@@ -475,8 +459,14 @@ export const engagementService = {
     const publicTrackIds = new Set(
       await tracksRepository.listPublicTrackIds(profile.id),
     );
+    const releaseContexts = new Map(
+      (
+        await tracksRepository.findReleaseContexts(tracks.map((track) => track.id))
+      ).map(({ trackId, ...context }) => [trackId, context]),
+    );
     const trackAnalytics = await Promise.all(
       tracks.map(async (track) => {
+        const releaseContext = releaseContexts.get(track.id);
         const [saves, uniqueListeners, playbackStarts, playbackCompletions] =
           await Promise.all([
             engagementRepository.countTrackSaves(track.id),
@@ -488,8 +478,8 @@ export const engagementService = {
         return {
           trackId: track.id,
           title: track.title,
-          releaseId: track.releaseId,
-          releaseTitle: track.releaseTitle,
+          releaseId: releaseContext?.releaseId,
+          releaseTitle: releaseContext?.releaseTitle,
           visibility: publicTrackIds.has(track.id) ? "published" : "unpublished",
           status: track.status,
           plays: track.plays,
@@ -498,7 +488,10 @@ export const engagementService = {
           uniqueListeners,
           completionRate:
             playbackStarts > 0
-              ? Number(((playbackCompletions / playbackStarts) * 100).toFixed(1))
+              ? Math.min(
+                  100,
+                  Number(((playbackCompletions / playbackStarts) * 100).toFixed(1)),
+                )
               : 0,
         };
       }),

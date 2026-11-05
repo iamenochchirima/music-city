@@ -23,6 +23,10 @@ export const tracksRepository = {
     return databaseService.getTrackReleaseContext(trackId);
   },
 
+  async findReleaseContexts(trackIds: string[]) {
+    return databaseService.getTrackReleaseContexts(trackIds);
+  },
+
   async findById(trackId: string) {
     return databaseService.findPayloadById<TrackSummary>("tracks", trackId);
   },

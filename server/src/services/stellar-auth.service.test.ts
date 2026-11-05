@@ -3,6 +3,7 @@ import test from "node:test";
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
 
 process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/music-city";
+process.env.STELLAR_SEP10_SECRET = Keypair.random().secret();
 
 const [{ stellarAuthService }, { databaseService }, { usersService }] =
   await Promise.all([

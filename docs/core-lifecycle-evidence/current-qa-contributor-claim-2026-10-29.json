@@ -1,0 +1,37 @@
+{
+  "observedAt": "2026-10-29T10:23:49.907379+00:00",
+  "transaction": {
+    "hash": "89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46",
+    "successful": true,
+    "ledger": 5449138,
+    "created_at": "2026-10-29T10:22:10Z",
+    "source_account": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+    "fee_charged": "10213"
+  },
+  "localDatabase": {
+    "attempt": {
+      "id": "56e6246c-df96-46ed-8654-0393084b9f09",
+      "status": "confirmed",
+      "submissionCount": 1,
+      "claimIndex": 1
+    },
+    "royalty": {
+      "id": "rled_683d989a95664f74",
+      "status": "paid",
+      "amount": "0.0003000"
+    },
+    "indexedClaimEvents": 1,
+    "reconciliation": {
+      "updatedAt": "2026-10-29T10:23:38.203867+00:00",
+      "ok": true,
+      "error": null
+    }
+  },
+  "browser": {
+    "receivedAfterReload": true,
+    "spendableBefore": "0.0073",
+    "spendableAfter": "0.0076",
+    "asset": "Testnet USDC"
+  },
+  "remaining": "Artist allocation 0.0007000 USDC is still available and unclaimed."
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { PaymentIntentRecord } from "@music-city/shared";
+import type { ArtistActivationQuote, PaymentIntentRecord } from "@music-city/shared";
 
 import { useStellarCheckout } from "@/features/payments/hooks/use-stellar-checkout";
 import { paymentsApi } from "@/features/payments/lib/payments-api";
@@ -13,6 +13,8 @@ export const useArtistOnboardingPayment = () => {
   const [isPaid, setIsPaid] = useState(
     session?.artistAccess ?? false,
   );
+  const [activationQuote, setActivationQuote] =
+    useState<ArtistActivationQuote | null>(null);
   const [isChecking, setIsChecking] = useState(Boolean(session?.token));
   const [isPreparing, setIsPreparing] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
@@ -24,6 +26,7 @@ export const useArtistOnboardingPayment = () => {
   useEffect(() => {
     if (!session?.token) {
       setIsChecking(false);
+      setActivationQuote(null);
       return;
     }
 
@@ -35,6 +38,7 @@ export const useArtistOnboardingPayment = () => {
       .then((status) => {
         if (!cancelled) {
           setIsPaid(status.artistAccess);
+          setActivationQuote(status);
         }
       })
       .catch(() => undefined)
@@ -58,6 +62,8 @@ export const useArtistOnboardingPayment = () => {
 
     try {
       const activation = await paymentsApi.getArtistOnboardingFeeStatus(session.token);
+      setActivationQuote(activation);
+      setIsPaid(activation.artistAccess);
       if (activation.status === "eligible" || activation.status === "sponsored") {
         throw new Error("Music City has covered your artist activation fee");
       }
@@ -69,6 +75,21 @@ export const useArtistOnboardingPayment = () => {
       setIsPreparing(false);
     }
   }, [session?.token]);
+
+  const refreshStatus = useCallback(async () => {
+    if (!session?.token) return null;
+
+    setIsChecking(true);
+    try {
+      const activation = await paymentsApi.getArtistOnboardingFeeStatus(session.token);
+      setActivationQuote(activation);
+      setIsPaid(activation.artistAccess);
+      await refreshSessionProfile().catch(() => undefined);
+      return activation;
+    } finally {
+      setIsChecking(false);
+    }
+  }, [refreshSessionProfile, session?.token]);
 
   const complete = useCallback(async (intent: PaymentIntentRecord) => {
     if (!session?.token) {
@@ -93,9 +114,11 @@ export const useArtistOnboardingPayment = () => {
   return {
     isChecking,
     isPaid,
+    activationQuote,
     isPaying,
     isPreparing,
     prepare,
+    refreshStatus,
     complete,
   };
 };

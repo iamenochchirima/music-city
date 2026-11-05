@@ -298,7 +298,10 @@ export const supportService = {
       const config = supportConfig();
       const [source, destination, ledger] = await Promise.all([
         supportChain.account(sender),
-        supportChain.account(recipient.walletAddress),
+        supportChain.account(
+          recipient.walletAddress,
+          "The recipient’s Stellar wallet is not active yet. Ask them to activate it before sending support.",
+        ),
         supportChain.ledger(),
       ]);
       validateSupportReadiness(

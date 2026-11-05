@@ -219,6 +219,7 @@ const ensureOwnerProfile = async (walletAddress: string) =>
     walletAddress,
     "Create an artist profile before managing releases",
     "Pay the onboarding fee before managing releases",
+    "Artist access is required to manage releases",
   );
 
 const validateReleaseTrackCount = (

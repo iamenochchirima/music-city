@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
-import type { ArtistSummary, PaymentIntentRecord } from "@music-city/shared";
+import { audioContentTypeForFileName, validateAudioFile, type ArtistSummary, type PaymentIntentRecord } from "@music-city/shared";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AudioFilePicker } from "@/components/ui/audio-file-picker";
 import { Label } from "@/components/ui/label";
 import { FormField } from "@/components/ui/form-field";
 import { StepNavigation } from "@/components/studio/step-navigation";
@@ -65,7 +66,6 @@ const steps = [
 ] as const;
 
 const isEmailLike = (value: string) => /\S+@\S+\.\S+/.test(value.trim());
-const MAX_AUDIO_SIZE_BYTES = 500 * 1024 * 1024;
 export const TrackCreateForm = ({
   onCreated,
   onClose,
@@ -381,36 +381,15 @@ export const TrackCreateForm = ({
       return;
     }
 
-    if (file.size > MAX_AUDIO_SIZE_BYTES) {
-      setAudioError("Audio files must be 500 MB or smaller.");
-      setAudioFile(null);
-      return;
-    }
-
-    if (file.type && !file.type.startsWith("audio/")) {
-      setAudioError("Choose an audio file such as MP3, WAV, M4A, or FLAC.");
+    const error = validateAudioFile(file);
+    if (error) {
+      setAudioError(error);
       setAudioFile(null);
       return;
     }
 
     setAudioError("");
     setAudioFile(file);
-  };
-
-  const audioContentType = (file: File) => {
-    if (file.type.startsWith("audio/")) return file.type;
-    switch (file.name.split(".").pop()?.toLowerCase()) {
-      case "mp3":
-        return "audio/mpeg";
-      case "wav":
-        return "audio/wav";
-      case "m4a":
-        return "audio/mp4";
-      case "flac":
-        return "audio/flac";
-      default:
-        return file.type || "application/octet-stream";
-    }
   };
 
   const createTrack = async () => {
@@ -462,7 +441,7 @@ export const TrackCreateForm = ({
         trackId: track.id,
         purpose: "audio",
         fileName: audioFile.name,
-        contentType: audioContentType(audioFile),
+        contentType: audioContentTypeForFileName(audioFile.name)!,
         sizeBytes: audioFile.size,
       });
       uploadSessionId = uploadSession.id;
@@ -793,16 +772,15 @@ export const TrackCreateForm = ({
                 error={audioError}
                 className="mt-4"
               >
-                <Input
-                  type="file"
-                  accept="audio/*,.mp3,.wav,.m4a,.flac"
-                  onChange={(event) =>
-                    handleAudioFileChange(event.target.files?.[0])
+                <AudioFilePicker
+                  inputLabel="Master audio file"
+                  onFiles={(files) =>
+                    handleAudioFileChange(files[0])
                   }
                 />
               </FormField>
               <p className="mt-2 text-xs text-muted-foreground">
-                MP3, WAV, M4A, or FLAC · up to 500 MB. Playback will be
+                MP3, WAV, FLAC, M4A, AAC, or OGG · up to 500 MB. Playback will be
                 available after processing.
               </p>
               {audioFile ? (

@@ -120,6 +120,63 @@ it("requires review, then signs and submits the bound beneficiary claim", async 
   );
   expect(m.sign).toHaveBeenCalledWith("exact-prepared-transaction");
 });
+it("hides server configuration details and does not show failed earnings as zero", async () => {
+  const user = userEvent.setup();
+  m.get.mockImplementation(async (path: string) => {
+    if (path === "/settlements/balances") {
+      throw Object.assign(
+        new Error(
+          "Agreement treasury and finalized-split registry must be configured explicitly",
+        ),
+        { status: 503 },
+      );
+    }
+    return path === "/settlements" ? { items: [] } : { batch, attempts };
+  });
+  render(<CreatorClaims />);
+
+  const alert = await screen.findByRole("alert");
+  expect(alert.textContent).toContain(
+    "We couldn’t load your earnings. Try again.",
+  );
+  expect(alert.textContent).not.toContain("Agreement treasury");
+  expect(
+    screen.queryByText("Your earnings will appear here when they’re ready."),
+  ).toBeNull();
+  expect(screen.getAllByText("—")).toHaveLength(2);
+
+  m.get.mockImplementation(async (path: string) =>
+    path === "/settlements/balances"
+      ? { pendingUnits: "0" }
+      : path === "/settlements"
+        ? { items: [] }
+        : { batch, attempts },
+  );
+  await user.click(screen.getByRole("button", { name: "Try again" }));
+  expect(
+    await screen.findByText("Your earnings will appear here when they’re ready."),
+  ).toBeTruthy();
+  expect(screen.queryByRole("alert")).toBeNull();
+});
+it("does not expose server setup details when a claim cannot be confirmed", async () => {
+  const user = userEvent.setup();
+  m.post.mockRejectedValueOnce(
+    Object.assign(
+      new Error(
+        "Agreement treasury and finalized-split registry must be configured explicitly",
+      ),
+      { status: 503 },
+    ),
+  );
+  render(<CreatorClaims />);
+
+  await user.click(await screen.findByRole("button", { name: "Claim USDC" }));
+  await user.click(screen.getByRole("button", { name: "Sign and claim" }));
+  const alert = await screen.findByRole("alert");
+  expect(alert.textContent).toContain("We couldn’t confirm this claim.");
+  expect(alert.textContent).not.toContain("Agreement treasury");
+  expect(m.sign).not.toHaveBeenCalled();
+});
 it("wallet cancellation keeps the claim available without submitting a withdrawal", async () => {
   m.sign.mockRejectedValueOnce(new Error("Signing cancelled"));
   const user = userEvent.setup();

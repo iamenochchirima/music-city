@@ -2,6 +2,31 @@ import { z } from "zod";
 
 export const MAX_AUDIO_UPLOAD_BYTES = 500 * 1024 * 1024;
 export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024;
+const audioTypes: Record<string, string> = {
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  wave: "audio/wav",
+  flac: "audio/flac",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+};
+export const audioContentTypeForFileName = (fileName: string) => {
+  const extension = /\.([^.]+)$/.exec(fileName)?.[1]?.toLowerCase() ?? "";
+  return Object.prototype.hasOwnProperty.call(audioTypes, extension)
+    ? audioTypes[extension]
+    : undefined;
+};
+
+export const validateAudioFile = (file: { name: string; size: number }) => {
+  if (!file.size) return "This file is empty. Choose an audio recording.";
+  if (file.size > MAX_AUDIO_UPLOAD_BYTES)
+    return "Audio files must be 500 MB or smaller.";
+  if (!audioContentTypeForFileName(file.name))
+    return "Choose an MP3, WAV, FLAC, M4A, AAC, or OGG audio file.";
+  return null;
+};
 export const uploadMaxBytes = (purpose: "audio" | "cover") =>
   purpose === "audio" ? MAX_AUDIO_UPLOAD_BYTES : MAX_IMAGE_UPLOAD_BYTES;
 

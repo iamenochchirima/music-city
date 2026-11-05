@@ -27,11 +27,15 @@ export function prepareCashOutTransfer(
   accountSequence: string,
   feeStroops: number,
   now = new Date(),
+  expiryCeilingSeconds?: number,
 ) {
+  if (expiryCeilingSeconds !== undefined && (!Number.isSafeInteger(expiryCeilingSeconds) || expiryCeilingSeconds < 1))
+    throw new HttpError(400, "Invalid transfer expiry");
   const instructions = cashOutTransferInstructionsSchema.parse(rawInstructions);
   const quote = cashOutQuoteSchema.parse(rawQuote);
   const expires = Math.floor(Math.min(
     Date.parse(instructions.expiresAt), Date.parse(quote.expiresAt), now.getTime() + 300_000,
+    expiryCeilingSeconds === undefined ? Infinity : expiryCeilingSeconds * 1000,
   ) / 1000);
   if (!Number.isFinite(now.getTime()) || Date.parse(quote.createdAt) > now.getTime() ||
     expires <= Math.floor(now.getTime() / 1000)) {
@@ -114,7 +118,7 @@ export function verifyCashOutEnvelope(
   }
   const threshold = account.thresholds.med_threshold;
   const signers = account.signers.filter((signer) => signer.weight > 0 && signer.type === "ed25519_public_key");
-  if (!Number.isInteger(threshold) || threshold < 1 || threshold > 255 ||
+  if (!Number.isInteger(threshold) || threshold < 0 || threshold > 255 ||
     new Set(signers.map((signer) => signer.key)).size !== signers.length ||
     signers.some((signer) => !Number.isInteger(signer.weight) || signer.weight > 255 ||
       !StrKey.isValidEd25519PublicKey(signer.key))) {
@@ -135,6 +139,7 @@ export function verifyCashOutEnvelope(
     signedBy.add(signer.key);
     weight += signer.weight;
   }
-  if (weight < threshold) throw new HttpError(403, "More wallet authorization is required for this payment");
+  // Even when the ledger threshold is zero, require an actual wallet signature.
+  if (weight < Math.max(1, threshold)) throw new HttpError(403, "More wallet authorization is required for this payment");
   return signed.toXDR();
 }

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReleaseDetail, TrackSummary } from "@music-city/shared";
+import { audioContentTypeForFileName, validateAudioFile, type ReleaseDetail, type TrackSummary } from "@music-city/shared";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { releasesApi } from "@/features/music/lib/releases-api";
 import { uploadsApi } from "@/features/uploads/lib/uploads-api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AudioFilePicker } from "@/components/ui/audio-file-picker";
 import { Progress } from "@/components/ui/progress";
 import { LoaderCircle, Clock3, CircleAlert } from "lucide-react";
 type Upload = {
@@ -59,11 +59,8 @@ export function ReleaseAudioUploader({
       let sessionId: string | undefined;
       update({ state: "uploading", error: undefined });
       try {
-        if (
-          item.file.size > 500 * 1024 * 1024 ||
-          !/\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(item.file.name)
-        )
-          throw new Error("Choose a supported audio file up to 500 MB.");
+        const error = validateAudioFile(item.file);
+        if (error) throw new Error(error);
         if (!item.track) {
           const track = item.replaceId
             ? release.tracks.find((t) => t.trackId === item.replaceId)!.track
@@ -80,7 +77,7 @@ export function ReleaseAudioUploader({
             trackId: track.id,
             purpose: "audio",
             fileName: item.file.name,
-            contentType: item.file.type || "audio/wav",
+            contentType: audioContentTypeForFileName(item.file.name)!,
             sizeBytes: item.file.size,
           });
           sessionId = session.id;
@@ -161,24 +158,17 @@ export function ReleaseAudioUploader({
     <div className="space-y-4">
       {(replaceId || maxFiles === undefined || maxFiles > 0) && !initialFiles?.length && (
         <>
-          <label className="block space-y-2">
+          <div className="space-y-2">
             <span className="block font-semibold">
               {replaceId ? "Replace audio" : "Add audio files"}
             </span>
-            <Input
-              type="file"
-              aria-label={replaceId ? "Replacement audio" : "Audio files"}
+            <AudioFilePicker
+              inputLabel={replaceId ? "Replacement audio" : "Audio files"}
               multiple={!replaceId && (maxFiles === undefined || maxFiles > 1)}
               disabled={busy}
-              accept="audio/*,.flac,.m4a"
-              className="h-auto py-2"
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? []);
-                if (files.length) choose(files);
-                e.target.value = "";
-              }}
+              onFiles={choose}
             />
-          </label>
+          </div>
           <p className="text-xs text-muted-foreground">
             MP3, WAV, FLAC, AAC, OGG, or M4A · up to 500 MB each
           </p>

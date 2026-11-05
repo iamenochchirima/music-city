@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { AdRecord, PlaybackSession, TrackSummary } from "@music-city/shared";
+import { STREAM_QUALIFICATION_SECONDS, type AdRecord, type PlaybackSession, type TrackSummary } from "@music-city/shared";
 import Hls from "hls.js";
 import {
   ChevronDown,
@@ -32,6 +32,7 @@ import { VolumeControl } from "@/features/playback/components/volume-control";
 import { adsApi } from "@/features/ads/lib/ads-api";
 import { engagementApi } from "@/features/engagement/lib/engagement-api";
 import { playbackApi } from "@/features/playback/lib/playback-api";
+import { publishStreamCount } from "@/features/playback/lib/stream-counts";
 import { useAuth } from "@/hooks/use-auth";
 import { ApiClientError } from "@/lib/api/http-client";
 import { cn } from "@/lib/utils";
@@ -469,8 +470,9 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     null,
   );
   const lastObservedPlaybackPositionRef = useRef<number | null>(null);
+  const lastObservedPlaybackTimeRef = useRef<number | null>(null);
   const unreportedListenSecondsRef = useRef(0);
-  const isReportingPlaybackRef = useRef(false);
+  const playbackReportRef = useRef<Promise<void> | null>(null);
   const completionReportedRef = useRef(false);
   const guestPromptOpenedRef = useRef(false);
   const resumePositionRef = useRef<number | null>(null);
@@ -500,15 +502,22 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
     const nextPosition = audio.currentTime || 0;
     const previousPosition = lastObservedPlaybackPositionRef.current;
+    const observedAt = performance.now();
+    const previousTime = lastObservedPlaybackTimeRef.current;
 
     if (
       !audio.paused &&
       previousPosition !== null &&
       nextPosition > previousPosition &&
-      nextPosition - previousPosition <= 2
+      previousTime !== null &&
+      !audio.seeking
     ) {
-      unreportedListenSecondsRef.current += nextPosition - previousPosition;
+      unreportedListenSecondsRef.current += Math.min(
+        nextPosition - previousPosition,
+        Math.max(0, (observedAt - previousTime) / 1000) * audio.playbackRate,
+      );
     }
+    lastObservedPlaybackTimeRef.current = observedAt;
 
     const currentTrack = activeTrackRef.current;
     const currentPlaybackSession = playbackSessionRef.current;
@@ -616,11 +625,12 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         guestPromptOpenedRef.current = false;
         resumePositionRef.current = resumeAt > 0 ? resumeAt : null;
         lastObservedPlaybackPositionRef.current = null;
+        lastObservedPlaybackTimeRef.current = null;
         unreportedListenSecondsRef.current = 0;
-        isReportingPlaybackRef.current = false;
         completionReportedRef.current = false;
         clearActiveAdState();
         setActiveTrack(track);
+        playbackSessionRef.current = nextPlaybackSession;
         setPlaybackSession(nextPlaybackSession);
         setStreamUrl(nextPlaybackSession.streamUrl);
       } catch (error) {
@@ -712,6 +722,45 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     const handleEnded = () => {
       void handleAudioEnded();
     };
+    const handleSeeking = () => {
+      lastObservedPlaybackPositionRef.current = audio.currentTime;
+      lastObservedPlaybackTimeRef.current = performance.now();
+    };
+    const handleWaiting = () => {
+      if (guestPromptOpenedRef.current) return;
+      const session = playbackSessionRef.current;
+      const track = activeTrackRef.current;
+      if (!session?.isGuest || !track) return;
+
+      const declaredRuntime = track.runtime.match(/^(\d+):(\d{2})$/);
+      const fullDuration = declaredRuntime
+        ? Number(declaredRuntime[1]) * 60 + Number(declaredRuntime[2])
+        : audio.duration;
+      if (
+        fullDuration <= 0 ||
+        (session.guestBudgetRemainingSeconds ?? Infinity) > fullDuration
+      )
+        return;
+
+      const allowedSeconds = Math.min(
+        fullDuration,
+        session.guestRemainingSeconds ?? fullDuration,
+      );
+      const bufferedEnd = audio.buffered.length
+        ? audio.buffered.end(audio.buffered.length - 1)
+        : 0;
+      if (
+        audio.currentTime < allowedSeconds - 0.5 ||
+        bufferedEnd < allowedSeconds - 0.25
+      )
+        return;
+
+      guestPromptOpenedRef.current = true;
+      audio.pause();
+      setCurrentTime(Math.min(audio.currentTime, allowedSeconds));
+      setIsPlaying(false);
+      setGuestLimitReached(true);
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
@@ -720,6 +769,8 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("seeking", handleSeeking);
+    audio.addEventListener("waiting", handleWaiting);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
@@ -729,6 +780,8 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("seeking", handleSeeking);
+      audio.removeEventListener("waiting", handleWaiting);
       stopAnimationLoop();
     };
   }, [handleAudioEnded]);
@@ -781,6 +834,8 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       } catch (error) {
         setIsPlaying(false);
 
+        if (guestPromptOpenedRef.current) return;
+
         if (activeAd && pendingTrackAfterAd) {
           const impressionId = activeAdImpressionId;
           const nextTrack = pendingTrackAfterAd;
@@ -827,6 +882,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     reportAdImpressionUpdate,
     startTrackSession,
     streamUrl,
+    playbackSession?.id,
   ]);
 
   const recordPlaybackEvent = useCallback(
@@ -835,16 +891,15 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       positionSeconds: number,
       force = false,
     ) => {
-      if (
-        !playbackSession ||
-        isReportingPlaybackRef.current
-      ) {
-        return;
-      }
+      const requestedSessionId = playbackSessionRef.current?.id;
+      if (playbackReportRef.current && !force) return;
+      while (playbackReportRef.current) await playbackReportRef.current;
+      const reportSession = playbackSessionRef.current;
+      if (!reportSession || reportSession.id !== requestedSessionId) return;
 
-      const listenedSeconds = Math.min(unreportedListenSecondsRef.current, 30);
+      const listenedSeconds = Math.min(unreportedListenSecondsRef.current, 3600);
 
-      if (!force && listenedSeconds < 15) {
+      if (!force && listenedSeconds < STREAM_QUALIFICATION_SECONDS) {
         return;
       }
 
@@ -852,30 +907,37 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         return;
       }
 
-      isReportingPlaybackRef.current = true;
+      const report = (async () => {
+        try {
+          const updatedSession = await engagementApi.recordPlaybackEvent(
+            session?.token,
+            reportSession,
+            {
+              eventType,
+              positionSeconds,
+              durationSeconds: duration > 0 ? duration : undefined,
+              listenedSeconds: listenedSeconds || undefined,
+            },
+          );
 
-      try {
-        const updatedSession = await engagementApi.recordPlaybackEvent(
-          session?.token,
-          playbackSession,
-          {
-            eventType,
-            positionSeconds,
-            durationSeconds: duration > 0 ? duration : undefined,
-            listenedSeconds: listenedSeconds || undefined,
-          },
-        );
+          if (updatedSession.streamCount !== undefined) {
+            publishStreamCount(updatedSession.trackId, updatedSession.streamCount);
+          }
+          if (playbackSessionRef.current?.id !== reportSession.id) return;
 
-        unreportedListenSecondsRef.current = Math.max(
-          0,
-          unreportedListenSecondsRef.current - listenedSeconds,
-        );
-        setPlaybackSession(updatedSession);
-      } catch {
-        // Keep the unreported duration so the next heartbeat can retry it.
-      } finally {
-        isReportingPlaybackRef.current = false;
-      }
+          unreportedListenSecondsRef.current = Math.max(
+            0,
+            unreportedListenSecondsRef.current - listenedSeconds,
+          );
+          playbackSessionRef.current = updatedSession;
+          setPlaybackSession(updatedSession);
+        } catch {
+          // Keep the unreported duration so the next heartbeat can retry it.
+        }
+      })();
+      playbackReportRef.current = report;
+      await report;
+      if (playbackReportRef.current === report) playbackReportRef.current = null;
     },
     [duration, playbackSession, session?.token],
   );
@@ -893,7 +955,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   }, [activeTrack, currentTime, playbackSession, recordPlaybackEvent, session?.token, startTrackSession]);
 
   useEffect(() => {
-    if (!playbackSession || !isPlaying || unreportedListenSecondsRef.current < 15) {
+    if (!playbackSession || !isPlaying || unreportedListenSecondsRef.current < STREAM_QUALIFICATION_SECONDS) {
       return;
     }
 
@@ -940,6 +1002,14 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   const playTrack = useCallback(async (track: TrackSummary) => {
     const actor = playbackActorRef.current;
     if (track.id === activeTrack?.id && audioRef.current) {
+      if (audioRef.current.ended) {
+        if (!completionReportedRef.current) {
+          completionReportedRef.current = true;
+          await recordPlaybackEvent("completed", audioRef.current.currentTime, true);
+        }
+        await startTrackSession(track);
+        return;
+      }
       try {
         if (audioRef.current.paused) {
           await audioRef.current.play();
@@ -989,9 +1059,9 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
       lastObservedPlaybackPositionRef.current = null;
       unreportedListenSecondsRef.current = 0;
-      isReportingPlaybackRef.current = false;
       completionReportedRef.current = false;
       setActiveTrack(track);
+      playbackSessionRef.current = null;
       setPlaybackSession(null);
       setActiveAd(decision.ad);
       setActiveAdImpressionId(decision.impressionId);
@@ -1028,8 +1098,11 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
   advanceQueueRef.current = async () => {
     const index = playbackQueue.findIndex((track) => track.id === activeTrackRef.current?.id);
     const next = index >= 0 ? playbackQueue[index + 1] : undefined;
+    if (!completionReportedRef.current) {
+      completionReportedRef.current = true;
+      await recordPlaybackEvent("completed", audioRef.current?.currentTime ?? currentTime, true);
+    }
     if (!next) return;
-    await recordPlaybackEvent("completed", audioRef.current?.currentTime ?? currentTime, true);
     await playTrack(next);
   };
 
@@ -1064,6 +1137,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audioRef.current?.removeAttribute("src");
       audioRef.current?.load();
       setStreamUrl(null);
+      playbackSessionRef.current = null;
       setPlaybackSession(null);
       setActiveTrack(null);
       setIsPlaying(false);
@@ -1113,6 +1187,15 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     const audio = audioRef.current;
     if (!audio) return;
 
+    if (audio.ended && activeTrackRef.current) {
+      if (!completionReportedRef.current) {
+        completionReportedRef.current = true;
+        await recordPlaybackEvent("completed", audio.currentTime, true);
+      }
+      await startTrackSession(activeTrackRef.current);
+      return;
+    }
+
     try {
       if (audio.paused) {
         await audio.play();
@@ -1128,7 +1211,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       setIsPlaying(false);
       toast.error(describePlaybackError(error));
     }
-  }, []);
+  }, [recordPlaybackEvent, startTrackSession]);
 
   const seekTo = (value: number) => {
     if (activeAd) return;
@@ -1136,6 +1219,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     if (!audio) return;
     audio.currentTime = value;
     lastObservedPlaybackPositionRef.current = value;
+    lastObservedPlaybackTimeRef.current = performance.now();
     setCurrentTime(value);
   };
 
@@ -1146,6 +1230,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     const nextTime = Math.max(0, Math.min(duration || 0, audio.currentTime + delta));
     audio.currentTime = nextTime;
     lastObservedPlaybackPositionRef.current = nextTime;
+    lastObservedPlaybackTimeRef.current = performance.now();
     setCurrentTime(nextTime);
   };
 
@@ -1178,6 +1263,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    playbackSessionRef.current = null;
     setPlaybackSession(null);
     setStreamUrl(null);
     setActiveTrack(null);
@@ -1186,7 +1272,6 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     clearActiveAdState();
     lastObservedPlaybackPositionRef.current = null;
     unreportedListenSecondsRef.current = 0;
-    isReportingPlaybackRef.current = false;
     completionReportedRef.current = false;
   }, [
     activeAdImpressionId,

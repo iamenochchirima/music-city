@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { UserProfile } from "@music-city/shared";
+import type { AnalyticsEvent, UserProfile } from "@music-city/shared";
 
 process.env.DATABASE_URL ??= "postgres://music-city:music-city@127.0.0.1:5432/music-city";
 
 const walletAddress = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 const { usersService } = await import("./users.service.js");
 const { usersRepository } = await import("./users.repository.js");
+const { engagementRepository } = await import("../engagement/engagement.repository.js");
 const { sponsorshipsService } = await import("../sponsorships/sponsorships.service.js");
+const { HttpError } = await import("../../utils/http-error.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -47,7 +49,7 @@ test("legacy free artist access remains readable without creating a synthetic pa
       website: "",
       instagram: "",
       youtube: "",
-      soundcloud: "",
+      facebook: "",
       x: "",
     },
     verified: false,
@@ -74,6 +76,41 @@ test("legacy free artist access remains readable without creating a synthetic pa
     assert.equal(access.primaryIntent, "artist");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("artist-only routes return permission and activation errors with client statuses", async () => {
+  const originalGetProfile = usersService.getProfile;
+
+  try {
+    usersService.getProfile = (async () => createProfile()) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create an artist profile first",
+        "Activate artist access first",
+        "Artist access is required",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
+
+    usersService.getProfile = (async () => ({
+      ...createProfile(),
+      primaryIntent: "artist",
+      artistAccess: false,
+    })) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(walletAddress, "Create an artist profile first", "Activate artist access first"),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
+
+    usersService.getProfile = (async () => null) as typeof usersService.getProfile;
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(walletAddress, "Create an artist profile first"),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
+  } finally {
+    usersService.getProfile = originalGetProfile;
   }
 });
 
@@ -126,7 +163,7 @@ const createProfile = (
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   },
   hasReleasedMusic: undefined,
@@ -174,7 +211,7 @@ test("saving the required intent advances a profile created by the welcome step"
     assert.equal(profile.primaryIntent, "listener");
     assert.equal(profile.displayName, "New Listener");
     assert.equal(profile.onboardingStatus, "in_progress");
-    assert.equal(profile.onboardingStep, "personalize");
+    assert.equal(profile.onboardingStep, "visuals");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -231,6 +268,72 @@ test("artist activation is a saved onboarding step between intent and artist pro
       step: "artist_activation",
     });
     assert.equal(artistProfile?.onboardingStep, "artist_identity");
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("a completed listener can start artist setup without receiving artist access", async () => {
+  let stored = createProfile({
+    displayName: "Existing Listener",
+    onboardingStatus: "complete",
+    onboardingStep: "complete",
+    onboardingCompletedAt: new Date(0).toISOString(),
+  });
+  let upsertCalls = 0;
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        upsertCalls += 1;
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 2000,
+        campaignCode: null,
+        termsRevision: null,
+        status: "payment_required",
+        profileExists: true,
+        artistAccess: false,
+        activatedAt: null,
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+  ];
+
+  try {
+    const selected = await usersService.saveOnboardingStep(walletAddress, {
+      step: "intent",
+      primaryIntent: "artist",
+    });
+
+    assert.equal(upsertCalls, 1);
+    assert.equal(selected?.primaryIntent, "artist");
+    assert.equal(selected?.onboardingStatus, "complete");
+    assert.equal(selected?.onboardingStep, "complete");
+    assert.equal(selected?.artistAccess, false);
+
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create an artist profile first",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -310,17 +413,6 @@ test("both intent persists listener and artist personalization without role ambi
     await usersService.saveOnboardingStep(walletAddress, {
       step: "artist_activation",
     });
-    await usersService.saveOnboardingStep(walletAddress, {
-      step: "personalize",
-      genres: ["Afrobeats", "House"],
-      favoriteArtistIds: [],
-      interestedInLocalMusic: true,
-      notificationPreferences: {
-        releaseNotifications: true,
-        artistUpdates: false,
-        productUpdates: false,
-      },
-    });
     const profile = await usersService.saveOnboardingStep(walletAddress, {
       step: "artist_identity",
       bio: "A sound from both sides of the city.",
@@ -329,19 +421,129 @@ test("both intent persists listener and artist personalization without role ambi
         website: "https://example.com",
         instagram: "",
         youtube: "",
-        soundcloud: "",
+        facebook: "",
         x: "",
       },
       hasReleasedMusic: true,
     });
 
+    await usersService.saveOnboardingStep(walletAddress, { step: "visuals", removeProfileImage: false, removeHeaderImage: false });
+    const personalized = await usersService.saveOnboardingStep(walletAddress, {
+      step: "personalize",
+      genres: [],
+      favoriteArtistIds: [],
+      interestedInLocalMusic: true,
+      notificationPreferences: {
+        releaseNotifications: true,
+        artistUpdates: false,
+        productUpdates: false,
+      },
+    });
+    assert.equal(personalized?.onboardingStep, "complete");
+    assert.equal(personalized?.interestedInLocalMusic, true);
+    assert.deepEqual(personalized?.genres, ["Afrobeats", "House"]);
     assert.ok(profile);
     assert.equal(profile.primaryIntent, "both");
     assert.deepEqual(profile.genres, ["Afrobeats", "House"]);
-    assert.equal(profile.interestedInLocalMusic, true);
+    assert.equal(profile.interestedInLocalMusic, false);
     assert.equal(profile.bio, "A sound from both sides of the city.");
     assert.equal(profile.hasReleasedMusic, true);
     assert.equal(profile.onboardingStep, "visuals");
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("selected onboarding artists become follows and retries do not duplicate follow events", async () => {
+  const artistProfile = createProfile({
+    id: "usr-onboarding-artist",
+    walletAddress: "GCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+    displayName: "Test Artist",
+    primaryIntent: "artist",
+    artistAccess: true,
+    onboardingStatus: "complete",
+    onboardingStep: "complete",
+  });
+  let stored = createProfile({ onboardingStep: "personalize" });
+  let followWrites = 0;
+  const analyticsEvents: AnalyticsEvent[] = [];
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      usersRepository,
+      "listArtists",
+      (async () => [artistProfile]) as typeof usersRepository.listArtists,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 0,
+        campaignCode: null,
+        termsRevision: null,
+        status: "legacy_free",
+        profileExists: true,
+        artistAccess: true,
+        activatedAt: new Date(0).toISOString(),
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+    restore(
+      engagementRepository,
+      "upsertArtistFollow",
+      (async () => {
+        followWrites += 1;
+        return followWrites === 1;
+      }) as typeof engagementRepository.upsertArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+  ];
+
+  try {
+    const input = {
+      step: "personalize" as const,
+      genres: ["Kwaito" as const],
+      favoriteArtistIds: [artistProfile.id],
+      interestedInLocalMusic: false,
+      notificationPreferences: {
+        releaseNotifications: false,
+        artistUpdates: false,
+        productUpdates: false,
+      },
+    };
+
+    await usersService.saveOnboardingStep(walletAddress, input);
+    await usersService.saveOnboardingStep(walletAddress, input);
+
+    assert.deepEqual(stored.favoriteArtistIds, [artistProfile.id]);
+    assert.equal(followWrites, 2);
+    assert.equal(analyticsEvents.length, 1);
+    assert.equal(analyticsEvents[0]?.eventType, "follow_artist");
+    assert.equal(analyticsEvents[0]?.actorUserId, stored.id);
+    assert.equal(analyticsEvents[0]?.artistId, artistProfile.id);
+    assert.equal(analyticsEvents[0]?.source, "server.engagement");
+    assert.equal(analyticsEvents[0]?.surface, "onboarding");
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }
@@ -384,6 +586,63 @@ test("completion requires only display name and intent and is idempotent", async
     assert.ok(first.onboardingCompletedAt);
     assert.equal(second.onboardingCompletedAt, first.onboardingCompletedAt);
     assert.notEqual(first.onboardingCompletedAt, completedAt);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("an unpaid artist can finish registration but still cannot use artist tools", async () => {
+  let stored = createProfile({
+    primaryIntent: "artist",
+    onboardingStatus: "in_progress",
+    onboardingStep: "personalize",
+  });
+  const cleanup = [
+    restore(
+      usersRepository,
+      "findByWallet",
+      (async () => stored) as typeof usersRepository.findByWallet,
+    ),
+    restore(
+      usersRepository,
+      "upsert",
+      (async (profile) => {
+        stored = profile;
+        return profile;
+      }) as typeof usersRepository.upsert,
+    ),
+    restore(
+      sponsorshipsService,
+      "getMyActivation",
+      (async () => ({
+        currency: "USD",
+        originalAmountMinor: 2000,
+        discountAmountMinor: 0,
+        discountPercent: 0,
+        amountDueMinor: 2000,
+        campaignCode: null,
+        termsRevision: null,
+        status: "payment_required",
+        profileExists: true,
+        artistAccess: false,
+        activatedAt: null,
+      })) as typeof sponsorshipsService.getMyActivation,
+    ),
+  ];
+
+  try {
+    const completed = await usersService.completeOnboarding(walletAddress);
+
+    assert.equal(completed?.onboardingStatus, "complete");
+    assert.equal(completed?.onboardingStep, "complete");
+    assert.equal(completed?.artistAccess, false);
+    await assert.rejects(
+      usersService.requireArtistOnboardingAccess(
+        walletAddress,
+        "Create your artist profile first",
+      ),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 402,
+    );
   } finally {
     cleanup.reverse().forEach((fn) => fn());
   }

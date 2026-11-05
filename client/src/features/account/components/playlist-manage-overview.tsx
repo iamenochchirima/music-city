@@ -14,7 +14,7 @@ import { tracksApi } from "@/features/music/lib/tracks-api";
 import { useAuth } from "@/hooks/use-auth";
 
 export const PlaylistManageOverview = ({ playlistId }: { playlistId: string }) => {
-  const { session } = useAuth();
+  const { session, isLoading: isAuthLoading } = useAuth();
   const [playlist, setPlaylist] = useState<PlaylistDetail | null>(null);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,13 +24,24 @@ export const PlaylistManageOverview = ({ playlistId }: { playlistId: string }) =
   useEffect(() => {
     let cancelled = false;
 
+    if (isAuthLoading) {
+      setIsLoading(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const load = async () => {
       const token = session?.token;
 
       if (!token) {
+        setPlaylist(null);
         setIsLoading(false);
         return;
       }
+
+      setPlaylist(null);
+      setIsLoading(true);
 
       try {
         const [nextPlaylist, publicTracks, myTracks] = await Promise.all([
@@ -67,7 +78,7 @@ export const PlaylistManageOverview = ({ playlistId }: { playlistId: string }) =
     return () => {
       cancelled = true;
     };
-  }, [playlistId, session?.token]);
+  }, [isAuthLoading, playlistId, session?.token]);
 
   const availableTracks = useMemo(() => {
     const assignedIds = new Set(playlist?.tracks.map((item) => item.trackId) ?? []);
@@ -174,18 +185,18 @@ export const PlaylistManageOverview = ({ playlistId }: { playlistId: string }) =
     }
   };
 
-  if (!session) {
+  if (isAuthLoading || isLoading) {
     return (
       <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
-        Log in to manage playlists.
+        Loading playlist details...
       </div>
     );
   }
 
-  if (isLoading) {
+  if (!session) {
     return (
       <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-8 text-slate-300">
-        Loading playlist details...
+        Log in to manage playlists.
       </div>
     );
   }

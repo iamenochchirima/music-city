@@ -1,3 +1,4 @@
+import { nextOnboardingStep } from "@music-city/shared";
 import {
   artistPublicProfileSchema,
   completeOnboardingSchema,
@@ -22,6 +23,7 @@ import { createId } from "../../services/id.service.js";
 import { storageService } from "../../services/storage.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { sponsorshipsService } from "../sponsorships/sponsorships.service.js";
+import { engagementRepository } from "../engagement/engagement.repository.js";
 import { usersRepository } from "./users.repository.js";
 
 const nowIso = () => new Date().toISOString();
@@ -43,46 +45,15 @@ const isPublicArtist = (profile: UserProfile) =>
 const isListenerIntent = (primaryIntent: PrimaryIntent) =>
   primaryIntent === "listener" || primaryIntent === "both";
 
-const nextStepFor = (
-  primaryIntent: PrimaryIntent,
-  step: OnboardingStep,
-): OnboardingStep => {
-  if (step === "intent") {
-    return isArtistIntent(primaryIntent)
-      ? "artist_activation"
-      : "personalize";
-  }
-
-  if (step === "artist_activation") {
-    return isListenerIntent(primaryIntent) ? "personalize" : "artist_identity";
-  }
-
-  if (step === "identity") {
-    return "intent";
-  }
-
-  if (step === "personalize") {
-    return isArtistIntent(primaryIntent) ? "artist_identity" : "visuals";
-  }
-
-  if (step === "artist_identity") {
-    return "visuals";
-  }
-
-  if (step === "visuals") {
-    return "complete";
-  }
-
-  return "complete";
-};
+const nextStepFor = nextOnboardingStep;
 
 const onboardingStepOrder: Record<OnboardingStep, number> = {
   identity: 0,
   intent: 1,
   artist_activation: 2,
-  personalize: 3,
-  artist_identity: 4,
-  visuals: 5,
+  artist_identity: 3,
+  visuals: 4,
+  personalize: 5,
   complete: 6,
 };
 
@@ -194,6 +165,33 @@ const ensureFavoriteArtistIds = async (favoriteArtistIds: string[]) => {
   }
 };
 
+const followSelectedArtists = async (
+  profile: UserProfile,
+  artistIds: string[],
+  occurredAt: string,
+) => {
+  for (const artistId of artistIds) {
+    if (artistId === profile.id) continue;
+
+    const wasCreated = await engagementRepository.upsertArtistFollow(
+      profile.id,
+      artistId,
+      occurredAt,
+    );
+    if (!wasCreated) continue;
+
+    await engagementRepository.insertAnalyticsEvent({
+      id: createId("anl"),
+      eventType: "follow_artist",
+      occurredAt,
+      actorUserId: profile.id,
+      artistId,
+      source: "server.engagement",
+      surface: "onboarding",
+    });
+  }
+};
+
 const withMediaUrls = (profile: UserProfile | null) => {
   if (!profile) {
     return null;
@@ -215,7 +213,7 @@ const withMediaUrls = (profile: UserProfile | null) => {
       website: profile.socialLinks?.website ?? "",
       instagram: profile.socialLinks?.instagram ?? "",
       youtube: profile.socialLinks?.youtube ?? "",
-      soundcloud: profile.socialLinks?.soundcloud ?? "",
+      facebook: profile.socialLinks?.facebook ?? "",
       x: profile.socialLinks?.x ?? "",
     },
     profileImageUrl: profile.profileImageStorageKey
@@ -397,7 +395,7 @@ export const usersService = {
             website: "",
             instagram: "",
             youtube: "",
-            soundcloud: "",
+            facebook: "",
             x: "",
           },
           profileImageUrl: undefined,
@@ -433,11 +431,8 @@ export const usersService = {
         nextProfile.onboardingStep = "intent";
         break;
       case "personalize":
-        if (!isListenerIntent(nextProfile.primaryIntent)) {
-          throw new HttpError(400, "Listener personalization is not available for this account");
-        }
         await ensureFavoriteArtistIds(parsed.favoriteArtistIds);
-        nextProfile.genres = parsed.genres;
+        if (!isArtistIntent(nextProfile.primaryIntent)) nextProfile.genres = parsed.genres;
         nextProfile.favoriteArtistIds = parsed.favoriteArtistIds;
         nextProfile.interestedInLocalMusic = parsed.interestedInLocalMusic;
         nextProfile.notificationPreferences = parsed.notificationPreferences;
@@ -484,7 +479,7 @@ export const usersService = {
             parsed.headerImageStorageKey,
           ) ?? nextProfile.headerImageStorageKey;
         }
-        nextProfile.onboardingStep = "complete";
+        nextProfile.onboardingStep = nextStepFor(nextProfile.primaryIntent, parsed.step);
         break;
     }
 
@@ -499,7 +494,19 @@ export const usersService = {
       nextProfile.onboardingStep = existing?.onboardingStep ?? nextProfile.onboardingStep;
     }
 
-    return withArtistAccess(await usersRepository.upsert(nextProfile, { referralReceipt: parsed.step === "identity" ? parsed.referralReceipt : undefined }));
+    const savedProfile = await usersRepository.upsert(nextProfile, {
+      referralReceipt:
+        parsed.step === "identity" ? parsed.referralReceipt : undefined,
+    });
+    if (parsed.step === "personalize") {
+      await followSelectedArtists(
+        savedProfile,
+        parsed.favoriteArtistIds,
+        timestamp,
+      );
+    }
+
+    return withArtistAccess(savedProfile);
   },
 
   async completeOnboarding(
@@ -526,24 +533,23 @@ export const usersService = {
       updatedAt: nowIso(),
     };
 
-    return withArtistAccess(await usersRepository.upsert(completed, {
-      requireArtistAccess: isArtistIntent(completed.primaryIntent),
-    }));
+    return withArtistAccess(await usersRepository.upsert(completed));
   },
 
   async requireArtistOnboardingAccess(
     walletAddress: string,
     missingProfileMessage: string,
     missingFeeMessage = "Complete artist activation before accessing artist tools",
+    missingArtistIntentMessage = "Choose artist access before using artist tools",
   ) {
     const profile = await this.getProfile(walletAddress);
 
     if (!profile) {
-      throw new Error(missingProfileMessage);
+      throw new HttpError(403, missingProfileMessage);
     }
 
     if (!isArtistIntent(profile.primaryIntent)) {
-      throw new Error(missingFeeMessage);
+      throw new HttpError(403, missingArtistIntentMessage);
     }
 
     if (!profile.artistAccess) {

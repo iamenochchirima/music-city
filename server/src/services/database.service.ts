@@ -1,3 +1,14 @@
+import { rampLaunchStatements } from "../modules/ramps/ramp-launch-migration.js";
+import { rampRefundFailureStatements } from "../modules/ramps/ramp-refund-failure-migration.js";
+import { rampClaimLinkStatements } from "../modules/ramps/ramp-claim-link-migration.js";
+import { rampCashOutRecoveryStatements } from "../modules/ramps/ramp-cashout-recovery-migration.js";
+import { rampCashOutAttemptStatements } from "../modules/ramps/ramp-cashout-attempt-migration.js";
+import { rampQuoteStatements } from "../modules/ramps/ramp-quote-migration.js";
+import { rampDeliveryStatements } from "../modules/ramps/ramp-delivery-migration.js";
+import { rampLeaseStatements } from "../modules/ramps/ramp-lease-migration.js";
+import { rampProgressStatements } from "../modules/ramps/ramp-progress-migration.js";
+import { rampSchemaStatements } from "../modules/ramps/ramp-migration.js";
+import { onboardingFeedbackMigrationStatements } from "../modules/users/onboarding-feedback-migration.js";
 import { supportSchemaStatements } from "../modules/support/support-schema.js";
 import { checkoutSchemaStatements } from "../modules/payments/checkout-schema.js";
 import { settlementChainEventSchemaStatements } from "../modules/settlements/chain-event-schema.js";
@@ -13,6 +24,7 @@ import { guestPlaybackSchemaStatements, expandedGuestPlaybackSchemaStatements } 
 
 import { liveRecording } from "../modules/releases/live-recording.js";
 import { env } from "../config/env.js";
+import { assertDatabaseTargetAllowed } from "../config/database-safety.js";
 
 type PersistedRow = {
   id: string;
@@ -410,6 +422,15 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-10-26-ramp-orders", statements: rampSchemaStatements },
+  { name: "2026-10-26-ramp-progress", statements: rampProgressStatements },
+  { name: "2026-10-28-ramp-lease", statements: rampLeaseStatements },
+  { name: "2026-10-28-ramp-delivery", statements: rampDeliveryStatements },
+  { name: "2026-10-28-ramp-quote-integrity", statements: rampQuoteStatements },
+  { name: "2026-10-28-ramp-cashout-attempt", statements: rampCashOutAttemptStatements },
+  { name: "2026-10-28-ramp-cashout-recovery", statements: rampCashOutRecoveryStatements },
+  { name: "2026-10-28-ramp-launch-session", statements: rampLaunchStatements },
+  { name: "2026-10-29-ramp-refund-failure", statements: rampRefundFailureStatements },
   { name: "2026-10-19-guest-playback", statements: guestPlaybackSchemaStatements },
   { name: "2026-10-20-guest-listening-time", statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", statements: checkoutSchemaStatements },
@@ -426,6 +447,7 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-17-agreement-recovery", statements: agreementRecoveryStatements },
   { name: "2026-10-15-earnings-settlement", statements: settlementSchemaStatements },
   { name: "2026-10-15-settlement-chain-events", statements: settlementChainEventSchemaStatements },
+  { name: "2026-10-29-ramp-claim-link", statements: rampClaimLinkStatements },
   {
     name: "2026-10-05-single-use-stellar-auth-challenges",
     statements: [
@@ -899,12 +921,23 @@ const schemaMigrations: SchemaMigration[] = [
        )`,
     ],
   },
+  { name: "2026-10-26-onboarding-feedback", statements: onboardingFeedbackMigrationStatements },
 ];
 
 const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-10-29-ramp-claim-link", migrationName: "2026-10-29-ramp-claim-link", relations: ["ramp_orders", "settlement_batches"], columns: ["ramp_orders.associated_claim_batch_id", "ramp_orders.associated_claim_index"], constraints: ["ramp_orders_associated_claim_pair_check", "ramp_orders_associated_claim_batch_fk"], statements: rampClaimLinkStatements },
+  { name: "2026-10-29-ramp-refund-failure", migrationName: "2026-10-29-ramp-refund-failure", relations: ["ramp_orders"], constraints: ["ramp_orders_provider_state_check"], statements: rampRefundFailureStatements },
+  { name: "2026-10-28-ramp-launch-session", migrationName: "2026-10-28-ramp-launch-session", relations: ["ramp_launch_sessions"], columns: ["ramp_launch_sessions.encrypted_session", "ramp_launch_sessions.resumable"], statements: rampLaunchStatements },
+  { name: "2026-10-28-ramp-cashout-recovery", migrationName: "2026-10-28-ramp-cashout-recovery", relations: ["ramp_chain_attempts"], columns: ["ramp_chain_attempts.submission_count", "ramp_chain_attempts.last_submitted_at", "ramp_chain_attempts.due_at", "ramp_chain_attempts.leased_until", "ramp_chain_attempts.lease_token", "ramp_chain_attempts.last_error_code"], indexes: ["ramp_cashout_recovery_due"], statements: rampCashOutRecoveryStatements },
+  { name: "2026-10-28-ramp-cashout-attempt", migrationName: "2026-10-28-ramp-cashout-attempt", relations: ["ramp_chain_attempts"], columns: ["ramp_chain_attempts.prepared_ledger", "ramp_chain_attempts.updated_at"], statements: rampCashOutAttemptStatements },
+  { name: "2026-10-28-ramp-quote-integrity", migrationName: "2026-10-28-ramp-quote-integrity", relations: ["ramp_orders", "ramp_quotes"], statements: rampQuoteStatements },
+  { name: "2026-10-28-ramp-delivery", migrationName: "2026-10-28-ramp-delivery", relations: ["ramp_events"], indexes: ["ramp_unique_incoming_payment"], statements: rampDeliveryStatements },
+  { name: "2026-10-28-ramp-lease", migrationName: "2026-10-28-ramp-lease", relations: ["ramp_reconciliation_jobs"], columns: ["ramp_reconciliation_jobs.lease_token"], statements: rampLeaseStatements },
+  { name: "2026-10-26-ramp-progress", migrationName: "2026-10-26-ramp-progress", relations: ["ramp_orders"], columns: ["ramp_orders.provider_observation", "ramp_orders.launch_issued_at"], statements: rampProgressStatements },
+  { name: "2026-10-26-ramp-orders", migrationName: "2026-10-26-ramp-orders", relations: ["ramp_orders", "ramp_quotes", "ramp_chain_attempts", "ramp_events", "ramp_reconciliation_jobs"], indexes: ["ramp_orders_owner_history", "ramp_one_uncertain_transfer", "ramp_reconciliation_due"], statements: rampSchemaStatements },
   { name: "2026-10-19-guest-playback", migrationName: "2026-10-19-guest-playback", relations: ["guest_playback_allowances"], indexes: ["guest_playback_allowances_expires_idx"], statements: guestPlaybackSchemaStatements },
   { name: "2026-10-20-guest-listening-time", migrationName: "2026-10-20-guest-listening-time", relations: ["guest_playback_allowances"], indexes: [], statements: expandedGuestPlaybackSchemaStatements },
   { name: "2026-10-17-durable-checkout", migrationName: "2026-10-17-durable-checkout", relations: ["payment_checkouts", "checkout_events"], indexes: ["checkout_one_active_wallet", "checkout_reconcile_idx"], statements: checkoutSchemaStatements },
@@ -1231,6 +1264,7 @@ export const databaseService = {
   },
 
   async initialize(options?: { repair?: boolean }) {
+    assertDatabaseTargetAllowed(env.DATABASE_URL, env.NODE_ENV);
     await pool.query(schemaMigrationTableStatement);
 
     for (const statement of baseSchemaStatements) {
@@ -1457,6 +1491,33 @@ export const databaseService = {
        WHERE rt.track_id=$1 AND r.artist_id=t.artist_id`, [trackId],
     );
     return result.rows[0] ?? null;
+  },
+
+  async getTrackReleaseContexts(trackIds: string[]) {
+    if (trackIds.length === 0) return [];
+
+    const result = await pool.query<{
+      trackId: string;
+      releaseId: string;
+      releaseTitle: string;
+      releaseArtistName: string | null;
+      trackNumber: number;
+      discNumber: number;
+      isFocusTrack: boolean;
+    }>(
+      `SELECT rt.track_id AS "trackId", r.id AS "releaseId",
+        r.payload->>'title' AS "releaseTitle",
+        r.payload->>'artistName' AS "releaseArtistName",
+        rt.track_number AS "trackNumber", rt.disc_number AS "discNumber",
+        rt.is_focus_track AS "isFocusTrack"
+       FROM release_tracks rt
+       JOIN releases r ON r.id = rt.release_id
+       JOIN tracks t ON t.id = rt.track_id
+       WHERE rt.track_id = ANY($1::text[]) AND r.artist_id = t.artist_id`,
+      [trackIds],
+    );
+
+    return result.rows;
   },
 
   async applyReleaseTrackMetadata(artistId: string, releaseId: string, input: ReleaseTrackMetadataInput): Promise<TrackSummary[]> {
@@ -1758,13 +1819,15 @@ export const databaseService = {
   },
 
   async upsertArtistFollow(userId: string, artistId: string, createdAt: string) {
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO artist_follows (user_id, artist_id, created_at)
        VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, artist_id) DO UPDATE SET
-         created_at = EXCLUDED.created_at`,
+       ON CONFLICT (user_id, artist_id) DO NOTHING
+       RETURNING user_id`,
       [userId, artistId, createdAt],
     );
+
+    return (result.rowCount ?? 0) > 0;
   },
 
   async deleteArtistFollow(userId: string, artistId: string) {
@@ -2022,7 +2085,7 @@ export const databaseService = {
 
   async countPlaybackStartsByTrack(trackId: string) {
     const result = await pool.query<CountRow>(
-      `SELECT COUNT(*)::text AS count
+      `SELECT COUNT(DISTINCT playback_session_id)::text AS count
        FROM playback_events
        WHERE track_id = $1 AND event_type = 'started'`,
       [trackId],
@@ -2045,9 +2108,17 @@ export const databaseService = {
 
   async countPlaybackCompletionsByTrack(trackId: string) {
     const result = await pool.query<CountRow>(
-      `SELECT COUNT(*)::text AS count
-       FROM playback_events
-       WHERE track_id = $1 AND event_type = 'completed'`,
+      `SELECT COUNT(DISTINCT completed.playback_session_id)::text AS count
+       FROM playback_events completed
+       WHERE completed.track_id = $1
+         AND completed.event_type = 'completed'
+         AND EXISTS (
+           SELECT 1
+           FROM playback_events started
+           WHERE started.playback_session_id = completed.playback_session_id
+             AND started.track_id = completed.track_id
+             AND started.event_type = 'started'
+         )`,
       [trackId],
     );
 

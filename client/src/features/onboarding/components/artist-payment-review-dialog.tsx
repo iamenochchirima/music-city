@@ -106,8 +106,8 @@ export const ArtistPaymentReviewDialog = ({
 
   return (
     <Dialog
-      title="Confirm first-upload payment"
-      description="Review the amount and wallet balances before confirming."
+      title="Confirm artist activation"
+      description="Review the one-time activation amount and wallet balance before confirming."
       busy={isPaying}
       onClose={onCancel}
       className="max-w-xl"
@@ -118,8 +118,9 @@ export const ArtistPaymentReviewDialog = ({
           {formatAmount(intent.amount)} {intent.assetCode}
         </p>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          One-time payment to activate music uploads. The exact Stellar amount
-          includes the transaction’s unique reference.
+          One-time payment to unlock artist tools, including release creation
+          and music uploads. The exact Stellar amount includes the transaction’s
+          unique reference.
         </p>
       </div>
 

@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-26",
+  "environment": "Isolated local API and PostgreSQL, production onboarding component with local session fixtures",
+  "browserChecks": [
+    "Artist, listener and both branches completed through real HTTP API",
+    "Artist recommendations appear after profile visuals",
+    "Artist and both branches show genres once",
+    "Back retains genre and Facebook values",
+    "Listener and both completion survive reload",
+    "Desktop and 390px mobile layout inspected"
+  ],
+  "profiles": [
+    {
+      "role": "artist",
+      "status": "complete",
+      "genres": [
+        "Maskandi"
+      ],
+      "facebookSaved": true,
+      "retiredFieldPresent": false,
+      "selectedArtistCount": 1
+    },
+    {
+      "role": "both",
+      "status": "complete",
+      "genres": [
+        "Kwaito"
+      ],
+      "facebookSaved": false,
+      "retiredFieldPresent": false,
+      "selectedArtistCount": 0
+    },
+    {
+      "role": "listener",
+      "status": "complete",
+      "genres": [
+        "R&B / Soul"
+      ],
+      "facebookSaved": false,
+      "retiredFieldPresent": false,
+      "selectedArtistCount": 0
+    }
+  ],
+  "tests": {
+    "clientPassed": 162,
+    "serverPassed": 160,
+    "serverSkipped": 12,
+    "localPostgresMigrationPassed": 1,
+    "focusedOnboardingPassed": 7,
+    "typechecks": "passed",
+    "clientProductionBuild": "passed"
+  },
+  "limitations": [
+    "Dynamic login was replaced by a local fixture hook in a temporary Vite configuration; production authentication code was not changed",
+    "Physical mobile browsers were not tested",
+    "No production data changed and nothing deployed"
+  ],
+  "cleanup": "Temporary preview files removed and isolated services stopped"
+}

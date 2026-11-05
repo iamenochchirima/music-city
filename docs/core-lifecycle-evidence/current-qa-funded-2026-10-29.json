@@ -1,0 +1,63 @@
+{
+  "observedAt": "2026-10-29T10:12:36.489193+00:00",
+  "environment": "isolated local PostgreSQL and Stellar Testnet",
+  "transport": "user-authorized CLI signing and authenticated local API submission",
+  "transaction": {
+    "hash": "08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36",
+    "successful": true,
+    "ledger": 5448972,
+    "created_at": "2026-10-29T10:08:20Z",
+    "source_account": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+    "fee_charged": "252038"
+  },
+  "localDatabase": {
+    "attempt": {
+      "id": "099c7ca3-43ff-4025-a389-27a697a95d3e",
+      "status": "confirmed",
+      "hash": "08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36",
+      "signedBy": [
+        "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "GDYPXZHFKNTF4G3GTS7FVVIJOD3MR75HVO2O6FYCUBKODKGJVYD3PS2S"
+      ],
+      "submissionCount": 1,
+      "ledger": 5448972
+    },
+    "batch": {
+      "id": "b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069",
+      "state": "funded",
+      "allocations": [
+        {
+          "index": 0,
+          "status": "available",
+          "feeUnits": "0",
+          "grossUnits": "7000",
+          "amountUnits": "7000",
+          "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "updatedLedger": 5448972,
+          "ledgerEntryIds": [
+            "rled_2b11c614ad4447ca"
+          ]
+        },
+        {
+          "index": 1,
+          "status": "available",
+          "feeUnits": "0",
+          "grossUnits": "3000",
+          "amountUnits": "3000",
+          "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "updatedLedger": 5448972,
+          "ledgerEntryIds": [
+            "rled_683d989a95664f74"
+          ]
+        }
+      ]
+    },
+    "indexedFundingEvents": 1,
+    "reconciliation": {
+      "updatedAt": "2026-10-29T10:12:29.927361+00:00",
+      "error": null,
+      "ok": true
+    }
+  },
+  "limitation": "Neither beneficiary claim is confirmed for this new purchase."
+}

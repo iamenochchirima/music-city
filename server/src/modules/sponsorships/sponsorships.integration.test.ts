@@ -154,10 +154,9 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       assert.deepEqual(await counts(afterPause),{ intents: 0,payments: 0,activations: 0 });
       const unpaidDraft = await usersService.saveOnboardingStep(afterPause,{ step: "intent",primaryIntent: "artist" });
       await usersService.saveOnboardingStep(afterPause,{ step: "artist_activation" });
-      await assert.rejects(
-        usersService.completeOnboarding(afterPause),
-        (error: unknown) => error instanceof Error && "statusCode" in error && error.statusCode === 402,
-      );
+      const unpaidRegistration = await usersService.completeOnboarding(afterPause);
+      assert.equal(unpaidRegistration?.onboardingStatus,"complete");
+      assert.equal(unpaidRegistration?.artistAccess,false);
       assert.equal((await usersService.getPublicArtistProfile(unpaidDraft!.id)),null);
       assert.deepEqual(await usersService.getPublicArtistTracks(unpaidDraft!.id),[]);
       assert.deepEqual(await usersService.getPublicArtistReleases(unpaidDraft!.id),[]);
@@ -246,7 +245,7 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       await sponsorshipsService.updateCampaign("admin:test",{ active: true,reason: "Restore after legacy test" });
     });
 
-    await t.test("artist activation is capped atomically under concurrent completion", async () => {
+    await t.test("artist registration completes when sponsorship capacity is exhausted", async () => {
       const before = (await sponsorshipsService.getAdminReport()).campaign;
       const wallets = Array.from({ length: 21 }, () => wallet());
       await Promise.all(wallets.map(w => welcome(w)));
@@ -260,18 +259,24 @@ test("early-user artist sponsorship through PostgreSQL and HTTP", { skip: !testU
       ));
 
       const completions = await Promise.allSettled(wallets.map(w => usersService.completeOnboarding(w)));
-      assert.equal(completions.filter(result => result.status === "fulfilled").length,20);
-      assert.equal(completions.filter(result => result.status === "rejected").length,1);
+      assert.equal(completions.filter(result => result.status === "fulfilled").length,21);
+      assert.equal(completions.filter(result => result.status === "rejected").length,0);
       const after = (await sponsorshipsService.getAdminReport()).campaign;
       assert.equal(after.activatedArtists,before.activatedArtists + 20);
       assert.equal(after.remainingGrants,0);
-      const waitingQuote = await sponsorshipsService.getMyActivation(wallets.find((_, index) => completions[index]?.status === "rejected")!);
+      const waitingIndex = completions.findIndex(result => result.status === "fulfilled" && result.value?.artistAccess === false);
+      assert.notEqual(waitingIndex,-1);
+      const waitingQuote = await sponsorshipsService.getMyActivation(wallets[waitingIndex]!);
       assert.equal(waitingQuote.status,"payment_required");
       const lateWallet = wallet();
       await welcome(lateWallet);
       assert.equal((await sponsorshipsService.getMyActivation(lateWallet)).status,"payment_required");
       await usersService.saveOnboardingStep(lateWallet,{ step: "intent",primaryIntent: "artist" });
-      await assert.rejects(usersService.completeOnboarding(lateWallet),/activation/);
+      const registered = await usersService.completeOnboarding(lateWallet);
+      assert.ok(registered);
+      assert.equal(registered.onboardingStatus,"complete");
+      assert.equal(registered.artistAccess,false);
+      await assert.rejects(usersService.requireArtistOnboardingAccess(lateWallet,"Create your artist profile first"), (error: unknown) => error instanceof Error && "statusCode" in error && error.statusCode === 402);
       await databaseService.transaction(client => client.query(
         "UPDATE artist_sponsorship_campaigns SET max_grants=20 WHERE code='EARLYUSER'",
       ));

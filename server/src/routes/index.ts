@@ -4,6 +4,12 @@ import { settlementsRouter, adminSettlementsRouter } from "../modules/settlement
 import { referralsRouter, adminReferralsRouter } from "../modules/referrals/referrals.router.js";
 import { sponsorshipsRouter, adminSponsorshipsRouter } from "../modules/sponsorships/sponsorships.router.js";
 import { Router } from "express";
+import { cashOutQuoteRouter } from "../modules/cashout/cashout-quote.router.js";
+import { cashOutAuthorizationRouter } from "../modules/cashout/cashout-authorization.router.js";
+import { moonpayWebhookRouter } from "../modules/ramps/moonpay-webhook.router.js";
+import { rampsRouter } from "../modules/ramps/ramps.router.js";
+import { rampLaunchRouter } from "../modules/ramps/ramp-launch.router.js";
+import { adminRampsRouter } from "../modules/ramps/admin-ramps.router.js";
 
 import { adsRouter } from "../modules/ads/ads.router.js";
 import { adminRouter } from "../modules/admin/admin.router.js";
@@ -47,6 +53,12 @@ apiRouter.use("/playback", playbackRouter);
 apiRouter.use("/playlists", playlistsRouter);
 apiRouter.use("/media", mediaRouter);
 apiRouter.use("/payments", paymentsRouter);
+apiRouter.use("/webhooks/moonpay", moonpayWebhookRouter);
+apiRouter.use("/ramps/:orderId/cashout", cashOutQuoteRouter);
+apiRouter.use("/ramps/:orderId/cashout", cashOutAuthorizationRouter);
+apiRouter.use("/ramps/:orderId", rampLaunchRouter);
+apiRouter.use("/ramps", rampsRouter);
+apiRouter.use("/admin/ramps", adminRampsRouter);
 apiRouter.use("/support", supportRouter);
 apiRouter.use("/admin/support", adminSupportRouter);
 apiRouter.use("/releases", releasesRouter);

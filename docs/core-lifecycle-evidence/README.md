@@ -1,6 +1,89 @@
 # Core music-to-earnings verification
 
+## Current local financial cycle closed, 29 October 2026
+
+The new QA Listener purchase completed treasury funding and both real Dynamic Sandbox beneficiary claims. Horizon independently confirms all four transactions below. Each funding or claim attempt has one submission. The local database has one purchase payment, one listening entitlement, two paid royalty entries, and a Closed settlement batch with both allocations claimed. The event index contains exactly one funding event and two claim events for this batch, is caught up, and global reconciliation reports `ok: true` with no discrepancies.
+
+| Action | Testnet USDC | Ledger | Receipt |
+| --- | --- | --- | --- |
+| QA Listener purchase | 0.0010000 | 5448808 | [2bd73d77…](https://horizon-testnet.stellar.org/transactions/2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44) |
+| Two-signature treasury funding | 0.0010000 | 5448972 | [08463be2…](https://horizon-testnet.stellar.org/transactions/08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36) |
+| Kwame claim | 0.0003000 | 5449138 | [89813d21…](https://horizon-testnet.stellar.org/transactions/89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46) |
+| Ngoni claim | 0.0007000 | 5449170 | [5c6ae05d…](https://horizon-testnet.stellar.org/transactions/5c6ae05db1c98a594fb9ba35d783dcf7b04b184412fb0c34b54e578f29f55151) |
+
+Horizon effects independently identify each beneficiary's exact USDC credit and Circle Testnet issuer. After reload, both Revenue pages show Received with the new receipt. Kwame's spendable USDC increased from 0.0073 to 0.0076; Ngoni's increased from 0.0087 to 0.0094. Admin shows Closed, 0.0010000 claimed, zero unclaimed, and Reconciled. The global escrow and open obligations remain equal at 0.0100000 USDC, which belongs to an older separate batch. No obligation from this new purchase remains.
+
+See the [complete sanitized closure snapshot](current-qa-closed-2026-10-29.json), [artist received page](current-qa-artist-received-2026-10-29.png), and [closed batch](current-qa-closed-2026-10-29.png). This financial rerun uses the existing Core Journey release and finalized agreement. It does not claim a newly created Core Journey agreement; current creator onboarding/upload/publication checks are separately dated in the [Sandbox account log](sandbox-test-accounts-2026-10-29.md#first-login-stellar-wallet-recovery-29-october-2026). The original 17 October E8 receipts remain historical. Treasury signing used the user-authorized CLI; the user completed the actual Dynamic purchase and beneficiary wallet signatures.
+
+C2 is complete as a local lifecycle verification item with those scope distinctions. Provider-specific acceptance, refund behavior, any required conversion, and the populated provider browser matrix remain open. No fiat provider success, production acceptance, push, or deployment is claimed. The earlier checkpoints below record intermediate states, not the latest status.
+
+## Current contributor claim confirmed, 29 October 2026
+
+The user completed Kwame's Dynamic wallet authorization for the new 0.0003000 USDC claim. Horizon independently confirms [89813d21…](https://horizon-testnet.stellar.org/transactions/89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46), ledger `5449138`, with Kwame as transaction source and a fee of 10213 stroops. The local attempt is confirmed with one submission, the matching royalty entry is paid, and the event index contains one matching claim event. Reconciliation remains `ok: true`. After reload, the browser shows Received with the new receipt, zero available earnings, and spendable USDC increased from 0.0073 to 0.0076. See the [claim snapshot](current-qa-contributor-claim-2026-10-29.json) and [received page](current-qa-contributor-received-2026-10-29.png).
+
+I then signed out of Kwame, restored the existing Ngoni account through ordinary Google sign-in, and opened the separate 0.0007000 USDC artist claim review. The displayed recipient matches Ngoni's wallet. That claim is not signed or submitted. C2 remains open for the artist claim and final closed-batch reconciliation; provider acceptance remains open.
+
+## Current funding confirmed and live event compatibility fixed, 29 October 2026
+
+The user authorized running the local Testnet commands. The CLI signed the existing funding envelope with two saved treasury test keys, and the authenticated local API verified both signatures and submitted once. Horizon confirms transaction [08463be2…](https://horizon-testnet.stellar.org/transactions/08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36), ledger `5448972`, with a fee of 252038 stroops. Batch `b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069` is Funded; both new allocations are available. No private key entered the browser or repository.
+
+This real funding exposed a live event-index compatibility failure. The RPC omitted `inSuccessfulContractCall`, which Stellar deprecated and scheduled for removal in its [Protocol 23 upgrade guide](https://stellar.org/blog/developers/protocol-23-upgrade-guide). The indexer now accepts an omitted flag while rejecting an explicit false or malformed flag, diagnostic events, foreign contracts, unsuccessful receipts, envelope-hash mismatches, and receipt-ledger mismatches. It still independently verifies the successful transaction receipt. A regression test first reproduced the failure, then passed with the fix. All six focused live/archive event tests, the full default server suite with 238 passed and 13 database-only skips, and server typecheck passed.
+
+After restarting only the isolated local financial worker with the fix, it independently indexed the new funding event exactly once, caught up, and restored reconciliation `ok: true`. Computer use showed Reconciled and the confirmed funding receipt. Normal Sandbox sign-in restored Kwame's actual Dynamic wallet, whose Revenue page shows the new 0.0003 USDC claim separately from the historical received payment. Its unsigned claim review is open. The saved treasury test keys do not match either beneficiary wallet, so they cannot sign beneficiary claims.
+
+See the [sanitized funding snapshot](current-qa-funded-2026-10-29.json), [funded admin page](current-qa-funded-2026-10-29.png), and [contributor claim review](current-qa-contributor-claim-review-2026-10-29.png). C2 remains open for both new beneficiary claims and final reconciliation. Provider routes remain disabled. No push or deployment occurred.
+
+## Current signed purchase and settlement preparation, 29 October 2026
+
+At application revision `501b6d9`, the user completed Dynamic Sandbox wallet authorization for the separate `SOW2 QA Listener`. Stellar Testnet confirmed the 0.0010000 USDC purchase of **Core Journey** in ledger `5448808`, transaction [2bd73d77…](https://horizon-testnet.stellar.org/transactions/2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44). Independent Horizon checks verified the successful payment, exact USDC issuer, QA source wallet, E8 treasury destination, intent memo, and 100-stroop network fee.
+
+The isolated local database contains exactly one payment and one listening entitlement for this purchase. Its two royalty entries preserve agreement `7186e534-47db-4d05-9c2f-1bee561cc67e`, version 1, allocating 0.0007000 USDC to Ngoni and 0.0003000 USDC to Kwame. Computer use verified that Purchased survives reload.
+
+A synthetic QA administrator was seeded only in the existing loopback test database, leaving existing administrators unchanged. Normal password sign-in through the local admin UI succeeded. Through that UI, the new source earnings were approved, exact allocations reviewed, and both entries reserved in batch `b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069`. Funding attempt `099c7ca3-43ff-4025-a389-27a697a95d3e` awaits two treasury signatures. Computer use showed 0 of 2 signatures and disabled submission. No treasury signature or funding submission occurred. The prepared transaction expires at 12:08:36 SAST on 29 October and must be refreshed after expiry.
+
+The local financial worker was stopped. Restarting it with the running API's isolated test environment restored event-index freshness and a reconciliation snapshot with `ok: true`. Three older support attempts still report unavailable payment history and remain unresolved; they were not resent or reclassified. This is separate from the confirmed current track purchase.
+
+See the [sanitized chain and database snapshot](current-qa-purchase-2026-10-29.json), [purchased page](current-qa-purchase-2026-10-29.png), and [unsigned funding review](current-qa-funding-review-2026-10-29.png). This advances C2 but does not complete it: new treasury funding, both beneficiary claims, and final reconciliation remain unverified. Provider journeys remain open. No push or deployment occurred.
+
+The [local treasury signing handoff](treasury-signing-handoff.md) identifies the saved E8 Testnet signer state and documents an offline review/signing utility. All three saved public keys match the on-chain treasury signer list. The actual unsigned funding envelope passed review-only mode; no signature was created. Four utility tests passed. The operator must run signing and submit the reviewed transaction.
+
+## Historical evidence and earlier checkpoints
+
 Verified locally on 17 October 2026. Original verification base `9cd39f0`, branch `main`. The completed implementation is recorded in Git history. No production deployment or push was performed. This is E8 in the [SOW 2 tracker](../sow-2-tracker.md#core-d3-lifecycle-closure), not acceptance of the whole SOW.
+
+## Latest local verification, 29 October 2026
+
+The latest browser account and route pass used commit `23c034a` (`fix(onboarding): persist selected artist follows`); subsequent worker changes are verified separately below. Account, mobile, and full server-database evidence is recorded in the [dated test-account log](sandbox-test-accounts-2026-10-29.md). The local Dynamic Sandbox artist and a separate synthetic listener completed the available account and role checks. Onboarding follows persisted on the artist profile, a private listener playlist survived reload and stayed out of the public list, and Revenue at 390 pixels had no horizontal overflow. The spendable 0.014 USDC remained separate from earnings. No verified ramp route was available, so funding and cash-out stayed disabled.
+
+`pnpm test` passed 225 server, 214 client, and 23 admin tests. Workspace typecheck and production build passed. The entire server suite then passed 328/328 against a new disposable local PostgreSQL database with all database integration checks enabled and no skips; that database was removed. No provider transaction, wallet signature, purchase-to-claim journey, or fresh Testnet receipt was produced in this pass. E8 receipts below remain historical evidence only.
+
+The ramp UI suite passes 45/45, including timer-driven checks that provider status updates appear automatically in transaction history/detail and that a pending cash-out transfer advances to its confirmed state. After adding those checks, the full client suite passed 216/216 and client typecheck passed. These tests exercise local polling behavior with controlled responses; they do not claim a real provider status transition. The 225/214/23 workspace counts above are from the earlier full workspace run, before the polling tests were added.
+
+The compiled financial worker now starts even when settlement-contract configuration is missing, retries settlement readiness in the background, and isolates reconciliation-task failures so ramp and cash-out jobs can continue. Its fresh local database smoke and focused worker/ramp/cash-out tests are recorded in the [dated account log](sandbox-test-accounts-2026-10-29.md#independent-financial-worker-smoke-29-october-2026). The queue was empty, so this is worker scheduling evidence only; it does not verify a provider status transition or payout.
+
+CO-25 remains open for the full responsive, keyboard, interruption, recovery, and transaction-detail browser matrix. U2 and R3–R9/V5 remain open for genuine provider journeys; current providers are not enabled. C2 remains open for a new creator-to-claim cycle. C3a is complete with the evidence package below. C3b remains open because no current deployment versions or migrations were verified. No production deployment or push is claimed.
+
+## Current local SOW2 checkpoint, 29 October 2026
+
+This checkpoint is separate from the historical E8 Testnet journey below. The application code was tested at revision `c4dc6a6`; E8's older chain receipts are not presented as a fresh run on this revision.
+
+The local client at `http://localhost:3000` returned HTTP 200. The API readiness endpoint at `http://localhost:4339/api/v1/health/ready` returned `ok: true`, with database, schema, and local storage healthy and all 28 registered schema groups applied. This verifies only the local test database and schema; it says nothing about a deployed database.
+
+The current client verification passed 212/212 tests, including 29 focused ramp dialog and retry tests, six first-login wallet recovery tests, and six track playback-action tests. Client typecheck passed. The ramp dialogs preserve the same idempotency key and freeze route and amount after an ambiguous create response; only HTTP 400/422 validation responses release the form for correction. When Dynamic delays its Stellar credential, the sign-in page now refreshes the user and retries the Music City session. Commit `e863be9` records that change. A fresh Sandbox identity completed this recovery in the browser, finished onboarding, and published a synthetic single in the isolated local database. Its eight-second WAV playback changed the stream count from zero to one. The track page showed Play after the audio ended at 0:08. Commit `c4dc6a6` records the corrected button state. Revenue showed zero USDC and no verified provider route. The full account evidence is in [sandbox-test-accounts-2026-10-29.md](sandbox-test-accounts-2026-10-29.md).
+
+The sanitized [provider readiness snapshot](../ramp-sandbox-evidence/readiness-2026-10-29.json) reports MoonPay native XLM Test Mode support but no Stellar USDC Test Mode support. A later MoneyGram check confirmed the credentials work, but its account is custodial and has no Stellar chain or configured Stellar wallets; see the [partner configuration evidence](../ramp-sandbox-evidence/moneygram-config-2026-10-29.json). No provider transaction was created. R3–R9, U2's verified provider journey, C2's fresh purchase-to-claim lifecycle, and V5 remain open.
+
+E8's contract identifiers, transaction hashes, ledgers, and screenshots remain available in the historical chain-check and browser evidence linked below. They support the 17 October demonstration only. The current checkout has not been pushed or deployed. Its deployed versions and remote migration state have not been verified. An earlier local API startup reached Railway before the host mismatch was caught; whether it applied a migration or repair is unknown, as recorded in the Sandbox account evidence. C3b remains open until a deployment candidate and its actual deployed versions can be verified.
+
+## Latest ramp and funded-wallet check, 29 October 2026
+
+The current workspace revision is `d54f7b7`; application changes include refund-state recovery from `e6b0895`. The isolated local API at `http://127.0.0.1:4339` returned healthy with 29 schema groups applied and local storage/media. The local preflight passed 4/4, and workspace typecheck passed.
+
+`pnpm test` passed 335 server, 222 client, and 23 admin tests with no skips. Every opt-in database test used the same fresh PostgreSQL database on loopback with a `_test` name. The temporary database container was removed after the run. This includes the ramp repository's PostgreSQL ownership, idempotency, event-history, and settlement-history checks.
+
+The Dynamic Sandbox QA wallet holds 20 Testnet USDC from Circle faucet transaction [6e4a54dd…](https://horizon-testnet.stellar.org/transactions/6e4a54dd862d4be15577c3c08f6a0550c5c094d2ae07e310a8ff0dd78e49643b), plus its Testnet XLM reserve. Revenue showed 20 USDC spendable, zero earnings or pending payments, and no verified provider route; Add funds and Cash out remained disabled. The local `Core Journey` 0.001 USDC purchase review was keyboard-tested and closed with Escape; Music City restored focus to the Buy button and reported that no payment was sent. No wallet signature, purchase, provider order, cash-out, settlement, or claim occurred in this check. The complete current account log is in [sandbox-test-accounts-2026-10-29.md](sandbox-test-accounts-2026-10-29.md).
+
+This evidence covers the current local database and Sandbox account only. The older E8 receipts and screenshots below remain historical. No current deployment, deployed migration state, provider acceptance, or new purchase-to-claim run is claimed. C2, C3b, and provider-dependent checklist items remain open.
 
 ## Demonstrated result
 

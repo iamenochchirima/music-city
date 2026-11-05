@@ -1,0 +1,186 @@
+{
+  "observedAt": "2026-10-29T10:27:33.913259+00:00",
+  "applicationRevisions": {
+    "purchase": "501b6d9",
+    "liveEventFix": "b49518b",
+    "latestBeforeClosure": "a80222a"
+  },
+  "environment": "local client, API and isolated PostgreSQL; actual Dynamic Sandbox user signatures; Stellar Testnet",
+  "scope": "Fresh purchase, two-signature treasury funding, and both claims on the existing Core Journey recording and finalized agreement. Creator onboarding/publication has separate dated 29 October browser evidence. This is not a newly created Core Journey agreement.",
+  "receipts": {
+    "purchase": {
+      "hash": "2bd73d7791ef17691e93ca4aff41186e8a663ee3d5936cbc54fd28b2b310fe44",
+      "successful": true,
+      "ledger": 5448808,
+      "created_at": "2026-10-29T09:54:40Z",
+      "source_account": "GBVL2UCJKSSRH7DFHSXU7IO3VRDQLQQCTOW2WMR2S2BC47D73WOO5PHE",
+      "fee_charged": "100"
+    },
+    "funding": {
+      "hash": "08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36",
+      "successful": true,
+      "ledger": 5448972,
+      "created_at": "2026-10-29T10:08:20Z",
+      "source_account": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+      "fee_charged": "252038"
+    },
+    "producerClaim": {
+      "hash": "89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46",
+      "successful": true,
+      "ledger": 5449138,
+      "created_at": "2026-10-29T10:22:10Z",
+      "source_account": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+      "fee_charged": "10213",
+      "credits": [
+        {
+          "type": "account_credited",
+          "account": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "amount": "0.0003000",
+          "asset_code": "USDC",
+          "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+        }
+      ]
+    },
+    "artistClaim": {
+      "hash": "5c6ae05db1c98a594fb9ba35d783dcf7b04b184412fb0c34b54e578f29f55151",
+      "successful": true,
+      "ledger": 5449170,
+      "created_at": "2026-10-29T10:24:50Z",
+      "source_account": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "fee_charged": "10212",
+      "credits": [
+        {
+          "type": "account_credited",
+          "account": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "amount": "0.0007000",
+          "asset_code": "USDC",
+          "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+        }
+      ]
+    }
+  },
+  "localDatabase": {
+    "batch": {
+      "id": "b7cca1703d33754a0b0a78df41e18a3a58c58c6444d760859ab322fbaa7c3069",
+      "state": "closed",
+      "sourceId": "pay_28e833aeedf04b8f",
+      "allocations": [
+        {
+          "index": 0,
+          "status": "claimed",
+          "feeUnits": "0",
+          "grossUnits": "7000",
+          "amountUnits": "7000",
+          "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "updatedLedger": 5449170,
+          "ledgerEntryIds": [
+            "rled_2b11c614ad4447ca"
+          ],
+          "transactionHash": "5c6ae05db1c98a594fb9ba35d783dcf7b04b184412fb0c34b54e578f29f55151"
+        },
+        {
+          "index": 1,
+          "status": "claimed",
+          "feeUnits": "0",
+          "grossUnits": "3000",
+          "amountUnits": "3000",
+          "beneficiary": "GDMWDNBPSQJNZLMOUHOO2PMS77D64R4TE3VCMKLHB3CDE3LZ7SKKSDWL",
+          "updatedLedger": 5449138,
+          "ledgerEntryIds": [
+            "rled_683d989a95664f74"
+          ],
+          "transactionHash": "89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46"
+        }
+      ]
+    },
+    "attempts": [
+      {
+        "id": "0471c7c4-f86f-43a5-a282-1f145836ede1",
+        "status": "confirmed",
+        "kind": "claim",
+        "claimIndex": 0,
+        "submissionCount": 1
+      },
+      {
+        "id": "56e6246c-df96-46ed-8654-0393084b9f09",
+        "status": "confirmed",
+        "kind": "claim",
+        "claimIndex": 1,
+        "submissionCount": 1
+      },
+      {
+        "id": "099c7ca3-43ff-4025-a389-27a697a95d3e",
+        "status": "confirmed",
+        "kind": "settle",
+        "claimIndex": null,
+        "submissionCount": 1
+      }
+    ],
+    "royalties": [
+      {
+        "id": "rled_683d989a95664f74",
+        "status": "paid",
+        "amount": "0.0003000"
+      },
+      {
+        "id": "rled_2b11c614ad4447ca",
+        "status": "paid",
+        "amount": "0.0007000"
+      }
+    ],
+    "paymentCount": 1,
+    "entitlementCount": 1,
+    "events": [
+      {
+        "type": "settlement_funded",
+        "hash": "08463be28b263a0677607d4c493f69073135fd8ef2036c559a6b1f9cfcc39d36"
+      },
+      {
+        "type": "claim_consumed",
+        "hash": "89813d21da7b41e78b8d02958411709724224ee67d532fbdebf58e3247753b46"
+      },
+      {
+        "type": "claim_consumed",
+        "hash": "5c6ae05db1c98a594fb9ba35d783dcf7b04b184412fb0c34b54e578f29f55151"
+      }
+    ],
+    "reconciliation": {
+      "ok": true,
+      "config": {
+        "assetCode": "USDC",
+        "contractId": "CAU2GOWTTF54DHUDEHVHSYMR6KZCT2BQK6ZVQ3KF5KIVDXJJHI4FBA43",
+        "registryId": "CAVW5STWK2C7Y3RC5Z6BSKICRFR4GVI6HDWEFQ23PSVQ62DBYRN4NLNS",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GAGX4VX7XATS7247VUYFYDX5FZISYL3ME6SAO2MOTWVFEUVDBFQGBEB5",
+        "networkPassphrase": "Test SDF Network ; September 2015"
+      },
+      "checkedAt": "2026-10-29T10:27:25.826Z",
+      "openUnits": "100000",
+      "eventIndex": {
+        "caughtUp": true,
+        "checkedAt": "2026-10-29T10:27:20.178Z",
+        "indexedLedger": 5449200,
+        "unknownBatchIds": []
+      },
+      "fundedUnits": "2000320000",
+      "claimedUnits": "1700220000",
+      "surplusUnits": "0",
+      "discrepancies": [],
+      "reclaimedUnits": "300000000",
+      "escrowBalanceUnits": "100000",
+      "networkFeeXlmUnits": "645605390"
+    }
+  },
+  "browser": {
+    "artistReceivedAfterReload": true,
+    "artistSpendableBefore": "0.0087",
+    "artistSpendableAfter": "0.0094",
+    "producerReceivedAfterReload": true,
+    "producerSpendableBefore": "0.0073",
+    "producerSpendableAfter": "0.0076",
+    "adminBatchClosed": true
+  },
+  "remainingGlobalObligation": "0.0100000 USDC from an older separate batch, unchanged by this purchase.",
+  "providerStatus": "No verified route enabled; this does not verify fiat on-ramp or off-ramp."
+}

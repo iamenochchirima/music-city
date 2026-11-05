@@ -29,7 +29,7 @@ const createFanProfile = () => ({
   interestedInLocalMusic: false,
   notificationPreferences: { releaseNotifications: true, artistUpdates: true, productUpdates: false },
   bio: "",
-  socialLinks: { website: "", instagram: "", youtube: "", soundcloud: "", x: "" },
+  socialLinks: { website: "", instagram: "", youtube: "", facebook: "", x: "" },
   profileImageUrl: undefined,
   profileImageStorageKey: undefined,
   headerImageUrl: undefined,
@@ -56,7 +56,7 @@ const createArtistProfile = () => ({
   interestedInLocalMusic: false,
   notificationPreferences: { releaseNotifications: true, artistUpdates: true, productUpdates: false },
   bio: "",
-  socialLinks: { website: "", instagram: "", youtube: "", soundcloud: "", x: "" },
+  socialLinks: { website: "", instagram: "", youtube: "", facebook: "", x: "" },
   profileImageUrl: undefined,
   profileImageStorageKey: undefined,
   headerImageUrl: undefined,
@@ -94,7 +94,7 @@ test("followArtist stores the follow and returns the refreshed state", async () 
     restore(
       engagementRepository,
       "upsertArtistFollow",
-      (async () => undefined) as typeof engagementRepository.upsertArtistFollow,
+      (async () => true) as typeof engagementRepository.upsertArtistFollow,
     ),
     restore(
       engagementRepository,
@@ -122,6 +122,58 @@ test("followArtist stores the follow and returns the refreshed state", async () 
       following: true,
       followerCount: 7,
     });
+    assert.deepEqual(analyticsEvents, ["follow_artist"]);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("repeating a follow does not create another analytics event", async () => {
+  const analyticsEvents: string[] = [];
+  let insertCount = 0;
+  const cleanup = [
+    restore(
+      usersService,
+      "getProfile",
+      (async () => createFanProfile()) as typeof usersService.getProfile,
+    ),
+    restore(
+      usersService,
+      "getProfileById",
+      (async () => createArtistProfile()) as typeof usersService.getProfileById,
+    ),
+    restore(
+      engagementRepository,
+      "upsertArtistFollow",
+      (async () => {
+        insertCount += 1;
+        return insertCount === 1;
+      }) as typeof engagementRepository.upsertArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "hasArtistFollow",
+      (async () => true) as typeof engagementRepository.hasArtistFollow,
+    ),
+    restore(
+      engagementRepository,
+      "countArtistFollowers",
+      (async () => 1) as typeof engagementRepository.countArtistFollowers,
+    ),
+    restore(
+      engagementRepository,
+      "insertAnalyticsEvent",
+      (async (event) => {
+        analyticsEvents.push(event.eventType);
+      }) as typeof engagementRepository.insertAnalyticsEvent,
+    ),
+  ];
+
+  try {
+    await engagementService.followArtist("wallet-1", "usr-artist");
+    await engagementService.followArtist("wallet-1", "usr-artist");
+
+    assert.equal(insertCount, 2);
     assert.deepEqual(analyticsEvents, ["follow_artist"]);
   } finally {
     cleanup.reverse().forEach((fn) => fn());
@@ -469,7 +521,7 @@ test("recordReleaseView stores a release analytics event for anonymous or signed
   }
 });
 
-test("getArtistAnalytics returns save totals and selected window metrics", async () => {
+test("getArtistAnalytics returns save totals and caps duplicate completion reports at 100%", async () => {
   const cleanup = [
     restore(
       usersService,
@@ -485,8 +537,6 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "First",
           artistId: "usr-artist",
           artistName: "Artist",
-          releaseId: "rel-1",
-          releaseTitle: "Release One",
           genre: "Pop",
           runtime: "3:00",
           priceLabel: "Public",
@@ -500,8 +550,6 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           title: "Second",
           artistId: "usr-artist",
           artistName: "Artist",
-          releaseId: "rel-2",
-          releaseTitle: "Release Two",
           genre: "Soul",
           runtime: "4:00",
           priceLabel: "Subscribers",
@@ -516,6 +564,14 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
       tracksRepository,
       "listPublicTrackIds",
       (async () => ["trk-1"]) as typeof tracksRepository.listPublicTrackIds,
+    ),
+    restore(
+      tracksRepository,
+      "findReleaseContexts",
+      (async () => [
+        { trackId: "trk-1", releaseId: "rel-1", releaseTitle: "Release One", releaseArtistName: "Artist", trackNumber: 1, discNumber: 1, isFocusTrack: false },
+        { trackId: "trk-2", releaseId: "rel-2", releaseTitle: "Release Two", releaseArtistName: "Artist", trackNumber: 1, discNumber: 1, isFocusTrack: false },
+      ]) as typeof tracksRepository.findReleaseContexts,
     ),
     restore(
       releasesRepository,
@@ -561,7 +617,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
     restore(
       engagementRepository,
       "countPlaybackCompletionsByTrack",
-      (async (trackId: string) => (trackId === "trk-1" ? 8 : 1)) as typeof engagementRepository.countPlaybackCompletionsByTrack,
+      (async (trackId: string) => (trackId === "trk-1" ? 8 : 4)) as typeof engagementRepository.countPlaybackCompletionsByTrack,
     ),
     restore(
       engagementRepository,
@@ -640,7 +696,7 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
           trackId: "trk-2",
           saves: 2,
           uniqueListeners: 6,
-          completionRate: 33.3,
+          completionRate: 100,
         },
       ],
     );
@@ -683,7 +739,12 @@ test("getArtistAnalytics returns save totals and selected window metrics", async
   }
 });
 
-test("recordPlaybackEvent does not qualify a seek or client-supplied duration", async () => {
+for (const scenario of [
+  { runtime: "3:00", reported: undefined },
+  { runtime: "3:00", reported: 4.99 },
+  { runtime: "0:01", reported: 0.5 },
+  { runtime: "0:04", reported: 2 },
+]) test(`recordPlaybackEvent rejects listening below five seconds for ${scenario.runtime} tracks (${scenario.reported ?? 0})`, async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   let savedSession: unknown;
@@ -698,7 +759,7 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
         artistId: "usr-artist",
         artistName: "Artist",
         genre: "Pop",
-        runtime: "3:00",
+        runtime: scenario.runtime,
         priceLabel: "Public",
         status: "published",
         access: "public",
@@ -756,11 +817,13 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
+        lastPlaybackEventAt: new Date(Date.now() - 10_000).toISOString(),
       },
       {
         eventType: "progress",
         positionSeconds: 179,
         durationSeconds: 1,
+        listenedSeconds: scenario.reported,
       },
     );
 
@@ -774,7 +837,12 @@ test("recordPlaybackEvent does not qualify a seek or client-supplied duration", 
   }
 });
 
-test("recordPlaybackEvent counts a qualified stream once when the threshold is first met", async () => {
+for (const scenario of [
+  { name: "signed-in five-second threshold", guest: false, previous: 0, reported: 5, elapsed: 10 },
+  { name: "guest five-second threshold", guest: true, previous: 0, reported: 5, elapsed: 10 },
+  { name: "delayed background report", guest: true, previous: 0, reported: 45, elapsed: 50 },
+  { name: "two-minute background report", guest: true, previous: 0, reported: 120, elapsed: 125 },
+]) test(`recordPlaybackEvent counts one stream for ${scenario.name}`, async () => {
   const events: string[] = [];
   const analyticsEvents: string[] = [];
   const trackUpserts: unknown[] = [];
@@ -861,20 +929,20 @@ test("recordPlaybackEvent counts a qualified stream once when the threshold is f
         id: "ply-1",
         trackId: "trk-1",
         artistId: "usr-artist",
-        listenerUserId: "usr-listener",
+        ...(scenario.guest ? { guestIdHash: "guest-hash", isGuest: true } : { listenerUserId: "usr-listener" }),
         provider: "local",
         streamUrl: "https://example.com/audio.mp3",
         token: "token",
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
         maxPositionSeconds: 12,
-        listenedSeconds: 12,
-        lastPlaybackEventAt: new Date(Date.now() - 20_000).toISOString(),
+        listenedSeconds: scenario.previous,
+        lastPlaybackEventAt: new Date(Date.now() - scenario.elapsed * 1000).toISOString(),
       },
       {
         eventType: "progress",
         positionSeconds: 31,
         durationSeconds: 180,
-        listenedSeconds: 18,
+        listenedSeconds: scenario.reported,
       },
     );
 
@@ -884,6 +952,8 @@ test("recordPlaybackEvent counts a qualified stream once when the threshold is f
       "track_playback_qualified",
     ]);
     assert.ok(session.qualifiedStreamCountedAt);
+    assert.equal(session.streamCount, 3);
+    assert.equal(session.listenedSeconds, scenario.previous + scenario.reported);
     assert.equal(trackUpserts.length, 1);
     assert.equal((trackUpserts[0] as { plays: number }).plays, 3);
   } finally {
@@ -897,6 +967,7 @@ test("recordPlaybackEvent preserves the original qualified timestamp when a dupl
   const trackUpserts: unknown[] = [];
 
   const cleanup = [
+    restore(engagementRepository, "countQualifiedStreamsByTrack", async () => 3),
     restore(
       tracksRepository,
       "findById",

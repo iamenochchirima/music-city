@@ -17,6 +17,7 @@ import { releasesApi } from "@/features/music/lib/releases-api";
 import { TrackGrid } from "@/features/music/components/track-grid";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { usersApi } from "@/features/users/lib/users-api";
+import { artistsWithPublicReleases } from "@/features/artists/lib/artist-directory";
 
 const DiscoverSection = ({
   title,
@@ -93,6 +94,7 @@ export const DiscoverOverview = () => {
 
   const scheduledReleases = releases.filter((release) => release.status === "scheduled");
   const liveReleases = releases.filter((release) => release.status === "published");
+  const discoverableArtists = artistsWithPublicReleases(artists, releases);
 
   return (
     <div className="space-y-12">
@@ -106,38 +108,46 @@ export const DiscoverOverview = () => {
           <ReleaseGrid releases={scheduledReleases.slice(0, 3)} emptyMessage="No scheduled releases yet." />
         </DiscoverSection>
       ) : null}
-      <DiscoverSection
-        title="Latest live releases"
-        description="Freshly released projects you can stream right now."
-        href="/releases"
-        linkLabel="View all releases"
-      >
-        <ReleaseGrid releases={liveReleases.slice(0, 3)} emptyMessage="No live releases yet." />
-      </DiscoverSection>
-      <DiscoverSection
-        title="Featured tracks"
-        description="A quick way into the latest music on Music City."
-        href="/stream"
-        linkLabel="View all tracks"
-      >
-        <TrackGrid tracks={tracks.slice(0, 6)} />
-      </DiscoverSection>
-      <DiscoverSection
-        title="Community playlists"
-        description="Listening paths built by the Music City community."
-        href="/playlists"
-        linkLabel="View all playlists"
-      >
-        <PlaylistGrid playlists={playlists.slice(0, 3)} />
-      </DiscoverSection>
-      <DiscoverSection
-        title="Artists in motion"
-        description="Explore artists and the music they are sharing."
-        href="/artists"
-        linkLabel="View all artists"
-      >
-        <ArtistGrid artists={artists.slice(0, 6)} />
-      </DiscoverSection>
+      {liveReleases.length > 0 ? (
+        <DiscoverSection
+          title="Latest live releases"
+          description="Freshly released projects you can stream right now."
+          href="/releases"
+          linkLabel="View all releases"
+        >
+          <ReleaseGrid releases={liveReleases.slice(0, 3)} />
+        </DiscoverSection>
+      ) : null}
+      {tracks.length > 0 ? (
+        <DiscoverSection
+          title="Featured tracks"
+          description="A quick way into the latest music on Music City."
+          href="/stream"
+          linkLabel="View all tracks"
+        >
+          <TrackGrid tracks={tracks.slice(0, 6)} />
+        </DiscoverSection>
+      ) : null}
+      {playlists.length > 0 ? (
+        <DiscoverSection
+          title="Community playlists"
+          description="Listening paths built by the Music City community."
+          href="/playlists"
+          linkLabel="View all playlists"
+        >
+          <PlaylistGrid playlists={playlists.slice(0, 3)} />
+        </DiscoverSection>
+      ) : null}
+      {discoverableArtists.length > 0 ? (
+        <DiscoverSection
+          title="Artists in motion"
+          description="Explore artists and the music they are sharing."
+          href="/artists"
+          linkLabel="View all artists"
+        >
+          <ArtistGrid artists={discoverableArtists.slice(0, 6)} />
+        </DiscoverSection>
+      ) : null}
     </div>
   );
 };

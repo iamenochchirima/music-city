@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { walletApi } from "@/features/wallet/lib/wallet-api";
+import { WalletRampActivity } from "@/features/ramps/wallet-ramp-activity";
 import {
   resolveStellarWallet,
 } from "@/features/wallet/lib/resolve-stellar-wallet";
@@ -423,25 +424,34 @@ export const WalletOverviewCard = () => {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Assets</p>
-            <p className="mt-2 text-3xl font-semibold text-white">
-              {account?.balances.length ?? 0}
+            <p
+              className="mt-2 text-3xl font-semibold text-white"
+              aria-label={isLoading ? "Loading asset count" : undefined}
+            >
+              {isLoading ? "—" : account ? account.balances.length : "—"}
             </p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">XLM</p>
-            <p className="mt-2 break-all text-[2rem] font-semibold leading-none text-white sm:text-3xl">
-              {formatMetricBalance(xlmBalance?.amount)}
+            <p
+              className="mt-2 break-all text-[2rem] font-semibold leading-none text-white sm:text-3xl"
+              aria-label={isLoading ? "Loading XLM balance" : undefined}
+            >
+              {isLoading ? "—" : account ? formatMetricBalance(xlmBalance?.amount) : "—"}
             </p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">USDC</p>
-            <p className="mt-2 break-all text-[2rem] font-semibold leading-none text-white sm:text-3xl">
-              {formatMetricBalance(usdcBalance?.amount)}
+            <p
+              className="mt-2 break-all text-[2rem] font-semibold leading-none text-white sm:text-3xl"
+              aria-label={isLoading ? "Loading USDC balance" : undefined}
+            >
+              {isLoading ? "—" : account ? formatMetricBalance(usdcBalance?.amount) : "—"}
             </p>
           </div>
         </div>
 
-        {!hasUsdcTrustline ? (
+        {!isLoading && account && !hasUsdcTrustline ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
             <div>
               <p className="text-base font-medium text-white">Enable testnet USDC</p>
@@ -473,14 +483,14 @@ export const WalletOverviewCard = () => {
               Add USDC trustline
             </Button>
           </div>
-        ) : (
+        ) : !isLoading && account ? (
           <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-4">
             <p className="text-sm font-medium text-white">Testnet USDC is enabled</p>
             <p className="mt-1 text-sm text-slate-400">
               Your wallet already trusts {clientEnv.stellarTestnetUsdcCode}, so the faucet can send it here immediately.
             </p>
           </div>
-        )}
+        ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/10 bg-slate-950/70 p-4">
           <div>
@@ -551,6 +561,13 @@ export const WalletOverviewCard = () => {
             </div>
           )}
         </div>
+
+        {session?.token && <WalletRampActivity key={session.token} token={session.token}
+          spendableUsdc={account?.balances.find((balance) => balance.assetCode === "USDC" && balance.assetIssuer === clientEnv.stellarTestnetUsdcIssuer)?.availableAmount ?? "0"}
+          sign={stellarWallet ? async (transaction) => {
+            await authorizeWallet(stellarWallet);
+            return stellarWallet.signTransaction(transaction);
+          } : undefined} />}
 
         {isSendModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">

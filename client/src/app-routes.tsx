@@ -69,6 +69,19 @@ const StudioSection = ({
   <StudioShell>{children}</StudioShell>
 );
 
+const OnboardingRoute = () => {
+  const [searchParams] = useSearchParams();
+  const startArtistSetup = searchParams.get("intent") === "artist";
+
+  return (
+    <section className="studio-theme min-h-[calc(100dvh-4rem)] bg-background px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-[720px]">
+        <OnboardingForm startArtistSetup={startArtistSetup} />
+      </div>
+    </section>
+  );
+};
+
 const StreamPage = () => {
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -401,9 +414,7 @@ export const AppRoutes = () => (
     />
     <Route
       path="/onboarding"
-      element={
-        <section className="studio-theme min-h-[calc(100dvh-4rem)] bg-background px-4 py-8 sm:px-6 sm:py-10"><div className="mx-auto max-w-[720px]"><OnboardingForm /></div></section>
-      }
+      element={<OnboardingRoute />}
     />
     <Route path="/stream" element={<StreamPage />} />
     <Route path="/stream/:trackId" element={<StreamTrackPage />} />

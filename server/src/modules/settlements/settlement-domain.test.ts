@@ -264,3 +264,31 @@ test("zero allocations do not require fabricated zero-value ledger entries", () 
   );
   assert.equal(b.fundedUnits, "1");
 });
+
+test("every protected settlement action requires two distinct treasury signatures", () => {
+  const signers = [Keypair.random(), Keypair.random(), Keypair.random()];
+  for (const kind of ["settle", "reclaim", "maintain", "restore"] as const) {
+    const treasury = signers[0]!.publicKey();
+    const tx = new TransactionBuilder(new Account(treasury, "10"), {
+      fee: "100", networkPassphrase: Networks.TESTNET,
+    }).addOperation(Operation.manageData({ name: "protected-action", value: kind })).setTimeout(600).build();
+    const attempt = {
+      id: "id", batchId: preview().id, kind, actor: "admin:test", treasuryAddress: treasury,
+      networkPassphrase: Networks.TESTNET, transaction: tx.toXDR(), transactionHash: tx.hash().toString("hex"),
+      signers: signers.map((key) => key.publicKey()).sort(), signatures: {}, signedBy: [],
+      status: "awaiting_signatures" as const, submissionCount: 0,
+      expiresAt: new Date(Number(tx.timeBounds!.maxTime) * 1000).toISOString(),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+    assert.throws(() => signedFinancialTransaction(attempt), /Two independent/, kind);
+    const first = TransactionBuilder.fromXDR(attempt.transaction, Networks.TESTNET);
+    first.sign(signers[0]!);
+    const once = collectTreasurySignatures(attempt, first.toXDR());
+    const duplicate = collectTreasurySignatures(once, first.toXDR());
+    assert.throws(() => signedFinancialTransaction(duplicate), /Two independent/, kind);
+    const second = TransactionBuilder.fromXDR(attempt.transaction, Networks.TESTNET);
+    second.sign(signers[1]!);
+    const both = collectTreasurySignatures(duplicate, second.toXDR());
+    assert.equal(signedFinancialTransaction(both).hash().toString("hex"), attempt.transactionHash, kind);
+  }
+});

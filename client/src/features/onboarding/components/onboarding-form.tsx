@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   MUSIC_GENRES,
+  FEATURED_MUSIC_GENRES,
+  nextOnboardingStep,
   type ArtistActivationQuote,
   type ArtistSummary,
   type PrimaryIntent,
@@ -34,6 +36,7 @@ import { ArtistActivationSummary } from "@/features/sponsorships/artist-activati
 
 type OnboardingFormProps = {
   mode?: "page" | "modal";
+  startArtistSetup?: boolean;
   onBusyChange?: (busy: boolean) => void;
   footerActions?: ReactNode;
   onCompleted?: (intent: PrimaryIntent, destination: string) => void;
@@ -48,6 +51,46 @@ type FlowStep =
   | "visuals"
   | "complete";
 type MusicGenre = (typeof MUSIC_GENRES)[number];
+
+function GenreChoices({
+  genres,
+  onToggle,
+}: {
+  genres: MusicGenre[];
+  onToggle: (genre: MusicGenre) => void;
+}) {
+  const featured: readonly MusicGenre[] = FEATURED_MUSIC_GENRES;
+  const choices = (items: readonly MusicGenre[]) => (
+    <div className="flex flex-wrap gap-2">
+      {items.map((genre) => (
+        <ToggleChip
+          key={genre}
+          selected={genres.includes(genre)}
+          disabled={!genres.includes(genre) && genres.length >= 5}
+          onClick={() => onToggle(genre)}
+        >
+          {genre}
+        </ToggleChip>
+      ))}
+    </div>
+  );
+  const visible = MUSIC_GENRES.filter(
+    (genre) => featured.includes(genre) || genres.includes(genre),
+  );
+  return (
+    <div className="space-y-3">
+      {choices(visible)}
+      <details>
+        <summary className="cursor-pointer text-sm text-primary">
+          More genres
+        </summary>
+        <div className="mt-3">
+          {choices(MUSIC_GENRES.filter((genre) => !visible.includes(genre)))}
+        </div>
+      </details>
+    </div>
+  );
+}
 
 const COUNTRY_OPTIONS = [
   "Afghanistan",
@@ -276,27 +319,24 @@ const intentOptions: Array<{
 const isArtistIntent = (intent: PrimaryIntent) =>
   intent === "artist" || intent === "both";
 
-const isListenerIntent = (intent: PrimaryIntent) =>
-  intent === "listener" || intent === "both";
-
 const isEmailDerivedDisplayName = (displayName: string, email?: string) =>
   Boolean(email?.trim()) &&
   displayName.trim().toLowerCase() === email!.trim().toLowerCase();
 
 const nextStepFor = (intent: PrimaryIntent): FlowStep => {
-  return isArtistIntent(intent) ? "artist_activation" : "personalize";
+  return nextOnboardingStep(intent, "intent");
 };
 
 const nextStepAfterArtistActivation = (intent: PrimaryIntent): FlowStep =>
-  isListenerIntent(intent) ? "personalize" : "artist_identity";
+  nextOnboardingStep(intent, "artist_activation");
 
 const stepLabels = (intent: PrimaryIntent) => [
   "Welcome",
   "How you’ll use Music City",
   ...(isArtistIntent(intent) ? ["Artist activation"] : []),
-  ...(isListenerIntent(intent) ? ["Personalize"] : []),
   ...(isArtistIntent(intent) ? ["Artist identity"] : []),
   "Profile visuals",
+  "Discover artists",
   "Ready",
 ];
 
@@ -383,6 +423,7 @@ const prepareImageFile = (
 
 export const OnboardingForm = ({
   mode = "page",
+  startArtistSetup = false,
   onCompleted,
   onBusyChange,
   footerActions,
@@ -418,7 +459,7 @@ export const OnboardingForm = ({
     website: "",
     instagram: "",
     youtube: "",
-    soundcloud: "",
+    facebook: "",
     x: "",
   });
   const [hasReleasedMusic, setHasReleasedMusic] = useState<
@@ -511,7 +552,13 @@ export const OnboardingForm = ({
 
         const profile = state.profile;
         setProfileId(profile.id);
-        setPrimaryIntent(profile.primaryIntent);
+        const shouldStartArtistSetup =
+          startArtistSetup && state.onboardingStatus === "complete";
+        setPrimaryIntent(
+          shouldStartArtistSetup && !isArtistIntent(profile.primaryIntent)
+            ? "artist"
+            : profile.primaryIntent,
+        );
         setDisplayName(
           isEmailDerivedDisplayName(profile.displayName, profile.email)
             ? ""
@@ -538,7 +585,7 @@ export const OnboardingForm = ({
           website: profile.socialLinks.website ?? "",
           instagram: profile.socialLinks.instagram ?? "",
           youtube: profile.socialLinks.youtube ?? "",
-          soundcloud: profile.socialLinks.soundcloud ?? "",
+          facebook: profile.socialLinks.facebook ?? "",
           x: profile.socialLinks.x ?? "",
         });
         setHasReleasedMusic(profile.hasReleasedMusic);
@@ -548,7 +595,7 @@ export const OnboardingForm = ({
         setRemoveHeaderImage(false);
 
         if (state.onboardingStatus === "complete") {
-          setStep("complete");
+          setStep(shouldStartArtistSetup ? "intent" : "complete");
         } else if (
           [
             "identity",
@@ -577,7 +624,7 @@ export const OnboardingForm = ({
     return () => {
       cancelled = true;
     };
-  }, [session?.token, loadRetry]);
+  }, [session?.token, loadRetry, startArtistSetup]);
 
   useEffect(() => {
     if (!session?.onboardingStep || session.onboardingStatus === "complete") {
@@ -600,7 +647,7 @@ export const OnboardingForm = ({
   }, [session?.onboardingStatus, session?.onboardingStep]);
 
   useEffect(() => {
-    if (!isListenerIntent(primaryIntent) || step !== "personalize") {
+    if (step !== "personalize") {
       return;
     }
 
@@ -668,7 +715,7 @@ export const OnboardingForm = ({
         : step === "artist_activation"
           ? "Artist activation"
           : step === "personalize"
-            ? "Personalize"
+            ? "Discover artists"
             : step === "artist_identity"
               ? "Artist identity"
               : step === "visuals"
@@ -804,7 +851,8 @@ export const OnboardingForm = ({
           interestedInLocalMusic,
           notificationPreferences,
         });
-        setStep(isArtistIntent(primaryIntent) ? "artist_identity" : "visuals");
+        await complete();
+        trackEvent("signup_completed");
       } else if (step === "artist_identity") {
         await saveStep({
           step: "artist_identity",
@@ -843,8 +891,7 @@ export const OnboardingForm = ({
           removeProfileImage: skipOptional ? false : removeProfileImage,
           removeHeaderImage: skipOptional ? false : removeHeaderImage,
         });
-        await complete();
-        trackEvent("signup_completed");
+        setStep("personalize");
       } else {
         const destination =
           primaryIntent === "artist" ? "/dashboard" : "/discover";
@@ -889,17 +936,13 @@ export const OnboardingForm = ({
     } else if (step === "artist_activation") {
       setStep("intent");
     } else if (step === "personalize") {
-      setStep(isArtistIntent(primaryIntent) ? "artist_activation" : "intent");
-    } else if (step === "artist_identity") {
-      setStep(
-        isListenerIntent(primaryIntent) ? "personalize" : "artist_activation",
-      );
-    } else if (step === "visuals") {
-      setStep(
-        isArtistIntent(primaryIntent) ? "artist_identity" : "personalize",
-      );
-    } else if (step === "complete") {
       setStep("visuals");
+    } else if (step === "artist_identity") {
+      setStep("artist_activation");
+    } else if (step === "visuals") {
+      setStep(isArtistIntent(primaryIntent) ? "artist_identity" : "intent");
+    } else if (step === "complete") {
+      setStep("personalize");
     }
   };
 
@@ -1177,34 +1220,22 @@ export const OnboardingForm = ({
           <div className="space-y-6">
             <FormStepHeader
               ref={stepHeading}
-              title="Help us find your sound."
-              eyebrow="Personalize"
-              description="Choose a few interests now. You can change them any time."
+              title="Find your artists"
+              eyebrow="Discover artists"
+              description="Follow artists you want to hear from. This is optional."
             />
 
-            <fieldset className="space-y-3">
-              <legend className="text-sm font-medium text-foreground">
-                Favorite genres
-              </legend>
-              <p className="text-xs text-muted-foreground">
-                Choose up to five. {genres.length} selected.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {MUSIC_GENRES.map((genre) => {
-                  const selected = genres.includes(genre);
-                  return (
-                    <ToggleChip
-                      key={genre}
-                      selected={selected}
-                      disabled={!selected && genres.length >= 5}
-                      onClick={() => toggleGenre(genre)}
-                    >
-                      {genre}
-                    </ToggleChip>
-                  );
-                })}
-              </div>
-            </fieldset>
+            {!isArtistIntent(primaryIntent) ? (
+              <fieldset className="space-y-3">
+                <legend className="text-sm font-medium text-foreground">
+                  Favorite genres
+                </legend>
+                <p className="text-xs text-muted-foreground">
+                  Choose up to five. {genres.length} selected.
+                </p>
+                <GenreChoices genres={genres} onToggle={toggleGenre} />
+              </fieldset>
+            ) : null}
 
             <fieldset className="space-y-3">
               <legend className="text-sm font-medium text-foreground">
@@ -1331,21 +1362,7 @@ export const OnboardingForm = ({
               <p className="text-xs text-muted-foreground">
                 Choose up to five. {genres.length} selected.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {MUSIC_GENRES.map((genre) => {
-                  const selected = genres.includes(genre);
-                  return (
-                    <ToggleChip
-                      key={genre}
-                      selected={selected}
-                      disabled={!selected && genres.length >= 5}
-                      onClick={() => toggleGenre(genre)}
-                    >
-                      {genre}
-                    </ToggleChip>
-                  );
-                })}
-              </div>
+              <GenreChoices genres={genres} onToggle={toggleGenre} />
             </fieldset>
 
             <fieldset className="space-y-3">
@@ -1380,7 +1397,7 @@ export const OnboardingForm = ({
                   ["website", "Website"],
                   ["instagram", "Instagram"],
                   ["youtube", "YouTube"],
-                  ["soundcloud", "SoundCloud"],
+                  ["facebook", "Facebook"],
                   ["x", "X"],
                 ] as const
               ).map(([key, label]) => (
@@ -1422,7 +1439,8 @@ export const OnboardingForm = ({
                 {profileImagePreview ? (
                   <AppImage
                     src={profileImagePreview}
-                    sizes="96px" maxWidth={384}
+                    sizes="96px"
+                    maxWidth={384}
                     alt="Profile preview"
                     className="h-24 w-24 rounded-full object-cover"
                   />
@@ -1532,12 +1550,16 @@ export const OnboardingForm = ({
             >
               {primaryIntent === "listener"
                 ? "Your listening space is ready."
-                : "Your artist workspace is ready."}
+                : artistActivationQuote?.artistAccess
+                  ? "Your artist workspace is ready."
+                  : "Your account is ready."}
             </h2>
             <p className="mx-auto max-w-md text-sm leading-7 text-muted-foreground">
               {primaryIntent === "listener"
                 ? "Start with a fresh release, follow an artist, or build your first playlist."
-                : "Your profile is ready. Continue into the studio whenever you want to release music."}
+                : artistActivationQuote?.artistAccess
+                  ? "Your profile is ready. Continue into the studio whenever you want to release music."
+                  : "You can listen now. Artist tools unlock after you complete activation, which you can review when you create your first release."}
             </p>
           </div>
         ) : null}
@@ -1620,12 +1642,10 @@ export const OnboardingForm = ({
                 ? "Preparing image..."
                 : isSaving
                   ? "Saving..."
-                  : step === "visuals"
+                  : step === "personalize"
                     ? "Finish setup"
                     : step === "artist_activation"
-                      ? isListenerIntent(primaryIntent)
-                        ? "Continue to listening setup"
-                        : "Continue to artist profile"
+                      ? "Continue to artist profile"
                       : "Continue"}
             </Button>
           )}

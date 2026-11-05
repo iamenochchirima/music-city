@@ -36,6 +36,30 @@ const ensureGuestIdentityToken = async () => {
   return guestIdentityPromise;
 };
 
+const isUnauthorizedGuestRequest = (error: unknown) =>
+  error instanceof ApiClientError && error.status === 401;
+
+const refreshGuestIdentityToken = async (expiredToken: string) => {
+  if (typeof window === "undefined") return ensureGuestIdentityToken();
+  if (readGuestIdentityToken() === expiredToken)
+    window.localStorage.removeItem(GUEST_IDENTITY_KEY);
+  return ensureGuestIdentityToken();
+};
+
+const withGuestIdentityRetry = async <T>(
+  request: (guestToken: string, isRetry: boolean) => Promise<T>,
+) => {
+  let guestToken = await ensureGuestIdentityToken();
+  try {
+    return await request(guestToken, false);
+  } catch (error) {
+    if (!isUnauthorizedGuestRequest(error) || typeof window === "undefined")
+      throw error;
+    guestToken = await refreshGuestIdentityToken(guestToken);
+    return request(guestToken, true);
+  }
+};
+
 const resolveStreamUrl = (streamUrl: string) => {
   if (/^https?:\/\//i.test(streamUrl)) {
     return streamUrl;
@@ -56,45 +80,41 @@ export const playbackApi = {
 
   preloadTrackIds(token: string | undefined, trackIds: string[]) {
     audioPreloader.prime(trackIds, token ?? "guest", async (trackId) => {
-      const guestToken = token ? null : await ensureGuestIdentityToken();
-      return httpClient.post<PlaybackPreload>(
-        "/playback/preload",
-        { trackId },
-        token,
-        guestToken ? { "X-Guest-Playback": guestToken } : {},
+      if (token)
+        return httpClient.post<PlaybackPreload>("/playback/preload", { trackId }, token);
+      return withGuestIdentityRetry((guestToken) =>
+        httpClient.post<PlaybackPreload>(
+          "/playback/preload",
+          { trackId },
+          undefined,
+          { "X-Guest-Playback": guestToken },
+        ),
       );
     });
   },
 
   async createSession(token: string | undefined, trackId: string) {
     const prepared = audioPreloader.peek(trackId, token ?? "guest");
-    let guestToken = token ? null : await ensureGuestIdentityToken();
-    const create = () =>
+    const create = (guestToken?: string, isRetry = false) =>
       httpClient.post<{
         playbackSession: PlaybackSession;
         guestIdentityToken?: string;
         preloadKey?: string;
       }>(
         "/playback/sessions",
-        { trackId, ...(prepared ? { preloadTicket: prepared.ticket } : {}) },
+        {
+          trackId,
+          ...(prepared && !isRetry ? { preloadTicket: prepared.ticket } : {}),
+        },
         token,
-        guestToken ? { "X-Guest-Playback": guestToken } : {},
+        !token && guestToken ? { "X-Guest-Playback": guestToken } : {},
       );
     let response;
-    try {
-      response = await create();
-    } catch (error) {
-      if (
-        token ||
-        !(error instanceof ApiClientError) ||
-        error.status !== 401 ||
-        typeof window === "undefined"
-      )
-        throw error;
-      window.localStorage.removeItem(GUEST_IDENTITY_KEY);
-      guestToken = await ensureGuestIdentityToken();
-      response = await create();
-    }
+    response = token
+      ? await create()
+      : await withGuestIdentityRetry((guestToken, isRetry) =>
+          create(guestToken, isRetry),
+        );
 
     const playbackSession = {
       ...response.playbackSession,

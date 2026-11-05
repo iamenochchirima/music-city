@@ -8,6 +8,7 @@ test("admin bootstrap is authorized and race-safe; login attempts are database-l
   assert.ok(["localhost", "127.0.0.1"].includes(url.hostname) && url.pathname.endsWith("_test"), "Use an isolated local database ending in _test");
   process.env.DATABASE_URL = testUrl;
   process.env.NODE_ENV = "test";
+  process.env.ADMIN_BOOTSTRAP_TOKEN = "music-city-local-bootstrap-token";
 
   const { databaseService } = await import("../../services/database.service.js");
   const { adminService } = await import("./admin.service.js");

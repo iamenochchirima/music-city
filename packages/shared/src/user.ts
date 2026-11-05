@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MUSIC_GENRES } from "./genres.js";
 
 import {
   onboardingStatusSchema,
@@ -20,23 +21,10 @@ export const socialLinksSchema = z.object({
   website: z.string().url().max(300).optional().or(z.literal("")),
   instagram: z.string().url().max(300).optional().or(z.literal("")),
   youtube: z.string().url().max(300).optional().or(z.literal("")),
-  soundcloud: z.string().url().max(300).optional().or(z.literal("")),
+  facebook: z.string().url().max(300).optional().or(z.literal("")),
   x: z.string().url().max(300).optional().or(z.literal("")),
 });
 export type SocialLinks = z.infer<typeof socialLinksSchema>;
-
-export const MUSIC_GENRES = [
-  "Afrobeats",
-  "Alternative",
-  "Hip-hop",
-  "House",
-  "Indie",
-  "Jazz",
-  "Pop",
-  "R&B",
-  "Rock",
-  "Soul",
-] as const;
 
 export const musicGenreSchema = z.enum(MUSIC_GENRES);
 
