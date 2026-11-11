@@ -151,6 +151,45 @@ it("starts with release setup and autosaves changed release details", async () =
     { timeout: 4000 },
   );
 });
+it("keeps the description editable while autosave saves it", async () => {
+  let finish: (() => void) | undefined;
+  mocks.update.mockImplementation(
+    (_token, _id, patch) =>
+      new Promise((resolve) => {
+        finish = () =>
+          resolve({
+            ...base,
+            ...patch,
+            description: String(patch.description ?? "").trim(),
+          });
+      }),
+  );
+  const user = userEvent.setup();
+  await open("artwork");
+  const description = () =>
+    screen.getByLabelText("Description") as HTMLTextAreaElement;
+
+  await user.type(description(), "Warm intro ");
+  await waitFor(() => expect(mocks.update).toHaveBeenCalledTimes(1), {
+    timeout: 4000,
+  });
+
+  expect(mocks.update).toHaveBeenCalledWith(
+    "token",
+    "release",
+    expect.objectContaining({ description: "Warm intro" }),
+  );
+  expect(description().disabled).toBe(false);
+  expect(screen.getByText("Saving changes…")).toBeTruthy();
+
+  finish?.();
+
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  expect(mocks.update).toHaveBeenCalledTimes(1);
+  expect(description().value).toBe("Warm intro ");
+  expect(screen.queryByText("Saving changes…")).toBeNull();
+});
+
 it("lets creators prepare per-track sale prices from the release workspace", async () => {
   const user = userEvent.setup();
   mocks.artistAccess = true;

@@ -60,8 +60,10 @@ const releaseDetails = (release: ReleaseDetail) => ({
   genre: release.genre.trim(),
   expectedTrackCount:
     release.type === "single" ? 1 : release.expectedTrackCount,
-  recordLabel: release.recordLabel ?? "",
-  description: release.description ?? "",
+  // The server trims these fields. Comparing the untrimmed draft against the
+  // saved copy kept autosave re-firing while the text ended in a space.
+  recordLabel: release.recordLabel?.trim() ?? "",
+  description: release.description?.trim() ?? "",
 });
 const orderItems = (release: ReleaseDetail) =>
   release.tracks.map(({ trackId, trackNumber, discNumber, isFocusTrack }) => ({
@@ -117,6 +119,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [myTracks, setMyTracks] = useState<TrackSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutosaving, setIsAutosaving] = useState(false);
   const [isEditingTrackInformation, setIsEditingTrackInformation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -388,13 +391,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     }
     setTrackErrors({});
   };
-  const saveWorkspace = async () => {
+  const saveWorkspace = async (background = false) => {
     if (!session?.token || !release) return false;
     if (["processing", "scheduled"].includes(release.publication?.state ?? ""))
       return true;
     const details = validatedDetails();
     if (!details) return false;
-    setIsSaving(true);
+    // Background autosave keeps the inputs editable: disabling the fieldset for
+    // every save made the description box flicker and drop the caret.
+    if (background) setIsAutosaving(true);
+    else setIsSaving(true);
     setActionError("");
     try {
       await saveTrackInformation();
@@ -413,7 +419,8 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       reportError(error, "Unable to save draft");
       return false;
     } finally {
-      setIsSaving(false);
+      if (background) setIsAutosaving(false);
+      else setIsSaving(false);
     }
   };
   const selectStep = (value: ReleaseSection) => {
@@ -758,6 +765,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       !savedRelease ||
       actionError ||
       isSaving ||
+      isAutosaving ||
       isEditingTrackInformation ||
       audioBusy ||
       publicationPending ||
@@ -771,12 +779,13 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       )
     )
       return;
-    const timer = setTimeout(() => void saveAction.current(), 1000);
+    const timer = setTimeout(() => void saveAction.current(true), 1000);
     return () => clearTimeout(timer);
   }, [
     draftSignature,
     savedSignature,
     isSaving,
+    isAutosaving,
     isEditingTrackInformation,
     audioBusy,
     publicationPending,
@@ -1150,7 +1159,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         }
       >
         <p role="status" className="text-sm text-muted-foreground">
-          {isSaving
+          {isSaving || isAutosaving
             ? "Saving changes…"
             : detailsDirty ||
                 orderDirty ||
