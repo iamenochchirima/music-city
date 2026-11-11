@@ -409,3 +409,51 @@ test("publication rejects a tracklist missing planned songs", () => {
     /Add all planned songs/,
   );
 });
+
+test("release artwork is copied to tracks that have none", async () => {
+  const currentRelease = { ...release("single"), status: "draft" as const };
+  const applied: Array<{
+    releaseId: string;
+    artwork: { coverStorageKey: string; coverImageUrl?: string };
+  }> = [];
+  const cleanup = [
+    restore(releasesRepository, "findById", async () => currentRelease),
+    restore(
+      releasesRepository,
+      "upsert",
+      (async (nextRelease) => nextRelease) as typeof releasesRepository.upsert,
+    ),
+    restore(releasesRepository, "listTracks", async () => []),
+    restore(
+      tracksRepository,
+      "applyReleaseArtwork",
+      (async (
+        releaseId: string,
+        artwork: { coverStorageKey: string; coverImageUrl?: string },
+      ) => {
+        applied.push({ releaseId, artwork });
+        return 1;
+      }) as typeof tracksRepository.applyReleaseArtwork,
+    ),
+  ];
+
+  try {
+    await releasesService.attachCoverArt(currentRelease.id, {
+      coverStorageKey: "covers/releases/rel-1.png",
+    });
+
+    assert.equal(applied.length, 1);
+    assert.equal(applied[0]?.releaseId, currentRelease.id);
+    assert.equal(
+      applied[0]?.artwork.coverStorageKey,
+      "covers/releases/rel-1.png",
+    );
+    assert.match(
+      applied[0]?.artwork.coverImageUrl ?? "",
+      /\/media\/images\/v1\/.+\/768\.webp$/,
+    );
+  } finally {
+    cleanup.reverse().forEach((restoreOriginal) => restoreOriginal());
+  }
+});
+

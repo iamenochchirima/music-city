@@ -11,6 +11,7 @@ import { databaseService } from "../../services/database.service.js";
 import { HttpError } from "../../utils/http-error.js";
 import { releasesService } from "../releases/releases.service.js";
 import type { StoredRelease } from "../releases/releases.repository.js";
+import { releaseArtworkPatch } from "../tracks/track-artwork.js";
 
 type Assignment = {
   track_id: string;
@@ -188,10 +189,17 @@ export const publicationService = {
               status: "published",
               publishedAt: current.publishedAt ?? timestamp,
             };
-        for (const id of ids)
+        for (const track of tracks)
           await client.query(
-            'UPDATE tracks SET visibility=\'published\',payload=payload || \'{"visibility":"published","priceLabel":"Published"}\'::jsonb WHERE id=$1',
-            [id],
+            "UPDATE tracks SET visibility='published',payload=payload || $2::jsonb WHERE id=$1",
+            [
+              track.id,
+              JSON.stringify({
+                visibility: "published",
+                priceLabel: "Published",
+                ...releaseArtworkPatch(current, track),
+              }),
+            ],
           );
         await client.query(
           "UPDATE releases SET status='published',payload=$2::jsonb WHERE id=$1",
@@ -416,6 +424,7 @@ export const publicationService = {
               priceLabel: "Published",
               genre: t.genre.trim() || release.genre,
               updatedAt: timestamp,
+              ...releaseArtworkPatch(release, t),
             }),
           ],
         );

@@ -2,6 +2,7 @@ import { notifyTrackProcessing } from "../notifications/notifications.service.js
 import type { TrackSummary, TrackMetadataUpdateInput } from "@music-city/shared";
 
 import { databaseService } from "../../services/database.service.js";
+import { applyReleaseArtworkToTracks } from "./track-artwork.js";
 
 export const tracksRepository = {
   async list() {
@@ -30,6 +31,22 @@ export const tracksRepository = {
 
   async findById(trackId: string) {
     return databaseService.findPayloadById<TrackSummary>("tracks", trackId);
+  },
+
+  async applyReleaseArtwork(
+    releaseId: string,
+    artwork: { coverStorageKey: string; coverImageUrl?: string },
+  ) {
+    return databaseService.transaction(async (client) => {
+      const trackIds = (
+        await client.query<{ track_id: string }>(
+          "SELECT track_id FROM release_tracks WHERE release_id=$1",
+          [releaseId],
+        )
+      ).rows.map((row) => row.track_id);
+
+      return applyReleaseArtworkToTracks(client, trackIds, artwork);
+    });
   },
 
   async updateMetadata(trackId: string, artistId: string, patch: TrackMetadataUpdateInput & { updatedAt: string }) {

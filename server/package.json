@@ -14,6 +14,7 @@
     "db:bootstrap": "tsx src/scripts/bootstrap-postgres.ts",
     "db:doctor": "tsx src/scripts/db-doctor.ts",
     "db:repair": "tsx src/scripts/db-repair.ts",
+    "images:backfill-artwork": "tsx src/scripts/backfill-release-artwork.ts",
     "admin:reset-password": "tsx src/scripts/reset-admin-password.ts",
     "treasury:derive-secret": "tsx src/scripts/derive-treasury-key-from-mnemonic.ts",
     "treasury:add-trustline": "tsx src/scripts/add-treasury-trustline.ts",

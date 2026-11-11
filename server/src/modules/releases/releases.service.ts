@@ -818,11 +818,19 @@ export const releasesService = {
     }
 
     requireEditable(existing);
+    const coverImageUrl = storageService.getImageUrl(payload.coverStorageKey);
     const updated = await releasesRepository.upsert({
       ...existing,
       coverStorageKey: payload.coverStorageKey,
-      coverImageUrl: storageService.getImageUrl(payload.coverStorageKey),
+      coverImageUrl,
       updatedAt: new Date().toISOString(),
+    });
+
+    // Artwork describes the whole release, so tracks without their own image
+    // inherit it for the player and track lists.
+    await tracksRepository.applyReleaseArtwork(releaseId, {
+      coverStorageKey: payload.coverStorageKey,
+      coverImageUrl,
     });
 
     return toReleaseDetail(updated, true);
