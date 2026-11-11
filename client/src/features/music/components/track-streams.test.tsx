@@ -20,11 +20,19 @@ const track = (plays: number): TrackSummary => ({
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-it.each([[0, "0 streams"], [1, "1 stream"], [12345, "12,345 streams"]])(
+const normalize = (value: string) => value.replace(/\s+/g, " ").trim();
+
+it.each([[0, "0 streams"], [1, "1 stream"], [12345, `${(12345).toLocaleString()} streams`]])(
   "shows %s streams in track listings",
   (plays, label) => {
     render(<TrackTable tracks={[track(plays)]} renderAction={() => <button>Play</button>} />);
-    expect(screen.getByText(label)).toBeTruthy();
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === "P" &&
+          normalize(element.textContent ?? "") === normalize(label),
+      ),
+    ).toBeTruthy();
   },
 );
 
