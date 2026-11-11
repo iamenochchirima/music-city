@@ -108,6 +108,7 @@ export function RevenueWalletCashout() {
       <WalletRampActivity
         token={session.token}
         sign={sign}
+        walletXlm={account?.balances.find(balance => balance.isNative)?.availableAmount ?? "0"}
         spendableUsdc={usdc?.availableAmount ?? "0"}
         showTransactions={false}
       />

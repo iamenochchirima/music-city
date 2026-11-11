@@ -1,5 +1,7 @@
+import {PoolPanel} from "./pool-panel";
+import { PayoutRuns } from "./payout-runs";
 import { useCallback, useEffect, useState } from "react";
-import type { FinancialAttempt, SettlementBatch } from "@music-city/shared";
+import type { FinancialAttempt, SettlementBatch, PayoutRun } from "@music-city/shared";
 import { Loader2 } from "lucide-react";
 import { useAdminAuth } from "@/features/auth/providers/admin-auth-provider";
 import { httpClient } from "@/lib/api/http-client";
@@ -12,6 +14,7 @@ type Source = {
 };
 type Reconciliation={snapshot:null|{ok:boolean;checkedAt:string;fundedUnits:string;claimedUnits:string;reclaimedUnits:string;openUnits:string;escrowBalanceUnits:string;networkFeeXlmUnits:string;discrepancies:{batchId:string;message:string}[]};stale:boolean;error:string|null};
 type Detail = {
+  payoutRun?: PayoutRun;
   batch: SettlementBatch;
   attempts: FinancialAttempt[];
   events: { id: string; action: string; created_at: string; payload: object }[];
@@ -22,17 +25,13 @@ const money = (value: string) => {
 };
 const panel = "rounded-xl border border-white/10 bg-white/[0.025] p-5";
 export function AdminSettlementsPage() {
+  const [poolEnabled,setPoolEnabled]=useState(false);
   const { session } = useAdminAuth();
   const token = session?.token,
     canOperate = session?.role === "super_admin";
   const [items, setItems] = useState<SettlementBatch[]>([]),
     [sources, setSources] = useState<Source[]>([]),
     [detail, setDetail] = useState<Detail | null>(null);
-  const [source, setSource] = useState<Source | null>(null),
-    [preview, setPreview] = useState<SettlementBatch | null>(null),
-    [expiry, setExpiry] = useState(() =>
-      new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-    );
   const [reconciliation,setReconciliation]=useState<Reconciliation|null>(null);
   const [signed, setSigned] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
@@ -55,8 +54,6 @@ export function AdminSettlementsPage() {
   );
   useEffect(() => {
     setDetail(null);
-    setPreview(null);
-    setSource(null);
     setItems([]);
     setLoading(true);
     void load()
@@ -99,15 +96,15 @@ export function AdminSettlementsPage() {
   }
   const b = detail?.batch;
   return (
-    <main aria-busy={busy} className="space-y-6 p-4 text-slate-100 md:p-8">
+    <main aria-busy={busy} className="mx-auto max-w-5xl space-y-5 p-4 text-slate-100 md:p-8">
       <header>
         <h1 className="text-2xl font-semibold">Earnings settlements</h1>
         {busy && <span role="status" aria-label="Updating settlement" className="mt-3 flex items-center gap-2 text-sm text-slate-400"><Loader2 className="size-4 animate-spin"/>Updating settlement</span>}
         <p className="mt-2 text-sm text-slate-400">
-          Fund approved earnings with two treasury signatures. Contributors
-          claim their own USDC.
+          Manage pool funds and approve treasury transactions.
         </p>
       </header>
+      {token&&<PoolPanel token={token} canOperate={canOperate} onEnabledChange={setPoolEnabled}/>}
       {error && (
         <p
           role="alert"
@@ -116,13 +113,16 @@ export function AdminSettlementsPage() {
           {error}
         </p>
       )}
-        <section aria-label="Contract reconciliation" className={panel}>
+        <details open={!poolEnabled || !!reconciliation?.error || !!(reconciliation?.snapshot && !reconciliation.snapshot.ok)} className="border-t border-white/10 pt-4">
+        <summary className="w-fit cursor-pointer text-sm text-slate-400">Settlement reconciliation</summary>
+        <section aria-label="Contract reconciliation" className="mt-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">Contract reconciliation</h2>{!reconciliation?.snapshot||reconciliation.stale?<p role="status" className="flex items-center gap-2 text-sm text-slate-400"><Loader2 className="size-4 animate-spin"/>Checking financial records</p>:<p role="status" className={reconciliation.snapshot.ok?"text-sm text-emerald-300":"text-sm text-amber-200"}>{reconciliation.snapshot.ok?"Reconciled":"Needs attention"}</p>}</div>
         {reconciliation?.snapshot&&<dl className="mt-4 grid grid-cols-2 gap-3 text-sm lg:grid-cols-5">{[["Funded",reconciliation.snapshot.fundedUnits],["Claimed",reconciliation.snapshot.claimedUnits],["Recovered",reconciliation.snapshot.reclaimedUnits],["Unclaimed",reconciliation.snapshot.openUnits],["Escrow USDC",reconciliation.snapshot.escrowBalanceUnits]].map(([label,value])=><div key={label} className="rounded-lg bg-white/5 p-3"><dt className="text-slate-400">{label}</dt><dd className="mt-1 break-words">{money(value!)}</dd></div>)}</dl>}
         {reconciliation?.snapshot&&<p className="mt-3 text-xs text-slate-400">Network fees: {money(reconciliation.snapshot.networkFeeXlmUnits)} XLM</p>}
         {reconciliation?.error&&<p role="alert" className="mt-3 text-sm text-amber-200">{reconciliation.error}</p>}
         {reconciliation?.snapshot&&!reconciliation.snapshot.ok&&<ul role="alert" className="mt-3 space-y-2 text-sm text-amber-200">{reconciliation.snapshot.discrepancies.map((d,index)=><li key={`${d.batchId}:${index}`}>{d.message}</li>)}</ul>}
       </section>
+      </details>
     {detail ? (
         <>
           <Button variant="outline" onClick={() => setDetail(null)}>
@@ -140,6 +140,11 @@ export function AdminSettlementsPage() {
                 Expires {new Date(b!.expiresAt).toLocaleString()}
               </p>
             </div>
+            {detail.payoutRun && <div className="space-y-2 rounded-lg border border-emerald-400/30 p-4">
+              <h3 className="font-semibold">Payout run · {money(detail.payoutRun.fundedUnits)} USDC total</h3>
+              <p>{detail.payoutRun.batches.length} earnings sources share one treasury transaction. Both signers approve the entire run.</p>
+              {detail.payoutRun.batches.map(member=><p key={member.id} className="break-all text-sm">{member.trackId} · {member.sourceId} · {money(member.fundedUnits)} USDC</p>)}
+            </div>}
             {b!.discrepancy && (
               <p
                 role="alert"
@@ -371,116 +376,9 @@ export function AdminSettlementsPage() {
         </>
       ) : (
         <>
-          {canOperate && (
-            <section className={`${panel} space-y-4`}>
-              <h2 className="text-lg font-semibold">Prepare a settlement</h2>
-              {!sources.length ? (
-                <p className="text-sm text-slate-400">
-                  No approved, unreserved earnings sources.
-                </p>
-              ) : (
-                <div className="grid gap-2">
-                  {sources.map((s) => (
-                    <button
-                      key={`${s.trackId}:${s.sourceType}:${s.sourceId}`}
-                      className={`rounded-lg border p-3 text-left text-sm ${source === s ? "border-emerald-400" : "border-white/10"}`}
-                      onClick={() => {
-                        setSource(s);
-                        setPreview(null);
-                      }}
-                    >
-                      <span className="capitalize">
-                        {s.sourceType.replaceAll("_", " ")}
-                      </span>
-                      <span className="ml-2 text-slate-400">
-                        {s.allocations} allocations
-                      </span>
-                      <span className="mt-1 block break-all text-xs text-slate-400">
-                        {s.trackId} · {s.sourceId}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {source && (
-                <>
-                  <label className="block text-sm">
-                    Claim deadline, UTC
-                    <input
-                      type="datetime-local"
-                      value={expiry}
-                      onChange={(e) => {
-                        setExpiry(e.target.value);
-                        setPreview(null);
-                      }}
-                      className="ml-3 rounded-lg border border-white/15 bg-black/20 p-2"
-                    />
-                  </label>
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      run(async () => {
-                        const r = await httpClient.post<{
-                          batch: SettlementBatch;
-                        }>(
-                          "/settlements/preview",
-                          {
-                            trackId: source.trackId,
-                            sourceType: source.sourceType,
-                            sourceId: source.sourceId,
-                            expiresAt: new Date(`${expiry}:00Z`).toISOString(),
-                          },
-                          token,
-                        );
-                        setPreview(r.batch);
-                      })
-                    }
-                  >
-                    Review allocations
-                  </Button>
-                </>
-              )}
-              {preview && (
-                <div className="space-y-3 border-t border-white/10 pt-4">
-                  <p className="font-semibold">
-                    {money(preview.fundedUnits)} USDC · Agreement v
-                    {preview.version}
-                  </p>
-                  {preview.allocations.map((a) => (
-                    <p key={a.index} className="break-all text-sm">
-                      {money(a.amountUnits)} USDC → {a.beneficiary}
-                    </p>
-                  ))}
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      run(async () => {
-                        await httpClient.post(
-                          "/settlements/reserve",
-                          {
-                            previewId: preview.id,
-                            source: {
-                              trackId: preview.trackId,
-                              sourceType: preview.sourceType,
-                              sourceId: preview.sourceId,
-                              expiresAt: preview.expiresAt,
-                            },
-                          },
-                          token,
-                        );
-                        await load(preview.id);
-                        setPreview(null);
-                      })
-                    }
-                  >
-                    Reserve reviewed earnings
-                  </Button>
-                </div>
-              )}
-            </section>
-          )}
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Settlement history</h2>
+          {canOperate && token && !poolEnabled && <PayoutRuns token={token} sources={sources} onOpen={async id=>{await load(id);}} />}
+          <details open={!poolEnabled} className="space-y-3 border-t border-white/10 pt-4">
+            <summary className="w-fit cursor-pointer text-sm text-slate-400">Settlement history · {items.length}</summary>
             {loading ? (
               <p role="status">Loading settlements…</p>
             ) : !items.length ? (
@@ -505,7 +403,7 @@ export function AdminSettlementsPage() {
                 </button>
               ))
             )}
-          </section>
+          </details>
         </>
       )}
     </main>

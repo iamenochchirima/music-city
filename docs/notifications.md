@@ -16,6 +16,7 @@ Music City writes inbox entries and email deliveries in the same PostgreSQL tran
 | Earnings claimed                          | Beneficiary                                         | Revenue           |
 | Direct support confirmed                  | Sender and recipient, with separate receipts        | Support history   |
 | Purchase or access payment recorded       | Paying account                                      | Account           |
+| Track purchase confirmed                 | Track owner                                         | Revenue sales     |
 
 Draft edits, signature preparation, uncertain chain submissions, and social activity do not generate emails. Revision notices describe preparation, and contributors receive an approval request only when the owner submits the new version. A removed contributor can open their previous submitted versions through agreement history.
 

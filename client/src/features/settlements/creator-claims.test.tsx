@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FinancialAttempt, SettlementBatch } from "@music-city/shared";
 import { CreatorClaims } from "./creator-claims";
@@ -237,4 +237,25 @@ it("wrong network or beneficiary stops signing before funds can move", async () 
     "network changed",
   );
   expect(m.sign).not.toHaveBeenCalled();
+});
+
+it("explains a missing USDC trustline beside the claim controls and links to wallet setup", async () => {
+  m.post.mockRejectedValueOnce(
+    new Error("Add the configured USDC trustline in your wallet before continuing"),
+  );
+  const user = userEvent.setup();
+  render(<CreatorClaims />);
+  await user.click(await screen.findByRole("button", { name: "Claim USDC" }));
+  await user.click(screen.getByRole("button", { name: "Sign and claim" }));
+  const review = screen.getByRole("region", { name: "Review withdrawal" });
+  expect((await within(review).findByRole("alert")).textContent).toContain(
+    "Your wallet cannot receive USDC yet.",
+  );
+  expect(within(review).getByRole("alert").textContent).toContain(
+    "Your earnings are still available.",
+  );
+  expect(within(review).getByRole("link", { name: "Open wallet to add USDC trustline" })
+    .getAttribute("href")).toBe("/account");
+  expect(m.sign).not.toHaveBeenCalled();
+  expect(m.post).toHaveBeenCalledTimes(1);
 });

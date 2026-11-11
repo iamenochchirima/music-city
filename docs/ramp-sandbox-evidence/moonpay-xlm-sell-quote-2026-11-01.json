@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-01T14:01:07.716Z",
+  "environment": "sandbox",
+  "asset": "xlm",
+  "baseCurrencyAmount": "200",
+  "quoteCurrencyCode": "gbp",
+  "payoutMethod": "credit_debit_card",
+  "httpStatus": 200,
+  "response": {
+    "baseCurrencyAmount": 200,
+    "quoteCurrencyAmount": 20.27,
+    "feeAmount": 3.99,
+    "extraFeeAmount": 0
+  }
+}

@@ -425,6 +425,33 @@ test("durable notifications and delivery", { skip: !testUrl }, async (t) => {
         assert.equal(delivery.state, "sent");
       },
     );
+    await t.test("confirmed track purchases notify the artist once as well as the buyer", async () => {
+      const { paymentsRepository } = await import("../payments/payments.repository.js");
+      const trackId = randomUUID(), intentId = randomUUID();
+      const timestamp = new Date().toISOString();
+      await db.transaction(async client => {
+        await client.query("INSERT INTO tracks(id,artist_id,status,visibility,payload) VALUES($1,$2,'published','published',$3)",
+          [trackId, ownerId, { id: trackId, artistId: ownerId, title: "Purchase notification regression" }]);
+        await client.query("INSERT INTO payment_intents(id,wallet_address,product_type,track_id,status,expires_at,payload) VALUES($1,$2,'track_purchase',$3,'pending',NOW()+INTERVAL '1 hour','{}')", [intentId, outsider, trackId]);
+      });
+      const payment = { id: randomUUID(), intentId, walletAddress: outsider, trackId,
+        productType: "track_purchase" as const, txHash: randomUUID(), amount: "3", assetCode: "USDC",
+        status: "failed" as const, confirmedAt: timestamp, createdAt: timestamp };
+      const saleNotifications = () => db.transaction(client => client.query(
+        "SELECT recipient,kind,href FROM notifications WHERE event_key=$1", [`sale:${intentId}:confirmed`]));
+      await paymentsRepository.upsertPayment(payment);
+      assert.equal((await saleNotifications()).rowCount, 0);
+      await paymentsRepository.upsertPayment({ ...payment, status: "confirmed" });
+      await paymentsRepository.upsertPayment({ ...payment, status: "confirmed" });
+      const sales = (await saleNotifications()).rows;
+      assert.equal(sales.length, 1, "artist must receive one sale notification, including on retry");
+      assert.equal(sales[0].recipient, owner);
+      assert.equal(sales[0].kind, "payment.sale");
+      assert.equal(sales[0].href, "/dashboard/revenue");
+      const receipts = await db.transaction(client => client.query(
+        "SELECT recipient FROM notifications WHERE event_key=$1", [`payment:${intentId}:confirmed`]));
+      assert.deepEqual(receipts.rows, [{ recipient: outsider }]);
+    });
   } finally {
     await db.close();
   }

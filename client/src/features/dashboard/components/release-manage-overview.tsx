@@ -1,3 +1,4 @@
+import { clientEnv } from "@/lib/config/env";
 import { ReleaseSetupFields, releaseSetupErrors } from "./release-setup-fields";
 import { ReleaseSharedDetails } from "./release-shared-details";
 ("use client");
@@ -116,6 +117,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [myTracks, setMyTracks] = useState<TrackSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingTrackInformation, setIsEditingTrackInformation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -756,6 +758,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
       !savedRelease ||
       actionError ||
       isSaving ||
+      isEditingTrackInformation ||
       audioBusy ||
       publicationPending ||
       (!release.hasRevision &&
@@ -774,6 +777,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
     draftSignature,
     savedSignature,
     isSaving,
+    isEditingTrackInformation,
     audioBusy,
     publicationPending,
     actionError,
@@ -1186,7 +1190,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
               Choose which songs to sell and set a separate USDC price for each.
-              Sales are being prepared and are not visible to listeners yet.
+              {clientEnv.trackPurchasesEnabled ? "Buying is enabled for songs with an active agreement." : "Sales are being prepared and are not visible to listeners yet."}
             </p>
           </div>
           {release.tracks.length ? (
@@ -1431,8 +1435,17 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         </div>
       ) : null}
       {section === "information" ? (
-        <div className="space-y-6">
+        <div
+          className="space-y-6"
+          onFocusCapture={() => setIsEditingTrackInformation(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setIsEditingTrackInformation(false);
+            }
+          }}
+        >
           <ReleaseSharedDetails
+            searchToken={session?.token}
             release={release}
             artists={artists}
             busy={isSaving || publicationPending}
@@ -1452,6 +1465,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
             }
           />
           <ReleaseTrackInformation
+            searchToken={session?.token}
             selectedTrack={informationTrack}
             release={release}
             artists={artists}

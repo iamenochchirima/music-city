@@ -647,3 +647,16 @@ test("an unpaid artist can finish registration but still cannot use artist tools
     cleanup.reverse().forEach((fn) => fn());
   }
 });
+
+test("contributor search trims and bounds queries without requiring an artist profile", async () => {
+  const queries: string[] = [];
+  const expected = [{ id: "listener-1", name: "Listener Contributor", walletAddress }];
+  const cleanup = restore(usersRepository, "searchContributors", async query => { queries.push(query); return expected; });
+  try {
+    assert.deepEqual(await usersService.searchContributors(" N "), []);
+    assert.deepEqual(await usersService.searchContributors("  Listener  "), expected);
+    assert.deepEqual(queries, ["Listener"]);
+    await assert.rejects(usersService.searchContributors("x".repeat(81)), /up to 80 characters/);
+    await assert.rejects(usersService.searchContributors(["Listener"]), /up to 80 characters/);
+  } finally { cleanup(); }
+});

@@ -52,7 +52,7 @@ beforeEach(() => {
   m.get.mockImplementation(async (p: string) =>
     p === "/settlements/reconciliation" ? {snapshot:{ok:true,checkedAt:new Date().toISOString(),fundedUnits:"0",claimedUnits:"0",reclaimedUnits:"0",openUnits:"0",escrowBalanceUnits:"0",networkFeeXlmUnits:"0",discrepancies:[]},stale:false,error:null} : p === "/settlements"
       ? { items: [batch] }
-      : p === "/settlements/sources"
+      : p === "/settlements/sources" || p === "/settlements/runs"
         ? { items: [] }
         : { batch, attempts: [attempt], events: [] },
   );

@@ -5,6 +5,9 @@ import type { UserProfile } from "@music-city/shared";
 import { databaseService } from "../../services/database.service.js";
 
 export const usersRepository = {
+  async searchContributors(query: string) {
+    return databaseService.searchContributorProfiles(query);
+  },
   async listAll() {
     return databaseService.listPayloads<UserProfile>("users");
   },

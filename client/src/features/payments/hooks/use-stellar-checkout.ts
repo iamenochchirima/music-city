@@ -271,11 +271,6 @@ export const StellarCheckoutProvider = ({
             { className: "text-2xl font-semibold" },
             `${pending.intent.amount} ${pending.intent.assetCode}`,
           ),
-          createElement(
-            "p",
-            { className: "text-sm text-muted-foreground" },
-            "Network fee is paid separately in XLM.",
-          ),
           pending.attempt.status === "submitting" || uncertain
             ? createElement(
                 "div",

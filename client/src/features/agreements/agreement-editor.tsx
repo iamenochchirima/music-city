@@ -139,6 +139,9 @@ export function AgreementEditor({
       clearTimeout(timer);
     };
   }, [query, token]);
+  const availableMatches = matches.filter(
+    (person) => !rows.some((row) => row.person.walletAddress === person.walletAddress),
+  );
   const total = rows.reduce(
     (sum, r) =>
       sum +
@@ -441,14 +444,14 @@ export function AgreementEditor({
                     {lookupError}
                   </p>
                 )}
-                {query.trim().length >= 2 && !searching && !lookupError && !matches.length && (
+                {query.trim().length >= 2 && !searching && !lookupError && !availableMatches.length && (
                   <p className="text-sm text-muted-foreground">
-                    No matching Music City accounts
+                    {matches.length ? "No other matching contributors" : "No matching Music City accounts"}
                   </p>
                 )}
-                {matches.length > 0 && (
+                {availableMatches.length > 0 && (
                   <ul className="divide-y divide-border rounded-md border border-border">
-                    {matches.map((person) => (
+                    {availableMatches.map((person) => (
                       <li key={person.walletAddress}>
                         <button
                           type="button"

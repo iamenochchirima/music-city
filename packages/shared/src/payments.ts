@@ -46,6 +46,8 @@ export const paymentIntentSchema = z.object({
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
   royaltySplitId: z.string().optional(),
+  poolContractId: z.string().optional(),
+  poolOrderId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
   assetIssuer: optionalStellarAssetIssuerSchema,
@@ -68,6 +70,8 @@ export const paymentRecordSchema = z.object({
   subscriptionScope: subscriptionScopeSchema.optional(),
   trackId: z.string().optional(),
   royaltySplitId: z.string().optional(),
+  poolContractId: z.string().optional(),
+  poolOrderId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   txHash: z.string(),
   amount: nonNegativeAmountSchema,
   assetCode: stellarAssetCodeSchema,
@@ -81,6 +85,8 @@ export const paymentRecordSchema = z.object({
 export type PaymentRecord = z.infer<typeof paymentRecordSchema>;
 
 export const checkoutAttemptSchema = z.object({
+  poolContractId: z.string().optional(),
+  poolOrderId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   id: z.string(),
   intentId: z.string(),
   walletAddress: stellarWalletAddressSchema,

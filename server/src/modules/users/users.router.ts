@@ -8,6 +8,14 @@ import { usersService } from "./users.service.js";
 const usersRouter = Router();
 
 usersRouter.get(
+  "/contributors",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    response.json({ items: await usersService.searchContributors(request.query.query ?? "") });
+  }),
+);
+
+usersRouter.get(
   "/me",
   requireSession,
   asyncHandler(async (request, response) => {

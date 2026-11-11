@@ -1,0 +1,77 @@
+{
+  "updatedAt": "2026-11-01T11:13:09.578488+00:00",
+  "scope": "Local Stellar Testnet admin ownership linking and connected wallet signing",
+  "treasuryConfiguration": {
+    "network": "Test SDF Network ; September 2015",
+    "treasury": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+    "threshold": 2,
+    "signers": [
+      "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+      "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+      "GCZS3HHJGOFZRSKOO4K6WO5PFQEBW7XP3QTTA53A6IITRCORN2ZS4APA"
+    ],
+    "transactionHash": "69caeffa5f7c523a6ee165d63cfc3ef1760af9c6774609babd89557e95070889",
+    "ledger": 5501377,
+    "admins": [
+      {
+        "email": "iamenochchirima@gmail.com",
+        "wallet": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U"
+      },
+      {
+        "email": "chirimaenoch@gmail.com",
+        "wallet": "GCZS3HHJGOFZRSKOO4K6WO5PFQEBW7XP3QTTA53A6IITRCORN2ZS4APA"
+      }
+    ],
+    "ownershipLinks": "Fresh wallet ownership proofs are still required per admin account"
+  },
+  "verified": {
+    "postgresqlOwnershipAndSignatureAuthorization": "passed including wrong-wallet, cross-admin, replay, expiry, cancellation and immutable ownership records",
+    "postgresqlPoolCompatibility": "passed with linked admin wallets",
+    "adminTests": 27,
+    "clientTests": 277,
+    "serverTests": 254,
+    "serverSkipped": 17,
+    "workspaceTypechecks": "passed",
+    "workspaceBuild": "passed; existing large client bundle warning",
+    "updatedWalletPageTests": 5,
+    "liveApi": "Both actual demo admin logins, scoped wallet request, cross-admin denial and cancellation verified; 35 schema groups ready",
+    "redirectContinuation": "Explicit signing intent resumes only after scoped authorization is verified; incomplete or cancelled authentication does not automatically prompt again"
+  },
+  "pending": "Real Dynamic ownership links and two real connected-wallet treasury signatures must be completed by the account holders. No private key or file-upload fallback is exposed by the pool UI.",
+  "independentAdminWallet": {
+    "updatedAt": "2026-11-01T11:37:47.746296+00:00",
+    "route": "/console/settlements",
+    "redirect": "current admin origin /console/settlements",
+    "adminTestsPassed": 46,
+    "typecheck": "passed",
+    "build": "passed, large SDK bundle warning",
+    "browser": "Admin controls and explicit initialization failure verified. Dynamic settings fetch failed.",
+    "liveOwnershipAndSigning": "pending real wallet authentication; not claimed"
+  },
+  "adminOriginDiagnosis": {
+    "checkedAt": "2026-11-01T11:51:26.797794+00:00",
+    "method": "Same public SDK settings GET using curl with Origin header, no admin credential",
+    "mainApp": {
+      "origin": "http://localhost:3000",
+      "status": 200,
+      "accessControlAllowOrigin": "http://localhost:3000"
+    },
+    "adminApp": {
+      "origin": "http://localhost:4318",
+      "status": 200,
+      "accessControlAllowOrigin": null
+    },
+    "requiredAction": "Add http://localhost:4318 to the matching Dynamic environment Allowed CORS Origin list, preserving existing origins",
+    "liveWalletSigning": "Still unverified. Settings requests are blocked by browser CORS for the admin origin."
+  },
+  "adminOriginResolution": {
+    "verifiedAt": "2026-11-01T12:09:53.838347+00:00",
+    "environment": "Matching MusicCity Sandbox",
+    "originAdded": "http://localhost:4318",
+    "existingOriginsPreserved": true,
+    "console": "Saved origin row visibly verified",
+    "sdkSettingsHttpStatus": 200,
+    "accessControlAllowOrigin": "http://localhost:4318",
+    "liveWalletSigning": "Not yet completed. Refresh admin and authenticate with the wallet."
+  }
+}

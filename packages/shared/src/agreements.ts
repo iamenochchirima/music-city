@@ -47,6 +47,9 @@ export const agreementVersionSchema = z.object({
   proposalHash: z.string().regex(/^[a-f0-9]{64}$/),
   state: agreementStateSchema,
   responses: z.array(agreementResponseSchema),
+  publicationMode: z.literal("contributors").optional(),
+  requiredApprovers: z.array(z.string()).min(1).max(41).optional(),
+  publication: z.object({ contractId: z.string(), networkPassphrase: z.string(), transactionHash: z.string(), transaction: z.string(), actor: z.string(), ledger: z.number().int().positive(), previousFinalizedHash: z.string() }).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

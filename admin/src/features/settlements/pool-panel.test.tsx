@@ -1,0 +1,20 @@
+import {afterEach,it,expect,vi} from "vitest";
+import {render,screen,cleanup,waitFor} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {PoolPanel} from "./pool-panel";
+const m=vi.hoisted(()=>({get:vi.fn(),post:vi.fn(),sign:vi.fn(),link:vi.fn()}));
+vi.mock("@/lib/api/http-client",()=>({httpClient:m}));
+vi.mock("@/features/wallet/use-admin-wallet",()=>({useAdminWallet:(token:string)=>({status:{walletAddress:token==="admin-b"?"wallet-b":"wallet-a",eligible:true},busy:false,error:null,link:m.link,signAttempt:(id:string)=>m.sign(id,token),refresh:async()=>{},cancel:vi.fn()})}));
+afterEach(()=>{cleanup();vi.clearAllMocks();});
+const report={balanceUnits:"10000000000",outstandingUnits:"30000000",surplusUnits:"9970000000",claimedUnits:"0",feeUnits:"0",ok:true,errors:[],feeBps:0};
+it("prepares a pool top-up without selecting purchases",async()=>{m.get.mockImplementation(async(path:string)=>path==="/pool/treasury"?{balanceUnits:"105005000"}:{enabled:true,report,attempts:[]});m.post.mockResolvedValue({});render(<PoolPanel token="admin" canOperate onEnabledChange={vi.fn()}/>);const user=userEvent.setup();await screen.findByText("Earnings pool");expect(await screen.findByText("10.5005")).toBeTruthy();expect(screen.getByText("Treasury balance")).toBeTruthy();expect(screen.getByText("Pool balance")).toBeTruthy();await user.click(screen.getByRole("button",{name:"Manage funds"}));const field=screen.getByLabelText("Amount, USDC");await user.clear(field);await user.type(field,"500");await user.click(screen.getByRole("button",{name:"Prepare pool transaction"}));expect(m.post).toHaveBeenCalledWith("/pool/prepare",{action:"top_up",amount:"500"},"admin");});
+it("uses two connected admin wallets and never offers file upload",async()=>{
+ let count=0;const attempt=()=>({id:"demo",kind:"settle",poolAction:"top_up",amountUnits:"1000000",status:"awaiting_signatures",signers:["wallet-a","wallet-b"],signedBy:["wallet-a","wallet-b"].slice(0,count),transactionHash:"same-hash",signatureApprovals:[{signerWallet:"wallet-a",actorName:"Treasury Admin A"},{signerWallet:"wallet-b",actorName:"Treasury Admin B"}].slice(0,count)});
+ m.get.mockImplementation(async()=>({enabled:true,report,attempts:[attempt()]}));m.sign.mockImplementation(async()=>{count++;});
+ const onEnabled=vi.fn(),user=userEvent.setup();const {rerender}=render(<PoolPanel token="admin-a" canOperate onEnabledChange={onEnabled}/>);
+ expect((await screen.findByRole("button",{name:"Submit pool transaction"})).hasAttribute("disabled")).toBe(true);expect(screen.queryByLabelText("Upload signed transaction")).toBeNull();
+ await user.click(screen.getByRole("button",{name:"Sign with connected wallet"}));expect(await screen.findByText(/Signature added by Treasury Admin A/)).toBeTruthy();expect(screen.getByRole("button",{name:"Submit pool transaction"}).hasAttribute("disabled")).toBe(true);
+ rerender(<PoolPanel token="admin-b" canOperate onEnabledChange={onEnabled}/>);await user.click(await screen.findByRole("button",{name:"Sign with connected wallet"}));expect(await screen.findByText(/Signature added by Treasury Admin B/)).toBeTruthy();expect(screen.getByRole("button",{name:"Submit pool transaction"}).hasAttribute("disabled")).toBe(false);
+ expect(m.sign.mock.calls).toEqual([["demo","admin-a"],["demo","admin-b"]]);
+ rerender(<PoolPanel token="admin-b" canOperate={false} onEnabledChange={onEnabled}/>);expect(screen.queryByRole("button",{name:"Submit pool transaction"})).toBeNull();
+});

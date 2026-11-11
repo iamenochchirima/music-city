@@ -351,6 +351,7 @@ export const TrackManageOverview = ({ trackId }: { trackId: string }) => {
           </FormSection>
           <div id="track-metadata" className="border-t border-border pt-6">
             <TrackMetadataEditor
+            searchToken={session?.token}
               value={metadata}
               onChange={setMetadata}
               artists={artistOptions}

@@ -14,7 +14,6 @@ import type {
   UserProfile,
 } from "@music-city/shared";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { tracksApi } from "@/features/music/lib/tracks-api";
@@ -22,7 +21,6 @@ import { paymentsApi } from "@/features/payments/lib/payments-api";
 import { subscriptionsApi } from "@/features/subscriptions/lib/subscriptions-api";
 import { usersApi } from "@/features/users/lib/users-api";
 import { WalletOverviewCard } from "@/features/wallet/components/wallet-overview-card";
-import { clientEnv } from "@/lib/config/env";
 import { sponsorshipsApi } from "@/features/sponsorships/sponsorships-api";
 import { ArtistActivationSummary } from "@/features/sponsorships/artist-activation-summary";
 
@@ -172,349 +170,67 @@ export const AccountOverview = () => {
     );
   }
 
+  const artistAccess = profile?.artistAccess || session.artistAccess;
+  const disclosure = "border-t border-white/10 py-4";
+  const summary = "w-fit cursor-pointer text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <div className="space-y-6">
-        <Link href="/account/referrals" className="inline-flex rounded-md border border-emerald-400/30 px-4 py-2 text-emerald-300">Invite artists</Link>
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
-        {profile?.headerImageUrl ? (
-          <div className="h-40 overflow-hidden rounded-t-xl border-b border-white/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <Image
-              src={profile.headerImageUrl}
-              sizes="(min-width: 1024px) 640px, 92vw"
-              alt=""
-              className="h-full w-full object-cover"
-            />
+    <div className="mx-auto max-w-4xl space-y-6">
+      <section aria-label="Profile" className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {profile?.profileImageUrl ? <Image src={profile.profileImageUrl} sizes="48px" maxWidth={144} alt="" className="size-12 rounded-full object-cover" /> : null}
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-white">{profile?.displayName ?? session.displayName}</h2>
+            <p className="break-words text-sm text-slate-400">{profile?.email || session.email || formatIntent(profile?.primaryIntent ?? session.primaryIntent)}</p>
           </div>
-        ) : null}
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            {profile?.profileImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <Image
-                src={profile.profileImageUrl}
-                sizes="64px" maxWidth={192}
-                alt=""
-                className="size-16 rounded-full object-cover ring-2 ring-emerald-300/40"
-              />
-            ) : (
-              <div className="size-16 rounded-full bg-gradient-to-br from-emerald-300/40 to-slate-950 ring-1 ring-white/10" />
-            )}
-            <CardTitle className="text-2xl">Profile</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-4 text-sm text-slate-300 sm:grid-cols-2">
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Name</p>
-            <p className="text-base text-white">
-              {profile?.displayName ?? session.displayName}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Account</p>
-            <p className="text-base text-white">
-              {formatIntent(profile?.primaryIntent ?? session.primaryIntent)}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Artist access</p>
-            <p className="text-base text-white">
-              {activationQuote?.status === "sponsored"
-                ? "Activated by Music City"
-                : activationQuote?.status === "paid"
-                  ? "Activated by confirmed payment"
-                  : activationQuote?.status === "legacy_free"
-                    ? "Legacy free access"
-                    : activationQuote?.status === "eligible"
-                      ? "Eligible for early-user discount"
-                      : profile?.artistAccess || session.artistAccess
-                        ? "Artist access active"
-                        : "Not unlocked"}
-            </p>
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Email</p>
-            <p className="text-base text-white">
-              {profile?.email || session.email || "Not added"}
-            </p>
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Wallet</p>
-            <p className="text-base text-white" title={session.walletAddress}>
-              {compactWalletAddress(session.walletAddress)}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Location</p>
-            <p className="text-base text-white">{profile?.location || "Not added"}</p>
-          </div>
-        </CardContent>
-        </Card>
+        </div>
+        <Button asChild variant="outline"><Link href="/onboarding">Edit profile</Link></Button>
+      </section>
 
-        {profile && session.token && (
-          <NotificationSettings
-            key={profile.id}
-            profile={profile}
-            token={session.token}
-            onSaved={next => {
-              setProfile(next);
-              void refreshSessionProfile();
-            }}
-          />
-        )}
+      <WalletOverviewCard />
 
-        {activationQuote && (
-          activationQuote.status !== "payment_required" ||
-          profile?.primaryIntent === "artist" || profile?.primaryIntent === "both"
-        ) ? <ArtistActivationSummary quote={activationQuote} /> : null}
+      <nav aria-label="Account links" className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+        {[
+          ["/dashboard/revenue", "Your earnings"],
+          ["/account/agreements", "Royalty agreements"],
+          ["/account/playlists", "My playlists"],
+          ["/account/support", "Support history"],
+          ["/account/referrals", "Invite artists"],
+          ...(artistAccess ? [["/dashboard", "Artist studio"]] : []),
+        ].map(([href,label])=><Link key={href} href={href!} className="w-fit rounded text-emerald-300 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300">{label}</Link>)}
+      </nav>
 
-        {onboardingState ? (
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
-            <CardHeader>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-2xl">Profile completion</CardTitle>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Optional details you can add whenever you are ready.
-                  </p>
-                </div>
-                <span className="text-2xl font-semibold text-emerald-300">
-                  {onboardingState.profileCompletion.percentage}%
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-emerald-400 transition-all"
-                  style={{ width: `${onboardingState.profileCompletion.percentage}%` }}
-                />
-              </div>
-              {onboardingState.profileCompletion.missing.length > 0 ? (
-                <p className="text-sm text-slate-300">
-                  Still available: {onboardingState.profileCompletion.missing.slice(0, 4).map((item) => item.replaceAll("_", " ")).join(", ")}.
-                </p>
-              ) : (
-                <p className="text-sm text-emerald-200">Your profile has all available details.</p>
-              )}
-              <Button
-                asChild
-                variant="outline"
-                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-              >
-                <Link href="/onboarding">Review profile details</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : null}
+      <div>
+        <details className={disclosure}>
+          <summary className={summary}>Profile and preferences</summary>
+          <div className="mt-4 space-y-5 text-sm">
+            <dl className="grid grid-cols-2 gap-4 text-slate-400">
+              <div><dt>Account type</dt><dd className="mt-1 text-white">{formatIntent(profile?.primaryIntent ?? session.primaryIntent)}</dd></div>
+              <div><dt>Artist access</dt><dd className="mt-1 text-white">{artistAccess ? "Active" : "Not activated"}</dd></div>
+              <div><dt>Location</dt><dd className="mt-1 text-white">{profile?.location || "Not added"}</dd></div>
+              <div><dt>Wallet</dt><dd className="mt-1 text-white" title={session.walletAddress}>{compactWalletAddress(session.walletAddress)}</dd></div>
+            </dl>
+            {onboardingState && <div className="flex flex-wrap items-center justify-between gap-3 text-slate-400"><p>Profile {onboardingState.profileCompletion.percentage}% complete</p><Link href="/onboarding" className="text-emerald-300 hover:underline">Review profile details</Link></div>}
+            {profile && <fieldset disabled={isUpdatingIntent} className="space-y-3">
+              <legend className="mb-2 text-sm text-slate-400">How you use Music City</legend>
+              <div className="flex flex-wrap gap-2">{([["listener","Listener"],["artist","Artist"],["both","Both"]] as const).map(([intent,label])=><Button key={intent} type="button" aria-pressed={profile.primaryIntent===intent} variant={profile.primaryIntent===intent ? "default" : "outline"} onClick={()=>void updateIntent(intent)}>{label}</Button>)}</div>
+            </fieldset>}
+            {profile && session.token && <NotificationSettings key={profile.id} profile={profile} token={session.token} onSaved={next=>{setProfile(next);void refreshSessionProfile();}} />}
+          </div>
+        </details>
 
-        {profile ? (
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
-            <CardHeader>
-              <CardTitle className="text-2xl">How you use Music City</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-slate-400">
-                Change your starting point any time. Artist tools remain separately access-controlled.
-              </p>
-              <div className="grid gap-2">
-                {(
-                  [
-                    ["listener", "I’m here to listen"],
-                    ["artist", "I release music"],
-                    ["both", "Both"],
-                  ] as const
-                ).map(([intent, label]) => (
-                  <Button
-                    key={intent}
-                    type="button"
-                    variant={profile.primaryIntent === intent ? "default" : "outline"}
-                    className={profile.primaryIntent === intent
-                      ? "justify-start bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-                      : "justify-start border-white/10 bg-white/5 text-white hover:bg-white/10"}
-                    onClick={() => void updateIntent(intent)}
-                    disabled={isUpdatingIntent}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
+        {activationQuote && (activationQuote.status!=="payment_required" || profile?.primaryIntent==="artist" || profile?.primaryIntent==="both") && <details className={disclosure}><summary className={summary}>Artist activation</summary><div className="mt-4"><ArtistActivationSummary quote={activationQuote} /></div></details>}
+
+        <details className={disclosure}>
+          <summary className={summary}>Payments and subscriptions</summary>
+          <div className="mt-4 space-y-5 text-sm">
+            <section aria-label="Payments"><h3 className="font-medium text-white">Payments</h3>{payments.length ? <ul className="mt-2 divide-y divide-white/10">{payments.slice(0,6).map(payment=><li key={payment.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-white">{payment.productType==="track_purchase" ? "Track purchase" : payment.productType==="platform_subscription" ? "Subscription" : "Artist activation"}</p><p className="mt-1 text-slate-400">{payment.amount} {payment.assetCode}</p></div><span className="text-slate-400">{payment.waived || payment.amount==="0" ? "Waived" : "Confirmed"}</span></li>)}</ul> : <p className="mt-2 text-slate-400">No payments yet.</p>}</section>
+            <section aria-label="Subscriptions"><h3 className="font-medium text-white">Subscriptions</h3>{subscriptions.length ? <ul className="mt-2 divide-y divide-white/10">{subscriptions.slice(0,6).map(subscription=><li key={subscription.id} className="flex flex-wrap justify-between gap-3 py-3"><p className="text-slate-400">Ends {new Date(subscription.endsAt).toLocaleDateString()}</p><span className="text-white">{subscription.status}</span></li>)}</ul> : <p className="mt-2 text-slate-400">No subscriptions yet.</p>}</section>
+          </div>
+        </details>
+
+        {tracks.length>0 && <details className={disclosure}><summary className={summary}>Track activity · {tracks.length}</summary><ul className="mt-3 divide-y divide-white/10 text-sm">{tracks.slice(0,5).map(track=><li key={track.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><p className="min-w-0 break-words text-white">{track.title}</p><span className="text-slate-400">{activityLabel(track)}</span></li>)}</ul></details>}
       </div>
-
-      <div className="space-y-6">
-        <WalletOverviewCard />
-        <Button asChild variant="outline"><Link href="/account/support">Support history</Link></Button>
-
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <CardTitle className="text-2xl">Activity</CardTitle>
-              <Button
-                asChild
-                variant="outline"
-                className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-              >
-                <Link href="/account/playlists">Manage playlists</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white">
-              <Link href="/account/agreements">Royalty agreements</Link>
-            </Button>
-            <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white">
-              <Link href="/dashboard/revenue">Your earnings</Link>
-            </Button>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                Tracks
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-white">
-                {tracks.length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                Published
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-white">
-                {tracks.filter((track) => track.status === "published").length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {profile?.primaryIntent === "artist" || profile?.primaryIntent === "both" ? (
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
-            <CardHeader>
-                  <CardTitle className="text-2xl">Subscription</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Model
-                  </p>
-                  <p className="mt-2 text-base font-medium text-white">
-                    Subscription
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Published tracks
-                  </p>
-                  <p className="mt-2 text-base font-medium text-white">
-                    {tracks.filter((track) => track.visibility === "published").length}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    Member benefit
-                  </p>
-                  <p className="mt-2 text-base font-medium text-white">
-                    Subscriber-only tracks
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
-          <CardHeader>
-            <CardTitle className="text-2xl">Recent track activity</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tracks.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
-                Your recent activity will appear here after you create a track.
-              </div>
-            ) : (
-              tracks.slice(0, 5).map((track) => (
-                <div
-                  key={track.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4"
-                >
-                  <div className="space-y-1">
-                    <p className="text-base font-medium text-white">{track.title}</p>
-                    <p className="text-sm text-slate-400">{track.genre}</p>
-                  </div>
-                  <p className="text-sm text-emerald-300">{activityLabel(track)}</p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
-          <CardHeader>
-            <CardTitle className="text-2xl">Payments</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {payments.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
-                No payments yet.
-              </div>
-            ) : (
-              payments.slice(0, 6).map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4"
-                >
-                  <div className="space-y-1">
-                    <p className="text-base font-medium text-white">
-                      {payment.productType === "track_purchase"
-                        ? "Track purchase"
-                        : payment.productType === "platform_subscription"
-                          ? "Subscription"
-                          : "Artist onboarding fee"}
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      {payment.amount} {payment.assetCode}
-                    </p>
-                  </div>
-                  <p className="text-sm text-emerald-300">
-                    {payment.waived || payment.amount === "0" ? "Waived" : "Confirmed"}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
-          <CardHeader>
-            <CardTitle className="text-2xl">Subscriptions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {subscriptions.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
-                No active subscriptions yet.
-              </div>
-            ) : (
-              subscriptions.slice(0, 6).map((subscription) => (
-                <div
-                  key={subscription.id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4"
-                >
-                  <div className="space-y-1">
-                    <p className="text-base font-medium text-white">Subscription</p>
-                    <p className="text-sm text-slate-400">
-                      Ends {new Date(subscription.endsAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <p className="text-sm text-emerald-300">{subscription.status}</p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
     </div>
   );
 };

@@ -50,6 +50,8 @@ export const financialAttemptSchema = z.object({
   id: z.string(),
   batchId: hash,
   kind: z.enum(["settle", "claim", "reclaim", "maintain", "restore"]),
+  fundingBatchIds: z.array(hash).min(1).max(10).optional(),
+  payoutRunId: hash.optional(),
   claimIndex: z.number().int().nonnegative().optional(),
   actor: z.string(),
   treasuryAddress: wallet,
@@ -88,3 +90,15 @@ export const settlementPreviewInputSchema = z
 export const signedFinancialTransactionSchema = z
   .object({ signedTransaction: z.string().min(1).max(200000) })
   .strict();
+
+export const payoutRunInputSchema = z.object({
+  sources: z.array(settlementPreviewInputSchema.omit({expiresAt: true})).min(1).max(10),
+  expiresAt: z.string().datetime(),
+}).strict();
+export const payoutRunSchema = z.object({
+  id: hash,
+  routerId: z.string().regex(/^C[A-Z2-7]{55}$/),
+  batches: z.array(settlementBatchSchema).min(1).max(10),
+  fundedUnits: units,
+});
+export type PayoutRun = z.infer<typeof payoutRunSchema>;

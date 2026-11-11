@@ -476,7 +476,7 @@ export function createRampRepository(db: Database) {
         if (!["created", "awaiting_user", "processing"].includes(order.providerState)) throw new HttpError(409, "This cash-out is no longer ready for a transfer");
         const verified = validateCashOutQuote(order, saved.snapshot.quote, saved.snapshot.instructions, input.now ?? new Date());
         const { quote, instructions } = verified.snapshot;
-        const policy = { provider: order.terms.provider, environment: order.terms.environment, network: order.terms.network, assetIssuer: order.terms.assetIssuer!, walletAddress: order.terms.walletAddress, market: quote.market, maxFeeStroops: input.maxFeeStroops };
+        const policy = { provider: order.terms.provider, environment: order.terms.environment, network: order.terms.network, assetCode: order.terms.assetCode, assetIssuer: order.terms.assetIssuer, walletAddress: order.terms.walletAddress, market: quote.market, maxFeeStroops: input.maxFeeStroops };
         const now = input.now ?? new Date();
         let prepared = prepareCashOutTransfer(instructions, quote, policy, input.sequence, input.feeStroops, now);
         // An unsigned cancellation must not reuse the old transaction hash, even within the same second.

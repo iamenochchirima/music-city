@@ -28,6 +28,8 @@ test("settlement HTTP reads require an admin and protected actions require super
   const original = { ...settlementService };
   const calls: string[] = [];
   settlementService.list = async () => [];
+  settlementService.listRuns = async () => [];
+  settlementService.prepareRun = async (_id, actor) => {calls.push(actor);return {} as never;};
   settlementService.prepare = async (_id, _kind, actor) => {
     calls.push(actor);
     return {} as never;
@@ -70,7 +72,13 @@ test("settlement HTTP reads require an admin and protected actions require super
   try {
     assert.equal((await request("", undefined, "GET")).status, 401);
     assert.equal((await request("", admin, "GET")).status, 200);
+    assert.equal((await request("/runs", admin, "GET")).status, 200);
+    for(const path of ["/runs/preview","/runs/reserve"]) {
+      assert.equal((await request(path)).status,401);
+      assert.equal((await request(path,admin)).status,403);
+    }
     for (const path of [
+      "/runs/run/prepare",
       "/batch/prepare",
       "/batch/claims/0/reclaim",
       "/batch/maintenance",

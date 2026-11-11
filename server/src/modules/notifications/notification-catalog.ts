@@ -64,6 +64,11 @@ export const notificationCatalog = {
     title: "Payment confirmed",
     body: "Your Music City payment has been confirmed. View your account for purchase and access details.",
   },
+  "payment.sale": {
+    category: "transactional",
+    title: "Your track was purchased",
+    body: "A listener purchased your track. View the sale in Revenue. Earnings become available after settlement.",
+  },
   "support.receipt": {
     category: "transactional",
     title: "Support payment confirmed",

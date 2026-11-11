@@ -24,6 +24,7 @@ export function CashOutQuoteDialog({ token, orderId, onClose, onChanged, onPrepa
       onChanged(); onPrepared();
     } catch (error) {
       const known = error instanceof Error && (error as Error & { status?: number }).status === 409 && [
+        "Your wallet has insufficient spendable XLM after reserve and fees.",
         "Your wallet has insufficient spendable USDC.", "Your wallet needs an active USDC trustline.",
         "Add XLM to cover the network fee.", "Network fee changed. Cancel and start again.",
       ].includes(error.message);

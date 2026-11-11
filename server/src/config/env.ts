@@ -88,7 +88,11 @@ export const envSchema = z
     STELLAR_SETTLEMENT_ASSET_CODE: z.string().default("XLM"),
     STELLAR_SETTLEMENT_ASSET_ISSUER: z.string().optional(),
     ROYALTY_REGISTRY_CONTRACT_ID: z.string().optional(),
-    SETTLEMENT_CONTRACT_ID: z.string().optional(),
+    EARNINGS_MODE: z.enum(["settlement","pool"]).default("settlement"),
+  EARNINGS_POOL_CONTRACT_ID: z.string().regex(/^C[A-Z2-7]{55}$/).optional().or(z.literal("")),
+  EARNINGS_POOL_DEPLOYMENT_LEDGER: z.coerce.number().int().positive().optional(),
+  PAYOUT_RUN_CONTRACT_ID: z.string().regex(/^C[A-Z2-7]{55}$/).optional().or(z.literal("")),
+  SETTLEMENT_CONTRACT_ID: z.string().optional(),
     SETTLEMENT_DEPLOYMENT_LEDGER: z.coerce.number().int().positive().optional(),
     ROYALTY_PAYOUT_APPROVAL_MODE: z.enum(["admin", "automatic"]).default("admin"),
     ROYALTY_PAYOUT_CADENCE: z
@@ -117,6 +121,8 @@ export const envSchema = z
     ROYALTY_FEE_PLATFORM_SUBSCRIPTION_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     ROYALTY_FEE_AD_REVENUE_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
     ROYALTY_FEE_MANUAL_ADJUSTMENT_BPS: z.coerce.number().int().min(0).max(9_999).default(0),
+    AGREEMENT_PUBLICATION_MODE: z.enum(["treasury", "contributors"]).default("treasury"),
+    AGREEMENT_REGISTRAR_SECRET: z.string().optional(),
     TRACK_PURCHASE_DEFAULT_PRICE: z.string().default("5"),
     TRACK_PURCHASES_ENABLED: z
       .string()

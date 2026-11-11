@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import test,{mock} from "node:test";
+import {randomUUID} from "node:crypto";
+import {Account,BASE_FEE,Contract,Keypair,Networks,TransactionBuilder,nativeToScVal} from "@stellar/stellar-sdk";
+import {Server} from "@stellar/stellar-sdk/rpc";
+const url=process.env.CONTRIBUTORS_TEST_DATABASE_URL;
+test("PostgreSQL contributor publication retains exact signed receipts and finalizes without admin",{skip:!url},async()=>{
+ const target=new URL(url!);assert(["127.0.0.1","localhost"].includes(target.hostname)&&target.pathname.endsWith("_test"));
+ process.env.DATABASE_URL=url;process.env.NODE_ENV="test";process.env.AGREEMENT_PUBLICATION_MODE="contributors";
+ const {databaseService:db}=await import("../../services/database.service.js");
+ const {agreementsService:agreements}=await import("./agreements.service.js");
+ const {contributorChain,contributorProposal}=await import("./contributor-chain.js");
+ const {agreementsChain}=await import("./agreements-chain.js");
+ const {finalizedSplitsRepository}=await import("./effective-split.js");
+ const {env}=await import("../../config/env.js");
+ const owner=Keypair.random(),partner=Keypair.random(),outsider=Keypair.random(),ownerId=randomUUID(),trackId=randomUUID();
+ const receipts=new Map<string,{ledger:number;envelopeXdr:ReturnType<ReturnType<typeof TransactionBuilder.fromXDR>["toEnvelope"]>;status:"SUCCESS"}>();
+ let decisions:{wallet:string;action:number}[]=[],state=0,latest:import("@music-city/shared").FinalizedAgreementSplit|null=null;
+ try{
+  await db.initialize({repair:false});
+  await db.transaction(async client=>{for(const [key,id] of [[owner,ownerId],[partner,randomUUID()],[outsider,randomUUID()]] as const)await client.query("INSERT INTO users(id,wallet_address,primary_intent,payload) VALUES($1,$2,'artist',$3)",[id,key.publicKey(),{displayName:"Test contributor",onboardingStatus:"complete"}]);await client.query("INSERT INTO tracks(id,artist_id,status,visibility,payload) VALUES($1,$2,'draft','unpublished',$3)",[trackId,ownerId,{}]);});
+  const v=await agreements.create(owner.publicKey(),{trackId,submitForApproval:true,recipients:[{walletAddress:owner.publicKey(),role:"artist",shareBps:7000},{walletAddress:partner.publicKey(),role:"producer",shareBps:3000}],terms:"Verification"});
+  const id=v.proposal.agreementId;assert.equal(v.publicationMode,"contributors");assert.deepEqual(new Set(v.requiredApprovers),new Set([owner.publicKey(),partner.publicKey()]));
+  mock.method(contributorChain,"prepare",async(version:typeof v,actor:string,input:unknown)=>{const action=(input as {action:"accept"}).action;const tx=new TransactionBuilder(new Account(actor,"0"),{fee:BASE_FEE,networkPassphrase:Networks.TESTNET}).addOperation(new Contract(env.ROYALTY_REGISTRY_CONTRACT_ID!).call("respond",contributorProposal(version,"0".repeat(64)),nativeToScVal(actor,{type:"address"}),nativeToScVal(0,{type:"u32"}))).setTimeout(300).build();return{mode:"contributors" as const,id:randomUUID(),agreementId:id,version:1,walletAddress:actor,action,reason:"",proposalHash:version.proposalHash,previousFinalizedHash:"0".repeat(64),transaction:tx.toXDR(),expiresAt:new Date(Date.now()+300000).toISOString(),contractId:env.ROYALTY_REGISTRY_CONTRACT_ID!,networkPassphrase:Networks.TESTNET};});
+  mock.method(Server.prototype,"getTransaction",async(hash:string)=>receipts.get(hash)??{status:"NOT_FOUND"});
+  mock.method(contributorChain,"readState",async()=>({proposal:{proposal_hash:Buffer.from(v.proposalHash,"hex")},required:v.requiredApprovers!,decisions,state}));
+  mock.method(agreementsChain,"getVersion",async()=>latest);
+  const ca=await agreements.challenge(id,owner.publicKey(),{action:"accept"});const unsigned=TransactionBuilder.fromXDR(ca.transaction,Networks.TESTNET);unsigned.sign(outsider);
+  await assert.rejects(agreements.respond(id,owner.publicKey(),{challengeId:ca.id,signedTransaction:unsigned.toXDR()}),/exact contributor transaction/);
+  assert.equal((await db.transaction(async client=>(await client.query("SELECT COUNT(*)::int AS n FROM contributor_chain_attempts WHERE agreement_id=$1",[id])).rows[0].n)),0);
+  const ta=TransactionBuilder.fromXDR(ca.transaction,Networks.TESTNET);ta.sign(owner);receipts.set(ta.hash().toString("hex"),{status:"SUCCESS",ledger:12345,envelopeXdr:ta.toEnvelope()});decisions=[{wallet:owner.publicKey(),action:0}];
+  const request={challengeId:ca.id,signedTransaction:ta.toXDR()};await Promise.all([agreements.respond(id,owner.publicKey(),request),agreements.respond(id,owner.publicKey(),request)]);
+  let current=(await agreements.get(id,owner.publicKey())).versions[0]!;assert.equal(current.responses.length,1);assert.equal(current.state,"proposed");
+  const cb=await agreements.challenge(id,partner.publicKey(),{action:"accept"});const tb=TransactionBuilder.fromXDR(cb.transaction,Networks.TESTNET);tb.sign(partner);receipts.set(tb.hash().toString("hex"),{status:"SUCCESS",ledger:12346,envelopeXdr:tb.toEnvelope()});decisions.push({wallet:partner.publicKey(),action:0});state=1;latest={agreementId:id,version:1,proposalHash:v.proposalHash,previousFinalizedHash:"0".repeat(64),finalizedLedger:12346,recipients:v.proposal.recipients};
+  await agreements.respond(id,partner.publicKey(),{challengeId:cb.id,signedTransaction:tb.toXDR()});current=(await agreements.get(id,owner.publicKey())).versions[0]!;assert.equal(current.state,"finalized");assert.equal(current.publication?.transactionHash,tb.hash().toString("hex"));assert.equal((await finalizedSplitsRepository.effective(trackId))?.version,1);
+  await agreements.respond(id,partner.publicKey(),{challengeId:cb.id,signedTransaction:tb.toXDR()});
+  const counts=await db.transaction(async client=>(await client.query("SELECT (SELECT COUNT(*) FROM agreement_events WHERE agreement_id=$1 AND action='finalized')::int AS finalized,(SELECT COUNT(*) FROM agreement_finalizations WHERE agreement_id=$1)::int AS treasury",[id])).rows[0]);assert.equal(counts.finalized,1);assert.equal(counts.treasury,0);
+  const revised=await agreements.revise(id,owner.publicKey(),{resolution:"Remove partner with consent",recipients:[{walletAddress:owner.publicKey(),role:"artist",shareBps:10000}],terms:"Amendment"},1,v.proposalHash);assert(revised.requiredApprovers?.includes(partner.publicKey()));
+  const edited=await agreements.edit(id,owner.publicKey(),{recipients:[{walletAddress:owner.publicKey(),role:"artist",shareBps:10000}],terms:"Edited amendment"},2,revised.proposalHash);
+  assert(edited.requiredApprovers?.includes(partner.publicKey()));
+  await agreements.submit(id,owner.publicKey(),2,edited.proposalHash);assert.equal((await agreements.get(id,partner.publicKey())).currentVersion,2);assert.equal((await finalizedSplitsRepository.effective(trackId))?.version,1);
+ }finally{mock.restoreAll();await db.close();}
+});

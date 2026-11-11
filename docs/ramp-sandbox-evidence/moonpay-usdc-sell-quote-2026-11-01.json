@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-01T13:59:23.269Z",
+  "environment": "sandbox",
+  "asset": "usdc_xlm",
+  "baseCurrencyAmount": "100",
+  "quoteCurrencyCode": "gbp",
+  "payoutMethod": "credit_debit_card",
+  "httpStatus": 400,
+  "response": {
+    "errors": [],
+    "message": "Currency not supported in test mode",
+    "moonPayErrorCode": "1_SYS_UNKNOWN",
+    "type": "BadRequestError"
+  }
+}

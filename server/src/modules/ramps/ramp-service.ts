@@ -6,6 +6,7 @@ import {
 import { HttpError } from "../../utils/http-error.js";
 import { createRampRepository } from "./ramp.repository.js";
 import { rampSandboxConfigSchema } from "./sandbox-config.js";
+import { MoonpaySandbox } from "./moonpay-sandbox.js";
 import { env } from "../../config/env.js";
 
 // Only an adapter with verified, current account-specific evidence may return a route.
@@ -61,8 +62,8 @@ function matches(input: CreateRampOrder, terms: RampOrder["terms"]) {
 
 export function createRampService(repository: Repository, capabilities: RampCapabilitySource, now: () => number = Date.now, resolveClaim?: ClaimResolver) {
   async function routes() {
-    const time = now();
     const candidates = z.array(z.unknown()).max(1000).parse(await capabilities.routes());
+    const time = now();
     const routes = candidates.flatMap((candidate) => {
       const parsed = verifiedRouteSchema.safeParse(candidate);
       return parsed.success ? [parsed.data] : [];
@@ -71,7 +72,7 @@ export function createRampService(repository: Repository, capabilities: RampCapa
       if (Date.parse(route.verifiedAt) > time || Date.parse(route.expiresAt) <= time ||
           BigInt(route.minUnits) > BigInt(route.maxUnits) || BigInt(route.maxUnits) === 0n ||
           (route.assetCode === "USDC" && route.assetIssuer !== "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5") ||
-          (route.direction === "sell" && (route.amountDecimals !== 7 || route.assetCode !== "USDC"))) return false;
+          (route.direction === "sell" && (route.amountDecimals !== 7 || (route.assetCode === "XLM" && (route.provider !== "moonpay" || route.market.country !== "GB" || route.market.currency !== "GBP" || route.market.method !== "moonpay_balance"))))) return false;
       // Check provider, method, asset and amount together using the actual order contract.
       return rampOrderTermsSchema.safeParse({
         userId: "capability-check", walletAddress: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
@@ -125,21 +126,33 @@ export function createRampService(repository: Repository, capabilities: RampCapa
   };
 }
 
-// No account-specific payment route has passed verification yet.
-export const verifiedRampCapabilities: RampCapabilitySource = { async routes() { return []; } };
+// Recheck the account catalog and payout availability before advertising the tested route.
+export const verifiedRampCapabilities: RampCapabilitySource = { async routes() {
+  const config = rampSandboxConfigSchema.safeParse(process.env);
+  if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || config.data.RAMPS_SANDBOX_SELL_ENABLED !== "true" || config.data.RAMPS_SANDBOX_ASSET !== "XLM") return [];
+  const provider = new MoonpaySandbox(config.data);
+  const catalog = await provider.catalog();
+  const asset = catalog.currencies.find(c => c.code === "xlm" && c.metadata?.networkCode === "stellar");
+  if (!asset?.supportsTestMode || !asset.isSellSupported || asset.isSuspended !== false || !catalog.countries.some(c => c.alpha2 === "GB" && c.isSellAllowed) || !asset.minSellAmount || !asset.maxSellAmount) return [];
+  await provider.verifyBalanceSellQuote(String(Math.min(asset.maxSellAmount, Math.max(200, Math.ceil(asset.minSellAmount)))));
+  const exact = (value: number) => units(String(value), 7);
+  const now = Date.now();
+  // This is the tested UK MoonPay Balance route. Card payout remains unverified.
+  return [{ provider: "moonpay", direction: "sell", environment: "sandbox", network: "stellar:testnet", assetCode: "XLM", market: { country: "GB", currency: "GBP", method: "moonpay_balance" }, amountDecimals: 7, minUnits: exact(asset.minSellAmount), maxUnits: exact(asset.maxSellAmount), verifiedAt: new Date(now).toISOString(), expiresAt: new Date(now + 60000).toISOString() }];
+} };
 
 // Do not advertise a route until the corresponding launch path is configured.
 export function createOperationalRampCapabilities(verified: RampCapabilitySource, configSource: () => unknown, proxyHops: number): RampCapabilitySource {
   return { async routes() {
     const config = rampSandboxConfigSchema.safeParse(configSource());
-    if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || config.data.RAMPS_LAUNCH_IP_MODE !== "direct" ||
+    if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !["direct", "local"].includes(config.data.RAMPS_LAUNCH_IP_MODE) ||
       !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || !config.data.MOONPAY_PK || !config.data.MOONPAY_SK || !config.data.MOONPAY_WEBHOOK || proxyHops !== 0)
       return [];
     if (!["moonpay", "both"].includes(config.data.RAMPS_SANDBOX_PROVIDERS)) return [];
     return (await verified.routes()).filter((route) => {
       if (route.provider !== "moonpay") return false;
       if (route.direction === "buy") return route.assetCode === config.data.RAMPS_SANDBOX_ASSET;
-      return route.direction === "sell" && route.assetCode === "USDC" &&
+      return route.direction === "sell" && route.amountDecimals === 7 && (route.assetCode === "USDC" || route.assetCode === config.data.RAMPS_SANDBOX_ASSET) &&
         config.data.RAMPS_SANDBOX_SELL_ENABLED === "true" &&
         Boolean(config.data.RAMPS_CASHOUT_ENCRYPTION_KEY);
     });

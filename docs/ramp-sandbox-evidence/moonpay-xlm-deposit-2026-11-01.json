@@ -1,0 +1,14 @@
+{
+  "network": "stellar:testnet",
+  "providerOrderId": "db67844e-70fb-472b-9739-9f48049e55c3",
+  "externalTransactionId": "7071a575-2cc3-4c3e-87fd-41e40394e5c9",
+  "source": "GBHGIMUOCJZ55IAW2A3NLY2CCA72YNMEUQPVKY6V7GZWZU2ZHDQ3QS5R",
+  "destination": "GD4KAFADEFXOLNWWUA4IZI5YG23AH2OSJMIJAZ6YLNHJWNPX3T366FIY",
+  "memoType": "id",
+  "memo": "1265569955",
+  "amountXlm": "200.0000000",
+  "transactionHash": "8b6241ad14bf93aa330504b4206d1f5a0d9442ebf46e53225823ac89b5818dd4",
+  "status": "confirmed",
+  "ledger": 5503675,
+  "confirmedAt": "2026-11-01T14:06:58.096Z"
+}

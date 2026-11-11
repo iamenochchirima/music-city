@@ -1,3 +1,4 @@
+import { ApiClientError } from "@/lib/api/http-client";
 import { useEffect, useRef, useState } from "react";
 import {
   useDynamicContext,
@@ -56,7 +57,7 @@ export function AgreementDetailPanel({
   const pending = useRef<{
     id: string;
     version: number;
-    action: AgreementAction;
+    action: AgreementAction | "cancel";
     reason: string;
     challengeId: string;
     expiresAt: string;
@@ -79,6 +80,13 @@ export function AgreementDetailPanel({
     setCancelConfirm(false);
     pending.current = null;
   }, [detail.id, current.proposal.version]);
+  useEffect(() => {
+    const saved = pending.current;
+    if (saved && (current.responses.some(r => r.challengeId === saved.challengeId) || (saved.action === "cancel" && current.state === "cancelled"))) {
+      pending.current = null;
+      setError(null);
+    }
+  }, [current.responses, current.state]);
   const owner = version.proposal.ownerWallet === session?.walletAddress;
   const attempt = detail.finalizations
     .filter((a) => a.version === version.proposal.version)
@@ -139,15 +147,15 @@ export function AgreementDetailPanel({
       setCancelConfirm(false);
     });
   }
-  async function respond(action: AgreementAction) {
+  async function respond(action: AgreementAction | "cancel") {
     await run(async () => {
       if (
         current.proposal.networkPassphrase !==
         clientEnv.stellarNetworkPassphrase
       )
         throw new Error("Connect to the network used by this agreement");
-      const text = action === "accept" ? "" : reason.trim();
-      if (action !== "accept" && !text) throw new Error("Add a reason");
+      const text = action === "accept" || action === "cancel" ? "" : reason.trim();
+      if (action !== "accept" && action !== "cancel" && !text) throw new Error("Add a reason");
       let signed = pending.current;
       if (!signed) {
         const wallet = resolveStellarWallet(
@@ -218,7 +226,7 @@ export function AgreementDetailPanel({
           )
         ) {
           // A successful read found no recorded response; an expired envelope cannot be retried.
-          if (Date.parse(signed.expiresAt) <= Date.now())
+          if (Date.parse(signed.expiresAt) <= Date.now() || (current.publicationMode === "contributors" && e instanceof ApiClientError && e.status === 422))
             pending.current = null;
           throw e;
         }
@@ -227,11 +235,14 @@ export function AgreementDetailPanel({
       setChoice(null);
       setReason("");
       await onRefresh();
+      setCancelConfirm(false);
     });
   }
   return (
     <div className="space-y-6">
       <header className="space-y-3 border-b border-border pb-5">
+        {current.publicationMode === "contributors" && current.state === "proposed" && !current.responses.some(r => r.walletAddress === current.proposal.ownerWallet && r.action === "accept") && <p className="text-sm text-muted-foreground">The owner signs first. The last required approval activates the agreement automatically.</p>}
+        {version.publication && <a className="text-sm underline" href={`https://stellar.expert/explorer/testnet/tx/${version.publication.transactionHash}`} target="_blank" rel="noreferrer">View confirmed agreement receipt</a>}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 ref={titleRef} tabIndex={-1} className="break-words text-2xl font-semibold outline-none">
@@ -472,7 +483,7 @@ export function AgreementDetailPanel({
               className="flex items-center gap-2 text-sm text-muted-foreground"
             >
               <Check className="size-4" />
-              Everyone accepted. Awaiting finalization.
+              {current.publicationMode === "contributors" ? "Confirming contributor-approved agreement." : "Everyone accepted. Awaiting finalization."}
             </p>
           )}
           {version.state === "finalizing" && (
@@ -499,7 +510,7 @@ export function AgreementDetailPanel({
                 <Button
                   disabled={busy}
                   variant="destructive"
-                  onClick={() => void act("cancel")}
+                  onClick={() => void (current.publicationMode === "contributors" && current.state !== "draft" ? respond("cancel") : act("cancel"))}
                 >
                   Confirm cancellation
                 </Button>

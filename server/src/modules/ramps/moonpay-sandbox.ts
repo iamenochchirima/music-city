@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { rampOrderSchema, type RampOrder } from "@music-city/shared";
 import { moonpayIpBinding } from "./moonpay-ip.js";
@@ -62,8 +62,7 @@ export type MoonpayObservation = {
 };
 const codeFor = (asset: "USDC" | "XLM") =>
   asset === "XLM" ? "xlm" : "usdc_xlm";
-const orderAsset = (direction: "buy" | "sell", configuredAsset: "USDC" | "XLM") =>
-  direction === "buy" ? configuredAsset : "USDC";
+const orderAsset = (_direction: "buy" | "sell", configuredAsset: "USDC" | "XLM") => configuredAsset;
 export class MoonpaySandbox {
   private config: RampSandboxConfig;
   constructor(
@@ -147,12 +146,16 @@ export class MoonpaySandbox {
         .map(({ type, availability }) => ({ type, active: availability.active }));
     } catch { throw new HttpError(502, "MoonPay returned unreadable payment methods"); }
   }
+  async verifyBalanceSellQuote(amount: string) {
+    const result = z.object({ paymentMethod: z.literal("moonpay_balance"), baseCurrencyAmount: z.union([z.number(), z.string()]), quoteCurrencyAmount: z.number().positive(), baseCurrency: z.object({ code: z.literal("xlm"), supportsTestMode: z.literal(true), isSellSupported: z.literal(true), isSuspended: z.literal(false), metadata: z.object({ networkCode: z.literal("stellar") }) }), quoteCurrency: z.object({ code: z.literal("gbp") }) }).parse(await this.get("/v3/currencies/xlm/sell_quote", false, { baseCurrencyAmount: amount, quoteCurrencyCode: "gbp", paymentMethod: "moonpay_balance" }));
+    if (providerAmountUnits(result.baseCurrencyAmount, 7) !== providerAmountUnits(amount, 7)) throw new HttpError(502, "MoonPay returned a different quote amount");
+  }
   validateTerms(order: RampOrder, catalog: MoonpayCatalog) {
     rampOrderSchema.parse(order);
     const terms = order.terms;
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
+      (terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET) && !(terms.direction === "sell" && terms.assetCode === "USDC"))
     )
       throw new HttpError(
         409,
@@ -221,7 +224,7 @@ export class MoonpaySandbox {
     const terms = order.terms;
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
+      (terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET) && !(terms.direction === "sell" && terms.assetCode === "USDC"))
     )
       throw new HttpError(
         409,
@@ -255,6 +258,7 @@ export class MoonpaySandbox {
       q.set("baseCurrencyCode", codeFor(terms.assetCode));
       q.set("refundWalletAddress", terms.walletAddress);
       q.set("quoteCurrencyCode", terms.market.currency.toLowerCase());
+      if (terms.market.method === "moonpay_balance") q.set("paymentMethod", "moonpay_balance");
       q.set(
         "baseCurrencyAmount",
         decimalAmount(terms.amount.units, terms.amount.decimals),
@@ -270,11 +274,11 @@ export class MoonpaySandbox {
     q.set("signature", signature);
     return url.href;
   }
-  async lookup(order: RampOrder): Promise<MoonpayObservation | null> {
+  private async verifiedRecord(order: RampOrder): Promise<Record<string, unknown> | null> {
     const { terms } = rampOrderSchema.parse(order);
     if (
       terms.provider !== "moonpay" ||
-      terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET)
+      (terms.assetCode !== orderAsset(terms.direction, this.config.RAMPS_SANDBOX_ASSET) && !(terms.direction === "sell" && terms.assetCode === "USDC"))
     )
       throw new HttpError(
         409,
@@ -341,6 +345,35 @@ export class MoonpaySandbox {
         409,
         "The provider amount changed. Review is required.",
       );
+    if (terms.direction === "sell" && row.payoutMethod !== (terms.market.method === "card" ? "credit_debit_card" : terms.market.method))
+      throw new HttpError(409, "The provider payout method changed. Review is required.");
+    return row;
+  }
+  async cashOutQuote(order: RampOrder) {
+    const row = await this.verifiedRecord(order);
+    if (!row || order.terms.direction !== "sell" || order.terms.assetCode !== "XLM" || (order.terms.market.method !== "moonpay_balance" || order.terms.market.country !== "GB" || order.terms.market.currency !== "GBP") || row.status !== "waitingForDeposit" || row.depositHash)
+      throw new HttpError(409, "This transaction is not waiting for a deposit");
+    const deposit = z.object({ walletAddress: z.string(), walletAddressTag: z.string().regex(/^(0|[1-9][0-9]*)$/).max(20) }).parse(row.depositWallet);
+    const createdAt = new Date().toISOString();
+    const providerExpiry = row.quoteExpiresAt == null ? Infinity : Date.parse(z.string().datetime().parse(row.quoteExpiresAt));
+    const expiresAt = new Date(Math.min(Date.now() + 300000, providerExpiry)).toISOString();
+    const quoteId = randomUUID();
+    const context = { provider: order.terms.provider, environment: order.terms.environment, network: order.terms.network, walletAddress: order.terms.walletAddress };
+    const fiat = z.object({ precision: z.number().int().min(0).max(18) }).parse(row.quoteCurrency);
+    const money = (value: unknown) => ({ currency: order.terms.market.currency, units: providerAmountUnits(value, fiat.precision).toString(), decimals: fiat.precision });
+    return {
+      quote: { ...context, id: quoteId, cashOutId: order.id, sessionId: String(row.id), providerQuoteId: `${row.id}:${row.updatedAt}`, providerTransactionId: String(row.id),
+        market: { country: order.terms.market.country, currency: order.terms.market.currency, payoutMethod: order.terms.market.method }, debitUnits: order.terms.amount.units,
+        receive: money(row.quoteCurrencyAmount), fees: [row.feeAmount, row.extraFeeAmount].map(value => ({ kind: "provider", amount: money(value), includedInDebit: true })), destinationLabel: "MoonPay Balance · GBP · Test mode", createdAt, expiresAt },
+      instructions: { ...context, cashOutId: order.id, quoteId, providerTransactionId: String(row.id), destination: deposit.walletAddress, assetCode: "XLM", amountUnits: order.terms.amount.units, memo: { type: "id", value: deposit.walletAddressTag }, expiresAt },
+    };
+  }
+  async lookup(order: RampOrder): Promise<MoonpayObservation | null> {
+    const row = await this.verifiedRecord(order);
+    if (!row) return null;
+    const terms = order.terms;
+    const field = (key: string) => z.string().min(1).parse(row[key]);
+    const id = field("id");
     const originalStatus = field("status");
     const state =
       (

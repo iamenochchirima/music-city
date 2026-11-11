@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-01T14:40:47.610Z",
+  "environment": "sandbox",
+  "providerOrderId": "9ae54fba-acc8-4c74-b64a-b6a70881bff2",
+  "externalTransactionId": "f266c996-3b89-4776-98e2-61c35682bc63",
+  "status": "completed",
+  "payoutMethod": "moonpay_balance",
+  "baseCurrency": "xlm",
+  "baseCurrencyAmount": 200,
+  "quoteCurrency": "gbp",
+  "quoteCurrencyAmount": 24.37,
+  "feeAmount": 0,
+  "depositHash": "789d71b771668c2e91fed74f42fdf88591307589117c02622eb159f8a9b501e5",
+  "expectedDepositHash": "789d71b771668c2e91fed74f42fdf88591307589117c02622eb159f8a9b501e5",
+  "depositMatched": true,
+  "confirmations": 1,
+  "failureReason": null,
+  "refundHash": null,
+  "stages": [
+    {
+      "stage": "sell_stage_one_verification",
+      "status": "success",
+      "failureReason": null
+    },
+    {
+      "stage": "sell_stage_two_waiting_for_deposit",
+      "status": "success",
+      "failureReason": null
+    },
+    {
+      "stage": "sell_stage_three_processing",
+      "status": "success",
+      "failureReason": null
+    },
+    {
+      "stage": "sell_stage_four_withdrawal",
+      "status": "success",
+      "failureReason": null
+    }
+  ],
+  "payoutCompleted": true,
+  "realBankOrCardPayout": false
+}

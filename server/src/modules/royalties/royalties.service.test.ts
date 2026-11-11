@@ -414,3 +414,15 @@ test("approveLedgerEntries marks pending entries as approved", async () => {
     cleanup.reverse().forEach((fn) => fn());
   }
 });
+
+test("pool purchases never enter the manual earnings approval or settlement queue", async () => {
+  let recognized=false;
+  const cleanup=restore(royaltiesRepository,"recognizeSource",async()=>{recognized=true;return [];});
+  try {
+    const entries=await royaltiesService.ensureTrackPurchaseLedgerEntries({
+      id:"pool-payment",intentId:"pool-intent",walletAddress:"G"+"A".repeat(55),productType:"track_purchase",trackId:"track",
+      poolContractId:"pool",poolOrderId:"a".repeat(64),txHash:"hash",amount:"3",assetCode:"USDC",status:"confirmed",confirmedAt:new Date().toISOString(),createdAt:new Date().toISOString(),
+    });
+    assert.deepEqual(entries,[]);assert.equal(recognized,false);
+  } finally {cleanup();}
+});

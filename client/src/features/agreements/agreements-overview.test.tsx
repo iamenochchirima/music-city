@@ -353,6 +353,24 @@ describe("agreement lifecycle UI", () => {
     expect(screen.queryByRole("form", { name: "New agreement" })).toBeNull();
     expect(mocks.save).not.toHaveBeenCalled();
   });
+  it("keeps the artist in the split but hides selected wallets from contributor search", async () => {
+    const owner = detail.context.owner;
+    const producer = detail.context.people.find(person => person.walletAddress !== owner.walletAddress)!;
+    mocks.contributors.mockResolvedValue({ items: [owner, producer] });
+    const user = open(`/account/agreements/new?track=${version.proposal.trackId}`);
+    await screen.findByRole("heading", { name: "Who should share the earnings?" });
+    await user.type(screen.getByLabelText("Add a contributor"), "Owner");
+    const producerResult = await screen.findByRole("button", { name: new RegExp(`^${producer.name}`) });
+    expect(screen.queryByRole("button", { name: new RegExp(`^${owner.name}`) })).toBeNull();
+    expect(screen.getByRole("button", { name: `Remove ${owner.name}` }).hasAttribute("disabled")).toBe(true);
+    await user.click(producerResult);
+    await user.type(screen.getByLabelText("Add a contributor"), "Producer");
+    expect(await screen.findByText("No other matching contributors")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: new RegExp(`^${producer.name}`) })).toBeNull();
+    await user.click(screen.getByRole("button", { name: `Remove ${producer.name}` }));
+    expect(await screen.findByRole("button", { name: new RegExp(`^${producer.name}`) })).toBeTruthy();
+  });
+
   it("guides a creator from song and contributors through a reviewed 100% split", async () => {
     const producer = detail.context.people.find(
       (person) => person.walletAddress !== detail.context.owner.walletAddress,
@@ -443,4 +461,27 @@ describe("agreement lifecycle UI", () => {
       expectedHash: version.proposalHash,
     });
   });
+});
+
+it("uses a wallet-signed cancellation for contributor-controlled proposals", async () => {
+  version.publicationMode = "contributors";
+  const user = open();
+  await user.click(await screen.findByRole("button", { name: "Cancel proposal" }));
+  await user.click(screen.getByRole("button", { name: "Confirm cancellation" }));
+  await waitFor(() => expect(mocks.challenge).toHaveBeenCalledWith(
+    mocks.session.token, detail.id, { action: "cancel", reason: "" },
+  ));
+  expect(mocks.act).not.toHaveBeenCalled();
+  expect(mocks.sign).toHaveBeenCalledWith("exact-challenge");
+});
+
+it("shows the confirmed receipt for contributor finalization", async () => {
+  version.publicationMode = "contributors";
+  version.state = "finalized";
+  version.publication = { contractId: "registry", networkPassphrase: version.proposal.networkPassphrase, transactionHash: "a".repeat(64), transaction: "signed", actor: version.proposal.ownerWallet, ledger: 100, previousFinalizedHash: "0".repeat(64) };
+  configurePermissions();
+  open();
+  const receipt = await screen.findByRole("link", { name: "View confirmed agreement receipt" });
+  expect(receipt.getAttribute("href")).toContain("/testnet/tx/" + "a".repeat(64));
+  expect(screen.queryByText("Everyone accepted. Awaiting finalization.")).toBeNull();
 });

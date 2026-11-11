@@ -86,3 +86,20 @@ it("uses MoneyGram for a validated sandbox cash-out handoff", async () => {
   expect(await screen.findByText("Continue to MoneyGram to set up your cash-out.")).toBeTruthy();
   expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
 });
+
+
+it("selects XLM, keeps USDC unavailable, and creates only the chosen native-asset order", async () => {
+  const xlm: CashOutRoute = { ...route, assetCode: "XLM", assetIssuer: undefined, market: { country: "GB", currency: "GBP", method: "moonpay_balance" }, minUnits: "1200000000", maxUnits: "1000000000000" };
+  const user = userEvent.setup();
+  mock.post.mockResolvedValueOnce({ order: { id: "xlm-order" } }).mockResolvedValueOnce({ url: "https://sell-sandbox.moonpay.com/?test=1" });
+  render(<CashOutStartDialog token="session" routes={[xlm]} available="10" availableXlm="250" onClose={vi.fn()} onChanged={vi.fn()} />);
+  await user.click(screen.getByRole("radio", { name: "USDC" }));
+  expect(screen.getByText("USDC isn't available in test mode.")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Continue" }).hasAttribute("disabled")).toBe(true);
+  expect(mock.post).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("radio", { name: "XLM" }));
+  await user.type(screen.getByRole("textbox", { name: "Amount in XLM" }), "200");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  expect(await screen.findByRole("link", { name: "Continue to provider" })).toBeTruthy();
+  expect(mock.post).toHaveBeenNthCalledWith(1, "/ramps", expect.objectContaining({ assetCode: "XLM", amount: "200", market: xlm.market }), "session");
+});

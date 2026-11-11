@@ -1,3 +1,4 @@
+import { contributorChain } from "./contributor-chain.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -41,7 +42,7 @@ export const agreementsService = {
         wallet_address: string;
         name: string;
       }>(
-        `SELECT id,wallet_address,payload->>'displayName' AS name FROM users WHERE payload->>'onboardingStatus'='complete' AND (wallet_address=$1 OR strpos(lower(COALESCE(payload->>'displayName','')),lower($1))>0) ORDER BY CASE WHEN wallet_address=$1 THEN 0 ELSE 1 END,payload->>'displayName',id LIMIT 10`,
+        `SELECT id,wallet_address,payload->>'displayName' AS name FROM users WHERE archived_at IS NULL AND payload->>'onboardingStatus'='complete' AND (wallet_address=$1 OR strpos(lower(COALESCE(payload->>'displayName','')),lower($1))>0) ORDER BY CASE WHEN wallet_address=$1 THEN 0 ELSE 1 END,payload->>'displayName',id LIMIT 10`,
         [term],
       );
       return result.rows.map((r) => ({
@@ -143,6 +144,10 @@ export const agreementsService = {
         previousHash: null,
         ...terms,
       });
+      if (env.AGREEMENT_PUBLICATION_MODE === "contributors") {
+        draft.publicationMode = "contributors";
+        draft.requiredApprovers = [...new Set([actor, ...draft.proposal.recipients.map(r => r.walletAddress)])];
+      }
       const version = submitForApproval
         ? submitVersion(draft, actor)
         : draft;
@@ -250,9 +255,12 @@ export const agreementsService = {
           client,
           terms.recipients.map((r) => r.walletAddress),
         );
+        const effective = current.publicationMode === "contributors" && _root.effective_version
+          ? await readVersion(client,id,_root.effective_version) : null;
         const next = {
           ...createVersion({ ...current.proposal, ...terms }),
           createdAt: current.createdAt,
+          ...(current.publicationMode === "contributors" ? { publicationMode: "contributors" as const, requiredApprovers: [...new Set([actor, ...(effective?.proposal.recipients ?? []).map(r => r.walletAddress), ...terms.recipients.map(r => r.walletAddress)])] } : {}),
         };
         if (next.proposalHash === current.proposalHash) return current;
         await writeVersion(client, next);
@@ -316,6 +324,7 @@ export const agreementsService = {
             409,
             "The draft changed. Review the latest details before continuing",
           );
+        if (current.publicationMode === "contributors" && current.state !== "draft") throw new HttpError(409,"Sign cancellation with your wallet so the contract can block this proposal");
         const next = cancelVersion(current, actor);
         await writeVersion(client, next);
         await recordEvent(client, next, actor, "cancelled");
@@ -362,6 +371,12 @@ export const agreementsService = {
           recipients: request.recipients,
           terms: request.terms,
         });
+        if (current.publicationMode === "contributors") {
+          const root = (await client.query("SELECT effective_version FROM contributor_agreements WHERE id=$1",[id])).rows[0];
+          const effective = root.effective_version ? await readVersion(client,id,root.effective_version) : null;
+          next.publicationMode = "contributors";
+          next.requiredApprovers = [...new Set([actor, ...(effective?.proposal.recipients ?? []).map(r=>r.walletAddress), ...next.proposal.recipients.map(r=>r.walletAddress)])];
+        }
         await writeVersion(client, next, true);
         await client.query(
           "UPDATE contributor_agreements SET current_version=$2 WHERE id=$1",
@@ -380,7 +395,9 @@ export const agreementsService = {
       id,
       actor,
       async (client, _root, current) => {
-        const challenge = createResponseChallenge(current, actor, input);
+        const challenge = current.publicationMode === "contributors"
+          ? await contributorChain.prepare(current, actor, input)
+          : createResponseChallenge(current, actor, input);
         await client.query(
           "INSERT INTO agreement_challenges(id,agreement_id,version,wallet_address,expires_at,payload) VALUES($1,$2,$3,$4,$5,$6)",
           [
@@ -400,6 +417,8 @@ export const agreementsService = {
     );
   },
   async respond(id: string, actor: string, input: unknown) {
+    const mode = await agreementsRepository.locked(id, actor, async (_client,_root,current) => current.publicationMode);
+    if (mode === "contributors") return contributorChain.respond(id,actor,input);
     const request = z
       .object({
         challengeId: z.string().uuid(),

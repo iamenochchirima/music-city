@@ -3,6 +3,7 @@ import type {
   AuthSession,
   ArtistSummary,
   ArtistPublicProfile,
+  ContributorSummary,
   CompleteOnboardingInput,
   CreateUserMediaUploadInput,
   ReleaseSummary,
@@ -16,6 +17,13 @@ import type {
 import { httpClient } from "@/lib/api/http-client";
 
 export const usersApi = {
+  async searchContributors(token: string, query: string) {
+    const response = await httpClient.get<{ items: ContributorSummary[] }>(
+      `/users/contributors?query=${encodeURIComponent(query)}`,
+      token,
+    );
+    return response.items;
+  },
   async getMe(token: string) {
     const response = await httpClient.get<{ profile: UserProfile | null }>(
       "/users/me",

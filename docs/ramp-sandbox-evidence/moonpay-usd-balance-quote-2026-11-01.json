@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-11-01T15:35:46.411Z",
+  "httpStatus": 200,
+  "baseCurrencyAmount": 200,
+  "quoteCurrency": "usd",
+  "quoteCurrencyAmount": 28.48,
+  "paymentMethod": "ach_bank_transfer",
+  "feeAmount": 3.99,
+  "scope": "USD Balance quote only; no completed payout",
+  "environment": "sandbox",
+  "requestedPaymentMethod": "moonpay_balance",
+  "note": "Provider returned ach_bank_transfer despite requesting moonpay_balance. This is not evidence of USD MoonPay Balance support."
+}

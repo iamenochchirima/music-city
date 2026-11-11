@@ -33,7 +33,7 @@ export function validateMoonpayLaunch(order: RampOrder, url: URL) {
   const expected: Record<string, string> = { externalTransactionId: order.id, externalCustomerId: order.terms.userId,
     theme: "dark", lockAmount: "true", baseCurrencyCode: buy ? order.terms.market.currency.toLowerCase() : asset,
     baseCurrencyAmount: decimalAmount(order.terms.amount.units, order.terms.amount.decimals),
-    ...(buy ? { currencyCode: asset, walletAddress: order.terms.walletAddress } : { quoteCurrencyCode: order.terms.market.currency.toLowerCase(), refundWalletAddress: order.terms.walletAddress }) };
+    ...(buy ? { currencyCode: asset, walletAddress: order.terms.walletAddress } : { quoteCurrencyCode: order.terms.market.currency.toLowerCase(), refundWalletAddress: order.terms.walletAddress, ...(order.terms.market.method === "moonpay_balance" ? { paymentMethod: "moonpay_balance" } : {}) }) };
   const keys = new Set([...Object.keys(expected), "apiKey", "allowedIpAddress", "signature"]);
   if ([...params.keys()].some((key) => !keys.has(key)) || Object.entries(expected).some(([key, value]) => !single(key, value)) ||
       params.getAll("apiKey").length !== 1 || !params.get("apiKey")?.startsWith("pk_test_") ||

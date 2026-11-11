@@ -41,18 +41,16 @@ it("shows field errors for incomplete rows and invalid ISRC and allows removing 
   expect(JSON.parse(screen.getByLabelText("Saved metadata").textContent!)).toEqual({ credits: [], isrc: "", recordLabel: "" });
 });
 
-it("preserves a selected profile when its optional control is hidden and restores focus after removal", async () => {
+it("preserves a linked profile, allows unlinking, and restores focus after removal", async () => {
   function LinkedForm() {
-    const [value, setValue] = useState<TrackMetadataDraft>({ ...emptyTrackMetadata(), credits: [{ role: "composer" as const, name: "Composer", artistId: "artist-1" }] });
+    const [value, setValue] = useState<TrackMetadataDraft>({ ...emptyTrackMetadata(), credits: [{ role: "composer", name: "Composer", artistId: "artist-1" }] });
     return <TrackMetadataEditor value={value} onChange={setValue} artists={[]} />;
   }
   const user = userEvent.setup(); render(<LinkedForm />);
-  expect(screen.queryByLabelText("Linked profile 1")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Show linked profile 1" }));
-  expect(screen.getByLabelText("Linked profile 1").textContent).toContain("Existing linked profile");
-  await user.click(screen.getByRole("button", { name: "Hide linked profile 1" }));
-  await user.click(screen.getByRole("button", { name: "Show linked profile 1" }));
-  expect(screen.getByLabelText("Linked profile 1").textContent).toContain("Existing linked profile");
+  expect(screen.getByText("Linked profile: Composer")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Unlink profile 1" }));
+  expect(screen.queryByText("Linked profile: Composer")).toBeNull();
+  expect((screen.getByLabelText("Contributor name 1") as HTMLInputElement).value).toBe("Composer");
   await user.click(screen.getByRole("button", { name: "Remove contributor 1" }));
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Add contributor" }));
 });

@@ -93,3 +93,21 @@ test("cash-out creation persists only an owner-verified claim reference and bind
   await assert.rejects(service.create({ userId: "artist", walletAddress: wallet }, { ...request, associatedClaim: { ...reference, claimIndex: 1 } }), /different terms/);
   await assert.rejects(service.create({ userId: "artist", walletAddress: wallet }, { ...request, direction: "buy" }), /only be linked to a cash-out/);
 });
+
+
+test("native XLM capability permits the verified Balance route without allowing USDC claim conversion", async () => {
+  const native: VerifiedRampRoute = { ...valid, direction: "sell", assetCode: "XLM", assetIssuer: undefined, amountDecimals: 7, market: { country: "GB", currency: "GBP", method: "moonpay_balance" } };
+  let reserved: unknown;
+  const service = createRampService({ async getByRequest() { return null; }, async reserve(terms) { reserved = terms; return { order: { terms } as RampOrder, created: true }; } }, { async routes() { return [native]; } }, () => Date.parse("2026-10-28T00:00:00Z"));
+  const input = { requestId: "ed39ecdf-d398-49cb-86bf-54cac8329168", provider: "moonpay", direction: "sell", assetCode: "XLM", market: native.market, amount: "0.001" };
+  await service.create({ userId: "user", walletAddress: issuer }, input);
+  assert.equal((reserved as RampOrder["terms"]).amount.units, "10000");
+  assert.equal((reserved as RampOrder["terms"]).assetIssuer, undefined);
+  await assert.rejects(service.create({ userId: "user", walletAddress: issuer }, { ...input, associatedClaim: { batchId: "a".repeat(64), claimIndex: 0 } }));
+});
+
+test("capability timestamps are evaluated after live provider verification finishes", async () => {
+  let clock = Date.parse("2026-10-28T00:00:00Z");
+  const service = createRampService({ async getByRequest() { return null; }, async reserve() { throw new Error("unused"); } }, { async routes() { clock += 1000; return [{ ...valid, verifiedAt: new Date(clock).toISOString() }]; } }, () => clock);
+  assert.equal((await service.routes()).length, 1);
+});

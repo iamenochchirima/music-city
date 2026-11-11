@@ -8,6 +8,12 @@ import {
 } from "./auth.js";
 import { stellarWalletAddressSchema } from "./commerce.js";
 
+export type ContributorSummary = {
+  id: string;
+  name: string;
+  walletAddress: string;
+};
+
 export const notificationPreferencesSchema = z.object({
   releaseNotifications: z.boolean().default(true),
   artistUpdates: z.boolean().default(true),

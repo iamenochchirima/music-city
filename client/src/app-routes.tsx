@@ -1,3 +1,4 @@
+import {AdminWalletPage} from "@/features/admin-wallet/admin-wallet-page";
 import { SupportHistory } from "@/features/support/support-history";
 import { ReferralJoin } from "@/features/referrals/referral-join";
 import { ReferralsOverview } from "@/features/referrals/referrals-overview";
@@ -5,7 +6,7 @@ import LandingPage from "@/app/page";
 import { AgreementsOverview } from "@/features/agreements/agreements-overview";
 import { PageContainer } from "@/components/common/page-container";
 import { PageHero } from "@/components/common/page-hero";
-import { AccountOverview } from "@/features/account/components/account-overview";
+import AccountPage from "@/app/account/page";
 import { AccountPlaylistsOverview } from "@/features/account/components/account-playlists-overview";
 import { PlaylistManageOverview } from "@/features/account/components/playlist-manage-overview";
 import { ArtistsOverview } from "@/features/artists/components/artists-overview";
@@ -272,20 +273,10 @@ const AccountPlaylistManagePage = () => {
 
 export const AppRoutes = () => (
   <Routes>
+    <Route path="/admin-wallet/:requestId" element={<AdminWalletPage/>}/>
     {ComponentPreview ? <Route path="/dev/studio-components" element={<Suspense fallback={<p role="status">Loading component preview…</p>}><ComponentPreview /></Suspense>} /> : null}
     <Route path="/" element={<LandingPage />} />
-    <Route
-      path="/account"
-      element={
-        <PageSection
-          eyebrow="Account"
-          title="Your account"
-          description="View your profile, wallet, and recent activity."
-        >
-          <AccountOverview />
-        </PageSection>
-      }
-    />
+    <Route path="/account" element={<AccountPage />} />
     <Route path="/join" element={<ReferralJoin />} />
     <Route path="/account/support" element={<PageContainer><div className="py-10"><SupportHistory /></div></PageContainer>} />
     <Route path="/account/referrals" element={<PageContainer><div className="py-10"><ReferralsOverview /></div></PageContainer>} />

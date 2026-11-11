@@ -39,6 +39,7 @@ export const finalizationService = {
   async resolveDispute(id: string,actor: string,input: unknown,expectedVersion?:number,expectedHash?:string) {
     const request = z.object({ resolution: z.string().trim().min(1).max(1000) }).strict().parse(input);
     return agreementsRepository.locked(id,actor,async (client,_root,current) => {
+      if(current.publicationMode === "contributors") throw new HttpError(409,"Contributors finalize this agreement through their own wallet approvals");
       if((expectedVersion!==undefined&&expectedVersion!==current.proposal.version)||(expectedHash!==undefined&&expectedHash!==current.proposalHash)) throw new HttpError(409,"The agreement changed. Review the latest version");
       if (!["disputed","rejected"].includes(current.state)) throw new HttpError(409,"Only disputed or rejected versions can be resolved");
       // Resolution creates an owner-controlled draft. It does not alter the blocked
@@ -67,6 +68,7 @@ export const finalizationService = {
   },
   async prepare(id: string,actor: string,expectedVersion?:number,expectedHash?:string) {
     return agreementsRepository.locked(id,actor,async (client,root,current) => {
+      if(current.publicationMode === "contributors") throw new HttpError(409,"Contributors finalize this agreement through their own wallet approvals");
       if((expectedVersion!==undefined&&expectedVersion!==current.proposal.version)||(expectedHash!==undefined&&expectedHash!==current.proposalHash)) throw new HttpError(409,"The agreement changed. Review the latest version");
       await client.query("SELECT pg_advisory_xact_lock(hashtext('music-city-agreement-treasury'))");
       const existing = await client.query("SELECT payload FROM agreement_finalizations WHERE agreement_id=$1 AND version=$2 AND status IN ('awaiting_signatures','submitting','submitted','confirmed')",[id,current.proposal.version]);
@@ -74,7 +76,7 @@ export const finalizationService = {
       if (current.state !== "ready") throw new HttpError(409,"Only a fully accepted, undisputed version can start finalization");
       await verifyConsent(client,current);
       const config = agreementsChain.config();
-      const outstanding = await client.query("SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",[config.treasuryAddress]);
+      const outstanding = await client.query("SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM pool_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",[config.treasuryAddress]);
       if (outstanding.rowCount) throw new HttpError(409,"Reconcile the treasury's outstanding finalization before preparing another transaction");
       const previous = root.effective_version ? await readVersion(client,id,root.effective_version) : null;
       const latest = await agreementsChain.getLatest(current.proposal.trackId);

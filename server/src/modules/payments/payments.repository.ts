@@ -87,6 +87,18 @@ export const paymentsRepository = {
       if (payment.status === "confirmed") await notify(client,{
         key: `payment:${payment.intentId}:confirmed`, kind: "payment.receipt", recipients: [payment.walletAddress], href: "/account",
       });
+      if (payment.status === "confirmed" && payment.productType === "track_purchase" && payment.trackId) {
+        const artist = (await client.query<{ wallet_address: string }>(
+          "SELECT u.wallet_address FROM tracks t JOIN users u ON u.id=t.artist_id WHERE t.id=$1",
+          [payment.trackId],
+        )).rows[0];
+        if (artist) await notify(client, {
+          key: `sale:${payment.intentId}:confirmed`,
+          kind: "payment.sale",
+          recipients: [artist.wallet_address],
+          href: "/dashboard/revenue",
+        });
+      }
     });
 
     return payment;

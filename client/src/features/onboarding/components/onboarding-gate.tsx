@@ -30,6 +30,7 @@ export const OnboardingGate = () => {
   if (
     !session ||
     pathname === "/onboarding" ||
+    pathname.startsWith("/admin-wallet/") ||
     dismissed ||
     (session.onboardingStatus === "complete" &&
       openedWallet !== session.walletAddress)

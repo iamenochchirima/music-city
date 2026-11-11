@@ -1,8 +1,14 @@
+import { contributorChain } from "./contributor-chain.js";
+import { env } from "../../config/env.js";
 import { databaseService } from "../../services/database.service.js";
 import { logger } from "../../utils/logger.js";
 import { finalizationService } from "./finalization.service.js";
 
 export async function reconcileAgreementFinalizations() {
+  if (env.AGREEMENT_PUBLICATION_MODE === "contributors") {
+    await contributorChain.reconcilePending();
+    return;
+  }
   const attempts = await databaseService.transaction(
     async (client) =>
       (

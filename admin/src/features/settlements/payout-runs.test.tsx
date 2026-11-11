@@ -1,0 +1,21 @@
+import {afterEach,expect,it,vi} from "vitest";
+import {cleanup,render,screen,waitFor} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {PayoutRuns} from "./payout-runs";
+const m=vi.hoisted(()=>({get:vi.fn(),post:vi.fn()}));
+vi.mock("@/lib/api/http-client",()=>({httpClient:m}));
+afterEach(()=>{cleanup();vi.clearAllMocks();});
+it("reviews multiple sources and reserves the exact reviewed run before opening signing",async()=>{
+ m.get.mockResolvedValue({items:[]});const onOpen=vi.fn();
+ const sources=[{trackId:"song-a",sourceType:"track_purchase",sourceId:"purchase-a",allocations:2},{trackId:"song-b",sourceType:"track_purchase",sourceId:"purchase-b",allocations:2}];
+ const run={id:"run",fundedUnits:"60000000",batches:sources.map((s,i)=>({...s,id:`batch-${i}`,version:1,fundedUnits:"30000000",feeBps:0,allocations:[{beneficiary:"artist",amountUnits:"21000000"},{beneficiary:"producer",amountUnits:"9000000"}]}))};
+ m.post.mockResolvedValue({run});render(<PayoutRuns token="admin" sources={sources} onOpen={onOpen}/>);const user=userEvent.setup();
+ for(const c of screen.getAllByRole("checkbox"))await user.click(c);
+ await user.click(screen.getByRole("button",{name:"Review payout run"}));
+ expect(await screen.findByText("6.0000000 USDC total · 2 earnings sources")).toBeTruthy();
+ expect(screen.getByText("4.2000000 USDC → artist")).toBeTruthy();
+ expect(screen.getByText("1.8000000 USDC → producer")).toBeTruthy();
+ await user.click(screen.getByRole("button",{name:"Reserve payout run"}));
+ await waitFor(()=>expect(onOpen).toHaveBeenCalledWith("batch-0"));
+ expect(m.post.mock.calls[1]?.[1].previewId).toBe("run");expect(m.post.mock.calls[1]?.[1].source.sources).toHaveLength(2);
+});

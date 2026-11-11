@@ -1,3 +1,8 @@
+import { userArchiveStatements } from "../modules/users/user-archive-schema.js";
+import {adminWalletStatements} from "../modules/admin/admin-wallet-schema.js";
+import { poolStatements, poolSignatureStatements } from "../modules/pool/pool-schema.js";
+import { payoutRunStatements } from "../modules/settlements/payout-run-schema.js";
+import { contributorPublicationStatements, contributorEffectiveEvidenceStatements } from "../modules/agreements/contributor-schema.js";
 import { notificationSchemaStatements } from "../modules/notifications/notification-schema.js";
 import { rampLaunchStatements } from "../modules/ramps/ramp-launch-migration.js";
 import { rampRefundFailureStatements } from "../modules/ramps/ramp-refund-failure-migration.js";
@@ -423,6 +428,7 @@ const schemaMigrationTableStatement = `CREATE TABLE IF NOT EXISTS schema_migrati
 )`;
 
 const schemaMigrations: SchemaMigration[] = [
+  { name: "2026-11-01-user-archive", statements: userArchiveStatements },
   { name: "2026-10-30-notifications", statements: notificationSchemaStatements },
   { name: "2026-10-26-ramp-orders", statements: rampSchemaStatements },
   { name: "2026-10-26-ramp-progress", statements: rampProgressStatements },
@@ -444,10 +450,16 @@ const schemaMigrations: SchemaMigration[] = [
   { name: "2026-10-08-referral-paid-activation", statements: referralActivationSchemaStatements },
   { name: "2026-10-08-referral-campaign-controls", statements: referralCampaignControlStatements },
   { name: "2026-10-02-contributor-agreements", statements: agreementSchemaStatements },
+  { name: "2026-10-31-contributor-publication", statements: contributorPublicationStatements },
   { name: "2026-10-02-agreement-finalization", statements: finalizationSchemaStatements },
   { name: "2026-10-02-agreement-finalization-integrity", statements: finalizationIntegrityStatements },
+  { name: "2026-10-31-contributor-effective-evidence", statements: contributorEffectiveEvidenceStatements },
   { name: "2026-10-17-agreement-recovery", statements: agreementRecoveryStatements },
   { name: "2026-10-15-earnings-settlement", statements: settlementSchemaStatements },
+  { name: "2026-10-31-payout-runs", statements: payoutRunStatements },
+  { name: "2026-11-01-prefunded-pool", statements: poolStatements },
+  { name: "2026-11-01-pool-signature-attribution", statements: poolSignatureStatements },
+  { name: "2026-11-01-admin-wallets", statements:adminWalletStatements },
   { name: "2026-10-15-settlement-chain-events", statements: settlementChainEventSchemaStatements },
   { name: "2026-10-29-ramp-claim-link", statements: rampClaimLinkStatements },
   {
@@ -930,6 +942,12 @@ const mapPayloadRows = <T>(rows: PersistedRow[]) =>
   rows.map((row) => row.payload as T);
 
 const criticalSchemaExpectationGroups: SchemaExpectationGroup[] = [
+  { name: "2026-11-01-user-archive", migrationName: "2026-11-01-user-archive", relations: ["users"], columns: ["users.archived_at"], statements: userArchiveStatements },
+  { name: "2026-11-01-admin-wallets", migrationName:"2026-11-01-admin-wallets", relations:["admin_wallet_links","admin_wallet_requests"], statements:adminWalletStatements },
+  { name: "2026-11-01-pool-signature-attribution", migrationName:"2026-11-01-pool-signature-attribution", relations:["pool_signature_approvals"], statements:poolSignatureStatements },
+  { name: "2026-11-01-prefunded-pool", migrationName: "2026-11-01-prefunded-pool", relations:["pool_orders","pool_attempts","pool_events","pool_cursors"], indexes:["pool_one_active_wallet"], statements:poolStatements },
+  { name: "2026-10-31-payout-runs", migrationName: "2026-10-31-payout-runs", relations: ["payout_runs", "payout_run_batches"], statements: payoutRunStatements },
+  { name: "2026-10-31-contributor-publication", migrationName: "2026-10-31-contributor-publication", relations: ["contributor_chain_attempts"], indexes: ["contributor_chain_pending_idx"], statements: contributorPublicationStatements },
   { name: "2026-10-30-notifications", migrationName: "2026-10-30-notifications", relations: ["notifications", "notification_deliveries", "notification_email_sink"], indexes: ["notifications_inbox", "notification_deliveries_due"], statements: notificationSchemaStatements },
   { name: "2026-10-29-ramp-claim-link", migrationName: "2026-10-29-ramp-claim-link", relations: ["ramp_orders", "settlement_batches"], columns: ["ramp_orders.associated_claim_batch_id", "ramp_orders.associated_claim_index"], constraints: ["ramp_orders_associated_claim_pair_check", "ramp_orders_associated_claim_batch_fk"], statements: rampClaimLinkStatements },
   { name: "2026-10-29-ramp-refund-failure", migrationName: "2026-10-29-ramp-refund-failure", relations: ["ramp_orders"], constraints: ["ramp_orders_provider_state_check"], statements: rampRefundFailureStatements },
@@ -1378,6 +1396,22 @@ export const databaseService = {
     return mapPayloadRows<T>(result.rows);
   },
 
+  async searchContributorProfiles(query: string) {
+    const result = await pool.query<{ id: string; name: string; walletAddress: string }>(
+      `SELECT id, payload->>'displayName' AS name, wallet_address AS "walletAddress"
+       FROM users
+       WHERE archived_at IS NULL
+         AND NULLIF(TRIM(payload->>'displayName'), '') IS NOT NULL
+         AND (strpos(lower(payload->>'displayName'), lower($1)) > 0
+           OR strpos(lower(wallet_address), lower($1)) > 0)
+       ORDER BY lower(payload->>'displayName') = lower($1) DESC,
+         lower(payload->>'displayName'), id
+       LIMIT 20`,
+      [query],
+    );
+    return result.rows;
+  },
+
   async findPayloadById<T>(table: string, id: string) {
     const result = await pool.query<PersistedRow>(
       `SELECT id, payload FROM ${table} WHERE id = $1 LIMIT 1`,
@@ -1713,7 +1747,7 @@ export const databaseService = {
 
   async listUsersByPrimaryIntents<T>(primaryIntents: string[]) {
     const result = await pool.query<PersistedRow>(
-      `SELECT id, payload FROM users WHERE primary_intent = ANY($1::text[]) ORDER BY id`,
+      `SELECT id, payload FROM users WHERE archived_at IS NULL AND primary_intent = ANY($1::text[]) ORDER BY id`,
       [primaryIntents],
     );
 

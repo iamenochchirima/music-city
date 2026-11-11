@@ -19,7 +19,7 @@ export function visibleAgreementVersions(
       admin ||
       actor === owner ||
       (submittedVersions.has(v.proposal.version) &&
-        v.proposal.recipients.some((r) => r.walletAddress === actor)),
+        (v.requiredApprovers ?? v.proposal.recipients.map(r => r.walletAddress)).includes(actor)),
   );
 }
 export function agreementPermissions(
@@ -30,7 +30,7 @@ export function agreementPermissions(
   const owner = latest && version.proposal.ownerWallet === actor;
   const member =
     latest &&
-    version.proposal.recipients.some((r) => r.walletAddress === actor);
+    (version.requiredApprovers ?? version.proposal.recipients.map(r => r.walletAddress)).includes(actor);
   const open = ["proposed", "ready"].includes(version.state);
   const response = version.responses
     .filter((r) => r.walletAddress === actor)

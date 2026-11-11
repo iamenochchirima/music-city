@@ -1,0 +1,1163 @@
+{
+  "environment": "sandbox",
+  "network": "stellar:testnet",
+  "checkedAt": "2026-11-01T13:57:40.196Z",
+  "providers": [
+    {
+      "provider": "moonpay",
+      "connection": "verified",
+      "asset": {
+        "code": "usdc_xlm",
+        "testMode": false,
+        "sellSupported": true,
+        "suspended": false
+      },
+      "countries": [
+        {
+          "code": "AF",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "AL",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "DZ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "AD",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "AO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "AI",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "AG",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "AR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "AM",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "AU",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "AT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "AZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BS",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BH",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BD",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "BB",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "BY",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "BE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BZ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BJ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BT",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BW",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "BR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IO",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BN",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "BF",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "BI",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CV",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "KH",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CM",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CA",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "KY",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CF",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "TD",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CL",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "CN",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "CO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "KM",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CG",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "CD",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "CR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "CI",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "HR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "CU",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "CY",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "CZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "DK",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "DJ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "DM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "DO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "EC",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "EG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SV",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GQ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "ER",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "EE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SZ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "ET",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "FK",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "FJ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "FI",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "FR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GA",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "GM",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "GE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "DE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GI",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GH",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "GR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GD",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "GT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GN",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "GW",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "GY",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "HT",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "HN",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "HK",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "HU",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IS",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IN",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "ID",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IR",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "IQ",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "IE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IL",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "IT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "JM",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "JP",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "JE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "JO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "KZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "KE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "KI",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "XK",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "KP",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "KR",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "KW",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "KG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "LA",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "LV",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "LB",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "LS",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "LR",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "LY",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "LI",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "LT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "LU",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MG",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "MW",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MY",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "MV",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "ML",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "MT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MH",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "MR",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "MU",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "MX",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "FM",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "MD",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MC",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MN",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "ME",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MS",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MA",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "MZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "MM",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "NA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "NR",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "NP",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "NL",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "NZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "NI",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "NE",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "NG",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "MK",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "NO",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "OM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PK",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "PW",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "PS",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "PA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PY",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PH",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "PN",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PL",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "PT",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "QA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "RO",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "RU",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "RW",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SH",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "KN",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "LC",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "WS",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "ST",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SN",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "RS",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SC",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SL",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SK",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SI",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SB",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SO",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "ZA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GS",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SS",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "ES",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "LK",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "VC",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SD",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "SR",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "SE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "CH",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "SY",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "TW",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TJ",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "TH",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "TL",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TG",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TO",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TT",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TN",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "TR",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "TM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "TC",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "TV",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "UG",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "UA",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "AE",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "GB",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "US",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "UY",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "UZ",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "VU",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "VA",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "VE",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "VN",
+          "buyAllowed": true,
+          "sellAllowed": false
+        },
+        {
+          "code": "VG",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "EH",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "YE",
+          "buyAllowed": false,
+          "sellAllowed": false
+        },
+        {
+          "code": "ZM",
+          "buyAllowed": true,
+          "sellAllowed": true
+        },
+        {
+          "code": "ZW",
+          "buyAllowed": false,
+          "sellAllowed": false
+        }
+      ],
+      "flows": [
+        {
+          "direction": "buy",
+          "status": "blocked",
+          "reason": "stellar_usdc_test_mode_unavailable"
+        },
+        {
+          "direction": "sell",
+          "status": "blocked",
+          "reason": "stellar_usdc_test_mode_unavailable"
+        }
+      ]
+    }
+  ],
+  "moonpayPaymentMethods": {
+    "countryCode": "GBR",
+    "currencyCode": "GBP",
+    "paymentMethods": [
+      {
+        "direction": "buy",
+        "status": "reported",
+        "methods": [
+          {
+            "type": "google_pay",
+            "active": true
+          },
+          {
+            "type": "revolut_pay",
+            "active": true
+          },
+          {
+            "type": "credit_debit_card",
+            "active": true
+          },
+          {
+            "type": "paypal",
+            "active": true
+          },
+          {
+            "type": "gbp_open_banking_payment",
+            "active": true
+          },
+          {
+            "type": "gbp_bank_transfer",
+            "active": true
+          },
+          {
+            "type": "apple_pay",
+            "active": true
+          }
+        ]
+      },
+      {
+        "direction": "sell",
+        "status": "reported",
+        "methods": [
+          {
+            "type": "credit_debit_card",
+            "active": true
+          },
+          {
+            "type": "paypal",
+            "active": true
+          },
+          {
+            "type": "gbp_open_banking_payment",
+            "active": true
+          },
+          {
+            "type": "gbp_bank_transfer",
+            "active": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -50,11 +50,23 @@ const repository = createRampRepository(databaseService);
 const capabilities = createRampService(repository, operationalRampCapabilities);
 function configuredService() {
   const config = rampSandboxConfigSchema.safeParse(process.env);
-  if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || config.data.RAMPS_LAUNCH_IP_MODE !== "direct" || env.TRUST_PROXY_HOPS !== 0)
+  if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_LAUNCH_ENCRYPTION_KEY || !["direct", "local"].includes(config.data.RAMPS_LAUNCH_IP_MODE) || env.TRUST_PROXY_HOPS !== 0)
     throw new HttpError(503, "This payment option is not available yet");
   const adapter = createMoonpayLaunchAdapter(config.data);
   return createRampLaunchService(repository, new Map([["moonpay", adapter]]), createCashOutEnvelopeCipher(Buffer.from(config.data.RAMPS_LAUNCH_ENCRYPTION_KEY, "hex")), async (order) =>
     (await capabilities.routes()).some((route) => routeSupportsOrder(route, order)));
 }
+export function launchCustomerIps(req: Pick<Request, "socket">, raw: unknown, proxyHops: number) {
+  const config = rampSandboxConfigSchema.parse(raw);
+  if (config.RAMPS_LAUNCH_IP_MODE === "local") {
+    // Local rehearsal only: the browser's observed public IP is provisioned privately on this workstation.
+    // Never accept an IP supplied in the request or use this mode for remote/proxied clients.
+    const remote = req.socket.remoteAddress && canonicalizeMoonpayIp(req.socket.remoteAddress);
+    if (config.RAMPS_SANDBOX_ENABLED !== "true" || config.NODE_ENV !== "development" || proxyHops !== 0 || !["127.0.0.1", "::1"].includes(remote ?? "") || !config.RAMPS_SANDBOX_LOCAL_CUSTOMER_IP)
+      throw new HttpError(503, "Payments are not available on this connection");
+    return directCustomerIp({ socket: { remoteAddress: config.RAMPS_SANDBOX_LOCAL_CUSTOMER_IP } } as Pick<Request, "socket">, "direct", 0);
+  }
+  return directCustomerIp(req, config.RAMPS_LAUNCH_IP_MODE, proxyHops);
+}
 export const rampLaunchRouter = createRampLaunchRouter(configuredService, usersRepository.findByWallet,
-  (req) => directCustomerIp(req, rampSandboxConfigSchema.parse(process.env).RAMPS_LAUNCH_IP_MODE, env.TRUST_PROXY_HOPS));
+  (req) => launchCustomerIps(req, process.env, env.TRUST_PROXY_HOPS));

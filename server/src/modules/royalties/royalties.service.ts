@@ -252,7 +252,7 @@ export const royaltiesService = {
   async ensureTrackPurchaseLedgerEntries(
     payment: PaymentRecord,
   ): Promise<RoyaltyLedgerEntry[]> {
-    if (payment.productType !== "track_purchase" || !payment.trackId) {
+    if (payment.poolContractId || payment.productType !== "track_purchase" || !payment.trackId) {
       return [];
     }
 

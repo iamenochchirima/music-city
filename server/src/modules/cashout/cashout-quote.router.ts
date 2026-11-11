@@ -11,6 +11,8 @@ import { createCashOutQuoteService } from "./cashout-quote.service.js";
 import { createRampService, operationalRampCapabilities, routeSupportsOrder } from "../ramps/ramp-service.js";
 import { rampSandboxConfigSchema } from "../ramps/sandbox-config.js";
 
+import { MoonpaySandbox } from "../ramps/moonpay-sandbox.js";
+
 type Service = ReturnType<typeof createCashOutQuoteService>;
 type FindUser = (wallet: string) => Promise<Pick<UserProfile, "id"> | null | undefined>;
 function publicQuote(result: Awaited<ReturnType<Service["get"]>>) {
@@ -35,10 +37,10 @@ export function createCashOutQuoteRouter(service: Service, findUser: FindUser) {
   }));
   return router;
 }
-// No cash-out provider has supplied a verified instruction adapter yet.
+// Fetch deposit instructions directly from MoonPay, bound to the saved order.
 const repository = createRampRepository(databaseService);
 const capabilities = createRampService(repository, operationalRampCapabilities);
-export const cashOutQuoteRouter = createCashOutQuoteRouter(createCashOutQuoteService(repository, new Map(), undefined,
+export const cashOutQuoteRouter = createCashOutQuoteRouter(createCashOutQuoteService(repository, new Map([["moonpay", { quote: (order) => new MoonpaySandbox(rampSandboxConfigSchema.parse(process.env)).cashOutQuote(order) }]]), undefined,
   async (order) => {
     const config = rampSandboxConfigSchema.safeParse(process.env);
     if (!config.success || config.data.RAMPS_SANDBOX_ENABLED !== "true" || !config.data.RAMPS_CASHOUT_ENCRYPTION_KEY) return false;

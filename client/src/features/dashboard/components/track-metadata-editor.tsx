@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useId, useRef } from "react";
 import {
   trackCreditsAndIdentifiersSchema,
   type ArtistSummary,
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { FieldHelp } from "@/components/ui/field-help";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
-import { SearchablePicker } from "@/components/ui/searchable-picker";
+import { ContributorNameInput } from "./contributor-name-input";
 import { FormSection } from "@/components/studio/form-section";
 import type { TrackCredit } from "@music-city/shared";
 
@@ -48,6 +48,7 @@ export function TrackMetadataEditor({
   errors = {},
   disabled = false,
   hideIsrc = false,
+  searchToken,
 }: {
   value: TrackMetadataDraft;
   onChange: (value: TrackMetadataDraft) => void;
@@ -55,6 +56,7 @@ export function TrackMetadataEditor({
   errors?: Record<string, string>;
   disabled?: boolean;
   hideIsrc?: boolean;
+  searchToken?: string;
 }) {
   const id = useId();
   const addButton = useRef<HTMLButtonElement>(null);
@@ -65,22 +67,11 @@ export function TrackMetadataEditor({
         i === index ? { ...credit, ...fields } : credit,
       ),
     });
-  const [expandedProfiles, setExpandedProfiles] = useState<Set<number>>(
-    () => new Set(),
-  );
   const removeCredit = (index: number) => {
     onChange({
       ...value,
       credits: value.credits.filter((_, i) => i !== index),
     });
-    setExpandedProfiles(
-      (current) =>
-        new Set(
-          [...current]
-            .filter((i) => i !== index)
-            .map((i) => (i > index ? i - 1 : i)),
-        ),
-    );
     queueMicrotask(() => addButton.current?.focus());
   };
   return (
@@ -99,9 +90,6 @@ export function TrackMetadataEditor({
           {value.credits.length > 0 && (
             <div className="divide-y divide-border">
               {value.credits.map((credit, index) => {
-                const expanded =
-                  expandedProfiles.has(index) ||
-                  Boolean(errors[`credits.${index}.artistId`]);
                 return (
                   <div key={index} className="space-y-3 py-4 first:pt-0">
                     <div className="grid min-w-0 grid-cols-[128px_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[144px_minmax(0,1fr)]">
@@ -132,38 +120,33 @@ export function TrackMetadataEditor({
                         label={`Contributor name ${index + 1}`}
                         error={errors[`credits.${index}.name`]}
                       >
-                        <Input
+                        <ContributorNameInput
                           value={credit.name}
-                          placeholder="Person or organization"
-                          onChange={(e) =>
-                            updateCredit(index, { name: e.target.value })
+                          linked={Boolean(credit.artistId)}
+                          token={searchToken}
+                          profiles={artists}
+                          disabled={disabled}
+                          onChange={(name, profile) =>
+                            updateCredit(index, { name, artistId: profile?.id })
                           }
                         />
                       </FormField>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="h-auto min-h-11 whitespace-normal px-0 text-left"
-                        aria-label={`${expanded ? "Hide" : "Show"} linked profile ${index + 1}`}
-                        aria-expanded={expanded}
-                        aria-controls={`${id}-profile-panel-${index}`}
-                        onClick={() =>
-                          setExpandedProfiles((current) => {
-                            const next = new Set(current);
-                            if (next.has(index)) next.delete(index);
-                            else next.add(index);
-                            return next;
-                          })
-                        }
-                      >
-                        {expanded
-                          ? "Hide profile link"
-                          : credit.artistId
-                            ? `Linked profile: ${artists.find((artist) => artist.id === credit.artistId)?.name ?? "Existing artist"}`
-                            : "Link a Music City profile"}
-                      </Button>
+                      {credit.artistId ? (
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                          <span className="break-words">Linked profile: {artists.find(artist => artist.id === credit.artistId)?.name ?? credit.name}</span>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="h-auto min-h-11 px-0"
+                            aria-label={`Unlink profile ${index + 1}`}
+                            onClick={() => updateCredit(index, { artistId: undefined })}
+                          >Unlink</Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Search by name or wallet, or enter a credit manually.</span>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -173,46 +156,7 @@ export function TrackMetadataEditor({
                         Remove
                       </Button>
                     </div>
-                    {expanded ? (
-                      <div id={`${id}-profile-panel-${index}`}>
-                        <FormField
-                          id={`${id}-profile-${index}`}
-                          label={`Linked profile ${index + 1}`}
-                          hint="Optional. A name is enough if the contributor has no account."
-                          error={errors[`credits.${index}.artistId`]}
-                        >
-                          <SearchablePicker
-                            id={`${id}-profile-${index}`}
-                            value={credit.artistId ?? ""}
-                            onValueChange={(artistId) =>
-                              updateCredit(index, {
-                                artistId: artistId || undefined,
-                              })
-                            }
-                            placeholder="No linked profile"
-                            searchPlaceholder="Search artist profiles"
-                            options={[
-                              { value: "", label: "No linked profile" },
-                              ...(credit.artistId &&
-                              !artists.some(
-                                (artist) => artist.id === credit.artistId,
-                              )
-                                ? [
-                                    {
-                                      value: credit.artistId,
-                                      label: "Existing linked profile",
-                                    },
-                                  ]
-                                : []),
-                              ...artists.map((artist) => ({
-                                value: artist.id,
-                                label: `${artist.name} · ${artist.walletAddress.slice(0, 6)}…${artist.walletAddress.slice(-4)}`,
-                              })),
-                            ]}
-                          />
-                        </FormField>
-                      </div>
-                    ) : null}
+
                   </div>
                 );
               })}

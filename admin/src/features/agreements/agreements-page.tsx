@@ -56,7 +56,7 @@ export function AdminAgreementsPage() {
   const current = detail?.versions.find(
     (v) => v.proposal.version === detail.currentVersion,
   );
-  const canOperate = session?.role === "super_admin";
+  const canOperate = session?.role === "super_admin" && current?.publicationMode !== "contributors";
   const attempt = detail?.finalizations
     .filter((a) => a.version === detail.currentVersion)
     .sort((a, b) => {
@@ -138,6 +138,8 @@ export function AdminAgreementsPage() {
           All agreements
         </Link>
       )}
+      {current?.publicationMode === "contributors" && <p className="text-sm text-slate-400">Contributors finalize this agreement with their wallet approvals. Treasury signatures are required when funding payouts.</p>}
+      {current?.publication && <a className="text-sm underline" href={`https://stellar.expert/explorer/testnet/tx/${current.publication.transactionHash}`} target="_blank" rel="noreferrer">View confirmed contributor agreement receipt</a>}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
         <div>
           <h1 className="break-words text-2xl font-semibold">

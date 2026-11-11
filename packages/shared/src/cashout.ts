@@ -20,7 +20,7 @@ export const cashOutNetworkSchema = z.enum(["stellar:testnet", "stellar:public"]
 export const cashOutMarketSchema = z.object({
   country: z.string().regex(/^[A-Z]{2}$/),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  payoutMethod: z.enum(["cash_pickup", "bank", "mobile_money", "card"]),
+  payoutMethod: z.enum(["cash_pickup", "bank", "mobile_money", "card", "moonpay_balance"]),
 }).strict();
 
 export const cashOutStatusSchema = z.enum([
@@ -98,12 +98,15 @@ export const cashOutTransferInstructionsSchema = z.object({
   quoteId: id,
   providerTransactionId: id,
   destination: stellarWalletAddressSchema,
-  assetCode: z.literal("USDC"),
-  assetIssuer: stellarWalletAddressSchema,
+  assetCode: z.enum(["USDC", "XLM"]),
+  assetIssuer: stellarWalletAddressSchema.optional(),
   amountUnits: positiveUnits,
   memo: cashOutMemoSchema,
   expiresAt: timestamp,
-}).strict();
+}).strict().superRefine((value, ctx) => {
+  if ((value.assetCode === "USDC" && !value.assetIssuer) || (value.assetCode === "XLM" && value.assetIssuer !== undefined))
+    ctx.addIssue({ code: "custom", path: ["assetIssuer"], message: "Use the exact issuer for USDC and no issuer for native XLM" });
+});
 
 export const cashOutTransactionSchema = z.object({
   ...context,

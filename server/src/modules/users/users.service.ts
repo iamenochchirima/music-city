@@ -690,6 +690,14 @@ export const usersService = {
     );
   },
 
+  async searchContributors(query: unknown) {
+    if (typeof query !== "string" || query.trim().length > 80) {
+      throw new HttpError(400, "Search by name or wallet address using up to 80 characters");
+    }
+    const term = query.trim();
+    return term.length < 2 ? [] : usersRepository.searchContributors(term);
+  },
+
   async listArtists() {
     const artists = await usersRepository.listArtists();
     const { engagementRepository } = await import(

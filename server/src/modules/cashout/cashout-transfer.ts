@@ -13,7 +13,8 @@ export type CashOutTransferPolicy = {
   provider: string;
   environment: CashOutEnvironment;
   network: CashOutNetwork;
-  assetIssuer: string;
+  assetCode?: "USDC" | "XLM";
+  assetIssuer?: string;
   walletAddress: string;
   market: CashOutMarket;
   maxFeeStroops: number;
@@ -43,6 +44,7 @@ export function prepareCashOutTransfer(
   }
   if (quote.cashOutId !== instructions.cashOutId || quote.id !== instructions.quoteId || quote.providerTransactionId !== instructions.providerTransactionId ||
     instructions.amountUnits !== quote.debitUnits ||
+    instructions.assetCode !== (policy.assetCode ?? "USDC") ||
     instructions.assetIssuer !== policy.assetIssuer ||
     quote.market.country !== policy.market.country || quote.market.currency !== policy.market.currency ||
     quote.market.payoutMethod !== policy.market.payoutMethod ||
@@ -51,7 +53,7 @@ export function prepareCashOutTransfer(
     )) {
     throw new HttpError(409, "Payment instructions do not match the approved quote and wallet");
   }
-  if (![policy.walletAddress, policy.assetIssuer, instructions.destination].every(
+  if (![policy.walletAddress, ...(policy.assetIssuer ? [policy.assetIssuer] : []), instructions.destination].every(
     (address) => StrKey.isValidEd25519PublicKey(address),
   ) || instructions.destination === policy.walletAddress) {
     throw new HttpError(409, "Payment instructions contain an invalid destination or asset");
@@ -73,7 +75,7 @@ export function prepareCashOutTransfer(
     fee: String(feeStroops), networkPassphrase,
   }).addOperation(Operation.payment({
     destination: instructions.destination,
-    asset: new Asset("USDC", policy.assetIssuer),
+    asset: instructions.assetCode === "XLM" ? Asset.native() : new Asset("USDC", policy.assetIssuer!),
     amount: formatUnits(instructions.amountUnits),
   })).addMemo(stellarMemo).setTimebounds(0, expires).build();
   return {

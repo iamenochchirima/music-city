@@ -1,0 +1,302 @@
+{
+  "verifiedAt": "2026-10-31T13:17:49.566303+00:00",
+  "environment": "Isolated local PostgreSQL and Stellar Testnet",
+  "verificationKind": "Real Testnet transactions signed with generated fixture keys. Dynamic and Firefox validation pending.",
+  "baselineCommit": "3dd7c1e72c86b65fd6579eb2bb3cf9728603eac4",
+  "deployment": {
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "registryId": "CA3P3N4EY23AEBBAPQRQXZR6TJHWJ7XIXEGQJYZP66VFJMKYPVDUACYU",
+    "contractId": "CALPM4PZFQBULFUPWIF22XGBOVXLC2N6H37QRTTXPD4H2EDNQ4S2CEVP",
+    "deploymentLedger": 5485582,
+    "treasuryAddress": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+    "registrarAddress": "GCDF2UZXVQJVGQOU4TCJ56XFONPQMA6U5GNFWITJAGV425GRAMJSJTAK",
+    "signers": [
+      "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+      "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ",
+      "GBHZN2JKSXXKC6L45QQ2S2FAG53E55BBXZUR3UXOE3BAS2HGO4DTE3PO"
+    ],
+    "assetCode": "USDC",
+    "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+    "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    "wasmSha256": {
+      "registry": "f38958cad1cf477c428450227d5dfa5f08c7300493af6187abfefb85608cf4cc",
+      "settlement": "7f85ac959468a2a85d54b79045afd0a2cfaf784b7d059e39927acc124090d304"
+    },
+    "transactions": {
+      "treasuryThreshold": "c858df422da6955d2d655e1ba239232e08781505b57ed692dba5aa5df5736417",
+      "treasuryTrustline": "a0dddc7fc763e3f750c7217096e95dbc26618f1f27d714b294ed723f91bbb3e1",
+      "registryUpload": "60b5b2e1a5c04db32dc68790c5a776315c1e9c0179d964c6d86197d985b653b0",
+      "registryDeploy": "e57a11069292bd0fc97a80b68a6a0cfe0242ac31c1dba43d0dff412c0de82f81",
+      "settlementUpload": "0763b4456c5e8f5b1efe33533c9ab054bf29485d9d309c88e8dfd281026eff71",
+      "settlementDeploy": "7af6c05bfe8398b65b31a41040f8d89a394d9269dccc251b008726b16854b54b"
+    }
+  },
+  "serviceJourney": {
+    "trustline-GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY": {
+      "hash": "32b15571e9587a0e3d3b446da9d07297c1b81ea77915ee1ebc6de36cc8e1799d",
+      "ledger": 5485665
+    },
+    "trustline-GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H": {
+      "hash": "1c939f3b1cb8b94f927471ae6d09c49a342cc4ec925ac406ffd74a379509630b",
+      "ledger": 5485667
+    },
+    "trustline-GBHGIMUOCJZ55IAW2A3NLY2CCA72YNMEUQPVKY6V7GZWZU2ZHDQ3QS5R": {
+      "hash": "ad02d842ba69966d4b8788640f428d5a9577bb68d5f2a2213d5482b75097176b",
+      "ledger": 5485669
+    },
+    "buyerUSDC": {
+      "hash": "8706af578bb80c403e430b38a5ed51911216a1a9c3bedf0c3a974d968d40bac4",
+      "ledger": 5485670
+    },
+    "ownerConsent": {
+      "hash": "fd256bd308c1f4d0db8441b24c6db2e45d92ba2f13fcfb438bd4fc80f40684b1"
+    },
+    "partnerConsent": {
+      "hash": "1f0d5bf91c1c9afc9286dd03cd5402a9d58038f43ef9d4328309b66b8008962c"
+    },
+    "purchase": {
+      "hash": "991a0a8ce5eb44895885fb12e953a66558648e5029ee7cfceee54b2393653222",
+      "ledger": 5485685,
+      "gross": "3",
+      "claims": [
+        {
+          "wallet": "GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H",
+          "net": "0.9000000",
+          "fee": "0"
+        },
+        {
+          "wallet": "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY",
+          "net": "2.1000000",
+          "fee": "0"
+        }
+      ]
+    },
+    "funding": {
+      "hash": "73662bcbe3d1c710d73d8f659f7620c9c1f167cd2c9701e6b9cfcf696dcd720a",
+      "ledger": 5485688,
+      "signedBy": [
+        "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ"
+      ]
+    },
+    "claim-1": {
+      "hash": "3d1a4b0c30004f38510b114eb27cca99efcd07ed17e52342be6a186661e4299e",
+      "ledger": 5485691,
+      "signedBy": [
+        "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY"
+      ]
+    },
+    "claim-0": {
+      "hash": "c3f4bc9e11be3b0c50e0a8725a1ea2a1bab26b1f612602fb373442cad5f1cfc5",
+      "ledger": 5485693,
+      "signedBy": [
+        "GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H"
+      ]
+    },
+    "finalBatch": {
+      "id": "c546f7cc41607437af818ffe0b6ff158a185583dc253d3265280534fe3c38100",
+      "state": "closed",
+      "fundedUnits": "30000000",
+      "allocations": [
+        {
+          "index": 0,
+          "beneficiary": "GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H",
+          "grossUnits": "9000000",
+          "feeUnits": "0",
+          "amountUnits": "9000000",
+          "ledgerEntryIds": [
+            "rled_0c0de2f035ba43ea"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5485693,
+          "transactionHash": "c3f4bc9e11be3b0c50e0a8725a1ea2a1bab26b1f612602fb373442cad5f1cfc5"
+        },
+        {
+          "index": 1,
+          "beneficiary": "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY",
+          "grossUnits": "21000000",
+          "feeUnits": "0",
+          "amountUnits": "21000000",
+          "ledgerEntryIds": [
+            "rled_0714b0f4b07241f9"
+          ],
+          "status": "claimed",
+          "updatedLedger": 5485691,
+          "transactionHash": "3d1a4b0c30004f38510b114eb27cca99efcd07ed17e52342be6a186661e4299e"
+        }
+      ]
+    },
+    "reconciliation": {
+      "checkedAt": "2026-10-31T13:12:55.495Z",
+      "config": {
+        "contractId": "CALPM4PZFQBULFUPWIF22XGBOVXLC2N6H37QRTTXPD4H2EDNQ4S2CEVP",
+        "registryId": "CA3P3N4EY23AEBBAPQRQXZR6TJHWJ7XIXEGQJYZP66VFJMKYPVDUACYU",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "assetCode": "USDC",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "fundedUnits": "30000000",
+      "claimedUnits": "30000000",
+      "reclaimedUnits": "0",
+      "openUnits": "0",
+      "escrowBalanceUnits": "0",
+      "surplusUnits": "0",
+      "networkFeeXlmUnits": "262201",
+      "discrepancies": [],
+      "eventIndex": {
+        "indexedLedger": 5485746,
+        "caughtUp": true,
+        "checkedAt": "2026-10-31T13:12:53.092Z",
+        "unknownBatchIds": []
+      },
+      "ok": true
+    },
+    "verificationKind": "Generated-key service journey on real Stellar Testnet. Dynamic browser verification is separate.",
+    "rejectedOwner": {
+      "hash": "7841f362d36a38970a567c76aa5b92edff00a095913f2c0452ab4ef32975a347"
+    },
+    "partnerRejection": {
+      "hash": "41da45abec2c4975aa23020a46d2677290d56feece3f35818c6ab69002e15d74"
+    },
+    "rejection": {
+      "version": 2,
+      "state": "rejected"
+    },
+    "disputedOwner": {
+      "hash": "14741c2abb921cacfc891010a34a096d6831e6dc4a287119925639cf4b3991fd"
+    },
+    "partnerDispute": {
+      "hash": "8190f09f3c67fb2ace855a1cd42ad77bf2bc13f4b7362f5c80457cfb185a35b7"
+    },
+    "dispute": {
+      "version": 3,
+      "state": "disputed"
+    },
+    "amendmentOwner": {
+      "hash": "fa28321da2bec5886e43072815f36d4f706f50a698d2e6eee7251fb668c0ad1e"
+    },
+    "removedPartnerConsent": {
+      "hash": "cd6b002b5b14932b816460a8c32a05030b0db9d632ef619b35dd495a527a979d"
+    },
+    "amendment": {
+      "version": 4,
+      "state": "finalized",
+      "requiredApprovers": [
+        "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY",
+        "GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H"
+      ],
+      "recipients": [
+        {
+          "walletAddress": "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY",
+          "role": "artist",
+          "shareBps": 10000
+        }
+      ],
+      "transactionHash": "cd6b002b5b14932b816460a8c32a05030b0db9d632ef619b35dd495a527a979d"
+    }
+  },
+  "interactiveAgreementId": "4878484d-6856-483f-bbc7-dd1ea922abf3",
+  "interactiveVerification": {
+    "ownerApproval": {
+      "agreementId": "4878484d-6856-483f-bbc7-dd1ea922abf3",
+      "actor": "Ngoni",
+      "transactionHash": "a898492db5318e1c26283f65b2410f9b1090194e80c16efb2322899f1da3924f",
+      "status": "SUCCESS",
+      "ledger": 5487244,
+      "observedUi": "Ngoni Accepted; Enock Awaiting response",
+      "browser": "Codex in-app browser"
+    },
+    "pending": [
+      "Both real beneficiary claims and final reconciliation",
+      "Firefox Google return and cancellation",
+      "Admin browser funding/history rehearsal"
+    ],
+    "contributorApprovalAndFinalization": {
+      "agreementId": "4878484d-6856-483f-bbc7-dd1ea922abf3",
+      "actor": "Enock",
+      "transactionHash": "9015c6c1b58da4b919237843031d87a300fe4070f649b06ef8f66a4cfbf23cde",
+      "status": "SUCCESS",
+      "ledger": 5487391,
+      "databaseState": "finalized",
+      "confirmedApprovals": 2,
+      "treasurySignatureRequired": false
+    },
+    "purchase": {
+      "paymentId": "pay_f0c0677de69b49e7",
+      "transactionHash": "01ae9174defebd033d0a9a89b120cfb1ad357485a7a3e5b1414a7783752816eb",
+      "ledger": 5487689,
+      "status": "SUCCESS",
+      "amount": "3.0000000",
+      "buyerIsSeparate": true
+    },
+    "funding": {
+      "sourceId": "pay_f0c0677de69b49e7",
+      "batchId": "6529750305c0e35288d00e74b6045ace3dc37d0bb8c612f3a69230a245661efd",
+      "fundingHash": "316509fb279ad1486aafe03c20a6c5a6dc7d060a855727a80cef7f003b34539a",
+      "ledger": 5487720,
+      "signedBy": [
+        "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ"
+      ],
+      "state": "funded",
+      "expiresAt": "2026-11-01T15:57:06.000Z",
+      "allocations": [
+        {
+          "index": 0,
+          "beneficiary": "GB3XS62ZJ7EVX2ZSMUJ2BWYXOXBOL6OCDY7J2F5QOOFWWLYWSEB6TV6U",
+          "grossUnits": "21000000",
+          "feeUnits": "0",
+          "amountUnits": "21000000",
+          "ledgerEntryIds": [
+            "rled_8bfd59224c2b4620"
+          ],
+          "status": "available",
+          "updatedLedger": 5487720
+        },
+        {
+          "index": 1,
+          "beneficiary": "GCZS3HHJGOFZRSKOO4K6WO5PFQEBW7XP3QTTA53A6IITRCORN2ZS4APA",
+          "grossUnits": "9000000",
+          "feeUnits": "0",
+          "amountUnits": "9000000",
+          "ledgerEntryIds": [
+            "rled_9b0a3dcc8392491d"
+          ],
+          "status": "available",
+          "updatedLedger": 5487720
+        }
+      ],
+      "signingMethod": "Application services with two generated local Testnet treasury keys; not an admin browser verification"
+    }
+  },
+  "automatedChecks": {
+    "contracts": {
+      "passed": 19,
+      "failed": 0
+    },
+    "client": {
+      "passed": 270,
+      "failed": 0,
+      "files": 58
+    },
+    "adminExistingSuitePassed": 23,
+    "adminAgreementFilePassed": 9,
+    "serverExistingSuite": {
+      "passed": 248,
+      "failed": 0,
+      "skipped": 14
+    },
+    "newEnvelopeTestsPassed": 3,
+    "postgres": {
+      "contributorPublication": 1,
+      "legacyAgreementsAndFinalization": 26,
+      "checkout": 8,
+      "settlements": 15,
+      "skipped": 0
+    },
+    "workspaceTypechecks": "passed",
+    "productionBuilds": "passed"
+  }
+}

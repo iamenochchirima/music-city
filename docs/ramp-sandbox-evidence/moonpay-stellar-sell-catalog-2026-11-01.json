@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-11-01T13:58:50.349Z",
+  "environment": "sandbox",
+  "currencies": [
+    {
+      "code": "usdc_xlm",
+      "supportsTestMode": false,
+      "isSellSupported": true,
+      "isSuspended": false,
+      "minSellAmount": 20.05113,
+      "maxSellAmount": 10000,
+      "precision": 2
+    },
+    {
+      "code": "xlm",
+      "supportsTestMode": true,
+      "isSellSupported": true,
+      "isSuspended": false,
+      "minSellAmount": 119.74005,
+      "maxSellAmount": 100000,
+      "precision": 2
+    }
+  ]
+}

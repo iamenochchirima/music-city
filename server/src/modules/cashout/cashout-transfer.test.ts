@@ -223,3 +223,21 @@ test("all supported memos survive XDR encoding without numeric conversion", () =
     else if (memo.type === "id") assert.equal(tx.memo.value, memo.value);
   }
 });
+
+
+test("native cash-out signs the exact XLM payment and memo, rejecting asset substitution", () => {
+  const nativeInstructions = { ...instructions, assetCode: "XLM", assetIssuer: undefined };
+  const nativePolicy = { ...policy, assetCode: "XLM" as const, assetIssuer: undefined };
+  const prepared = prepare(nativeInstructions, quote, nativePolicy);
+  const tx = TransactionBuilder.fromXDR(prepared.transaction, Networks.TESTNET) as Transaction;
+  const operation = tx.operations[0];
+  assert.equal(operation.type, "payment");
+  if (operation.type === "payment") { assert.equal(operation.asset.isNative(), true); assert.equal(operation.destination, destination); assert.equal(operation.amount, "12.3456789"); }
+  assert.equal(tx.memo.type, "id");
+  assert.equal(tx.memo.value, instructions.memo.type === "id" ? instructions.memo.value : "");
+  tx.sign(wallet);
+  assert.ok(verifyCashOutEnvelope(prepared, tx.toXDR(), { account_id: walletAddress, thresholds: { med_threshold: 1 }, signers: [{ key: walletAddress, type: "ed25519_public_key", weight: 1 }] }, now));
+  assert.throws(() => prepare(instructions, quote, nativePolicy));
+  assert.throws(() => prepare(nativeInstructions, quote, policy));
+  assert.throws(() => prepare({ ...nativeInstructions, assetIssuer }, quote, nativePolicy));
+});

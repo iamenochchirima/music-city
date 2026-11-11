@@ -1,0 +1,18 @@
+import {Router} from "express";
+import {z} from "zod";
+import {requireAdminSession} from "../../middleware/require-admin-session.js";
+import {requireSuperAdmin} from "../../middleware/require-super-admin.js";
+import {asyncHandler} from "../../utils/async-handler.js";
+import {adminWalletService as service} from "./admin-wallet.service.js";
+export const adminWalletRouter=Router();adminWalletRouter.use(requireAdminSession);
+adminWalletRouter.get("/",asyncHandler(async(req,res)=>res.json(await service.status(req.adminSession!.adminId))));
+adminWalletRouter.get("/requests/:id",asyncHandler(async(req,res)=>res.json(await service.get(req.adminSession!.adminId,String(req.params.id)))));
+adminWalletRouter.use(requireSuperAdmin);
+adminWalletRouter.post("/requests",asyncHandler(async(req,res)=>{const input=z.discriminatedUnion("kind",[z.object({kind:z.literal("link")}).strict(),z.object({kind:z.literal("sign"),attemptId:z.string().min(1)}).strict()]).parse(req.body);res.status(201).json(await service.create(req.adminSession!.adminId,input));}));
+adminWalletRouter.post("/requests/:id/confirm",asyncHandler(async(req,res)=>res.json(await service.confirm(req.adminSession!.adminId,String(req.params.id)))));
+adminWalletRouter.post("/requests/:id/cancel",asyncHandler(async(req,res)=>res.json(await service.cancel(req.adminSession!.adminId,String(req.params.id)))));
+export const publicAdminWalletRouter=Router();
+const token=(req:{get:(name:string)=>string|undefined})=>req.get("X-Wallet-Request-Token")??"";
+publicAdminWalletRouter.get("/requests/:id",asyncHandler(async(req,res)=>res.json(await service.publicView(String(req.params.id),token(req)))));
+publicAdminWalletRouter.post("/requests/:id/challenge",asyncHandler(async(req,res)=>{const input=z.object({walletAddress:z.string().regex(/^G[A-Z2-7]{55}$/)}).strict().parse(req.body);res.json(await service.challenge(String(req.params.id),token(req),input.walletAddress));}));
+publicAdminWalletRouter.post("/requests/:id/signed",asyncHandler(async(req,res)=>{const input=z.object({signedTransaction:z.string().min(1).max(200000)}).strict().parse(req.body);res.json(await service.signed(String(req.params.id),token(req),input.signedTransaction));}));

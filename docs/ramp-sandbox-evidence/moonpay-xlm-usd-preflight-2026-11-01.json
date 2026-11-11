@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-11-01T14:14:45.989Z",
+  "environment": "sandbox",
+  "purpose": "Preflight for a separate US/USD XLM test; no customer or order created",
+  "country": "USA",
+  "state": "CA",
+  "asset": "XLM",
+  "amountXlm": "200",
+  "quoteCurrency": "USD",
+  "quote": {
+    "httpStatus": 200,
+    "baseCurrencyAmount": 200,
+    "quoteCurrencyAmount": 28.47,
+    "feeAmount": 3.99
+  },
+  "payoutMethods": {
+    "httpStatus": 200,
+    "methods": [
+      {
+        "type": "paypal",
+        "active": true
+      },
+      {
+        "type": "venmo",
+        "active": true
+      },
+      {
+        "type": "credit_debit_card",
+        "active": true
+      },
+      {
+        "type": "ach_bank_transfer",
+        "active": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "network": "Testnet",
+  "donor": "GBHGIMUOCJZ55IAW2A3NLY2CCA72YNMEUQPVKY6V7GZWZU2ZHDQ3QS5R",
+  "treasury": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+  "asset": "USDC",
+  "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+  "amount": "10.0000000",
+  "originalFundingHash": "8706af578bb80c403e430b38a5ed51911216a1a9c3bedf0c3a974d968d40bac4",
+  "conversion": {
+    "testUsdc": "0.5200000",
+    "quotedTestXlm": "0.6403906",
+    "maxTestXlm": "0.7044297"
+  },
+  "treasuryBefore": "0.5005000",
+  "treasuryAfter": "10.5005000",
+  "hash": "3a6796639247aa9d2e623053801ab70c166aab82f35c04f9d6d43e173449ab34",
+  "status": "confirmed",
+  "ledger": 5503116,
+  "confirmedAt": "2026-11-01T13:20:22.320Z"
+}

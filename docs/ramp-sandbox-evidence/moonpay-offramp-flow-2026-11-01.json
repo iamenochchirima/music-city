@@ -1,0 +1,132 @@
+{
+  "checkedAt": "2026-11-01",
+  "environment": "sandbox",
+  "stellarUsdc": {
+    "catalogTestMode": false,
+    "dashboardOffRampAssetEnabled": true,
+    "sellQuoteHttpStatus": 400,
+    "sellQuoteMessage": "Currency not supported in test mode",
+    "payoutCompleted": false,
+    "checkedAt": "2026-11-01T14:42:53.671Z"
+  },
+  "separateXlmDemo": {
+    "userAuthorized": true,
+    "amount": "200",
+    "asset": "XLM",
+    "network": "stellar:testnet",
+    "quoteCurrency": "GBP",
+    "quoteHttpStatus": 200,
+    "widgetLoadedInTestMode": true,
+    "externalTransactionId": "7071a575-2cc3-4c3e-87fd-41e40394e5c9",
+    "payoutCompleted": false,
+    "fundsTransferred": true,
+    "payoutMethod": "credit_debit_card",
+    "termsContinuationApprovedByUser": true,
+    "reviewedEstimatedPayoutGbp": "20.26",
+    "status": "failed",
+    "updatedAt": "2026-11-01T14:04:37.530958+00:00",
+    "providerOrderId": "db67844e-70fb-472b-9739-9f48049e55c3",
+    "depositHash": "8b6241ad14bf93aa330504b4206d1f5a0d9442ebf46e53225823ac89b5818dd4",
+    "failureReason": "Cross-border payout to this card is not supported",
+    "refundHash": null,
+    "refundApprovalStatus": "approved",
+    "providerStatus": "failed",
+    "checkedAt": "2026-11-01T14:11:56.809Z",
+    "refundConfirmed": false,
+    "refundCheckedAt": "2026-11-01T14:42:53.671Z"
+  },
+  "nextXlmAttempt": {
+    "market": "USA/CA/USD",
+    "preflightFile": "moonpay-xlm-usd-preflight-2026-11-01.json",
+    "quoteAvailable": true,
+    "cardPayoutMethodAvailable": true,
+    "customerCreated": true,
+    "orderCreated": true,
+    "depositSent": false,
+    "pending": null,
+    "testEmailApprovedByUser": true,
+    "externalTransactionId": "f266c996-3b89-4776-98e2-61c35682bc63",
+    "widgetLaunchPrepared": true,
+    "updatedAt": "2026-11-01T14:28:40.913132+00:00",
+    "emailFormPrepared": true,
+    "emailVerificationComplete": true,
+    "orderCountCheck": {
+      "httpStatus": 404,
+      "count": null
+    },
+    "checkedAt": "2026-11-01T14:23:55.398Z",
+    "smsVerificationComplete": false,
+    "smsRequiredByProvider": true,
+    "actualPayoutMethod": "moonpay_balance",
+    "actualQuoteCurrency": "gbp",
+    "currentCustomerIsOriginalUkCustomer": true,
+    "status": "User selected the existing GBP MoonPay Balance order instead of continuing US/USD card setup"
+  },
+  "restartedOrder": {
+    "checkedAt": "2026-11-01T14:42:53.671Z",
+    "providerOrderId": "9ae54fba-acc8-4c74-b64a-b6a70881bff2",
+    "externalTransactionId": "f266c996-3b89-4776-98e2-61c35682bc63",
+    "status": "completed",
+    "baseCurrency": "xlm",
+    "baseCurrencyAmount": 200,
+    "quoteCurrency": "gbp",
+    "quoteCurrencyAmount": 24.38,
+    "payoutMethod": "moonpay_balance",
+    "sameCustomerAsOriginalUkAttempt": true,
+    "depositHash": "789d71b771668c2e91fed74f42fdf88591307589117c02622eb159f8a9b501e5",
+    "fundsSentByAgent": true,
+    "payoutCompleted": true
+  },
+  "balanceAttempt": {
+    "checkedAt": "2026-11-01T14:40:47.610Z",
+    "environment": "sandbox",
+    "providerOrderId": "9ae54fba-acc8-4c74-b64a-b6a70881bff2",
+    "externalTransactionId": "f266c996-3b89-4776-98e2-61c35682bc63",
+    "status": "completed",
+    "payoutMethod": "moonpay_balance",
+    "baseCurrency": "xlm",
+    "baseCurrencyAmount": 200,
+    "quoteCurrency": "gbp",
+    "quoteCurrencyAmount": 24.37,
+    "feeAmount": 0,
+    "depositHash": "789d71b771668c2e91fed74f42fdf88591307589117c02622eb159f8a9b501e5",
+    "expectedDepositHash": "789d71b771668c2e91fed74f42fdf88591307589117c02622eb159f8a9b501e5",
+    "depositMatched": true,
+    "confirmations": 1,
+    "failureReason": null,
+    "refundHash": null,
+    "stages": [
+      {
+        "stage": "sell_stage_one_verification",
+        "status": "success",
+        "failureReason": null
+      },
+      {
+        "stage": "sell_stage_two_waiting_for_deposit",
+        "status": "success",
+        "failureReason": null
+      },
+      {
+        "stage": "sell_stage_three_processing",
+        "status": "success",
+        "failureReason": null
+      },
+      {
+        "stage": "sell_stage_four_withdrawal",
+        "status": "success",
+        "failureReason": null
+      }
+    ],
+    "payoutCompleted": true,
+    "realBankOrCardPayout": false,
+    "userAuthorizedRouteChoice": true,
+    "chainPaymentVerified": true
+  },
+  "applicationOutcome": {
+    "verifiedUsdcCashOutRouteEnabled": false,
+    "matchingApplicationOrders": 0,
+    "separateProviderDemoOnly": true,
+    "bankOrCardPayoutVerified": false
+  },
+  "updatedAt": "2026-11-01T14:43:58.702188+00:00"
+}

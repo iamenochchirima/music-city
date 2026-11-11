@@ -5,7 +5,7 @@ import { Keypair } from "@stellar/stellar-sdk";
 import { ZodError } from "zod";
 import { tokenService } from "../../services/token.service.js";
 import { HttpError } from "../../utils/http-error.js";
-import { createRampLaunchRouter, directCustomerIp } from "./ramp-launch.router.js";
+import { createRampLaunchRouter, directCustomerIp, launchCustomerIps } from "./ramp-launch.router.js";
 
 test("direct launch IP uses only a public socket address and refuses proxies", () => {
   const request = (remoteAddress: string) => ({ socket: { remoteAddress } }) as Parameters<typeof directCustomerIp>[0];
@@ -33,4 +33,14 @@ test("launch requires authentication and rejects client-supplied payment or IP p
     assert.equal(response.status, 201); assert.equal(response.headers.get("cache-control"), "no-store");
     assert.deepEqual(calls, [{ id: "order", owner: { userId: "user", walletAddress: wallet }, ips: ["8.8.8.8"] }]);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
+});
+
+
+test("local sandbox IP binding is provisioned on the workstation and restricted to loopback development", () => {
+  const request = (remoteAddress: string) => ({ socket: { remoteAddress } }) as Parameters<typeof directCustomerIp>[0];
+  const config = { RAMPS_SANDBOX_ENABLED: "true", RAMPS_LAUNCH_IP_MODE: "local", NODE_ENV: "development", RAMPS_SANDBOX_LOCAL_CUSTOMER_IP: "8.8.8.8" };
+  assert.deepEqual(launchCustomerIps(request("::ffff:127.0.0.1"), config, 0), ["8.8.8.8"]);
+  for (const change of [{ NODE_ENV: "production" }, { NODE_ENV: "test" }, { RAMPS_SANDBOX_ENABLED: "false" }, { RAMPS_SANDBOX_LOCAL_CUSTOMER_IP: "127.0.0.1" }]) assert.throws(() => launchCustomerIps(request("127.0.0.1"), { ...config, ...change }, 0));
+  assert.throws(() => launchCustomerIps(request("8.8.4.4"), config, 0));
+  assert.throws(() => launchCustomerIps(request("127.0.0.1"), config, 1));
 });

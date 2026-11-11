@@ -1,3 +1,5 @@
+import { poolService } from "../pool/pool.service.js";
+import { poolChain, poolId, poolOrderId } from "../pool/pool-chain.js";
 import { referralsService } from "../referrals/referrals.service.js";
 import type {
   ConfirmPaymentInput,
@@ -95,7 +97,7 @@ const paymentResultFromExistingRecord = async (
     await paymentsRepository.upsertIntent({ ...intent, status: "confirmed", txHash: payment.txHash, updatedAt: new Date().toISOString() });
   }
   if (intent.productType === "track_purchase" && intent.trackId) {
-    await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
+    if (!intent.poolContractId) await royaltiesService.ensureTrackPurchaseLedgerEntries(payment);
 
     const entitlement =
       (await entitlementsService.findMineForTrack(walletAddress, intent.trackId)) ??
@@ -203,6 +205,7 @@ const verifyTransactionAgainstIntent = async (
   if (intent.networkPassphrase && intent.networkPassphrase !== env.STELLAR_NETWORK_PASSPHRASE) {
     throw new HttpError(409, "Payment network changed. Create a new payment intent.");
   }
+  if (intent.poolContractId) return poolService.verifyPurchase(intent,txHash);
   const transaction = await fetchTransaction(txHash);
 
   if (!transaction.successful) {
@@ -287,7 +290,7 @@ export const paymentsService = {
       throw new HttpError(409, "Finish your pending payment before starting another");
     }
     const split = await finalizedSplitsRepository.effective(trackId);
-    if (!split) throw new HttpError(409, "This song is not ready for purchases yet");
+    if (!split) throw new HttpError(409, "This song needs a confirmed royalty agreement before it can be purchased");
     if (track.purchaseAssetCode !== env.STELLAR_SETTLEMENT_ASSET_CODE ||
       track.purchaseAssetIssuer !== env.STELLAR_SETTLEMENT_ASSET_ISSUER) {
       throw new HttpError(409, "This song must be priced in the supported USDC asset");
@@ -308,6 +311,12 @@ export const paymentsService = {
       ),
     });
 
+    if (env.EARNINGS_MODE === "pool") {
+      const config=await poolChain.verify();
+      const settings=await royaltiesService.getFeeSettings();
+      if(config.feeBps!==settings.trackPurchaseFeeBps) throw new HttpError(409,"Pool fee policy differs from the configured track purchase fee");
+      intent.poolContractId=poolId();intent.poolOrderId=poolOrderId(intent.id);
+    }
     return paymentsRepository.upsertIntent(intent);
   },
 
@@ -432,6 +441,8 @@ export const paymentsService = {
       subscriptionScope: intent.subscriptionScope,
       trackId: intent.trackId,
       royaltySplitId: intent.royaltySplitId,
+      poolContractId:intent.poolContractId,
+      poolOrderId:intent.poolOrderId,
       txHash: parsed.txHash,
       amount: intent.amount,
       assetCode: intent.assetCode,

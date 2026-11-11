@@ -1,3 +1,4 @@
+import { env } from "../../config/env.js";
 import { notify } from "../notifications/notifications.service.js";
 import { indexedBatchReceipts } from "./chain-receipts.js";
 import { randomUUID } from "node:crypto";
@@ -5,6 +6,7 @@ import { Keypair, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { Api } from "@stellar/stellar-sdk/rpc";
 import {
   financialAttemptSchema,
+  payoutRunInputSchema, payoutRunSchema, type PayoutRun,
   royaltyLedgerEntrySchema,
   settlementPreviewInputSchema,
   signedFinancialTransactionSchema,
@@ -23,6 +25,7 @@ import {
 } from "../agreements/treasury-signatures.js";
 import {
   createSettlementPreview,
+  financialHash,
   assertConservation,
 } from "./settlement-domain.js";
 import {
@@ -99,6 +102,60 @@ async function preview(client: PoolClient, input: unknown) {
   assertConservation(batch);
   return batch;
 }
+async function previewRun(client: PoolClient, input: unknown): Promise<PayoutRun> {
+  const request = payoutRunInputSchema.parse(input);
+  if (!env.PAYOUT_RUN_CONTRACT_ID) throw new HttpError(503, "Payout run funding is not configured");
+  const sources = [...request.sources].sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  const keys = sources.map(s => `${s.trackId}:${s.sourceType}:${s.sourceId}`);
+  if (new Set(keys).size !== keys.length) throw new HttpError(400, "Select each earnings source only once");
+  const batches: SettlementBatch[] = [];
+  for (const source of sources) batches.push(await preview(client, {...source, expiresAt: request.expiresAt}));
+  const fundedUnits = batches.reduce((sum,b) => sum + BigInt(b.fundedUnits),0n).toString();
+  if (BigInt(fundedUnits) > 9223372036854775807n) throw new HttpError(400,"Payout run exceeds the asset limit");
+  const run = payoutRunSchema.parse({id: financialHash({routerId:env.PAYOUT_RUN_CONTRACT_ID,batchIds:batches.map(b=>b.id)}),
+    routerId:env.PAYOUT_RUN_CONTRACT_ID,batches,fundedUnits});
+  // Check native execution limits and treasury readiness before retaining reservations.
+  await settlementChain.prepareRun(batches, run.id, run.routerId);
+  return run;
+}
+
+async function reserveBatch(client: PoolClient, input: unknown, expectedId: string, actor: string) {
+  const existing = await client.query(
+    "SELECT payload FROM settlement_batches WHERE id=$1",
+    [expectedId],
+  );
+  if (existing.rows[0]) return existing.rows[0].payload as SettlementBatch;
+  const batch = await preview(client, input);
+  if (batch.id !== expectedId)
+    throw new HttpError(
+      409,
+      "Earnings changed. Review the current preview before reserving",
+    );
+  await client.query(
+    "INSERT INTO settlement_batches(id,source_key,agreement_id,version,state,payload) VALUES($1,$2,$3,$4,$5,$6)",
+    [
+      batch.id,
+      batch.sourceKey,
+      batch.agreementId,
+      batch.version,
+      batch.state,
+      batch,
+    ],
+  );
+  for (const a of batch.allocations)
+    for (const id of a.ledgerEntryIds)
+      await client.query(
+    "INSERT INTO settlement_reservations(ledger_id,batch_id,allocation_index) VALUES($1,$2,$3)",
+    [id, batch.id, a.index],
+      );
+  await settlementEvent(client, batch.id, actor, "source_reserved", {
+    sourceKey: batch.sourceKey,
+    ledgerIds: batch.allocations.flatMap((a) => a.ledgerEntryIds),
+    fundedUnits: batch.fundedUnits,
+  });
+  return batch;
+}
+
 function authorizeAttempt(
   attempt: FinancialAttempt,
   actor: string,
@@ -221,6 +278,33 @@ async function syncBatch(
 }
 export const settlementService = {
   ...settlementRepository,
+  async previewRun(input: unknown) { return databaseService.transaction(c => previewRun(c,input)); },
+  async reserveRun(input: unknown, expectedId: string, actor: string) {
+    return databaseService.transaction(async client => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('music-city-settlement-reservation'))");
+      const existing = (await client.query("SELECT payload FROM payout_runs WHERE id=$1",[expectedId])).rows[0];
+      if (existing) return payoutRunSchema.parse(existing.payload);
+      const run = await previewRun(client,input);
+      if(run.id !== expectedId) throw new HttpError(409,"Earnings changed. Review the payout run again");
+      for(const batch of run.batches) await reserveBatch(client,{trackId:batch.trackId,sourceType:batch.sourceType,sourceId:batch.sourceId,expiresAt:batch.expiresAt},batch.id,actor);
+      await client.query("INSERT INTO payout_runs(id,payload) VALUES($1,$2)",[run.id,run]);
+      for(const batch of run.batches) {
+        await client.query("INSERT INTO payout_run_batches(run_id,batch_id) VALUES($1,$2)",[run.id,batch.id]);
+        await settlementEvent(client,batch.id,actor,"payout_run_reserved",{runId:run.id,batchIds:run.batches.map(b=>b.id),fundedUnits:run.fundedUnits});
+      }
+      return run;
+    });
+  },
+  async listRuns() {
+    return databaseService.transaction(async c => (await c.query("SELECT payload FROM payout_runs ORDER BY created_at DESC LIMIT 100")).rows.map(r=>payoutRunSchema.parse(r.payload)));
+  },
+  async prepareRun(runId: string, actor: string) {
+    const run = await databaseService.transaction(async c => {
+      const r=(await c.query("SELECT payload FROM payout_runs WHERE id=$1",[runId])).rows[0];
+      if(!r) throw new HttpError(404,"Payout run not found");return payoutRunSchema.parse(r.payload);
+    });
+    return this.prepare(run.batches[0]!.id,"settle",actor);
+  },
   async preview(input: unknown) {
     return databaseService.transaction((client) => preview(client, input));
   },
@@ -229,40 +313,7 @@ export const settlementService = {
       await client.query(
         "SELECT pg_advisory_xact_lock(hashtext('music-city-settlement-reservation'))",
       );
-      const existing = await client.query(
-        "SELECT payload FROM settlement_batches WHERE id=$1",
-        [expectedId],
-      );
-      if (existing.rows[0]) return existing.rows[0].payload as SettlementBatch;
-      const batch = await preview(client, input);
-      if (batch.id !== expectedId)
-        throw new HttpError(
-          409,
-          "Earnings changed. Review the current preview before reserving",
-        );
-      await client.query(
-        "INSERT INTO settlement_batches(id,source_key,agreement_id,version,state,payload) VALUES($1,$2,$3,$4,$5,$6)",
-        [
-          batch.id,
-          batch.sourceKey,
-          batch.agreementId,
-          batch.version,
-          batch.state,
-          batch,
-        ],
-      );
-      for (const a of batch.allocations)
-        for (const id of a.ledgerEntryIds)
-          await client.query(
-            "INSERT INTO settlement_reservations(ledger_id,batch_id,allocation_index) VALUES($1,$2,$3)",
-            [id, batch.id, a.index],
-          );
-      await settlementEvent(client, batch.id, actor, "source_reserved", {
-        sourceKey: batch.sourceKey,
-        ledgerIds: batch.allocations.flatMap((a) => a.ledgerEntryIds),
-        fundedUnits: batch.fundedUnits,
-      });
-      return batch;
+      return reserveBatch(client, input, expectedId, actor);
     });
   },
   async prepare(
@@ -307,8 +358,9 @@ export const settlementService = {
           "Recovery is available after the claim expires",
         );
       const source = kind === "claim" ? actor : batch.config.treasuryAddress;
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[`checkout:${source}`]);
       const busy = await client.query(
-        "SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",
+        "SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM agreement_finalizations WHERE treasury_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM pool_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM payment_checkouts WHERE wallet_address=$1 AND status IN ('prepared','submitting')",
         [source],
       );
       if (busy.rowCount)
@@ -316,10 +368,21 @@ export const settlementService = {
           409,
           "Wait for this wallet's outstanding transaction before preparing another",
         );
-      const prepared = await settlementChain.prepare(batch, kind, index);
+      const runRow = kind === "settle" ? (await client.query("SELECT r.payload FROM payout_runs r JOIN payout_run_batches b ON b.run_id=r.id WHERE b.batch_id=$1",[batchId])).rows[0] : undefined;
+      const run = runRow ? payoutRunSchema.parse(runRow.payload) : undefined;
+      if (run && run.batches[0]!.id !== batchId) throw new HttpError(409,"Prepare funding from the payout run, not an individual source");
+      if (run && run.routerId !== env.PAYOUT_RUN_CONTRACT_ID) throw new HttpError(409,"Restore this payout run's configured contract before preparing funding");
+      const runBatches: SettlementBatch[] = [];
+      if(run) for(const b of run.batches) {
+        const member=await loadBatch(client,b.id);
+        if(member.state!=="reserved") throw new HttpError(409,"A payout run member is already funded");
+        runBatches.push(member);
+      }
+      const prepared = run ? await settlementChain.prepareRun(runBatches,run.id,run.routerId) : await settlementChain.prepare(batch, kind, index);
       const timestamp = new Date().toISOString();
       const attempt = financialAttemptSchema.parse({
         id: randomUUID(),
+        ...(run ? {payoutRunId:run.id,fundingBatchIds:runBatches.map(b=>b.id)} : {}),
         batchId,
         claimIndex: index,
         actor,
@@ -475,6 +538,13 @@ export const settlementService = {
         delete next.error;
         await saveAttempt(client, next);
         if (actual) await syncBatch(client, batch, actual, "worker", next);
+        if (a.fundingBatchIds) for (const batchId of a.fundingBatchIds.filter(id=>id!==batch.id)) {
+          const member=await loadBatch(client,batchId);
+          const outcome=await settlementChain.getBatch(member);
+          if(!outcome || outcome.funded_ledger!==result.ledger) throw new HttpError(409,"Payout run receipt has no matching funded source");
+          await syncBatch(client,member,outcome,"worker",next);
+          await settlementEvent(client,member.id,"worker","payout_run_confirmed",{runId:a.payoutRunId,attemptId:a.id,transactionHash:a.transactionHash,ledger:result.ledger});
+        }
         await settlementEvent(
           client,
           batch.id,

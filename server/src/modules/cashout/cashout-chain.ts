@@ -21,23 +21,25 @@ const readinessAccount = accountSchema.extend({
   balances: z.array(z.object({ asset_type: z.string(), asset_code: z.string().optional(), asset_issuer: z.string().optional(),
     balance: amount, selling_liabilities: amount, is_authorized: z.boolean().optional() })).max(10000),
 });
-export function verifyCashOutReadiness(raw: unknown, issuer: string | undefined, debitUnits: string, reserveStroops: number, feeStroops: number, currentBaseFee: number) {
+export function verifyCashOutReadiness(raw: unknown, issuer: string | undefined, debitUnits: string, reserveStroops: number, feeStroops: number, currentBaseFee: number, assetCode: "USDC" | "XLM" = "USDC") {
   const parsed = readinessAccount.safeParse(raw);
-  if (!parsed.success || !issuer || !/^[1-9][0-9]{0,18}$/.test(debitUnits) ||
+  if (!parsed.success || (assetCode === "USDC" ? !issuer : issuer !== undefined) || !/^[1-9][0-9]{0,18}$/.test(debitUnits) ||
       !Number.isSafeInteger(reserveStroops) || reserveStroops <= 0 ||
       !Number.isSafeInteger(feeStroops) || feeStroops < 100 || feeStroops > 10000 ||
       !Number.isSafeInteger(currentBaseFee) || currentBaseFee < 100 || currentBaseFee > 10000)
     throw new HttpError(502, "Could not check your wallet balance.");
   if (feeStroops < currentBaseFee) throw new HttpError(409, "Network fee changed. Cancel and start again.");
   const account = parsed.data, matches = account.balances.filter((balance) => balance.asset_code === "USDC" && balance.asset_issuer === issuer);
-  if (matches.length !== 1 || matches[0].is_authorized !== true) throw new HttpError(409, "Your wallet needs an active USDC trustline.");
-  if (amountUnits(matches[0].balance) - amountUnits(matches[0].selling_liabilities) < BigInt(debitUnits))
+  if (assetCode === "USDC" && (matches.length !== 1 || matches[0].is_authorized !== true)) throw new HttpError(409, "Your wallet needs an active USDC trustline.");
+  if (assetCode === "USDC" && amountUnits(matches[0].balance) - amountUnits(matches[0].selling_liabilities) < BigInt(debitUnits))
     throw new HttpError(409, "Your wallet has insufficient spendable USDC.");
   const native = account.balances.filter((balance) => balance.asset_type === "native");
   const reserveEntries = 2 + account.subentry_count + account.num_sponsoring - account.num_sponsored;
   if (native.length !== 1 || !Number.isSafeInteger(reserveEntries) || reserveEntries < 0)
     throw new HttpError(502, "Could not check your wallet balance.");
   const spendable = amountUnits(native[0].balance) - amountUnits(native[0].selling_liabilities) - BigInt(reserveEntries) * BigInt(reserveStroops);
+  if (assetCode === "XLM" && spendable < BigInt(debitUnits) + BigInt(feeStroops))
+    throw new HttpError(409, "Your wallet has insufficient spendable XLM after reserve and fees.");
   if (spendable < BigInt(feeStroops)) throw new HttpError(409, "Add XLM to cover the network fee.");
 }
 

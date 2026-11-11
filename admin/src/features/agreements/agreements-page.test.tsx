@@ -258,3 +258,12 @@ describe("admin agreement lifecycle", () => {
     expect(screen.queryByText("Track " + version.proposal.trackId)).toBeNull();
   });
 });
+
+it("does not offer treasury finalization for contributor-controlled agreements", async () => {
+  version.publicationMode = "contributors";
+  version.state = "ready";
+  hasAttempt = false;
+  render(<MemoryRouter initialEntries={[`/console/agreements/${version.proposal.agreementId}`]}><Routes><Route path="/console/agreements/:agreementId" element={<AdminAgreementsPage />} /></Routes></MemoryRouter>);
+  expect(await screen.findByText(/Contributors finalize this agreement with their wallet approvals/)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Prepare finalization" })).toBeNull();
+});

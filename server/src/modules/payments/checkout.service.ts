@@ -1,3 +1,4 @@
+import { poolChain } from "../pool/pool-chain.js";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import {
@@ -179,7 +180,7 @@ export const checkoutService = {
       )
         throw new HttpError(409, "Create a new payment before continuing");
       const pending = await client.query(
-        "SELECT id FROM payment_checkouts WHERE wallet_address=$1 AND status IN ('prepared','submitting')",
+        "SELECT id FROM payment_checkouts WHERE wallet_address=$1 AND status IN ('prepared','submitting') UNION ALL SELECT id FROM pool_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted') UNION ALL SELECT id FROM financial_attempts WHERE source_address=$1 AND status IN ('awaiting_signatures','submitting','submitted')",
         [wallet],
       );
       if (pending.rowCount)
@@ -198,7 +199,8 @@ export const checkoutService = {
         intentId,
         walletAddress: wallet,
         networkPassphrase: intent.networkPassphrase,
-        ...buildCheckoutTransaction(intent, source, destination, ledger),
+        ...(intent.poolContractId ? await poolChain.preparePurchase(intent) : buildCheckoutTransaction(intent, source, destination, ledger)),
+        poolContractId:intent.poolContractId,poolOrderId:intent.poolOrderId,
         preparedLedger: ledger.sequence,
         status: "prepared",
         submissionCount: 0,
@@ -299,7 +301,8 @@ export const checkoutService = {
     });
     if (submission) {
       try {
-        await checkoutChain.submit(submission);
+        if(current.poolContractId)await poolChain.send(submission);
+        else await checkoutChain.submit(submission);
       } catch (error) {
         logger.warn("Checkout awaits its original transaction receipt", {
           checkoutId: id,

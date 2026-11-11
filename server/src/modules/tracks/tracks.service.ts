@@ -98,7 +98,7 @@ const validateCreditProfiles = async (credits: TrackSummary["credits"]) => {
     ),
   )) {
     const artist = await usersService.getProfileById(artistId);
-    if (!artist || !["artist", "both"].includes(artist.primaryIntent))
+    if (!artist)
       throw new ZodError([
         {
           code: "custom",
@@ -107,7 +107,7 @@ const validateCreditProfiles = async (credits: TrackSummary["credits"]) => {
             (credits ?? []).findIndex((credit) => credit.artistId === artistId),
             "artistId",
           ],
-          message: "Linked credit profile must belong to an artist",
+          message: "Linked credit profile must belong to a Music City user",
         },
       ]);
   }

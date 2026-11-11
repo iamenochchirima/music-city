@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   delete: vi.fn(),
   sales: vi.fn(),
   artistAccess: false,
+  buyingEnabled: false,
+  searchContributors: vi.fn(),
 }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ session: { token: "token", artistAccess: mocks.artistAccess } }),
@@ -45,9 +47,13 @@ vi.mock("@/features/uploads/lib/uploads-api", () => ({
   },
 }));
 vi.mock("@/features/users/lib/users-api", () => ({
-  usersApi: { listArtists: async () => [] },
+  usersApi: { listArtists: async () => [], searchContributors: mocks.searchContributors },
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
+vi.mock("@/lib/config/env", async (original) => {
+  const actual = await original<typeof import("@/lib/config/env")>();
+  return { ...actual, clientEnv: { ...actual.clientEnv, get trackPurchasesEnabled() { return mocks.buyingEnabled; } } };
+});
 const track = {
   id: "one",
   title: "One",
@@ -87,6 +93,7 @@ const pending = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.artistAccess = false;
+  mocks.buyingEnabled = false;
   window.localStorage.clear();
   mocks.load.mockResolvedValue(base);
   mocks.update.mockImplementation(async (_t, _id, patch) => ({
@@ -286,4 +293,44 @@ it("requires confirmation before deleting and returns to the release library", a
   await user.click(within(screen.getByRole("dialog")).getByRole("button", {name:"Delete release"}));
   await waitFor(() => expect(mocks.delete).toHaveBeenCalledWith("token","release"));
   await waitFor(() => expect(screen.getByLabelText("Destination").textContent).toBe("/dashboard/releases"));
+});
+
+
+it("keeps contributor results available while the release autosave timer elapses", async () => {
+  const user = userEvent.setup();
+  const contributor = { id: "listener-1", name: "Nadia", walletAddress: `G${"A".repeat(55)}` };
+  mocks.searchContributors.mockResolvedValue([contributor]);
+  let finishSave!: (value: unknown) => void;
+  mocks.metadata.mockImplementation(() => new Promise(resolve => { finishSave = resolve; }));
+  await open("information");
+  await user.click(screen.getByRole("button", { name: "Add contributor" }));
+  const input = screen.getByLabelText("Contributor name 1");
+  await user.type(input, "Na");
+  expect(await screen.findByRole("option", { name: /Nadia/ })).toBeTruthy();
+  // Stay in the real release editor past its one-second autosave delay.
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  try {
+    expect(screen.queryByRole("option", { name: /Nadia/ })).not.toBeNull();
+    expect(input.matches(":disabled")).toBe(false);
+    expect(mocks.metadata).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("option", { name: /Nadia/ }));
+    expect(screen.getByText("Linked profile: Nadia")).toBeTruthy();
+    await user.click(screen.getByRole("heading", { name: "Original" }));
+    await waitFor(() => expect(mocks.metadata).toHaveBeenCalledWith(
+      "token", "one", expect.objectContaining({
+        credits: [{ role: "composer", name: "Nadia", artistId: "listener-1" }],
+      }),
+    ), { timeout: 3000 });
+  } finally {
+    finishSave?.({ ...track, credits: [{ role: "composer", name: "Nadia", artistId: "listener-1" }] });
+  }
+  await waitFor(() => expect(mocks.update).toHaveBeenCalled());
+});
+
+it("explains that buying is enabled when the local purchase flag is on", async () => {
+  mocks.artistAccess = true;
+  mocks.buyingEnabled = true;
+  await open();
+  expect(screen.getByText(/Buying is enabled for songs with an active agreement/i)).toBeTruthy();
+  expect(screen.queryByText(/not visible to listeners yet/i)).toBeNull();
 });

@@ -22,7 +22,7 @@ const providerStatus: Record<string, string> = {
 const chainStatus: Record<string, string> = {
   unobserved: "Transfer unconfirmed", prepared: "Transfer prepared", submitting: "Transfer pending", confirmed: "Transfer confirmed", failed: "Transfer failed", unknown: "Checking transfer", expired: "Transfer expired",
 };
-const methodLabel: Record<string, string> = { card: "Card", bank: "Bank transfer", apple_pay: "Apple Pay", google_pay: "Google Pay", cash_pickup: "Cash pickup", cash_deposit: "Cash deposit", mobile_money: "Mobile money" };
+const methodLabel: Record<string, string> = { card: "Card", bank: "Bank transfer", apple_pay: "Apple Pay", google_pay: "Google Pay", cash_pickup: "Cash pickup", cash_deposit: "Cash deposit", moonpay_balance: "MoonPay Balance", mobile_money: "Mobile money" };
 function money(value: Order["amount"]) {
   const digits = value.units.padStart(value.decimals + 1, "0");
   return `${value.decimals ? `${digits.slice(0, -value.decimals)}.${digits.slice(-value.decimals)}` : digits} ${value.currency}`;
@@ -38,13 +38,13 @@ function showsChainState(order: Order) {
   return order.launchRequested || order.providerStarted || order.chainState !== "unobserved" || !["created", "cancelled"].includes(order.providerState);
 }
 
-type WalletRampActivityProps = { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string; showTransactions?: boolean };
+type WalletRampActivityProps = { token: string; sign?: (transaction: string) => Promise<string>; spendableUsdc?: string; walletXlm?: string; showTransactions?: boolean };
 
 export function WalletRampActivity(props: WalletRampActivityProps) {
   return <WalletRampSession key={props.token} {...props} />;
 }
 
-function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions = true }: WalletRampActivityProps) {
+function WalletRampSession({ token, sign, spendableUsdc = "0", walletXlm = "0", showTransactions = true }: WalletRampActivityProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Order[]>([]);
   const [error, setError] = useState(false);
@@ -73,7 +73,7 @@ function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions 
     void httpClient.get<{ routes: Array<FundingRoute | CashOutRoute> }>("/ramps/capabilities", token).then((result) => {
       if (active && Array.isArray(result.routes)) {
         setRoutes(result.routes.filter((route): route is FundingRoute => route.direction === "buy"));
-        setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell" && route.assetCode === "USDC"));
+        setCashOutRoutes(result.routes.filter((route): route is CashOutRoute => route.direction === "sell"));
       }
     }).catch(() => {
       if (active) setRoutesError(true);
@@ -169,14 +169,14 @@ function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions 
             <Button type="button" variant="outline" onClick={() => setRoutesRetry((value) => value + 1)}>Try again</Button>
           </div>
         ) : routes.length === 0 && cashOutRoutes.length === 0 ? (
-          <p className="mt-1 text-sm text-slate-400">Add funds and cash out aren't available yet. Your wallet balance is unchanged.</p>
+          <p className="mt-1 text-sm text-slate-400">Provider funding is unavailable.</p>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={!routes.length || unresolved || error || loading} onClick={() => setFunding(true)}>Add funds</Button><Button type="button" variant="outline" disabled={!cashOutRoutes.length || !sign || !/[1-9]/.test(spendableUsdc) || unresolved || error || loading} onClick={() => setCashOut(true)}>Cash out</Button></div>
+      <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" disabled={!routes.length || unresolved || error || loading} onClick={() => setFunding(true)}>Add funds</Button><Button type="button" variant="outline" disabled={unresolved || error || loading || routesLoading || routesError} onClick={() => setCashOut(true)}>Cash out</Button></div>
     </div>
     {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-slate-300">Could not load transaction history. <Button type="button" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div>}
     {unresolved && <p className="text-sm text-slate-400">Check your pending transaction before starting another.</p>}
-    {showTransactions && items.length > 0 && <div className="space-y-2">
+    {(showTransactions || items.some(item => item.direction === "sell" && !["completed", "cancelled", "refunded", "failed"].includes(item.providerState))) && items.length > 0 && <div className="space-y-2">
       <h4 className="text-sm font-medium text-white">Transactions</h4>
       <ul className="divide-y divide-white/10">
         {items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
@@ -226,7 +226,7 @@ function WalletRampSession({ token, sign, spendableUsdc = "0", showTransactions 
     </Dialog>}
     {quoteId && <CashOutQuoteDialog token={token} orderId={quoteId} onClose={() => setQuoteId(null)} onChanged={() => setRetry((value) => value + 1)} onPrepared={() => { setReviewId(quoteId); setQuoteId(null); }} />}
     {reviewId && sign && <CashOutReview token={token} orderId={reviewId} sign={sign} onClose={() => setReviewId(null)} onChanged={() => setRetry((value) => value + 1)} />}
-    {cashOut && cashOutRoutes.length > 0 && <CashOutStartDialog token={token} routes={cashOutRoutes} available={spendableUsdc} onClose={() => setCashOut(false)} onChanged={() => setRetry((value) => value + 1)} />}
+    {cashOut && <CashOutStartDialog token={token} routes={cashOutRoutes} available={spendableUsdc} availableXlm={walletXlm} onClose={() => setCashOut(false)} onChanged={() => setRetry((value) => value + 1)} />}
     {funding && routes.length > 0 && <AddFundsDialog token={token} routes={routes} onClose={() => setFunding(false)} onChanged={() => setRetry((value) => value + 1)} />}
     {resume && <ResumeFundingDialog token={token} orderId={resume.id} provider={resume.provider} direction={resume.direction} available={resumeAvailable} onClose={() => setResume(null)} onChanged={() => setRetry((value) => value + 1)} />}
   </section>;

@@ -1,0 +1,128 @@
+{
+  "verifiedAt": "2026-11-01T08:04:35.104038+00:00",
+  "scope": "Local Stellar Testnet; additive pool for new track purchases; original escrow and database retained",
+  "deployment": {
+    "contractId": "CCVTCNVTZJKHDYGXTAJZ6TM2PZA46I5OHN4ZAYKWN43OGWOMM4V6Q3SQ",
+    "registryId": "CA3P3N4EY23AEBBAPQRQXZR6TJHWJ7XIXEGQJYZP66VFJMKYPVDUACYU",
+    "treasuryAddress": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+    "feeBps": 0,
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "wasmSha256": "69eed98ea23ac3ce31457296ab323f9864e3386d2658b59b6bc7c4d39413fc7e",
+    "ledger": 5499204,
+    "transactions": {
+      "upload": "cab3e61854bba2a602bd1bd368a4b34da409d84f18f4aaf003ff9ea72e995efe",
+      "deploy": "63b0a9717407fb6484393c0066fa478c6f6d62218e895185f606c8c005f2325f"
+    }
+  },
+  "verification": {
+    "top_up": {
+      "hash": "227feec5a85000ec9b994a92488c0c2098fabff5f8def167746b06a36ba840f5",
+      "ledger": 5499231,
+      "signers": [
+        "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ"
+      ]
+    },
+    "prefundedBeforePurchase": {
+      "enabled": true,
+      "contractId": "CCVTCNVTZJKHDYGXTAJZ6TM2PZA46I5OHN4ZAYKWN43OGWOMM4V6Q3SQ",
+      "feeBps": 0,
+      "balanceUnits": "10000000",
+      "outstandingUnits": "0",
+      "surplusUnits": "10000000",
+      "purchasedUnits": "0",
+      "feeUnits": "0",
+      "claimedUnits": "0",
+      "toppedUpUnits": "10000000",
+      "returnedUnits": "0",
+      "ok": true,
+      "errors": [],
+      "checkedAt": "2026-11-01T07:56:37.370Z"
+    },
+    "purchase": {
+      "hash": "dbeaf0575ce51ad8a2327cbaf18ae386b9e24ee4f53a3ab4bd9e0824a08e309f",
+      "ledger": 5499233,
+      "orderId": "dad07d8d5447a6bb1ad43bc085864d992963a138f5ac3ab4ea20c6175ac33200",
+      "claims": [
+        {
+          "index": 0,
+          "beneficiary": "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY",
+          "grossUnits": "30000000",
+          "feeUnits": "0",
+          "amountUnits": "30000000",
+          "claimed": false,
+          "ledger": 5499233
+        }
+      ],
+      "legacyApprovalEntries": 0,
+      "registrationAuthorization": "buyer only, atomic with payment"
+    },
+    "claim": {
+      "hash": "602988454fb2e7c4a81b6aef52ff2d95e4227af6ec3a9167280c0573ec53c87e",
+      "ledger": 5499236,
+      "signedBy": [
+        "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY"
+      ]
+    },
+    "return_surplus": {
+      "hash": "5c15ab964a23ab6877f2fa33a0b45a3c1a6a01cc13ee519f4b646b03ea216c38",
+      "ledger": 5499238,
+      "signers": [
+        "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ"
+      ]
+    },
+    "reconciliation": {
+      "enabled": true,
+      "contractId": "CCVTCNVTZJKHDYGXTAJZ6TM2PZA46I5OHN4ZAYKWN43OGWOMM4V6Q3SQ",
+      "feeBps": 0,
+      "balanceUnits": "0",
+      "outstandingUnits": "0",
+      "surplusUnits": "0",
+      "purchasedUnits": "30000000",
+      "feeUnits": "0",
+      "claimedUnits": "30000000",
+      "toppedUpUnits": "10000000",
+      "returnedUnits": "10000000",
+      "ok": true,
+      "errors": [],
+      "checkedAt": "2026-11-01T07:57:11.960Z"
+    },
+    "kind": "Generated-key service journey on real Stellar Testnet. No real-account signing or live browser claim is implied.",
+    "readyBuffer": {
+      "hash": "fac2f7d34661b968a04f19e8763e301db7cf552dbd0f6a16185a43ff64bfebc7",
+      "ledger": 5499355,
+      "amountUnits": "10000000",
+      "report": {
+        "enabled": true,
+        "contractId": "CCVTCNVTZJKHDYGXTAJZ6TM2PZA46I5OHN4ZAYKWN43OGWOMM4V6Q3SQ",
+        "feeBps": 0,
+        "balanceUnits": "10000000",
+        "outstandingUnits": "0",
+        "surplusUnits": "10000000",
+        "purchasedUnits": "30000000",
+        "feeUnits": "0",
+        "claimedUnits": "30000000",
+        "toppedUpUnits": "20000000",
+        "returnedUnits": "10000000",
+        "ok": true,
+        "errors": [],
+        "checkedAt": "2026-11-01T08:06:56.616Z"
+      }
+    }
+  },
+  "checks": {
+    "poolContractTests": 5,
+    "allContractTests": 27,
+    "poolPostgresqlTests": 1,
+    "legacyCheckoutPostgresqlTests": 8,
+    "legacySettlementPostgresqlTests": 16,
+    "clientTests": 274,
+    "adminTests": 27,
+    "serverTests": 253,
+    "serverSkipped": 16,
+    "typechecks": "passed",
+    "workspaceBuild": "passed; existing large client bundle warning"
+  },
+  "browserEvidence": "Component tests and live service transactions; no new personal Dynamic browser signing is claimed."
+}

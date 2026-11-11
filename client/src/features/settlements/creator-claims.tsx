@@ -1,3 +1,4 @@
+import {PoolClaims} from "./pool-claims";
 import { useStellarAuthorization } from "@/features/wallet/lib/use-stellar-authorization";
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
@@ -18,7 +19,12 @@ const money = (units: string) => {
   const n = BigInt(units);
   return `${n / 10000000n}.${(n % 10000000n).toString().padStart(7, "0").replace(/0+$/, "") || "00"}`;
 };
+const TRUSTLINE_REQUIRED = "Add the configured USDC trustline";
+const TRUSTLINE_MESSAGE =
+  "Your wallet cannot receive USDC yet. Add the USDC trustline in your wallet, then return here to claim. Your earnings are still available.";
 const claimErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message.includes(TRUSTLINE_REQUIRED))
+    return TRUSTLINE_MESSAGE;
   const isServerError =
     error instanceof Error &&
     "status" in error &&
@@ -33,6 +39,7 @@ const claimErrorMessage = (error: unknown) => {
 type EarningsBatch = SettlementBatch & { trackTitle?: string | null };
 type Detail = { batch: SettlementBatch; attempts: FinancialAttempt[] };
 export function CreatorClaims() {
+  const [poolEnabled,setPoolEnabled]=useState(false);
   const authorizeWallet = useStellarAuthorization();
   const { session } = useAuth();
   const { primaryWallet } = useDynamicContext();
@@ -174,12 +181,26 @@ export function CreatorClaims() {
     .reduce((n, { allocation: a }) => n + BigInt(a.amountUnits), 0n);
   const pending = BigInt(pendingUnits);
   if (!session) return null;
+  const errorNotice = error && (
+    <div
+      role="alert"
+      className="space-y-2 rounded-xl border border-destructive/30 p-4 text-sm"
+    >
+      <p>{error}</p>
+      {error === TRUSTLINE_MESSAGE && (
+        <a href="/account" className="inline-block font-medium underline">
+          Open wallet to add USDC trustline
+        </a>
+      )}
+    </div>
+  );
   return (
     <section className="space-y-5">
+      <PoolClaims onEnabledChange={setPoolEnabled}/>
       <StudioPageHeader
-        title="Your earnings"
+        title={poolEnabled?"Earlier payouts":"Your earnings"}
         eyebrow="Revenue"
-        description="Claim your USDC when it is ready."
+        description={poolEnabled?"Existing settlement payouts keep their original terms and receipts.":"Claim your USDC when it is ready."}
       />
       {loadError && (
         <div
@@ -196,14 +217,7 @@ export function CreatorClaims() {
           </Button>
         </div>
       )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-xl border border-destructive/30 p-4 text-sm"
-        >
-          <p>{error}</p>
-        </div>
-      )}
+      {!review && errorNotice}
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-xl border border-border p-5">
           <p className="text-sm text-muted-foreground">Available</p>
@@ -322,6 +336,7 @@ export function CreatorClaims() {
             To your connected Stellar wallet. Confirm below to sign this withdrawal.
           </p>
           <p className="break-all font-mono text-xs">{session.walletAddress}</p>
+          {errorNotice}
           <div className="flex flex-wrap gap-3">
             <Button disabled={!!busy} onClick={() => void claim()}>
               {busy ? (

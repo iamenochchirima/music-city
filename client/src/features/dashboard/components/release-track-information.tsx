@@ -12,6 +12,7 @@ import { TrackMetadataEditor } from "./track-metadata-editor";
 export function ReleaseTrackInformation({
   release,
   artists,
+  searchToken,
   busy,
   errors,
   onChange,
@@ -20,6 +21,7 @@ export function ReleaseTrackInformation({
   selectedTrack: string | null;
   release: ReleaseDetail;
   artists: ArtistSummary[];
+  searchToken?: string;
   busy: boolean;
   errors: Record<string, Record<string, string>>;
   onChange: (id: string, patch: Partial<TrackSummary>) => void;
@@ -91,6 +93,7 @@ export function ReleaseTrackInformation({
               Explicit lyrics
             </label>
             <TrackMetadataEditor
+              searchToken={searchToken}
               value={{
                 credits: active.track.credits ?? [],
                 isrc: active.track.isrc ?? "",

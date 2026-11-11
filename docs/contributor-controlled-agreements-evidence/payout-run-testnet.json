@@ -1,0 +1,94 @@
+{
+  "verifiedAt": "2026-10-31T18:28:04.392539+00:00",
+  "scope": "Local rehearsal on Stellar Testnet; no production rollout or existing escrow migration",
+  "deployment": {
+    "contractId": "CDL5HB6OKACWCPKBSB5AJK2H4V3OTQWQVZPYO5VAVTVSLVKLFDZF3MLT",
+    "settlementContractId": "CALPM4PZFQBULFUPWIF22XGBOVXLC2N6H37QRTTXPD4H2EDNQ4S2CEVP",
+    "networkPassphrase": "Test SDF Network ; September 2015",
+    "wasmSha256": "a70f9505072f2434fb5067dc0eb8f18739dd06e52c18e5fb3026ac5017184b07",
+    "ledger": 5489458,
+    "transactions": {
+      "upload": "e5c4e97f03b0168e2ae5126fe95fbe01b5eca987f15369f4f57b4ddbee15e9e2",
+      "deploy": "02482f6e6e03bba3d12373ffe88385a4247682f567b2d68d6bb074087c744c35"
+    }
+  },
+  "verification": {
+    "funding": {
+      "runId": "74852d7d0d26eefeaef96d134b5b5fafbe690a806ace99158f9380bfd780fbd4",
+      "batchIds": [
+        "653df4dcc0362eb09d90249f3612a42e417b671b92d376e4d4c68adb199a5e8d",
+        "1131efa11dbfbbbb25235aeadc327e52cf896c3fa9f38dafac632e992f26b893"
+      ],
+      "hash": "80040988ff0e4e8ae663c6a64caa26febc8850674d8078d96276cc64d90bc1f4",
+      "ledger": 5489489,
+      "signedBy": [
+        "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "GCKEN56TONLVKKTYTF4OWYJHLC3C6CX2H7BQCDP2R4LX36QBDHGFIOWQ"
+      ],
+      "totalUnits": "195000"
+    },
+    "claim-653df4dcc0362eb09d90249f3612a42e417b671b92d376e4d4c68adb199a5e8d-0": {
+      "hash": "b9a3033dcd14b6818b64a36dc13287cab7e92ffc519d79364ca0896d44486514",
+      "ledger": 5489493,
+      "amountUnits": "100000",
+      "signedBy": [
+        "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY"
+      ]
+    },
+    "claim-1131efa11dbfbbbb25235aeadc327e52cf896c3fa9f38dafac632e992f26b893-0": {
+      "hash": "3b16af55a72b2bcc685b83c1759dcdf4d02a8c1b41cb071fbdb3db7774d08385",
+      "ledger": 5489496,
+      "amountUnits": "28500",
+      "signedBy": [
+        "GBR2KBTRGCYZXUTX4LCLP75T5XEIMFKALZZIOIDHL33ZG2DWUOYWYC3H"
+      ]
+    },
+    "claim-1131efa11dbfbbbb25235aeadc327e52cf896c3fa9f38dafac632e992f26b893-1": {
+      "hash": "82ee9c283c721efcac2bd03882c8ee80816c8fecfd5b510c48392567b19b1286",
+      "ledger": 5489499,
+      "amountUnits": "66500",
+      "signedBy": [
+        "GCQTMAZOJ4OS4UND4B2AXFOFRS35LPAQXBCYPF4IDR2NXW3MAR6OGTKY"
+      ]
+    },
+    "reconciliation": {
+      "checkedAt": "2026-10-31T18:25:40.821Z",
+      "config": {
+        "contractId": "CALPM4PZFQBULFUPWIF22XGBOVXLC2N6H37QRTTXPD4H2EDNQ4S2CEVP",
+        "registryId": "CA3P3N4EY23AEBBAPQRQXZR6TJHWJ7XIXEGQJYZP66VFJMKYPVDUACYU",
+        "assetContractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "treasuryAddress": "GCGM5NOIC2GLOVAKLOX75ZRBG5FEMVPSMONIN6UXIS74DQ3DUBXWHT6M",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "assetCode": "USDC",
+        "assetIssuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      "fundedUnits": "60195000",
+      "claimedUnits": "60195000",
+      "reclaimedUnits": "0",
+      "openUnits": "0",
+      "escrowBalanceUnits": "0",
+      "surplusUnits": "0",
+      "networkFeeXlmUnits": "747572",
+      "discrepancies": [],
+      "eventIndex": {
+        "indexedLedger": 5489499,
+        "caughtUp": true,
+        "checkedAt": "2026-10-31T18:25:35.992Z",
+        "unknownBatchIds": []
+      },
+      "ok": true
+    },
+    "verificationKind": "Real Testnet service verification with generated fixture keys and synthetic manual earnings. Existing personal-account claims remain separate."
+  },
+  "automatedChecks": {
+    "contractTestsPassed": 22,
+    "postgresqlSettlementTestsPassed": 16,
+    "postgresqlSkipped": 0,
+    "adminTestsPassed": 25,
+    "serverTestsPassed": 251,
+    "serverTestsSkipped": 15,
+    "workspaceBuild": "passed",
+    "serverAndAdminTypecheck": "passed"
+  },
+  "browserLimit": "Admin component tests passed. No new live admin browser capture was made."
+}

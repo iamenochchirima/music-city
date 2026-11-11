@@ -16,7 +16,7 @@ export function validateCashOutQuote(order: RampOrder, rawQuote: unknown, rawIns
   const quote = cashOutQuoteSchema.parse(rawQuote);
   const instructions = cashOutTransferInstructionsSchema.parse(rawInstructions);
   const terms = order.terms;
-  if (terms.direction !== "sell" || terms.assetCode !== "USDC" || !terms.assetIssuer ||
+  if (terms.direction !== "sell" ||
       !order.providerTransactionId || quote.providerTransactionId !== order.providerTransactionId ||
       quote.cashOutId !== order.id || quote.provider !== terms.provider || quote.walletAddress !== terms.walletAddress ||
       quote.environment !== terms.environment || quote.network !== terms.network ||
@@ -26,7 +26,7 @@ export function validateCashOutQuote(order: RampOrder, rawQuote: unknown, rawIns
   // Reuse the transfer policy checks before saving the quote; no transaction is submitted here.
   prepareCashOutTransfer(instructions, quote, {
     provider: terms.provider, environment: terms.environment, network: terms.network,
-    assetIssuer: terms.assetIssuer, walletAddress: terms.walletAddress, market: quote.market, maxFeeStroops: 100,
+    assetCode: terms.assetCode, assetIssuer: terms.assetIssuer, walletAddress: terms.walletAddress, market: quote.market, maxFeeStroops: 100,
   }, "0", 100, now);
   const { snapshot, hash } = parseCashOutSnapshot({ quote, instructions });
   const expiresAt = new Date(Math.min(Date.parse(quote.expiresAt), Date.parse(instructions.expiresAt))).toISOString();

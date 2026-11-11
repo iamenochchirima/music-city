@@ -20,7 +20,7 @@ export function createCashOutAuthorizationService(repository: Repository, chain:
     const ledger = await chain.preparationLedger();
     const account = await chain.account(walletAddress);
     verifyCashOutReadiness(account, order.terms.assetIssuer, order.terms.amount.units,
-      ledger.base_reserve_in_stroops, feeStroops ?? ledger.base_fee_in_stroops, ledger.base_fee_in_stroops);
+      ledger.base_reserve_in_stroops, feeStroops ?? ledger.base_fee_in_stroops, ledger.base_fee_in_stroops, order.terms.assetCode);
     return { ledger, account };
   }
   return {

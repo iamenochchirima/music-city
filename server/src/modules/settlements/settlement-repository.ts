@@ -3,6 +3,7 @@ import { settlementConfig } from "./settlement-chain.js";
 import type { PoolClient } from "pg";
 import {
   financialAttemptSchema,
+  payoutRunSchema,
   royaltyLedgerEntrySchema,
   settlementBatchSchema,
   type FinancialAttempt,
@@ -138,7 +139,7 @@ export const settlementRepository = {
       if (wallet && !batch.allocations.some((a) => a.beneficiary === wallet))
         throw new HttpError(403, "Settlement access denied");
       const attempts = await client.query(
-        "SELECT payload FROM financial_attempts WHERE batch_id=$1 AND ($2::text IS NULL OR source_address=$2) ORDER BY payload->>'createdAt'",
+        "SELECT payload FROM financial_attempts WHERE (batch_id=$1 OR ($2::text IS NULL AND payload->'fundingBatchIds' ? $1)) AND ($2::text IS NULL OR source_address=$2) ORDER BY payload->>'createdAt'",
         [id, wallet ?? null],
       );
       const events = wallet
@@ -149,7 +150,9 @@ export const settlementRepository = {
               [id],
             )
           ).rows;
+      const runRow = !wallet ? (await client.query("SELECT r.payload FROM payout_runs r JOIN payout_run_batches b ON b.run_id=r.id WHERE b.batch_id=$1",[id])).rows[0] : undefined;
       return {
+        ...(runRow ? {payoutRun:payoutRunSchema.parse(runRow.payload)} : {}),
         batch,
         attempts: attempts.rows.map((r) =>
           financialAttemptSchema.parse(r.payload),

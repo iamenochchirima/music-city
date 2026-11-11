@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-11-01T14:20:42.808Z",
+  "providerOrderId": "db67844e-70fb-472b-9739-9f48049e55c3",
+  "providerStatus": "failed",
+  "failureReason": "Cross-border payout to this card is not supported",
+  "depositHash": "8b6241ad14bf93aa330504b4206d1f5a0d9442ebf46e53225823ac89b5818dd4",
+  "refundApprovalStatus": "approved",
+  "refundHash": null,
+  "refundConfirmed": false
+}

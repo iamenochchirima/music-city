@@ -72,3 +72,13 @@ test("cash-out readiness checks spendable USDC and XLM reserve using exact units
   assert.throws(() => check({ ...account, num_sponsored: 99 }), /check your wallet balance/);
   assert.throws(() => check(account, 100, 200), /Network fee changed/);
 });
+
+
+test("native cash-out leaves exact liabilities, sponsored reserve and fee untouched", () => {
+  const wallet = Keypair.random().publicKey();
+  const account = { account_id: wallet, sequence: "1", subentry_count: 2, num_sponsoring: 1, num_sponsored: 1, balances: [{ asset_type: "native", balance: "202.5000100", selling_liabilities: "0.5" }], thresholds: { med_threshold: 1 }, signers: [{ key: wallet, type: "ed25519_public_key", weight: 1 }] };
+  const check = (value: unknown) => verifyCashOutReadiness(value, undefined, "2000000000", 5000000, 100, 100, "XLM");
+  assert.doesNotThrow(() => check(account));
+  assert.throws(() => check({ ...account, balances: [{ ...account.balances[0], balance: "202.5000099" }] }), /insufficient spendable XLM/);
+  assert.throws(() => verifyCashOutReadiness(account, wallet, "2000000000", 5000000, 100, 100, "XLM"));
+});

@@ -43,10 +43,10 @@ export async function writeVersion(
       "INSERT INTO agreement_versions(agreement_id,version,proposal_hash,state,payload) VALUES($1,$2,$3,$4,$5)",
       [p.agreementId, p.version, version.proposalHash, version.state, version],
     );
-    for (const recipient of p.recipients) {
+    for (const wallet of version.requiredApprovers ?? p.recipients.map(r => r.walletAddress)) {
       await client.query(
         "INSERT INTO agreement_contributors(agreement_id,version,wallet_address) VALUES($1,$2,$3)",
-        [p.agreementId, p.version, recipient.walletAddress],
+        [p.agreementId, p.version, wallet],
       );
     }
   } else {
@@ -59,10 +59,10 @@ export async function writeVersion(
         "DELETE FROM agreement_contributors WHERE agreement_id=$1 AND version=$2",
         [p.agreementId, p.version],
       );
-      for (const recipient of p.recipients)
+      for (const wallet of version.requiredApprovers ?? p.recipients.map(r => r.walletAddress))
         await client.query(
           "INSERT INTO agreement_contributors(agreement_id,version,wallet_address) VALUES($1,$2,$3)",
-          [p.agreementId, p.version, recipient.walletAddress],
+          [p.agreementId, p.version, wallet],
         );
     }
   }
@@ -90,7 +90,7 @@ export async function recordEvent(
     // Draft revisions only tell the existing participants that preparation has started.
     const participants = action === "revision_created"
       ? (await client.query<{ wallet_address: string }>("SELECT DISTINCT wallet_address FROM agreement_contributors WHERE agreement_id=$1 AND version<$2",[version.proposal.agreementId,version.proposal.version])).rows.map(r => r.wallet_address)
-      : version.proposal.recipients.map(r => r.walletAddress);
+      : version.requiredApprovers ?? version.proposal.recipients.map(r => r.walletAddress);
     await notify(client, {
       key: `agreement-event:${event.rows[0].id}`, kind,
       recipients: [...new Set([owner,...participants])].filter(wallet => wallet !== actor || action === "finalized"),

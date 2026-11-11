@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Pool, type PoolClient } from "pg";
-import { Keypair, Networks, TransactionBuilder } from "@stellar/stellar-sdk";
+import { Keypair, Networks, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { rampOrderTermsSchema, type RampOrderTerms } from "@music-city/shared";
 import { createRampRepository } from "./ramp.repository.js";
 import { rampProgressStatements } from "./ramp-progress-migration.js";
@@ -701,6 +701,25 @@ test(
       const savedLaunch = await db.transaction(async (c) => (await c.query("SELECT encrypted_session FROM ramp_launch_sessions WHERE order_id=$1", [adapterOrder.id])).rows[0].encrypted_session as Buffer);
       assert.equal(savedLaunch.includes(Buffer.from(firstLaunch.url)), false);
       await assert.rejects(adapterService.launch(adapterOrder.id, { ...launchOwner, userId: "artist" }, ["203.0.113.1"]), /not found/);
+
+      const nativeKey = Keypair.random(), nativeWallet = nativeKey.publicKey();
+      const nativeOrder = (await repo.reserve(terms({ userId: "other", walletAddress: nativeWallet, direction: "sell", assetCode: "XLM", assetIssuer: undefined,
+        market: { country: "GB", currency: "GBP", method: "moonpay_balance" }, amount: { currency: "XLM", units: "2000000000", decimals: 7 } }))).order;
+      await repo.bindProviderReference(nativeOrder.id, "other", nativeWallet, "native-provider");
+      const nativeNow = new Date("2026-10-28T12:00:00.000Z"), nativeQuoteId = randomUUID();
+      const nativeContext = { provider: "moonpay", environment: "sandbox", network: "stellar:testnet", walletAddress: nativeWallet };
+      const nativeQuote = { ...nativeContext, id: nativeQuoteId, cashOutId: nativeOrder.id, sessionId: "native-session", providerQuoteId: "native-provider-quote", providerTransactionId: "native-provider", market: { country: "GB", currency: "GBP", payoutMethod: "moonpay_balance" }, debitUnits: "2000000000", receive: { currency: "GBP", units: "2441", decimals: 2 }, fees: [], destinationLabel: "MoonPay Balance", createdAt: nativeNow.toISOString(), expiresAt: "2026-10-28T12:05:00.000Z" };
+      const nativeInstructions = { ...nativeContext, cashOutId: nativeOrder.id, quoteId: nativeQuoteId, providerTransactionId: "native-provider", destination: Keypair.random().publicKey(), assetCode: "XLM", amountUnits: "2000000000", memo: { type: "id", value: "3010377762" }, expiresAt: nativeQuote.expiresAt };
+      const nativeSaved = await repo.saveCashOutQuote(nativeOrder.id, "other", nativeWallet, nativeQuote, nativeInstructions, nativeNow);
+      const nativeAttempt = await repo.prepareCashOutAttempt({ orderId: nativeOrder.id, quoteId: nativeQuoteId, confirmationHash: nativeSaved.hash, userId: "other", walletAddress: nativeWallet, sequence: "1", feeStroops: 100, maxFeeStroops: 10000, preparedLedger: 10, now: nativeNow });
+      const nativeTx = TransactionBuilder.fromXDR(nativeAttempt.transaction, Networks.TESTNET);
+      assert.ok(nativeTx instanceof Transaction);
+      assert.equal(nativeTx.operations[0].type, "payment");
+      if (nativeTx.operations[0].type === "payment") assert.equal(nativeTx.operations[0].asset.isNative(), true);
+      assert.equal(nativeTx.memo.value, "3010377762");
+      nativeTx.sign(nativeKey);
+      await repo.authorizeCashOutAttempt({ orderId: nativeOrder.id, attemptId: nativeAttempt.id, userId: "other", walletAddress: nativeWallet, signedXdr: nativeTx.toXDR(), account: { account_id: nativeWallet, thresholds: { med_threshold: 1 }, signers: [{ key: nativeWallet, type: "ed25519_public_key", weight: 1 }] }, cipher: createCashOutEnvelopeCipher(Buffer.alloc(32, 9)), now: nativeNow });
+      assert.equal((await repo.latestCashOutAttempt(nativeOrder.id, "other", nativeWallet))?.state, "submitting");
 
       const cashKey = Keypair.random(), cashWallet = cashKey.publicKey(), cashIssuer = Keypair.random().publicKey();
       const cashOrder = (await repo.reserve(terms({ userId: "other", walletAddress: cashWallet, direction: "sell", assetIssuer: cashIssuer,

@@ -32,7 +32,13 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const origin = window.location.origin;
-    setRedirectOrigin(origin);
+    const bridgeReturn=sessionStorage.getItem("music-city-admin-wallet-return");
+    const oauthReturn=new URLSearchParams(window.location.search).has("dynamicOauthCode");
+    if(window.location.pathname==="/"&&oauthReturn&&bridgeReturn&&/^\/admin-wallet\/[a-f0-9-]{36}$/.test(bridgeReturn)){
+      window.location.replace(`${origin}${bridgeReturn}${window.location.search}`);
+      return;
+    }
+    setRedirectOrigin(window.location.pathname.startsWith("/admin-wallet/")?`${origin}${window.location.pathname}`:origin);
   }, []);
 
   return (

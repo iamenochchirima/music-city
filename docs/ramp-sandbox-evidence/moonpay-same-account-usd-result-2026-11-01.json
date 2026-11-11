@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-11-01T16:35:07.820Z",
+  "environment": "sandbox",
+  "requestedCurrency": "USD",
+  "orders": [
+    {
+      "id": "aa32a32d-558a-45b0-8481-e536114917a2",
+      "status": "failed",
+      "sameCustomerAsGbpTest": true,
+      "asset": "xlm",
+      "amount": 200,
+      "payoutCurrency": "gbp",
+      "payoutMethod": "moonpay_balance",
+      "payoutAmount": 24.34,
+      "depositHash": null,
+      "failureReason": "Cancelled by customer"
+    }
+  ],
+  "outcome": "Same customer as completed GBP test. Requested USD, but provider created GBP MoonPay Balance sale. Unfunded test order cancelled; no new XLM sent."
+}

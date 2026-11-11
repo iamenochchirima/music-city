@@ -149,7 +149,7 @@ test("createTrack persists recording-owned metadata only", async () => {
   }
 });
 
-test("track metadata updates normalize identifiers and validate linked artist credits", async () => {
+test("track metadata updates normalize identifiers and accept registered listener contributors", async () => {
   let persistedTrack: Record<string, unknown> | null = null;
   const existingTrack = {
     id: "trk-1",
@@ -174,7 +174,7 @@ test("track metadata updates normalize identifiers and validate linked artist cr
     restore(
       usersService,
       "getProfileById",
-      (async () => artistProfile) as typeof usersService.getProfileById,
+      (async () => ({ ...artistProfile, primaryIntent: "listener" as const })) as typeof usersService.getProfileById,
     ),
     restore(
       tracksRepository,

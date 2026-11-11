@@ -1,3 +1,5 @@
+import {adminWalletRouter,publicAdminWalletRouter} from "../modules/admin/admin-wallet.router.js";
+import {poolRouter,adminPoolRouter} from "../modules/pool/pool.router.js";
 import { notificationsRouter } from "../modules/notifications/notifications.router.js";
 import { adminSupportRouter } from "../modules/support/admin-support.router.js";
 import { supportRouter } from "../modules/support/support.router.js";
@@ -40,6 +42,10 @@ apiRouter.use("/images", imagesRouter);
 
 apiRouter.use("/notifications", notificationsRouter);
 apiRouter.use("/health", healthRouter);
+apiRouter.use("/admin/wallet",adminWalletRouter);
+apiRouter.use("/admin-wallet",publicAdminWalletRouter);
+apiRouter.use("/pool",poolRouter);
+apiRouter.use("/admin/pool",adminPoolRouter);
 apiRouter.use("/referrals", referralsRouter);
 apiRouter.use("/admin/referrals", adminReferralsRouter);
 apiRouter.use("/sponsorships", sponsorshipsRouter);

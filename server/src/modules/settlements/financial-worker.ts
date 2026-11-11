@@ -1,3 +1,4 @@
+import { poolService } from "../pool/pool.service.js";
 import { reconcileAgreementFinalizations } from "../agreements/agreement-worker.js";
 import { supportService } from "../support/support.service.js";
 import { checkoutService } from "../payments/checkout.service.js";
@@ -57,6 +58,7 @@ async function settlementCycle() {
 }
 
 export async function financialCycle(options: { settlementReady?: boolean } = {}) {
+  try {await poolService.cycle();} catch(error) {logger.error("Pool reconciliation needs attention",{error:errorMessage(error,"Pool reconciliation failed")});}
   const tasks = createFinancialWorkerTasks(
     {
       agreementFinalization: reconcileAgreementFinalizations,

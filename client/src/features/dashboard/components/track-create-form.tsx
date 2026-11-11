@@ -799,6 +799,7 @@ export const TrackCreateForm = ({
 
         {stepIndex === 2 ? (
           <TrackMetadataEditor
+            searchToken={session?.token}
             value={metadata}
             onChange={setMetadata}
             artists={artistOptions}

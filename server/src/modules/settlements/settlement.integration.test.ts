@@ -361,6 +361,7 @@ test(
             : config.treasuryAddress,
         ),
       });
+      chain.prepareRun = async () => ({...prepared(config.treasuryAddress),kind:undefined,treasuryAddress:config.treasuryAddress,networkPassphrase:Networks.TESTNET,signers:evidence.signers});
       chain.send = async (tx) => ({
         status: "PENDING",
         hash: tx.hash().toString("hex"),
@@ -812,6 +813,41 @@ test(
         batches.set(id,{...original,claimed:original.funded,reclaimed:0n,claims:original.claims.map(c=>({...c,status:["Claimed"]})),request:{...original.request,batch_id:Buffer.from(id,"hex"),source_id:Buffer.from("e".repeat(64),"hex")}});fundedHashes.set(id,"d".repeat(64));
         await indexSettlementEvents();const report=await s.reconciliationReport();assert.equal(report.ok,false);assert.ok(report.discrepancies.some(d=>d.batchId===id));assert.equal(report.escrowBalanceUnits,report.openUnits);
         const checkpoint=await db.transaction(c=>c.query("SELECT deployment_ledger,cursor,caught_up FROM settlement_chain_cursors"));assert.equal(checkpoint.rows[0].cursor,"mock-cursor");assert.equal(checkpoint.rows[0].caught_up,true);
+      });
+      await t.test("payout runs atomically reserve sources and bind one transaction to every funded outcome",async()=>{
+        env.PAYOUT_RUN_CONTRACT_ID=StrKey.encodeContract(Buffer.alloc(32,7));
+        const first=await approvedSource(),second=await approvedSource();
+        const sources=[first,second].map(({trackId,sourceType,sourceId})=>({trackId,sourceType,sourceId}));
+        const input={sources,expiresAt:first.expiresAt};
+        await assert.rejects(s.previewRun({...input,sources:[sources[0],sources[0]]}),/only once/);
+        const preview=await s.previewRun(input);assert.equal(preview.fundedUnits,"2000000000");
+        await assert.rejects(s.reserveRun({...input,sources:[sources[0],{...sources[1],sourceId:"missing"}]},preview.id,"admin:test"));
+        assert.equal((await db.transaction(c=>c.query("SELECT count(*)::int AS n FROM settlement_reservations WHERE batch_id=ANY($1::text[])",[preview.batches.map(b=>b.id)]))).rows[0].n,0);
+        const [run,retry]=await Promise.all([s.reserveRun(input,preview.id,"admin:test"),s.reserveRun(input,preview.id,"admin:test")]);assert.equal(run.id,retry.id);
+        await assert.rejects(s.reserveRun({...input,sources:[sources[0]]},"f".repeat(64),"admin:test"));
+        await assert.rejects(db.transaction(c=>c.query("UPDATE payout_runs SET payload=payload WHERE id=$1",[run.id])),/append-only/);
+        const oldPrepare=chain.prepareRun;
+        chain.prepareRun=async()=>({...prepared(config.treasuryAddress),kind:undefined,treasuryAddress:config.treasuryAddress,networkPassphrase:Networks.TESTNET,signers:evidence.signers});
+        try {
+          await assert.rejects(s.prepare(run.batches[1]!.id,"settle","admin:test"),/payout run/);
+          const [attempt,repeated]=await Promise.all([s.prepareRun(run.id,"admin:test"),s.prepareRun(run.id,"admin:test")]);
+          assert.equal(attempt.id,repeated.id);assert.deepEqual(attempt.fundingBatchIds,run.batches.map(b=>b.id));
+          await s.addSignature(attempt.id,"admin:test",{signedTransaction:sign(attempt.transaction,signers[0]!)},true);
+          await assert.rejects(s.submit(attempt.id,"admin:test",true));
+          await s.addSignature(attempt.id,"admin:test",{signedTransaction:sign(attempt.transaction,signers[1]!)},true);
+          await s.submit(attempt.id,"admin:test",true);
+          const signed=(await s.detail(attempt.batchId)).attempts.find(a=>a.id===attempt.id)!;success(signed);
+          for(const b of run.batches) {
+            batches.set(b.id,{request:{batch_id:Buffer.from(b.id,"hex"),source_id:Buffer.from(b.sourceKey,"hex"),track_id:b.trackId,agreement_id:b.agreementId,version:b.version,proposal_hash:Buffer.from(b.proposalHash,"hex"),gross_amount:BigInt(b.grossUnits),fee_bps:b.feeBps,expires_at:BigInt(Date.parse(b.expiresAt)/1000)},claims:b.allocations.map(a=>({beneficiary:a.beneficiary,amount:BigInt(a.amountUnits),status:["Available"],updated_ledger:102})),funded:BigInt(b.fundedUnits),claimed:0n,reclaimed:0n,funded_ledger:102});
+            fundedHashes.set(b.id,signed.transactionHash);
+          }
+          const last=batches.get(run.batches[1]!.id)!;last.funded_ledger=103;
+          await assert.rejects(s.reconcile(attempt.id),/matching funded source/);
+          assert.equal((await s.detail(attempt.batchId)).batch.state,"reserved");
+          last.funded_ledger=102;await s.reconcile(attempt.id);
+          for(const b of run.batches){const detail=await s.detail(b.id);assert.equal(detail.batch.state,"funded");assert.equal(detail.batch.fundingHash,signed.transactionHash);assert.equal(detail.payoutRun?.id,run.id);assert(detail.attempts.some(a=>a.id===attempt.id));}
+          assert.equal((await s.reconcile(attempt.id)).status,"confirmed");
+        } finally {chain.prepareRun=oldPrepare;}
       });
     } finally {
       Object.assign(registry, originalRegistry);

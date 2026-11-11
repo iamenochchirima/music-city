@@ -425,6 +425,32 @@ export const settlementChain = {
       );
     return { nativeAvailableUnits };
   },
+  async prepareRun(batches: SettlementBatch[], runId: string, routerId: string) {
+    const batch = batches[0]!;
+    for (const b of batches) requireSettlementConfig(b.config);
+    const signers = await this.treasurySigners(batch.config);
+    await this.verifyConfiguration(batch.config);
+    const router = new Contract(routerId);
+    const probe = new TransactionBuilder(new Account(batch.config.treasuryAddress, "0"), {
+      fee: BASE_FEE, networkPassphrase: batch.config.networkPassphrase,
+    }).addOperation(router.call("settlement")).setTimeout(30).build();
+    const configuration = await rpc().simulateTransaction(probe);
+    if (!Api.isSimulationSuccess(configuration) || !configuration.result ||
+        scValToNative(configuration.result.retval) !== batch.config.contractId)
+      throw new HttpError(409, "Payout run contract does not target the configured settlement contract");
+    const total = batches.reduce((sum, b) => sum + BigInt(b.fundedUnits), 0n);
+    const readiness = await this.readiness(batch.config.treasuryAddress, batch.config, total.toString(), false);
+    const tx = new TransactionBuilder(await rpc().getAccount(batch.config.treasuryAddress), {
+      fee: BASE_FEE, networkPassphrase: batch.config.networkPassphrase,
+    }).addOperation(router.call("fund", bytes(runId), xdr.ScVal.scvVec(batches.map(settlementRequest))))
+      .setTimeout(600).build();
+    const prepared = await rpc().prepareTransaction(tx);
+    if (readiness.nativeAvailableUnits < BigInt(prepared.fee))
+      throw new HttpError(409, "Add XLM to cover the payout run network fee");
+    return {kind: undefined, treasuryAddress: batch.config.treasuryAddress, networkPassphrase: batch.config.networkPassphrase,
+      signers, transaction: prepared.toXDR(), transactionHash: prepared.hash().toString("hex"),
+      expiresAt: new Date(Number(prepared.timeBounds!.maxTime)*1000).toISOString()};
+  },
   async prepare(
     batch: SettlementBatch,
     kind: "settle" | "claim" | "reclaim" | "maintain",

@@ -1,6 +1,16 @@
 # Music City Smart Contracts
 
-## Royalty Split Registry
+## Contributor controlled registry
+
+`contributor-registry` is the opt-in local Testnet replacement. Its constructor takes the payout treasury and a separate track-ownership registrar. `register_track` binds an owner once; `respond` records owner/contributor authorization and automatically finalizes after all required approvals. Decisions, cancellation and amended versions are enforced on-chain. Existing beneficiaries must approve amendments even when removed from the new split.
+
+The finalized read interface remains compatible with the earnings settlement contract. That contract is redeployed with the new registry address; treasury funding and recovery still require two signatures, while each claim requires only its beneficiary. The legacy contracts and data are preserved.
+
+Use `AGREEMENT_PUBLICATION_MODE=contributors` only with its matching registry and fresh rehearsal database. Automatic registration is restricted to non-production Testnet. The registrar trusts the application's authenticated owner mapping and cannot overwrite an existing owner. Production rollout and SOW alignment remain separate.
+
+See [the bounded implementation plan](../docs/contributor-controlled-agreements-implementation-plan.md) and [current verification evidence](../docs/contributor-controlled-agreements-evidence/README.md). Generated-key Testnet verification is distinct from Dynamic/Firefox browser verification.
+
+## Treasury authorized royalty split registry
 
 The `royalty-split-registry` Soroban contract records immutable finalized contributor agreement versions. Revenue accounting and payouts remain in the application backend. The agreement service verifies contributor signatures and prepares an exact transaction from a dedicated 2-of-3 Stellar treasury; the contract requires authorization from that treasury account.
 
@@ -52,3 +62,11 @@ The following record belongs to the previous set/freeze contract. It is retained
 - Full deployment record: [`deployments/stellar-testnet.json`](deployments/stellar-testnet.json)
 
 The old read-back script, generated set/freeze binding and single-key registry publisher have been removed. Finalization runs through the contributor agreement API and the dedicated treasury signing flow. Historical split rows remain read-only financial evidence; new allocations use the explicit effective finalized agreement and its confirmed transaction evidence.
+
+## Payout run funding
+
+`payout-run` is an immutable coordinator configured with one existing earnings-settlement address. `fund(run_id, requests)` requires that settlement's treasury authorization and atomically invokes `settle` for up to ten complete earnings sources. Exact run retries are idempotent; a changed request under the same run ID fails. Each source is still validated and consumed by the original escrow, with its own finalized split, fee terms, claim deadline and beneficiary claims. The coordinator neither holds tokens nor signs claims. Existing escrow deployments need no migration. The application simulates and reserves the exact set before preparing one treasury transaction; it verifies the receipt ledger and funded state of every member before confirming the attempt.
+
+## Prefunded earnings pool
+
+`earnings-pool` is an additive immutable contract for new song purchases. Native buyer authorization pays USDC and records earnings against the registry's exact current finalized split in one atomic `buy` invocation. Gross proceeds enter the shared pool and the configured fee goes to treasury. There is no earnings registrar or per-purchase admin authorization. Each non-expiring claim requires its beneficiary. Order IDs prevent duplicate earning registration and changed order reuse; consumed claims cannot be replayed. Treasury-authorized `top_up` creates no earnings. Treasury-authorized `return_surplus` cannot reduce reserves below outstanding contributor obligations. Existing escrow payouts keep their own contracts, expiry rules and history. Pool/catalog checkout integration and exact receipts are covered by the dated local verification record.

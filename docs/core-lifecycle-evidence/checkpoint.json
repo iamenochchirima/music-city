@@ -1,0 +1,176 @@
+{
+  "at": "2026-10-17T20:04:11.059855+00:00",
+  "baseHead": "9cd39f0c638456daa0c96689c3f6840ce83b3e32",
+  "branch": "main",
+  "state": "Verified uncommitted working tree; no push or deployment",
+  "taskOwnedFiles": [
+    {
+      "path": "client/src/features/dashboard/components/dashboard-revenue-overview.tsx",
+      "sha256": "f6ca46b1f0f515f790fd2284a42d90314113b433367554715dde3028a6d91d04"
+    },
+    {
+      "path": "client/src/features/dashboard/components/dashboard-revenue-overview.test.tsx",
+      "sha256": "dc0de319c7073e72961a2e800ddcc9d7ef25aac2df21a361ebeef32bf6995ab1"
+    },
+    {
+      "path": "client/src/features/dashboard/components/track-manage-overview.tsx",
+      "sha256": "37e2a8f1f603b214200ff46afc51ae8ecad6c6e984293746937a320ad6685cb0"
+    },
+    {
+      "path": "client/src/features/dashboard/components/track-sales-settings.tsx",
+      "sha256": "353bd5b27a50e3d511333e7311722426d3eec8c7f7e10ecc40a1a19c2199912e"
+    },
+    {
+      "path": "client/src/features/dashboard/components/track-sales-settings.test.tsx",
+      "sha256": "9ec24d14bad04e959e9757e9311b03f814ddfb62963afbbbf20609d02117bb07"
+    },
+    {
+      "path": "client/src/features/music/components/track-commerce-actions.tsx",
+      "sha256": "7fc56e0856990a51f3215adeee3eddf1b08aa3b84f0d4b3037f33cc8d3f3c246"
+    },
+    {
+      "path": "client/src/features/music/components/track-commerce-actions.test.tsx",
+      "sha256": "104e316f1519d483d3cfe7da7aaedb7789988cbfba2ca4ac2a4288b2f829f260"
+    },
+    {
+      "path": "client/src/features/payments/hooks/use-stellar-checkout.ts",
+      "sha256": "72fcd3054ff451363c1f279edaea6e82e23eeedf21fc45ee88ecaec699f3857d"
+    },
+    {
+      "path": "client/src/features/payments/hooks/use-stellar-checkout.test.tsx",
+      "sha256": "d3fd9e82a76254709eac579bf26e7e11fabbc755bf59cbdf889cb0b4cc2beb43"
+    },
+    {
+      "path": "client/src/features/payments/lib/payments-api.ts",
+      "sha256": "3b38a241339fc74dc6648de78d2ebcdcf5c38b34f3bdc3b2f34460247607e2b3"
+    },
+    {
+      "path": "client/src/features/settlements/creator-claims.tsx",
+      "sha256": "c81fc09bd64ee43d139a8f019096e753d210454d1f4baf49a6c77bb1d9bc4ec0"
+    },
+    {
+      "path": "packages/shared/src/payments.ts",
+      "sha256": "3d76ce029dd247cc118166ef69101885c8c0c9205b13d4e30bc4b5d3f4050e66"
+    },
+    {
+      "path": "server/src/modules/agreements/finalization.integration.test.ts",
+      "sha256": "ed1271ce54a8a2486e5c52d827557e068f2deee2d8e362ff74eb104862de5415"
+    },
+    {
+      "path": "server/src/modules/payments/checkout-chain.ts",
+      "sha256": "14fb7f85f803b01c9341b05fcd3ac7b40a9fd5073094d8a13c35da6b453c5be1"
+    },
+    {
+      "path": "server/src/modules/payments/checkout-chain.test.ts",
+      "sha256": "b424e36b37c1f021dd3676b270b18d07e55bbb787aa6e20f63680c1f40b43b45"
+    },
+    {
+      "path": "server/src/modules/payments/checkout-schema.ts",
+      "sha256": "a9cf65657695fccdb2e88b4a0db670811ec9684d6503d4b6a1bbbc31788cc04a"
+    },
+    {
+      "path": "server/src/modules/payments/checkout.service.ts",
+      "sha256": "cc49847c662d44c840952f993cfc736b2ad8048f918855b175cea3c3c0ddb066"
+    },
+    {
+      "path": "server/src/modules/payments/checkout.integration.test.ts",
+      "sha256": "3d6fca6508af1210094200f43b4ac9ebff3962c195891645c0b8d3a1686ec0b4"
+    },
+    {
+      "path": "server/src/modules/payments/payments.repository.ts",
+      "sha256": "537d97cc27ec00953390330beb36edcf9c1c4f5f0b97f46957c49319ee22e6fd"
+    },
+    {
+      "path": "server/src/modules/payments/payments.router.ts",
+      "sha256": "5b3f0d1b2b31e596e007a44b56d79cb5f57d35708eaf9aba867907c5ebdb8fd1"
+    },
+    {
+      "path": "server/src/modules/payments/payments.service.ts",
+      "sha256": "e7715fc3e02ee33bdd6de1072f4e4e52e1a1b44c2cdaf613435c8a62ad90e91e"
+    },
+    {
+      "path": "server/src/modules/payments/payments.service.test.ts",
+      "sha256": "6240eb5fdd808593e06b37862375a0ec01fcf14be6bfb229120d4518aa636f05"
+    },
+    {
+      "path": "server/src/modules/royalties/royalties.service.ts",
+      "sha256": "3f3100c630aaa58b15094ad36ae098eb226c76f2472c05b2af092dcb6ce011a9"
+    },
+    {
+      "path": "server/src/modules/royalties/royalties.service.test.ts",
+      "sha256": "61e55d554febbc539c1594a5b78c95d2fa2bee6832cb06cfc56c2d48f775d581"
+    },
+    {
+      "path": "server/src/modules/settlements/financial-worker.ts",
+      "sha256": "9f0ef61c3bad12555c2d5111ea3a53efa7c7c276b663a812ef1d632a1bcc52f0"
+    },
+    {
+      "path": "server/src/modules/support/support-chain.ts",
+      "sha256": "7f77e090787b25ec421f3f7163bb6ed37a183656e4d39f7b00986c359e03722b"
+    },
+    {
+      "path": "server/src/modules/tracks/tracks.service.ts",
+      "sha256": "151336c09a0af97bf0895d8ac1dd56f146b26c7ebcb85bc14f6685e03db7ea09"
+    },
+    {
+      "path": "server/src/services/database.service.ts",
+      "sha256": "9fda33835a977deeb15f89f9e6c88da38a88e2be6b346c5916c2a07ecebfa001"
+    },
+    {
+      "path": "docs/sow-2-tracker.md",
+      "sha256": "00aa680d6ff67ae4aa3e17ab9a30da901a5cdc9d24181d66d9777f05d095356e"
+    }
+  ],
+  "preservedPreexistingWork": [
+    "packages/shared/src/cashout.ts",
+    "packages/shared/src/index.ts cashout export",
+    "server/src/modules/cashout/",
+    "docs/sow-2-tracker.md cashout section"
+  ],
+  "validation": {
+    "workspaceTests": {
+      "serverPassed": 139,
+      "serverSkipped": 10,
+      "clientPassed": 116,
+      "adminPassed": 18
+    },
+    "checkoutPostgres": {
+      "passed": 8,
+      "skipped": 0
+    },
+    "financialPostgres": {
+      "passed": 36,
+      "skipped": 0
+    },
+    "capturedAgreementFocused": {
+      "passed": 3
+    },
+    "finalClaimsUi": {
+      "passed": 5
+    },
+    "workspaceTypecheck": "passed",
+    "allProductionBuilds": "passed",
+    "finalClientBuildAfterCopyChange": "passed",
+    "diffCheck": "passed",
+    "realBrowserAndTestnet": "browser-results.json and independent-chain-check.json"
+  },
+  "runtime": {
+    "api": "http://127.0.0.1:4339/api/v1",
+    "client": "http://localhost:3000",
+    "admin": "http://127.0.0.1:4338",
+    "financialWorker": "active",
+    "temporaryProxy": "inactive",
+    "temporaryClientOverride": "removed"
+  },
+  "remainingOutsideGoal": [
+    "production rollout and deployed commit package",
+    "external SOW acceptance",
+    "provider integration readiness",
+    "E7 first-admin production setup and early migration exception"
+  ],
+  "knownLimits": [
+    "Dynamic email step-up OTP did not dismiss by backdrop or Escape. Review cancellation and navigation interruption are verified.",
+    "The local Vite preview required a reload after shared-package rebuild invalidated authentication contexts. Production builds passed.",
+    "Existing frontend bundle-size warnings remain."
+  ]
+}

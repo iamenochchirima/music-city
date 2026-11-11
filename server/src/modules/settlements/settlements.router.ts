@@ -105,6 +105,9 @@ adminSettlementsRouter.get(
     res.json(await settlementService.latestReconciliation());
   }),
 );
+adminSettlementsRouter.get("/runs", asyncHandler(async (_req,res) => {
+  res.json({items:await settlementService.listRuns()});
+}));
 adminSettlementsRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
@@ -112,6 +115,16 @@ adminSettlementsRouter.get(
   }),
 );
 adminSettlementsRouter.use(requireSuperAdmin);
+adminSettlementsRouter.post("/runs/preview", asyncHandler(async (req,res) => {
+  res.json({run:await settlementService.previewRun(req.body)});
+}));
+adminSettlementsRouter.post("/runs/reserve", asyncHandler(async (req,res) => {
+  const input=z.object({previewId:z.string().regex(/^[a-f0-9]{64}$/),source:z.unknown()}).strict().parse(req.body);
+  res.status(201).json({run:await settlementService.reserveRun(input.source,input.previewId,`admin:${req.adminSession!.adminId}`)});
+}));
+adminSettlementsRouter.post("/runs/:id/prepare", asyncHandler(async (req,res) => {
+  res.status(201).json({attempt:await settlementService.prepareRun(String(req.params.id),`admin:${req.adminSession!.adminId}`)});
+}));
 adminSettlementsRouter.post(
   "/preview",
   asyncHandler(async (req, res) => {

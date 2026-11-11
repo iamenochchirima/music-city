@@ -53,7 +53,7 @@ export const rampChainStateSchema = z.enum([
 export const rampMarketSchema = z.object({
   country: z.string().regex(/^[A-Z]{2}$/),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  method: z.enum(["card", "bank", "apple_pay", "google_pay", "cash_pickup", "cash_deposit", "mobile_money"]),
+  method: z.enum(["card", "bank", "apple_pay", "google_pay", "cash_pickup", "cash_deposit", "mobile_money", "moonpay_balance"]),
 }).strict();
 
 export const rampClaimReferenceSchema = z.object({
@@ -65,7 +65,7 @@ const claimReferenceDirectionRefinement = (
   value: { direction: string; associatedClaim?: unknown },
   context: z.RefinementCtx,
 ) => {
-  if (value.associatedClaim && value.direction !== "sell")
+  if (value.associatedClaim && (value.direction !== "sell" || ("assetCode" in value && value.assetCode !== "USDC")))
     context.addIssue({
       code: "custom",
       path: ["associatedClaim"],

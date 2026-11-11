@@ -12,11 +12,13 @@ import {
 export function ReleaseSharedDetails({
   release,
   artists,
+  searchToken,
   busy,
   onChange,
 }: {
   release: ReleaseDetail;
   artists: ArtistSummary[];
+  searchToken?: string;
   busy: boolean;
   onChange: (id: string, patch: Partial<TrackSummary>) => void;
 }) {
@@ -41,6 +43,7 @@ export function ReleaseSharedDetails({
       {open && (
         <div className="space-y-4">
           <TrackMetadataEditor
+              searchToken={searchToken}
             hideIsrc
             value={value}
             onChange={setValue}

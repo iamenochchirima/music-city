@@ -92,6 +92,7 @@ function providerRow(o: RampOrder) {
     feeAmount: 0,
     extraFeeAmount: 0,
     networkFeeAmount: 0,
+    payoutMethod: "credit_debit_card",
     status: "completed",
     updatedAt: new Date().toISOString(),
     cryptoTransactionId: "a".repeat(64),
@@ -390,4 +391,29 @@ test("buy delivery amount is retained only when it has exact Stellar precision",
     const result = await new MoonpaySandbox(config(), fetcher).lookup(o);
     assert.equal(result?.assetUnits, expected);
   }
+});
+
+
+test("XLM balance deposit instructions are fetched and bound to the exact provider order", async () => {
+  const o = order("sell", "XLM"); o.terms.market = { country: "GB", currency: "GBP", method: "moonpay_balance" }; o.providerTransactionId = "provider-id";
+  let row = { ...providerRow(o), status: "waitingForDeposit", payoutMethod: "moonpay_balance", quoteCurrency: { code: "gbp", precision: 2 }, quoteCurrencyAmount: 30.12, depositHash: null as string | null, depositWallet: { walletAddress: Keypair.random().publicKey(), walletAddressTag: "3010377762" } };
+  const client = new MoonpaySandbox(config(), (async () => Response.json([row])) as typeof fetch);
+  const result = await client.cashOutQuote(o);
+  assert.equal(result.instructions.assetCode, "XLM");
+  assert.deepEqual(result.instructions.memo, { type: "id", value: "3010377762" });
+  assert.equal(result.instructions.amountUnits, o.terms.amount.units);
+  assert.equal(result.instructions.destination, row.depositWallet.walletAddress);
+  assert.equal(result.quote.receive.units, "3012");
+  for (const patch of [{ refundWalletAddress: Keypair.random().publicKey() }, { externalCustomerId: "other" }, { externalTransactionId: "other" }, { baseCurrencyAmount: 249 }, { payoutMethod: "credit_debit_card" }, { depositHash: "a".repeat(64) }, { status: "completed" }, { quoteCurrency: { code: "usd", precision: 2 } }, { id: "other" }]) {
+    const original = row; row = { ...row, ...patch }; await assert.rejects(client.cashOutQuote(o)); row = original;
+  }
+});
+
+
+test("native Balance launch preselects the verified payout method and signs it", () => {
+  const o = order("sell", "XLM"); o.terms.market.method = "moonpay_balance";
+  const url = new URL(new MoonpaySandbox(config()).widgetUrl(o, catalog, customerIps));
+  assert.equal(url.searchParams.get("paymentMethod"), "moonpay_balance");
+  const signature = url.searchParams.get("signature"); url.searchParams.delete("signature");
+  assert.equal(signature, createHmac("sha256", config().MOONPAY_SK!).update(url.search).digest("base64"));
 });
