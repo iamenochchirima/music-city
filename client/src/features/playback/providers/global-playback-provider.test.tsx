@@ -83,8 +83,32 @@ it("shows the guest limit when capped media runs out just before the cutoff", as
   expect(await screen.findByRole("dialog", { name: "Keep listening" })).toBeTruthy();
 });
 
-it("keeps the release queue when another catalog mounts during playback", async () => {
-  function Browse() {
+it("shows the sign-in prompt when guest media is cut off mid-song", async () => {
+  m.create.mockResolvedValue({
+    id: "session-one",
+    trackId: "one",
+    streamUrl: "https://media.test/one.mp3",
+    isGuest: true,
+    guestBudgetRemainingSeconds: 10,
+    guestTrackDurationSeconds: 120,
+    guestRemainingSeconds: 10,
+  });
+  const { container } = render(
+    <GlobalPlaybackProvider>
+      <Controls />
+    </GlobalPlaybackProvider>,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Start release" }));
+  await vi.waitFor(() => expect(screen.getByTestId("active").textContent).toBe("one"));
+
+  await act(async () => {
+    fireEvent.error(container.querySelector("audio")!);
+  });
+
+  expect(await screen.findByRole("dialog", { name: "Keep listening" })).toBeTruthy();
+});
+
+it("keeps the release queue when another catalog mounts during playback", async () => {  function Browse() {
     const [browsing, setBrowsing] = useState(false);
     return <><Controls /><button onClick={() => setBrowsing(true)}>Browse music</button>{browsing ? <TrackGrid tracks={[song("unrelated")]} /> : null}</>;
   }

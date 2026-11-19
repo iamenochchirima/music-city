@@ -493,6 +493,25 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     });
   }, []);
 
+  // A guest whose remaining allowance is shorter than the track will have
+  // media requests cut off mid-song. Treat those interruptions as the listening
+  // limit instead of showing a raw media error.
+  const guestAllowanceExhausted = useCallback(() => {
+    const playback = playbackSessionRef.current;
+    if (!playback?.isGuest || session?.token) return false;
+    return (
+      (playback.guestBudgetRemainingSeconds ?? Infinity) <=
+      (playback.guestTrackDurationSeconds ?? 0)
+    );
+  }, [session?.token]);
+
+  const showGuestLimitPrompt = useCallback(() => {
+    audioRef.current?.pause();
+    setIsPlaying(false);
+    guestPromptOpenedRef.current = true;
+    setGuestLimitReached(true);
+  }, []);
+
   const syncProgress = () => {
     const audio = audioRef.current;
 
@@ -635,10 +654,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         setStreamUrl(nextPlaybackSession.streamUrl);
       } catch (error) {
         if (error instanceof ApiClientError && error.status === 429 && error.message.includes("Guest listening limit")) {
-          audioRef.current?.pause();
-          setIsPlaying(false);
-          setGuestLimitReached(true);
-          guestPromptOpenedRef.current = true;
+          showGuestLimitPrompt();
           return;
         }
         if (error instanceof ApiClientError && error.status === 401) {
@@ -652,7 +668,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
         );
       }
     },
-    [clearActiveAdState, logout, session?.token],
+    [clearActiveAdState, logout, session?.token, showGuestLimitPrompt],
   );
 
   const handleAudioEnded = useCallback(async () => {
@@ -761,6 +777,11 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       setIsPlaying(false);
       setGuestLimitReached(true);
     };
+    const handleError = () => {
+      if (guestPromptOpenedRef.current) return;
+      if (!guestAllowanceExhausted()) return;
+      showGuestLimitPrompt();
+    };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
@@ -771,6 +792,7 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("seeking", handleSeeking);
     audio.addEventListener("waiting", handleWaiting);
+    audio.addEventListener("error", handleError);
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
@@ -782,9 +804,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("seeking", handleSeeking);
       audio.removeEventListener("waiting", handleWaiting);
+      audio.removeEventListener("error", handleError);
       stopAnimationLoop();
     };
-  }, [handleAudioEnded]);
+  }, [handleAudioEnded, guestAllowanceExhausted, showGuestLimitPrompt]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -836,6 +859,11 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
 
         if (guestPromptOpenedRef.current) return;
 
+        if (guestAllowanceExhausted()) {
+          showGuestLimitPrompt();
+          return;
+        }
+
         if (activeAd && pendingTrackAfterAd) {
           const impressionId = activeAdImpressionId;
           const nextTrack = pendingTrackAfterAd;
@@ -878,8 +906,10 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
     activeAd,
     activeAdImpressionId,
     clearActiveAdState,
+    guestAllowanceExhausted,
     pendingTrackAfterAd,
     reportAdImpressionUpdate,
+    showGuestLimitPrompt,
     startTrackSession,
     streamUrl,
     playbackSession?.id,
@@ -1209,9 +1239,13 @@ export const GlobalPlaybackProvider = ({ children }: { children: ReactNode }) =>
       }
     } catch (error) {
       setIsPlaying(false);
+      if (guestAllowanceExhausted()) {
+        showGuestLimitPrompt();
+        return;
+      }
       toast.error(describePlaybackError(error));
     }
-  }, [recordPlaybackEvent, startTrackSession]);
+  }, [guestAllowanceExhausted, recordPlaybackEvent, showGuestLimitPrompt, startTrackSession]);
 
   const seekTo = (value: number) => {
     if (activeAd) return;
