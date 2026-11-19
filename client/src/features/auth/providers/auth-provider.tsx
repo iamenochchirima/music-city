@@ -355,6 +355,7 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
     autoProfileRefreshTokenRef,
   } = useBaseSessionState();
   const userRef = useRef(user);
+  const dynamicUserSeenRef = useRef(Boolean(user));
   const primaryWalletRef = useRef(primaryWallet);
   const authTriggerRef = useRef<HTMLElement | null>(null);
 
@@ -804,11 +805,23 @@ const DynamicAuthProvider = ({ children }: { children: ReactNode }) => {
   ]);
 
   useEffect(() => {
-    if (!sdkHasLoaded || showAuthFlow || user) {
+    if (user) {
+      dynamicUserSeenRef.current = true;
       return;
     }
 
-    clearSession();
+    if (!sdkHasLoaded || showAuthFlow) {
+      return;
+    }
+
+    // A null Dynamic user on first load usually means its session could not be
+    // restored in a resumed tab. Keep the stored Music City session (the API
+    // still verifies the token) and only clear it after a real sign-out.
+    if (dynamicUserSeenRef.current) {
+      dynamicUserSeenRef.current = false;
+      clearSession();
+    }
+
     setIsLoading(false);
   }, [clearSession, sdkHasLoaded, setIsLoading, showAuthFlow, user]);
 

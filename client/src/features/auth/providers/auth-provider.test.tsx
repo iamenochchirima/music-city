@@ -346,3 +346,52 @@ it("preserves provider reauthentication prompts for an existing user", async () 
   await waitFor(() => expect(mocks.createDynamicSession).toHaveBeenCalled());
   expect(mocks.setShowAuthFlow).not.toHaveBeenCalledWith(false);
 });
+
+it("keeps a stored session when Dynamic cannot restore its own user", async () => {
+  const stored = {
+    ...session,
+    token: `header.${btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }))}.sig`,
+  };
+  localStorage.setItem("music-city-auth-session", JSON.stringify(stored));
+  mocks.user = null;
+
+  render(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  expect(await screen.findByText(`Signed in as ${walletAddress}`)).toBeTruthy();
+  expect(JSON.parse(localStorage.getItem("music-city-auth-session") ?? "{}"))
+    .toMatchObject({ token: stored.token });
+  expect(mocks.createDynamicSession).not.toHaveBeenCalled();
+});
+
+it("clears the stored session when Dynamic reports a sign-out", async () => {
+  mocks.user = {
+    userId: "dynamic-user",
+    email: "artist@example.com",
+    verifiedCredentials: [{ chain: "stellar", address: walletAddress }],
+  };
+  const view = render(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  await waitFor(() =>
+    expect(localStorage.getItem("music-city-auth-session")).toBeTruthy(),
+  );
+
+  mocks.user = null;
+  view.rerender(
+    <AuthProvider>
+      <LoginControls />
+    </AuthProvider>,
+  );
+
+  await waitFor(() =>
+    expect(localStorage.getItem("music-city-auth-session")).toBeNull(),
+  );
+});
+
