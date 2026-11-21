@@ -49,7 +49,7 @@ export const TrackCommerceActions = ({
   useEffect(() => {
     let current = true;
     setPurchased(false);
-    if (!session?.token || !canPurchase) return;
+    if (!session?.token) return;
     setCheckingPurchase(true);
     void paymentsApi
       .listMine(session.token)
@@ -71,7 +71,7 @@ export const TrackCommerceActions = ({
     return () => {
       current = false;
     };
-  }, [session?.token, track.id, canPurchase]);
+  }, [session?.token, track.id]);
 
   const purchaseLabel = useMemo(
     () => formatAmountLabel(track.purchasePrice, track.purchaseAssetCode),
@@ -177,7 +177,7 @@ export const TrackCommerceActions = ({
         </Button>
       ) : null}
 
-      {canPurchase && purchased ? (
+      {purchased ? (
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
             <Check className="h-4 w-4" />

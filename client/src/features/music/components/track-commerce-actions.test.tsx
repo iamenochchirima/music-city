@@ -24,7 +24,7 @@ const track = {
   purchasePrice: "1",
   purchaseAssetCode: "USDC",
 } as TrackSummary;
-beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; m.activeTrackId = null; m.isPlaying = false; m.purchasesEnabled = true; });
+beforeEach(() => { vi.clearAllMocks(); m.session = { token: "token" }; m.activeTrackId = null; m.isPlaying = false; m.purchasesEnabled = true; m.list.mockResolvedValue([]); });
 afterEach(cleanup);
 it("shows a retained purchase after reopening without offering another payment", async () => {
   m.list.mockResolvedValue([
@@ -74,7 +74,17 @@ it("hides configured track sales from listeners while public purchases are disab
   m.purchasesEnabled = false;
   render(<TrackCommerceActions track={track} />);
   expect(screen.queryByRole("button", { name: "Buy 1 USDC" })).toBeNull();
-  expect(m.list).not.toHaveBeenCalled();
+});
+
+it("keeps the download for a past purchase after sales are switched off", async () => {
+  m.purchasesEnabled = false;
+  m.list.mockResolvedValue([
+    { trackId: "track", productType: "track_purchase", status: "confirmed" },
+  ]);
+  render(<TrackCommerceActions track={track} />);
+  await screen.findByText("Purchased");
+  expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Buy 1 USDC" })).toBeNull();
 });
 
 it("lets a guest play a ready song through the shared player", async () => {
