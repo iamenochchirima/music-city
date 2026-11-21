@@ -50,6 +50,35 @@ export const httpClient = {
     return (await response.json()) as T;
   },
 
+  async getFile(
+    path: string,
+    token?: string,
+  ): Promise<{ blob: Blob; filename?: string }> {
+    const response = await fetch(`${clientEnv.apiBaseUrl}${path}`, {
+      credentials: "include",
+      cache: "no-store",
+      headers: authHeaders(token),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as ErrorPayload;
+      throw buildApiClientError(payload, response.status);
+    }
+
+    const disposition = response.headers.get("content-disposition") ?? "";
+    const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1]?.trim();
+    const plain = /filename="?([^";]+)"?/i.exec(disposition)?.[1]?.trim();
+    let filename: string | undefined;
+
+    try {
+      filename = encoded ? decodeURIComponent(encoded) : plain;
+    } catch {
+      filename = plain;
+    }
+
+    return { blob: await response.blob(), filename };
+  },
+
   async post<T>(path: string, body: unknown, token?: string, extraHeaders: Record<string, string> = {}): Promise<T> {
     const response = await fetch(`${clientEnv.apiBaseUrl}${path}`, {
       method: "POST",

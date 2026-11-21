@@ -2,9 +2,39 @@ import { Router } from "express";
 
 import { requireSession } from "../../middleware/require-session.js";
 import { asyncHandler } from "../../utils/async-handler.js";
+import { storageService } from "../../services/storage.service.js";
 import { paymentsService } from "./payments.service.js";
 import { checkoutService } from "./checkout.service.js";
 import { signedFinancialTransactionSchema } from "@music-city/shared";
+
+const audioExtensions: Record<string, string> = {
+  "audio/mpeg": ".mp3",
+  "audio/mp3": ".mp3",
+  "audio/wav": ".wav",
+  "audio/x-wav": ".wav",
+  "audio/flac": ".flac",
+  "audio/mp4": ".m4a",
+  "audio/aac": ".aac",
+  "audio/ogg": ".ogg",
+  "audio/webm": ".webm",
+};
+
+const downloadFileName = (
+  track: { id: string; artistName?: string; title: string; sourceFileName?: string },
+  contentType: string,
+) => {
+  const extension =
+    track.sourceFileName?.match(/(\.[a-z0-9]{1,5})$/i)?.[1]?.toLowerCase() ??
+    audioExtensions[contentType] ??
+    "";
+  const base = `${track.artistName ?? "Music City"} - ${track.title}`
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+
+  return `${base || track.id}${extension}`;
+};
 
 const paymentsRouter = Router();
 paymentsRouter.get(
@@ -102,6 +132,35 @@ paymentsRouter.post(
         String(request.params.trackId),
       ),
     });
+  }),
+);
+
+paymentsRouter.get(
+  "/tracks/:trackId/download",
+  requireSession,
+  asyncHandler(async (request, response) => {
+    const { track, metadata } = await paymentsService.getTrackDownload(
+      request.session!.walletAddress,
+      String(request.params.trackId),
+    );
+    const fileName = downloadFileName(track, metadata.contentType);
+    const asciiFileName = fileName.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "'");
+
+    response.setHeader("Content-Type", metadata.contentType);
+    response.setHeader("Content-Length", String(metadata.sizeBytes));
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    );
+    response.setHeader("Cache-Control", "private, no-store");
+
+    const file = await storageService.openStoredObjectRange(
+      track.masterStorageKey!,
+      0,
+      metadata.sizeBytes - 1,
+    );
+    file.stream.on("error", () => response.destroy());
+    file.stream.pipe(response);
   }),
 );
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, LoaderCircle, Pause, Play, ShoppingBag } from "lucide-react";
+import { Check, Download, LoaderCircle, Pause, Play, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ArtistPublicProfile, TrackSummary } from "@music-city/shared";
@@ -38,6 +38,7 @@ export const TrackCommerceActions = ({
   const isTrackPlaying = activeTrackId === track.id && isPlaying;
   const runCheckout = useStellarCheckout();
   const [isBuying, setIsBuying] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const buyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!hidePlay && track.playbackReady) playbackApi.preloadTracks(session?.token, [track]);
@@ -119,6 +120,34 @@ export const TrackCommerceActions = ({
     }
   };
 
+  const handleDownload = async () => {
+    const token = ensureSession();
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+      const { blob, filename } = await paymentsApi.downloadTrack(token, track.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download =
+        filename ?? `${track.artistName ?? "Music City"} - ${track.title}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to download this song",
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handlePlay = async () => {
     try {
       if (activeTrackId !== track.id) setPlaybackQueue([track]);
@@ -149,10 +178,24 @@ export const TrackCommerceActions = ({
       ) : null}
 
       {canPurchase && purchased ? (
-        <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
-          <Check className="h-4 w-4" />
-          Purchased
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-sm text-emerald-400">
+            <Check className="h-4 w-4" />
+            Purchased
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => void handleDownload()}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Download
+          </Button>
+        </div>
       ) : canPurchase ? (
         <Button
           ref={buyButton}

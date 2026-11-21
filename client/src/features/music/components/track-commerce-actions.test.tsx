@@ -3,12 +3,12 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { TrackSummary } from "@music-city/shared";
 import { TrackCommerceActions } from "./track-commerce-actions";
-const m = vi.hoisted(() => ({ list: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null, activeTrackId: null as string | null, isPlaying: false, purchasesEnabled: true }));
+const m = vi.hoisted(() => ({ list: vi.fn(), download: vi.fn(), checkout: vi.fn(), play: vi.fn(), preload: vi.fn(), session: { token: "token" } as { token: string } | null, activeTrackId: null as string | null, isPlaying: false, purchasesEnabled: true }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({ session: m.session }),
 }));
 vi.mock("@/features/payments/lib/payments-api", () => ({
-  paymentsApi: { listMine: m.list },
+  paymentsApi: { listMine: m.list, downloadTrack: m.download },
 }));
 vi.mock("@/features/payments/hooks/use-stellar-checkout", () => ({
   useStellarCheckout: () => m.checkout,
@@ -35,6 +35,30 @@ it("shows a retained purchase after reopening without offering another payment",
   expect(screen.queryByRole("button", { name: "Buy 1 USDC" })).toBeNull();
   expect(m.checkout).not.toHaveBeenCalled();
 });
+it("offers a download after a confirmed purchase", async () => {
+  m.list.mockResolvedValue([
+    { trackId: "track", productType: "track_purchase", status: "confirmed" },
+  ]);
+  m.download.mockResolvedValue({
+    blob: new Blob(["audio"], { type: "audio/mpeg" }),
+    filename: "Artist - Track.mp3",
+  });
+  Object.assign(URL, {
+    createObjectURL: vi.fn(() => "blob:track"),
+    revokeObjectURL: vi.fn(),
+  });
+  const click = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => {});
+
+  render(<TrackCommerceActions track={track} />);
+  await screen.findByText("Purchased");
+  await userEvent.click(screen.getByRole("button", { name: "Download" }));
+
+  await vi.waitFor(() => expect(m.download).toHaveBeenCalledWith("token", "track"));
+  expect(click).toHaveBeenCalled();
+});
+
 it("does not treat another song or unconfirmed payment as ownership", async () => {
   m.list.mockResolvedValue([
     { trackId: "other", productType: "track_purchase", status: "confirmed" },

@@ -79,6 +79,13 @@ export const paymentsApi = {
     return response.intent;
   },
 
+  async downloadTrack(token: string, trackId: string) {
+    return httpClient.getFile(
+      `/payments/tracks/${encodeURIComponent(trackId)}/download`,
+      token,
+    );
+  },
+
   async createPlatformSubscriptionIntent(token: string) {
     const response = await httpClient.post<{ intent: PaymentIntentRecord }>(
       "/payments/intents/platform-subscription",

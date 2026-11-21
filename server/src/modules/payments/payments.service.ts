@@ -19,6 +19,7 @@ import { entitlementsService } from "../entitlements/entitlements.service.js";
 import { tracksService } from "../tracks/tracks.service.js";
 import { usersService } from "../users/users.service.js";
 import { createId } from "../../services/id.service.js";
+import { storageService } from "../../services/storage.service.js";
 import { normalizePositiveAmount, normalizeStellarAsset } from "../../utils/commerce.js";
 import { HttpError } from "../../utils/http-error.js";
 import { paymentsRepository } from "./payments.repository.js";
@@ -263,7 +264,6 @@ export const paymentsService = {
     if (!env.TRACK_PURCHASES_ENABLED) {
       throw new HttpError(403, "Track purchases are not available yet");
     }
-
     const track = await tracksService.getTrackForPlayback(trackId);
 
     if (!track || !track.playbackReady || !(await tracksService.isTrackPublic(track.id))) {
@@ -382,6 +382,43 @@ export const paymentsService = {
     });
 
     return paymentsRepository.upsertIntent(intent);
+  },
+
+  /**
+   * A purchased song keeps its original master in storage. Buyers (and the
+   * artist who owns the track) can download that master; streaming-only
+   * recordings without a stored master stay unavailable.
+   */
+  async getTrackDownload(walletAddress: string, trackId: string) {
+    const track = await tracksService.getTrackForPlayback(trackId);
+
+    if (!track) {
+      throw new HttpError(404, "Track not found");
+    }
+
+    const [entitlement, profile] = await Promise.all([
+      entitlementsService.findMineForTrack(walletAddress, trackId),
+      usersService.getProfile(walletAddress),
+    ]);
+
+    if (!entitlement && profile?.id !== track.artistId) {
+      throw new HttpError(403, "Purchase this song before downloading it");
+    }
+
+    if (!track.masterStorageKey) {
+      throw new HttpError(409, "This song is available for streaming only");
+    }
+
+    const metadata = await storageService.getStoredObjectMetadata(
+      track.masterStorageKey,
+      track.sourceFileName,
+    );
+
+    if (metadata.sizeBytes <= 0) {
+      throw new HttpError(409, "This song has no downloadable file");
+    }
+
+    return { track, metadata };
   },
 
   async getArtistOnboardingFeeStatus(walletAddress: string) {

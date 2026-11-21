@@ -17,6 +17,8 @@ const { sponsorshipsService } = await import("../sponsorships/sponsorships.servi
 const { adminService } = await import("../admin/admin.service.js");
 const { checkoutService } = await import("./checkout.service.js");
 const { env } = await import("../../config/env.js");
+const { tracksService } = await import("../tracks/tracks.service.js");
+const { storageService } = await import("../../services/storage.service.js");
 
 const restore = <T extends object, K extends keyof T>(
   target: T,
@@ -42,6 +44,96 @@ test("track purchase checkout stays disabled until the public sales launch", asy
     );
   } finally {
     env.TRACK_PURCHASES_ENABLED = original;
+  }
+});
+
+const downloadableTrack = {
+  id: "trk-1",
+  title: "Song",
+  artistName: "Artist",
+  artistId: "artist-1",
+  genre: "Pop",
+  runtime: "1:00",
+  priceLabel: "Published",
+  status: "published" as const,
+  visibility: "published" as const,
+  plays: 0,
+  likes: 0,
+  playbackReady: true,
+  masterStorageKey: "masters/tracks/trk-1/song.mp3",
+  sourceFileName: "song.mp3",
+};
+
+test("track downloads require a purchase or track ownership", async () => {
+  const cleanup = [
+    restore(tracksService, "getTrackForPlayback", (async () => downloadableTrack) as typeof tracksService.getTrackForPlayback),
+    restore(usersService, "getProfile", (async () => ({ id: "listener-1" })) as unknown as typeof usersService.getProfile),
+    restore(entitlementsService, "findMineForTrack", async () => undefined),
+  ];
+
+  try {
+    await assert.rejects(
+      () => paymentsService.getTrackDownload(walletAddress, "trk-1"),
+      (error: { statusCode?: number; message?: string }) =>
+        error.statusCode === 403 &&
+        error.message === "Purchase this song before downloading it",
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("a purchased track download returns the stored master metadata", async () => {
+  const cleanup = [
+    restore(tracksService, "getTrackForPlayback", (async () => downloadableTrack) as typeof tracksService.getTrackForPlayback),
+    restore(usersService, "getProfile", (async () => ({ id: "listener-1" })) as unknown as typeof usersService.getProfile),
+    restore(usersService, "getProfile", (async () => ({ id: "listener-1" })) as unknown as typeof usersService.getProfile),
+    restore(
+      entitlementsService,
+      "findMineForTrack",
+      (async () => ({ trackId: "trk-1", source: "purchase" })) as unknown as typeof entitlementsService.findMineForTrack,
+    ),
+    restore(
+      storageService,
+      "getStoredObjectMetadata",
+      async () => ({ sizeBytes: 1234, contentType: "audio/mpeg" }),
+    ),
+  ];
+
+  try {
+    const download = await paymentsService.getTrackDownload(walletAddress, "trk-1");
+    assert.equal(download.metadata.contentType, "audio/mpeg");
+    assert.equal(download.metadata.sizeBytes, 1234);
+    assert.equal(download.track.masterStorageKey, downloadableTrack.masterStorageKey);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("a recording without a stored master cannot be downloaded", async () => {
+  const cleanup = [
+    restore(
+      tracksService,
+      "getTrackForPlayback",
+      (async () => ({ ...downloadableTrack, masterStorageKey: undefined })) as typeof tracksService.getTrackForPlayback,
+    ),
+    restore(usersService, "getProfile", (async () => ({ id: "listener-1" })) as unknown as typeof usersService.getProfile),
+    restore(
+      entitlementsService,
+      "findMineForTrack",
+      (async () => ({ trackId: "trk-1", source: "purchase" })) as unknown as typeof entitlementsService.findMineForTrack,
+    ),
+  ];
+
+  try {
+    await assert.rejects(
+      () => paymentsService.getTrackDownload(walletAddress, "trk-1"),
+      (error: { statusCode?: number; message?: string }) =>
+        error.statusCode === 409 &&
+        error.message === "This song is available for streaming only",
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
   }
 });
 
