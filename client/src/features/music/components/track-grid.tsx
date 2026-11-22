@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { playbackApi } from "@/features/playback/lib/playback-api";
 import { Button } from "@/components/ui/button";
 import { useGlobalPlayback } from "@/features/playback/providers/global-playback-provider";
+import { usePurchasedTrackIds } from "@/features/payments/hooks/use-purchased-track-ids";
+import { TrackSaleButton } from "@/features/music/components/track-sale-button";
 import { TrackTable } from "@/features/music/components/track-table";
 import {
   DropdownMenu,
@@ -27,6 +29,7 @@ export const TrackGrid = ({
 }) => {
   const { session } = useAuth();
   const { activeTrackId, playTrack, setPlaybackQueue } = useGlobalPlayback();
+  const purchasedTrackIds = usePurchasedTrackIds(session?.token);
   const [syncingTrackId, setSyncingTrackId] = useState<string | null>(null);
   const safeTracks = Array.isArray(tracks) ? tracks : [];
 
@@ -59,34 +62,43 @@ export const TrackGrid = ({
           track.visibility === "published",
         )
       }
-      renderAction={(track) =>
-        track.playbackReady && track.visibility === "published" ? (
-          <Button
-            data-playback-preload={track.id}
-            variant={activeTrackId === track.id ? "default" : "outline"}
-            className={
-              activeTrackId === track.id
-                ? "bg-emerald-400 px-3 text-slate-950 hover:bg-emerald-300"
-                : "border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
-            }
-            onClick={(event) => {
-              event.stopPropagation();
-              void handleTrackAction(track);
-            }}
-          >
-            <Play className="h-4 w-4 fill-current" />
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            className="border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
-            disabled
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Play className="h-4 w-4 fill-current" />
-          </Button>
-        )
-      }
+      renderAction={(track) => (
+        <div
+          className="flex items-center justify-end gap-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {track.playbackReady && track.visibility === "published" ? (
+            <Button
+              data-playback-preload={track.id}
+              variant={activeTrackId === track.id ? "default" : "outline"}
+              className={
+                activeTrackId === track.id
+                  ? "bg-emerald-400 px-3 text-slate-950 hover:bg-emerald-300"
+                  : "border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleTrackAction(track);
+              }}
+            >
+              <Play className="h-4 w-4 fill-current" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="border-white/10 bg-white/5 px-3 text-white hover:bg-white/10"
+              disabled
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Play className="h-4 w-4 fill-current" />
+            </Button>
+          )}
+          <TrackSaleButton
+            track={track}
+            owned={purchasedTrackIds.has(track.id)}
+          />
+        </div>
+      )}
       renderOverflowAction={(track) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -24,7 +24,6 @@ import { ReleaseManageOverview } from "@/features/dashboard/components/release-m
 import { StudioShell } from "@/features/dashboard/components/studio-shell";
 import { TrackManageOverview } from "@/features/dashboard/components/track-manage-overview";
 import { DiscoverOverview } from "@/features/discover/components/discover-overview";
-import { MarketplaceOverview } from "@/features/marketplace/components/marketplace-overview";
 import { PlaylistDetailOverview } from "@/features/music/components/playlist-detail-overview";
 import { PlaylistsOverview } from "@/features/music/components/playlists-overview";
 import { ReleaseDetailOverview } from "@/features/music/components/release-detail-overview";
@@ -391,18 +390,6 @@ export const AppRoutes = () => (
       }
     />
     <Route path="/playlists/:playlistId" element={<PublicPlaylistPage />} />
-    <Route
-      path="/marketplace"
-      element={
-        <PageSection
-          eyebrow="Subscription"
-          title="Subscribe to Music City"
-          description="Unlock subscriber-only releases across the platform."
-        >
-          <MarketplaceOverview />
-        </PageSection>
-      }
-    />
     <Route
       path="/onboarding"
       element={<OnboardingRoute />}
