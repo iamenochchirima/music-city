@@ -74,7 +74,20 @@ export const agreementsService = {
     if (effective) return { status: "ready" as const };
 
     const existing = await this.forTrack(actor, trackId);
-    if (existing) return { status: "existing" as const, agreementId: existing };
+    if (existing) {
+      const detail = await this.get(existing, actor);
+      const current = detail.versions.find(
+        (version) => version.proposal.version === detail.currentVersion,
+      )!;
+      if (current.state === "proposed" || current.state === "ready") {
+        const challenge = await this.challenge(existing, actor, {
+          action: "accept",
+          reason: "",
+        });
+        return { status: "sign" as const, agreementId: existing, challenge };
+      }
+      return { status: "existing" as const, agreementId: existing };
+    }
 
     const version = await this.create(actor, {
       trackId,
