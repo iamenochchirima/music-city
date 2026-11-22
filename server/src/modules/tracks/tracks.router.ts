@@ -64,7 +64,7 @@ tracksRouter.put(
 
       response.json({ track });
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (error instanceof ZodError || error instanceof HttpError) {
         throw error;
       }
 
