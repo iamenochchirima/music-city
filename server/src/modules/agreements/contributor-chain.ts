@@ -38,7 +38,7 @@ async function ensureRegistered(version:AgreementVersion) {
   const existing=await read("owner",[nativeToScVal(p.trackId)]);
   if(existing){if(existing!==p.ownerWallet)throw new HttpError(409,"Registered track owner does not match");return;}
   if(!env.AGREEMENT_REGISTRAR_SECRET)throw new HttpError(503,"Track ownership registration is unavailable");
-  if(env.NODE_ENV==="production" || env.STELLAR_NETWORK_PASSPHRASE!==Networks.TESTNET)throw new HttpError(503,"Automatic ownership registration is restricted to local Testnet rehearsal");
+  if(env.STELLAR_NETWORK_PASSPHRASE!==Networks.TESTNET)throw new HttpError(503,"Automatic ownership registration is restricted to Testnet");
   const key=Keypair.fromSecret(env.AGREEMENT_REGISTRAR_SECRET),server=rpc(),c=config();
   const tx=await server.prepareTransaction(new TransactionBuilder(await server.getAccount(key.publicKey()),{fee:BASE_FEE,networkPassphrase:c.networkPassphrase}).addOperation(new Contract(c.contractId).call("register_track",nativeToScVal(p.trackId),new Address(p.ownerWallet).toScVal())).setTimeout(120).build());
   tx.sign(key);

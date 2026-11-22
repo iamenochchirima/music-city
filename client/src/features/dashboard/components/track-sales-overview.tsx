@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { AgreementSummary, TrackSummary } from "@music-city/shared";
 
 import { StudioPageHeader } from "@/components/studio/page-header";
+import { Button } from "@/components/ui/button";
 import { agreementApi } from "@/features/agreements/agreement-api";
+import { useOwnerSaleAgreement } from "@/features/agreements/use-owner-sale-agreement";
 import { tracksApi } from "@/features/music/lib/tracks-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -21,6 +23,9 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 
 export const TrackSalesOverview = () => {
   const { session } = useAuth();
+  const navigate = useNavigate();
+  const ownerSale = useOwnerSaleAgreement();
+  const [startingTrackId, setStartingTrackId] = useState<string | null>(null);
   const [tracks, setTracks] = useState<TrackSummary[]>([]);
   const [agreements, setAgreements] = useState<AgreementSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +58,27 @@ export const TrackSalesOverview = () => {
       active = false;
     };
   }, [session?.token]);
+
+  const startOwnerAgreement = async (trackId: string) => {
+    if (!session?.token) return;
+    setStartingTrackId(trackId);
+    try {
+      const result = await ownerSale.start(trackId);
+      if (result.status === "existing") {
+        navigate(`/account/agreements/${result.agreementId}`);
+        return;
+      }
+      const list = await agreementApi.list(session.token);
+      setAgreements(list.items);
+      toast.success("Agreement active. Set a price to start selling.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not create the agreement",
+      );
+    } finally {
+      setStartingTrackId(null);
+    }
+  };
 
   const agreementByTrack = useMemo(
     () =>
@@ -124,6 +150,19 @@ export const TrackSalesOverview = () => {
                     {agreement ? "Agreement active" : "Agreement needed"}
                   </span>
                 </div>
+
+                {published && session?.token && !agreement ? (
+                  <Button
+                    size="sm"
+                    className="bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+                    disabled={startingTrackId === track.id}
+                    onClick={() => void startOwnerAgreement(track.id)}
+                  >
+                    {startingTrackId === track.id
+                      ? "Waiting for your wallet…"
+                      : "Create 100% owner agreement"}
+                  </Button>
+                ) : null}
 
                 {published && session?.token ? (
                   <TrackSalesSettings

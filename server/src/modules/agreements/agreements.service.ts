@@ -1,4 +1,5 @@
 import { contributorChain } from "./contributor-chain.js";
+import { finalizedSplitsRepository } from "./effective-split.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -65,6 +66,30 @@ export const agreementsService = {
       );
       return (found.rows[0]?.id as string | undefined) ?? null;
     });
+  },
+  async ownerSale(actor: string, trackId: string) {
+    const effective = await finalizedSplitsRepository
+      .effective(trackId)
+      .catch(() => null);
+    if (effective) return { status: "ready" as const };
+
+    const existing = await this.forTrack(actor, trackId);
+    if (existing) return { status: "existing" as const, agreementId: existing };
+
+    const version = await this.create(actor, {
+      trackId,
+      submitForApproval: true,
+      recipients: [
+        { walletAddress: actor, name: actor, role: "artist", shareBps: 10_000 },
+      ],
+      terms: "Owner-only sale",
+    });
+    const agreementId = version.proposal.agreementId;
+    const challenge = await this.challenge(agreementId, actor, {
+      action: "accept",
+      reason: "",
+    });
+    return { status: "sign" as const, agreementId, challenge };
   },
   async create(actor: string, input: unknown) {
     const request = z

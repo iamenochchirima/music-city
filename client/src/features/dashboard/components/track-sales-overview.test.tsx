@@ -18,6 +18,9 @@ vi.mock("@/features/music/lib/tracks-api", () => ({
 vi.mock("@/features/agreements/agreement-api", () => ({
   agreementApi: { list: m.listAgreements },
 }));
+vi.mock("@/features/agreements/use-owner-sale-agreement", () => ({
+  useOwnerSaleAgreement: () => ({ start: vi.fn(), busy: false }),
+}));
 
 const track = (id: string, title: string, extra = {}) => ({
   id,

@@ -70,6 +70,18 @@ export const agreementApi = {
       expectedVersion,
       expectedHash,
     }),
+  ownerSale: (token: string, trackId: string) =>
+    request<{
+      status: "ready" | "existing" | "sign";
+      agreementId?: string;
+      challenge?: {
+        id: string;
+        transaction: string;
+        expiresAt: string;
+        proposalHash: string;
+        networkPassphrase: string;
+      };
+    }>(token, `/owner-sale/${encodeURIComponent(trackId)}`, "POST", {}),
   challenge: (token: string, id: string, body: unknown) =>
     request<{
       id: string;

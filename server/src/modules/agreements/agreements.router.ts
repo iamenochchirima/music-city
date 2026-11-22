@@ -44,6 +44,17 @@ agreementsRouter.get(
   }),
 );
 agreementsRouter.post(
+  "/owner-sale/:trackId",
+  asyncHandler(async (req, res) => {
+    res.status(201).json(
+      await agreementsService.ownerSale(
+        req.session!.walletAddress,
+        String(req.params.trackId),
+      ),
+    );
+  }),
+);
+agreementsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     res
