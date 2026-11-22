@@ -80,7 +80,7 @@ export const agreementsService = {
       trackId,
       submitForApproval: true,
       recipients: [
-        { walletAddress: actor, name: actor, role: "artist", shareBps: 10_000 },
+        { walletAddress: actor, role: "artist", shareBps: 10_000 },
       ],
       terms: "Owner-only sale",
     });
