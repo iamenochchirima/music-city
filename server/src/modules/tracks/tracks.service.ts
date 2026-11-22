@@ -23,6 +23,7 @@ import { usersService } from "../users/users.service.js";
 import { tracksRepository } from "./tracks.repository.js";
 import { HttpError } from "../../utils/http-error.js";
 import { amountUnits, formatUnits } from "../settlements/settlement-domain.js";
+import { finalizedSplitsRepository } from "../agreements/effective-split.js";
 
 const formatRuntime = (seconds?: number) => {
   if (!seconds || Number.isNaN(seconds)) {
@@ -434,6 +435,17 @@ export const tracksService = {
 
     const purchaseEnabled =
       parsed.purchaseEnabled ?? existing.purchaseEnabled ?? false;
+    if (purchaseEnabled) {
+      const split = await finalizedSplitsRepository
+        .effective(trackId)
+        .catch(() => null);
+      if (!split) {
+        throw new HttpError(
+          409,
+          "Finalize this song's royalty agreement before enabling sales",
+        );
+      }
+    }
     const purchasePrice = purchaseEnabled
       ? formatUnits(amountUnits(normalizePositiveAmount(
           parsed.purchasePrice ||

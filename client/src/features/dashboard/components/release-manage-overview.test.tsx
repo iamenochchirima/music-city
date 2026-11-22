@@ -46,6 +46,21 @@ vi.mock("@/features/uploads/lib/uploads-api", () => ({
     cancelSession: vi.fn(),
   },
 }));
+vi.mock("@/features/agreements/agreement-api", () => ({
+  agreementApi: {
+    list: async () => ({
+      items: [
+        {
+          id: "agreement-one",
+          effectiveVersion: 1,
+          current: { state: "finalized", proposal: { recipients: [] } },
+          context: { track: { id: "one" }, people: [] },
+        },
+      ],
+    }),
+  },
+  agreementStateLabel: (state: string) => state,
+}));
 vi.mock("@/features/users/lib/users-api", () => ({
   usersApi: { listArtists: async () => [], searchContributors: mocks.searchContributors },
 }));
@@ -197,7 +212,11 @@ it("lets creators prepare per-track sale prices from the release workspace", asy
   expect(
     screen.getByText(/not visible to listeners yet/i),
   ).toBeTruthy();
-  await user.click(screen.getByLabelText("Include this song in track sales"));
+  const salesToggle = screen.getByLabelText(
+    "Include this song in track sales",
+  ) as HTMLInputElement;
+  await waitFor(() => expect(salesToggle.disabled).toBe(false));
+  await user.click(salesToggle);
   await user.type(screen.getByLabelText("Price (USDC)"), "2.50");
   await user.click(screen.getByRole("button", { name: "Save sales settings" }));
   await screen.findByText("Sales settings saved");

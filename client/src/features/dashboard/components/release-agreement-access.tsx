@@ -7,9 +7,11 @@ import { agreementApi, agreementStateLabel } from "@/features/agreements/agreeme
 export function ReleaseAgreementAccess({
   release,
   token,
+  onAgreements,
 }: {
   release: Pick<ReleaseDetail, "id" | "tracks">;
   token: string;
+  onAgreements?: (agreements: AgreementSummary[]) => void;
 }) {
   const [agreements, setAgreements] = useState<AgreementSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,7 @@ export function ReleaseAgreementAccess({
     try {
       const result = await agreementApi.list(token);
       setAgreements(result.items);
+      onAgreements?.(result.items);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Could not load agreements",
@@ -28,7 +31,7 @@ export function ReleaseAgreementAccess({
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [onAgreements, token]);
 
   useEffect(() => {
     void load();

@@ -5,12 +5,13 @@ import { ReleaseSharedDetails } from "./release-shared-details";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   releaseUpdateSchema,
   type ReleaseDetail,
   type TrackSummary,
   type ArtistSummary,
+  type AgreementSummary,
   trackMetadataUpdateSchema,
 } from "@music-city/shared";
 import { ArrowLeft } from "lucide-react";
@@ -126,6 +127,16 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploadProgress, setCoverUploadProgress] = useState(0);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [agreementByTrack, setAgreementByTrack] = useState<Map<string, string>>(new Map());
+  const handleAgreements = useCallback((items: AgreementSummary[]) => {
+    setAgreementByTrack(
+      new Map(
+        items
+          .filter((agreement) => agreement.effectiveVersion)
+          .map((agreement) => [agreement.context.track.id, agreement.id]),
+      ),
+    );
+  }, []);
   const [launchMode, setLaunchMode] = useState<
     "draft" | "published" | "scheduled"
   >("draft");
@@ -1186,7 +1197,7 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
         </p>
       </StudioPageHeader>
       {session.artistAccess ? (
-        <ReleaseAgreementAccess release={release} token={session.token} />
+        <ReleaseAgreementAccess release={release} token={session.token} onAgreements={handleAgreements} />
       ) : null}
       {session.artistAccess ? (
         <section
@@ -1225,6 +1236,14 @@ export const ReleaseManageOverview = ({ releaseId }: { releaseId: string }) => {
                     token={session.token!}
                     showHeading={false}
                     compact
+                    agreementState={
+                      agreementByTrack.has(trackId) ? "active" : "missing"
+                    }
+                    agreementHref={
+                      agreementByTrack.get(trackId)
+                        ? `/account/agreements/${agreementByTrack.get(trackId)}`
+                        : `/account/agreements/new?track=${encodeURIComponent(trackId)}&release=${encodeURIComponent(release.id)}`
+                    }
                     onSaved={(updated) => {
                       setRelease((current) =>
                         current

@@ -382,3 +382,103 @@ test("artist track list hydrates release assignment from the release-track relat
     cleanup.reverse().forEach((fn) => fn());
   }
 });
+
+const salesTrack = {
+  id: "trk-sales",
+  title: "Sellable song",
+  artistId: "artist-1",
+  artistName: "Artist",
+  genre: "Pop",
+  runtime: "3:00",
+  priceLabel: "Published",
+  status: "published" as const,
+  visibility: "published" as const,
+  plays: 0,
+  likes: 0,
+  playbackReady: true,
+  purchaseEnabled: false,
+};
+
+test("enabling track sales requires a finalized royalty agreement", async () => {
+  const { finalizedSplitsRepository } = await import("../agreements/effective-split.js");
+  const cleanup = [
+    restore(
+      usersService,
+      "requireArtistOnboardingAccess",
+      (async () => artistProfile) as typeof usersService.requireArtistOnboardingAccess,
+    ),
+    restore(
+      tracksRepository,
+      "findById",
+      (async () => salesTrack) as typeof tracksRepository.findById,
+    ),
+    restore(
+      finalizedSplitsRepository,
+      "effective",
+      (async () => null) as unknown as typeof finalizedSplitsRepository.effective,
+    ),
+  ];
+
+  try {
+    await assert.rejects(
+      () =>
+        tracksService.updateTrackMonetization(walletAddress, "trk-sales", {
+          purchaseEnabled: true,
+          purchasePrice: "5",
+        }),
+      (error: { statusCode?: number; message?: string }) =>
+        error.statusCode === 409 &&
+        error.message ===
+          "Finalize this song's royalty agreement before enabling sales",
+    );
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});
+
+test("a finalized agreement allows a track to go on sale", async () => {
+  const { finalizedSplitsRepository } = await import("../agreements/effective-split.js");
+  let persisted: Record<string, unknown> | null = null;
+  const cleanup = [
+    restore(
+      usersService,
+      "requireArtistOnboardingAccess",
+      (async () => artistProfile) as typeof usersService.requireArtistOnboardingAccess,
+    ),
+    restore(
+      tracksRepository,
+      "findById",
+      (async () => salesTrack) as typeof tracksRepository.findById,
+    ),
+    restore(
+      finalizedSplitsRepository,
+      "effective",
+      (async () => ({ recipients: [] })) as unknown as typeof finalizedSplitsRepository.effective,
+    ),
+    restore(
+      tracksRepository,
+      "isTrackInPublicRelease",
+      (async () => true) as typeof tracksRepository.isTrackInPublicRelease,
+    ),
+    restore(
+      tracksRepository,
+      "upsert",
+      (async (track) => {
+        persisted = track as unknown as Record<string, unknown>;
+        return track;
+      }) as typeof tracksRepository.upsert,
+    ),
+  ];
+
+  try {
+    await tracksService.updateTrackMonetization(walletAddress, "trk-sales", {
+      purchaseEnabled: true,
+      purchasePrice: "5",
+    });
+
+    assert.equal(persisted?.["purchaseEnabled"], true);
+    assert.equal(Number(persisted?.["purchasePrice"]), 5);
+  } finally {
+    cleanup.reverse().forEach((fn) => fn());
+  }
+});

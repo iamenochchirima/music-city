@@ -18,6 +18,7 @@ import { DashboardCreateOverview } from "@/features/dashboard/components/dashboa
 import { DashboardTracksOverview } from "@/features/dashboard/components/dashboard-tracks-overview";
 import { ArtistAnalyticsOverview } from "@/features/dashboard/components/artist-analytics-overview";
 import { DashboardReleasesOverview } from "@/features/dashboard/components/dashboard-releases-overview";
+import { TrackSalesOverview } from "@/features/dashboard/components/track-sales-overview";
 import { DashboardRevenueOverview } from "@/features/dashboard/components/dashboard-revenue-overview";
 import { ReleaseCreateOverview } from "@/features/dashboard/components/release-create-overview";
 import { ReleaseManageOverview } from "@/features/dashboard/components/release-manage-overview";
@@ -152,6 +153,12 @@ const DashboardTrackPage = () => {
 const DashboardReleasesPage = () => (
   <StudioSection>
     <DashboardReleasesOverview />
+  </StudioSection>
+);
+
+const DashboardSalesPage = () => (
+  <StudioSection>
+    <TrackSalesOverview />
   </StudioSection>
 );
 
@@ -345,6 +352,7 @@ export const AppRoutes = () => (
     <Route path="/dashboard/analytics" element={<DashboardAnalyticsPage />} />
     <Route path="/dashboard/tracks" element={<DashboardTracksPage />} />
     <Route path="/dashboard/releases" element={<DashboardReleasesPage />} />
+    <Route path="/dashboard/sales" element={<DashboardSalesPage />} />
     <Route path="/dashboard/revenue" element={<DashboardRevenuePage />} />
     <Route path="/dashboard/releases/new" element={<StudioSection><ReleaseCreateOverview /></StudioSection>} />
     <Route

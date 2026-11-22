@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "react-router-dom";
 import type { TrackSummary } from "@music-city/shared";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,12 +20,16 @@ export function TrackSalesSettings({
   onSaved,
   showHeading = true,
   compact = false,
+  agreementState,
+  agreementHref,
 }: {
   track: TrackSummary;
   token: string;
   onSaved: (track: TrackSummary) => void;
   showHeading?: boolean;
   compact?: boolean;
+  agreementState?: "active" | "missing";
+  agreementHref?: string;
 }) {
   const id = useId();
   const [enabled, setEnabled] = useState(track.purchaseEnabled ?? false);
@@ -38,6 +43,10 @@ export function TrackSalesSettings({
   async function save(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    if (enabled && agreementState === "missing") {
+      setError("Finalize this song's royalty agreement before selling it.");
+      return;
+    }
     if (enabled && !validPrice(price)) {
       setError("Enter a price above zero with up to 7 decimal places.");
       return;
@@ -74,9 +83,22 @@ export function TrackSalesSettings({
         <h3 className="text-lg font-semibold">Track sales</h3>
       ) : null}
       <fieldset disabled={busy} className="space-y-4">
+        {agreementState === "missing" ? (
+          <p className="rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
+            Finalize this song&apos;s royalty agreement before selling it.{" "}
+            {agreementHref ? (
+              <Link to={agreementHref} className="underline underline-offset-4">
+                Set up agreement
+              </Link>
+            ) : null}
+          </p>
+        ) : agreementState === "active" ? (
+          <p className="text-sm text-emerald-400">Royalty agreement active.</p>
+        ) : null}
         <label className="flex min-h-11 items-center gap-3 text-sm">
           <Checkbox
             checked={enabled}
+            disabled={agreementState === "missing"}
             onChange={(event) => {
               setEnabled(event.target.checked);
               setSaved(false);

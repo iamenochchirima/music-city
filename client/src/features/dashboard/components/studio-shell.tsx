@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Library,
   PlusSquare,
+  Tag,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -35,6 +36,11 @@ const studioNavItems = [
     href: "/dashboard/releases",
     label: "Releases",
     icon: Disc3,
+  },
+  {
+    href: "/dashboard/sales",
+    label: "Sales",
+    icon: Tag,
   },
   {
     href: "/dashboard/analytics",
