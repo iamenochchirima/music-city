@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Address, BASE_FEE, Contract, Keypair, Networks, Transaction, TransactionBuilder, nativeToScVal, scValToNative, xdr } from "@stellar/stellar-sdk";
+import { Address, BASE_FEE, Contract, Keypair, Networks, Operation, Transaction, TransactionBuilder, nativeToScVal, scValToNative, xdr } from "@stellar/stellar-sdk";
 import { Api, Server } from "@stellar/stellar-sdk/rpc";
 import { z } from "zod";
 import type { AgreementAction, AgreementVersion } from "@music-city/shared";
@@ -31,6 +31,35 @@ async function read(method:string,args:xdr.ScVal[],source?:string) {
   const result=await server.simulateTransaction(tx);
   if (!Api.isSimulationSuccess(result) || !result.result) throw new HttpError(502,"Unable to read contributor registry");
   return scValToNative(result.result.retval);
+}
+// Testnet wallets may not exist yet. Give the signer a small fee balance so the
+// owner-only agreement can be signed without leaving the flow.
+async function ensureSignerAccount(address: string) {
+  const server = rpc();
+  try {
+    await server.getAccount(address);
+    return;
+  } catch {
+    // continue to sponsorship
+  }
+  if (!env.AGREEMENT_REGISTRAR_SECRET || env.STELLAR_NETWORK_PASSPHRASE !== Networks.TESTNET) {
+    throw new HttpError(409, "Your Stellar account needs test funds before signing");
+  }
+  const key = Keypair.fromSecret(env.AGREEMENT_REGISTRAR_SECRET);
+  let tx = new TransactionBuilder(await server.getAccount(key.publicKey()), { fee: BASE_FEE, networkPassphrase: env.STELLAR_NETWORK_PASSPHRASE })
+    .addOperation(Operation.createAccount({ destination: address, startingBalance: "2" }))
+    .setTimeout(60)
+    .build();
+  tx.sign(key);
+  const sent = await server.sendTransaction(tx);
+  if (sent.status === "ERROR") throw new HttpError(502, "Could not fund the signing wallet");
+  for (let i = 0; i < 20; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const status = await server.getTransaction(tx.hash().toString("hex"));
+    if (status.status === Api.GetTransactionStatus.SUCCESS) return;
+    if (status.status === Api.GetTransactionStatus.FAILED) throw new HttpError(502, "Could not fund the signing wallet");
+  }
+  throw new HttpError(409, "Funding the signing wallet is confirming. Please retry shortly");
 }
 // The registrar may bind ownership once. It cannot approve or change any split.
 async function ensureRegistered(version:AgreementVersion) {
@@ -72,6 +101,7 @@ export const contributorChain = {
     if(request.action==="accept"&&request.reason)throw new HttpError(400,"Acceptance cannot include a rejection reason");
     const pending=await databaseService.transaction(async client=>(await client.query("SELECT challenge_id FROM contributor_chain_attempts WHERE actor=$1 AND status='submitted' LIMIT 1",[actor])).rows[0]);
     if(pending)throw new HttpError(409,"Your previous wallet transaction is still confirming. Please wait before signing again");
+    await ensureSignerAccount(actor);
     await ensureRegistered(version);
     const c=config();
     const saved=await read("get_proposal",[nativeToScVal(version.proposal.trackId),nativeToScVal(version.proposal.version,{type:"u32"})],actor);
